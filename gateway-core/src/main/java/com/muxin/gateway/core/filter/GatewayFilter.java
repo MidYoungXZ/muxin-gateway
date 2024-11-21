@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.filter;
 
-import com.muxin.gateway.core.Ordered;
+import com.muxin.gateway.core.common.Ordered;
 import com.muxin.gateway.core.http.ServerWebExchange;
 
 /**

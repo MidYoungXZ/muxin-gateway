@@ -2,6 +2,7 @@ package com.muxin.gateway.core.netty;
 
 import com.muxin.gateway.core.LifeCycle;
 import com.muxin.gateway.core.config.NettyHttpServerProperties;
+import com.muxin.gateway.core.http.ExchangeHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.epoll.Epoll;
@@ -33,10 +34,11 @@ public class NettyHttpServer implements LifeCycle {
     private EventLoopGroup eventLoopGroupWorker;
 
     private NettyHttpServerProperties properties;
-    private ChannelInboundHandler channelInboundHandler;
 
-    public NettyHttpServer(ChannelInboundHandler channelInboundHandler, NettyHttpServerProperties properties) {
-        this.channelInboundHandler = channelInboundHandler;
+    private ExchangeHandler exchangeHandler;
+
+    public NettyHttpServer(ExchangeHandler exchangeHandler, NettyHttpServerProperties properties) {
+        this.exchangeHandler = exchangeHandler;
         this.properties = properties;
         init();
     }
@@ -80,8 +82,8 @@ public class NettyHttpServer implements LifeCycle {
                         ch.pipeline().addLast(
                                 new HttpServerCodec(), //http编解码
                                 new HttpObjectAggregator(properties.getMaxContentLength()), //请求报文聚合成FullHttpRequest
-                                new HttpServerExpectContinueHandler(),
-                                channelInboundHandler,
+                                new HttpServerExpectContinueHandler()
+                                ,
                                 new NettyServerConnectManagerHandler()
                         );
                     }

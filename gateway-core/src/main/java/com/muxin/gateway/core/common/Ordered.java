@@ -1,4 +1,4 @@
-package com.muxin.gateway.core;
+package com.muxin.gateway.core.common;
 
 /**
  * [Class description]

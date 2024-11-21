@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.route;
 
-import com.muxin.gateway.core.Ordered;
+import com.muxin.gateway.core.common.Ordered;
 import com.muxin.gateway.core.filter.GatewayFilter;
 import com.muxin.gateway.core.predicate.RoutePredicate;
 import lombok.Data;
@@ -16,7 +16,7 @@ import java.util.Map;
  * @date 2024/11/19 14:51
  */
 @Data
-public class Route implements Ordered {
+public class RouteRule implements Ordered {
 
     private final String id;
 

@@ -1,6 +1,7 @@
-package com.muxin.gateway.core.http;
+package com.muxin.gateway.core.netty;
 
-import com.muxin.gateway.core.filter.FilterChain;
+import com.muxin.gateway.core.http.ExchangeHandler;
+import com.muxin.gateway.core.http.ServerWebExchange;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -10,20 +11,19 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * @author Administrator
  * @date 2024/11/20 11:14
  */
-public class DispatcherHandler extends ChannelInboundHandlerAdapter implements WebHandler {
+public class ExchangeHandlerAdapter extends ChannelInboundHandlerAdapter implements ExchangeHandler {
+
+    private final ExchangeHandler delegate;
 
 
-    private FilterChain requestChain = null;
-
-    private FilterChain endpointChain = null;
-
-    private FilterChain responseChain = null;
-
-
-
+    public ExchangeHandlerAdapter(ExchangeHandler delegate) {
+        this.delegate = delegate;
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+
+
         handle(null);
     }
 
@@ -33,11 +33,12 @@ public class DispatcherHandler extends ChannelInboundHandlerAdapter implements W
      * 2.拼装filter
      * 3.执行filter
      * 4.处理返回
+     *
      * @param exchange
      */
     @Override
     public void handle(ServerWebExchange exchange) {
-
+        delegate.handle(exchange);
     }
 
 

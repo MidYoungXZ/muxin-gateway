@@ -1,5 +1,7 @@
 package com.muxin.gateway.core.http;
 
+import io.netty.channel.ChannelHandlerContext;
+
 /**
  * [Class description]
  *
@@ -11,6 +13,10 @@ public interface ServerWebExchange extends AttributesHolder {
     HttpServerRequest getRequest();
 
     HttpServerResponse getResponse();
+
+    void setResponse(HttpServerResponse response);
+
+    ChannelHandlerContext inboundContext();
 
     interface Builder {
 

@@ -1,13 +1,8 @@
 package com.muxin.gateway.core.http;
 
 
-
-import java.util.Map;
-import java.util.Set;
-
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.cookie.Cookie;
 
 /**
  * An Http Reactive Channel with several accessors related to HTTP flow: headers, params,
@@ -17,13 +12,6 @@ import io.netty.handler.codec.http.cookie.Cookie;
  * @since 0.5
  */
 public interface HttpInfos {
-
-    /**
-     * Returns resolved HTTP cookies.
-     *
-     * @return Resolved HTTP cookies
-     */
-    Map<CharSequence, Set<Cookie>> cookies();
 
     /**
      * Returns the decoded path portion from the {@link #uri()}.

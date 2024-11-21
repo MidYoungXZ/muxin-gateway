@@ -8,7 +8,7 @@ package com.muxin.gateway.core.filter;
  */
 public interface RequestFilter extends GatewayFilter {
 
-    default FilterTypeEnum filterType(){
+    default FilterTypeEnum filterType() {
         return FilterTypeEnum.REQUEST;
     }
 

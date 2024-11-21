@@ -51,13 +51,6 @@ public interface HttpServerResponse extends HttpServerInfos {
     HttpServerResponse compression(boolean compress);
 
     /**
-     * Returns true if headers and status have been sent to the client.
-     *
-     * @return true if headers and status have been sent to the client
-     */
-    boolean hasSentHeaders();
-
-    /**
      * Sets an outbound HTTP header, replacing any pre-existing value.
      *
      * @param name  headers key
@@ -88,13 +81,6 @@ public interface HttpServerResponse extends HttpServerInfos {
      */
     HttpHeaders responseHeaders();
 
-
-    /**
-     * Adds "text/event-stream" content-type for Server-Sent Events.
-     *
-     * @return this {@link HttpServerResponse}
-     */
-    HttpServerResponse sse();
 
     /**
      * Returns the assigned HTTP status.

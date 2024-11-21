@@ -6,7 +6,7 @@ package com.muxin.gateway.core.http;
  * @author Administrator
  * @date 2024/11/20 10:42
  */
-public interface WebHandler {
+public interface ExchangeHandler {
 
    void handle(ServerWebExchange exchange);
 

@@ -1,5 +1,7 @@
 package com.muxin.gateway.core.http;
 
+import io.netty.channel.ChannelHandlerContext;
+
 import java.util.Map;
 
 /**
@@ -18,6 +20,16 @@ public class DefaultServerWebExchange implements ServerWebExchange{
 
     @Override
     public HttpServerResponse getResponse() {
+        return null;
+    }
+
+    @Override
+    public void setResponse(HttpServerResponse response) {
+
+    }
+
+    @Override
+    public ChannelHandlerContext inboundContext() {
         return null;
     }
 
