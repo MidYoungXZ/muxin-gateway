@@ -14,7 +14,7 @@ import java.util.Map;
 public interface HttpServerInfos extends HttpInfos, ConnectionInformation {
 
     /**
-     * Returns resolved HTTP cookies. As opposed to {@link #cookies()}, this
+     * Returns resolved HTTP cookies. As opposed to {@link #()}, this
      * returns all cookies, even if they have the same name.
      *
      * @return Resolved HTTP cookies

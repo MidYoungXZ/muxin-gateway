@@ -9,7 +9,7 @@ import com.muxin.gateway.core.http.ServerWebExchange;
  * @author Administrator
  * @date 2024/11/19 09:36
  */
-public interface GatewayFilter extends Ordered {
+public interface RouteRuleFilter extends Ordered {
 
     void filter(ServerWebExchange exchange);
 

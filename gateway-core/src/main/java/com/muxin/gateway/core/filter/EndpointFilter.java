@@ -6,12 +6,10 @@ package com.muxin.gateway.core.filter;
  * @author Administrator
  * @date 2024/11/20 15:21
  */
-public interface EndpointFilter extends GatewayFilter{
+public interface EndpointFilter extends RouteRuleFilter {
 
     default FilterTypeEnum filterType(){
         return FilterTypeEnum.ENDPOINT;
     }
-
-
     
 }

@@ -7,7 +7,7 @@ package com.muxin.gateway.core.filter;
  * @date 2024/11/19 16:40
  */
 
-public interface ResponseFilter extends GatewayFilter {
+public interface ResponseFilter extends RouteRuleFilter {
 
     default FilterTypeEnum filterType() {
         return FilterTypeEnum.RESPONSE;

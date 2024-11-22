@@ -1,15 +1,14 @@
 package com.muxin.gateway.core.http;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.cookie.Cookie;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Adapter for FullHttpResponse to implement HttpServerResponse.
@@ -20,8 +19,6 @@ import java.util.function.Consumer;
  * @date 2024/11/21 16:37
  */
 @Data
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
 public class DefaultHttpServerResponse implements HttpServerResponse {
 
 
@@ -29,20 +26,49 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
 
     private final HttpResponseStatus status;
 
-    private final HttpHeaders headers;
+    private HttpHeaders headers;
 
-    private final String body;
+    private final ByteBuf body;
 
     private final long responseTime;
 
 
-    public DefaultHttpServerResponse(HttpResponseStatus status, HttpHeaders headers, String body) {
-        this(HttpVersion.HTTP_1_1, status, headers, body, System.currentTimeMillis());
+    public DefaultHttpServerResponse(HttpResponseStatus status, Map<String, String> headers, String body) {
+        this(HttpVersion.HTTP_1_1, status, headers, body);
+    }
+
+    public DefaultHttpServerResponse(HttpVersion version, HttpResponseStatus status, Map<String, String> headers, String body) {
+        this(version, status, headers, Unpooled.wrappedBuffer(body.getBytes()), System.currentTimeMillis());
+    }
+
+    public DefaultHttpServerResponse(HttpVersion version, HttpResponseStatus status, Map<String, String> headers, ByteBuf body) {
+        this(version, status, headers, body, System.currentTimeMillis());
     }
 
 
-    public DefaultHttpServerResponse(HttpVersion version, HttpResponseStatus status, HttpHeaders headers, String body) {
-        this(version, status, headers, body, System.currentTimeMillis());
+
+
+    public DefaultHttpServerResponse(HttpVersion version, HttpResponseStatus status, Map<String, String> headers, ByteBuf body, long responseTime) {
+        this.version = version;
+        this.status = status;
+        if (headers != null) {
+            DefaultHttpHeaders entries = new DefaultHttpHeaders();
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                entries.set(entry.getKey(), entry.getValue());
+            }
+            this.headers = entries;
+        }
+        this.body = body;
+        this.responseTime = responseTime;
+    }
+
+
+    public DefaultHttpServerResponse(HttpVersion version, HttpResponseStatus status, HttpHeaders headers, ByteBuf body, long responseTime) {
+        this.version = version;
+        this.status = status;
+        this.headers = headers;
+        this.body = body;
+        this.responseTime = responseTime;
     }
 
     @Override
@@ -71,7 +97,7 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
     }
 
     @Override
-    public HttpServerResponse headers(HttpHeaders headers) {
+    public HttpServerResponse headers(Map<String, String> headers) {
         return null;
     }
 
@@ -81,7 +107,7 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
     }
 
     @Override
-    public HttpHeaders responseHeaders() {
+    public Map<String, String> responseHeaders() {
         return null;
     }
 
@@ -92,11 +118,6 @@ public class DefaultHttpServerResponse implements HttpServerResponse {
 
     @Override
     public HttpServerResponse status(HttpResponseStatus status) {
-        return null;
-    }
-
-    @Override
-    public HttpServerResponse trailerHeaders(Consumer<? super HttpHeaders> trailerHeaders) {
         return null;
     }
 

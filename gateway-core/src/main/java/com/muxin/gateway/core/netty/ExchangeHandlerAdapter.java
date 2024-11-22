@@ -28,14 +28,7 @@ public class ExchangeHandlerAdapter extends ChannelInboundHandlerAdapter impleme
     }
 
 
-    /**
-     * 1.查找路由
-     * 2.拼装filter
-     * 3.执行filter
-     * 4.处理返回
-     *
-     * @param exchange
-     */
+
     @Override
     public void handle(ServerWebExchange exchange) {
         delegate.handle(exchange);

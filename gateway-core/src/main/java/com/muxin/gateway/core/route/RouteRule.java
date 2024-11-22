@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.route;
 
 import com.muxin.gateway.core.common.Ordered;
-import com.muxin.gateway.core.filter.GatewayFilter;
+import com.muxin.gateway.core.filter.RouteRuleFilter;
 import com.muxin.gateway.core.predicate.RoutePredicate;
 import lombok.Data;
 
@@ -26,7 +26,7 @@ public class RouteRule implements Ordered {
 
     private final RoutePredicate  predicate;
 
-    private final List<GatewayFilter> gatewayFilters;
+    private final List<RouteRuleFilter> routeRuleFilters;
 
     private final Map<String, Object> metadata;
 
