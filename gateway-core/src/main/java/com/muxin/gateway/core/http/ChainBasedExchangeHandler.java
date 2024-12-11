@@ -53,19 +53,19 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
                 ));
         //打印filter
         printFilter(filterTypeEnumListMap);
-        //request
+        //request phase
         if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.REQUEST))) {
             for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.REQUEST)) {
                 filter.filter(exchange);
             }
         }
-        //endpoint
+        //endpoint phase
         if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.ENDPOINT))) {
             for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.ENDPOINT)) {
                 filter.filter(exchange);
             }
         }
-        //response
+        //response phase
         if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.RESPONSE))) {
             for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.RESPONSE)) {
                 filter.filter(exchange);
@@ -88,12 +88,12 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
     }
 
 
-
     /**
      * 打印filter
+     *
      * @param filterTypeEnumListMap
      */
-    protected void  printFilter(Map<FilterTypeEnum, List<RouteRuleFilter>>  filterTypeEnumListMap){
+    protected void printFilter(Map<FilterTypeEnum, List<RouteRuleFilter>> filterTypeEnumListMap) {
 
 
     }

@@ -1,11 +1,13 @@
 package com.muxin.gateway.core.http;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.cookie.Cookie;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -22,22 +24,16 @@ import java.util.function.Function;
  * @author Administrator
  * @date 2024/11/21 17:05
  */
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor(force = true)
 public class DefaultHttpServerRequest implements HttpServerRequest {
 
-    private final HttpVersion version;
 
-    private final HttpMethod method;
-
-    private final HttpResponseStatus status;
-
-    private final HttpHeaders headers;
+    private FullHttpRequest request;
 
     private final String uri;
-
-    private final String body;
 
     private final long beginTime;
 
@@ -119,13 +115,13 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
     }
 
     @Override
-    public String protocol() {
-        return "";
+    public ZonedDateTime timestamp() {
+        return null;
     }
 
     @Override
-    public ZonedDateTime timestamp() {
-        return null;
+    public ByteBuf body() {
+        return request.content();
     }
 
     @Override
@@ -135,7 +131,7 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
 
     @Override
     public String fullPath() {
-        return "";
+        return request.uri();
     }
 
     @Override
@@ -155,16 +151,16 @@ public class DefaultHttpServerRequest implements HttpServerRequest {
 
     @Override
     public HttpMethod method() {
-        return null;
+        return request.method();
     }
 
     @Override
     public String uri() {
-        return "";
+        return request.uri();
     }
 
     @Override
     public HttpVersion version() {
-        return null;
+        return request.protocolVersion();
     }
 }

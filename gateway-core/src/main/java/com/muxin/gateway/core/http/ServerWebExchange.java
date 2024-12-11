@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.http;
 
+import com.muxin.gateway.core.common.ProcessingPhase;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -10,24 +11,34 @@ import io.netty.channel.ChannelHandlerContext;
  */
 public interface ServerWebExchange extends AttributesHolder {
 
+    /**
+     * 获取http请求
+     * @return
+     */
     HttpServerRequest getRequest();
 
+    /**
+     * 获取http响应
+     * @return
+     */
     HttpServerResponse getResponse();
 
+    /**
+     * 设置http请求
+     * @param response
+     */
     void setResponse(HttpServerResponse response);
 
+    /**
+     * netty进站数据
+     * @return
+     */
     ChannelHandlerContext inboundContext();
 
-    interface Builder {
-
-        Builder request(HttpServerRequest request);
-
-        Builder response(HttpServerResponse response);
-
-        ServerWebExchange build();
-
-    }
-
-    Builder mutate();
+    /**
+     * 请求处理阶段
+     * @return
+     */
+    ProcessingPhase processingPhase();
 
 }

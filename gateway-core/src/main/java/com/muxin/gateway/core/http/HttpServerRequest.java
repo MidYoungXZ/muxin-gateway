@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.http;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaders;
 
-import java.net.InetSocketAddress;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.function.Function;
@@ -61,13 +61,6 @@ public interface HttpServerRequest extends HttpServerInfos {
      */
     boolean isMultipart();
 
-    @Override
-    InetSocketAddress hostAddress();
-
-
-
-    @Override
-    InetSocketAddress remoteAddress();
 
     /**
      * Returns inbound {@link HttpHeaders}.
@@ -77,18 +70,13 @@ public interface HttpServerRequest extends HttpServerInfos {
     HttpHeaders requestHeaders();
 
     /**
-     * Returns the inbound protocol and version.
-     *
-     * @return the inbound protocol and version
-     * @since 1.0.28
-     */
-    String protocol();
-
-    /**
      * Returns the time when the request was received.
      *
      * @return the time when the request was received
      * @since 1.0.28
      */
     ZonedDateTime timestamp();
+
+
+    ByteBuf body();
 }

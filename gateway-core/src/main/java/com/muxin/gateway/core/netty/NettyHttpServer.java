@@ -82,8 +82,8 @@ public class NettyHttpServer implements LifeCycle {
                         ch.pipeline().addLast(
                                 new HttpServerCodec(), //http编解码
                                 new HttpObjectAggregator(properties.getMaxContentLength()), //请求报文聚合成FullHttpRequest
-                                new HttpServerExpectContinueHandler()
-                                ,
+                                new HttpServerExpectContinueHandler(),
+                                new ExchangeHandlerAdapter(null), //todo 路由处理器
                                 new NettyServerConnectManagerHandler()
                         );
                     }

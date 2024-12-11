@@ -1,9 +1,10 @@
 package com.muxin.gateway.core.netty;
 
-import com.muxin.gateway.core.http.ExchangeHandler;
-import com.muxin.gateway.core.http.ServerWebExchange;
+import com.muxin.gateway.core.common.ProcessingPhase;
+import com.muxin.gateway.core.http.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.FullHttpRequest;
 
 /**
  * [Class description]
@@ -22,11 +23,20 @@ public class ExchangeHandlerAdapter extends ChannelInboundHandlerAdapter impleme
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
-
-        handle(null);
+        //todo   FullHttpRequest转 HttpServerRequest  ServerWebExchange Disruptor实现对象池  JCTools
+        FullHttpRequest request = (FullHttpRequest) msg;
+        HttpServerRequest serverRequest = DefaultHttpServerRequest.builder()
+                .beginTime(System.currentTimeMillis())
+                .request(request)
+                .build();
+        ServerWebExchange webExchange = DefaultServerWebExchange.builder()
+                .request(serverRequest)
+                .ctx(ctx)
+                .phase(new ProcessingPhase().running())
+                .build();
+        //webHandle
+        handle(webExchange);
     }
-
 
 
     @Override

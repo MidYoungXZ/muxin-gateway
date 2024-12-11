@@ -1,6 +1,9 @@
 package com.muxin.gateway.core.http;
 
+import com.muxin.gateway.core.common.ProcessingPhase;
 import io.netty.channel.ChannelHandlerContext;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.Map;
 
@@ -10,7 +13,17 @@ import java.util.Map;
  * @author Administrator
  * @date 2024/11/20 15:54
  */
+@Data
+@Builder
 public class DefaultServerWebExchange implements ServerWebExchange{
+
+    private HttpServerRequest request;
+
+    private HttpServerResponse response;
+
+    private ChannelHandlerContext ctx;
+
+    private ProcessingPhase phase;
 
 
     @Override
@@ -34,7 +47,7 @@ public class DefaultServerWebExchange implements ServerWebExchange{
     }
 
     @Override
-    public Builder mutate() {
+    public ProcessingPhase processingPhase() {
         return null;
     }
 

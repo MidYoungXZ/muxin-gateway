@@ -29,4 +29,7 @@ public class NettyHttpClientProperties {
     //	客户端空闲连接超时时间, 默认60秒
     private int httpPooledConnectionIdleTimeout = 60 * 1000;
 
+    //是否异步
+    private boolean whenComplete = false;
+
 }

@@ -5,11 +5,10 @@ import com.muxin.gateway.core.config.NettyHttpClientProperties;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import lombok.extern.slf4j.Slf4j;
-import org.asynchttpclient.AsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
+import org.asynchttpclient.*;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * [Class description]
@@ -62,4 +61,17 @@ public class NettyHttpClient implements LifeCycle {
             }
         }
     }
+
+    public CompletableFuture<Response> executeRequest(Request request) {
+        ListenableFuture<Response> future = asyncHttpClient.executeRequest(request);
+        return future.toCompletableFuture();
+    }
+
+    public <T> CompletableFuture<T> executeRequest(Request request, AsyncHandler<T> handler) {
+        ListenableFuture<T> future = asyncHttpClient.executeRequest(request, handler);
+        return future.toCompletableFuture();
+    }
+
+
+
 }

@@ -10,7 +10,10 @@ import java.util.Objects;
  * @date 2024/11/18 16:40
  */
 public interface AttributesHolder {
-
+    /**
+     * 获取所有属性
+     * @return
+     */
     Map<String, Object> getAttributes();
 
     @SuppressWarnings("unchecked")
