@@ -80,7 +80,8 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
      * @return
      */
     protected RouteRule lookupRoute(ServerWebExchange exchange) {
-        return Optional.of(routeLocator.getRoutes()).orElse(Collections.emptyList())
+        return Optional.of(routeLocator.getRoutes(exchange.getRequest().uri()))
+                .orElse(Collections.emptyList())
                 .stream()
                 .filter(r -> r.getPredicate().test(exchange))
                 .findFirst()

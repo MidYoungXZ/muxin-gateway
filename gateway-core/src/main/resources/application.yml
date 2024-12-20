@@ -1,0 +1,19 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix=1
+            - AddRequestHeader=X-User-Header, UserValue
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/order/**
+            - Method=POST
+          filters:
+            - RewritePath=/order/(.*), /api/orders/$1
+            - AddResponseHeader=X-Order-Header, OrderValue
