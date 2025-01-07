@@ -26,9 +26,16 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     /**
      * Route配置的path都是常量，没有pattern，key就是normalize后的path
      */
-    private final Map<String, RouteGroup> constantPathRoutes = new ConcurrentHashMap<>(8);
+    private final Map<String, RouteRuleGroup> constantPathRoutes = new ConcurrentHashMap<>(8);
+    /**
+     * Route配置的path都不是常量，含有pattern，key是最长的常量前缀
+     * 比如一个Route的path是/foo/bar/{name}/info,那么它应该在key为/foo/bar的group中
+     */
+    private final Map<String, RouteRuleGroup> patternPathRoutes = new ConcurrentHashMap<>(8);
 
-
+    /**
+     * AntPathMatcher
+     */
     private final PathMatcher pathMatcher = AntPathMatcher.getDefaultInstance();
 
 
@@ -40,13 +47,36 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
      */
     @Override
     public List<RouteRule> getRoutes(String path) {
-        //先解决常量路径   todo 完善更复杂的判断 比如通过path传参的url
+        //先解决常量路径
         String normalizePath = PathUtil.normalize(path);
-        RouteGroup routeGroup = constantPathRoutes.get(normalizePath);
-        if (routeGroup == null) {
-            return new ArrayList<>(allRoutes.values());
+        RouteRuleGroup routeRuleGroup = constantPathRoutes.get(normalizePath);
+        List<RouteRuleGroup> groups = findInPatternPathRoutes(normalizePath);
+        if (Objects.nonNull(routeRuleGroup)) {
+            groups.add(0, routeRuleGroup);
         }
-        return routeGroup.getRoutes();
+        if (groups.isEmpty()) {
+            return Collections.emptyList();
+        } else if (groups.size() == 1) {
+            return groups.get(0).getRoutes();
+        }
+        List<RouteRule> list = new ArrayList<>(groups.size());
+        for (RouteRuleGroup rg : groups) {
+            list.addAll(rg.getRoutes());
+        }
+        return list;
+    }
+
+    private List<RouteRuleGroup> findInPatternPathRoutes(String normalizePath) {
+        String prefix = PathUtil.removeLast(normalizePath);
+        List<RouteRuleGroup> groups = new LinkedList<>();
+        while (!prefix.isEmpty()) {
+            RouteRuleGroup routeRuleGroup = patternPathRoutes.get(prefix);
+            if (Objects.nonNull(routeRuleGroup)) {
+                groups.add(routeRuleGroup);
+            }
+            prefix = PathUtil.removeLast(prefix);
+        }
+        return groups;
     }
 
 
@@ -55,13 +85,25 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
             // 是一个已经存在的api的更新动作，其path可能已经改变，要先根据id删除之
             removeRouteById(route.getId());
         }
+        //添加到全量routeRule
         this.allRoutes.put(route.getId(), route);
         String normalizePath = PathUtil.normalize(route.getUri().getPath());
-        RouteGroup targetGroup;
-        targetGroup = constantPathRoutes.get(normalizePath);
-        if (Objects.isNull(targetGroup)) {
-            targetGroup = new RouteGroup();
-            constantPathRoutes.put(normalizePath, targetGroup);
+        RouteRuleGroup targetGroup;
+        if (pathMatcher.isPattern(normalizePath)) {
+            //带正则表达式的routeRule
+            String prefix = PathUtil.constantPrefix(normalizePath);
+            targetGroup = patternPathRoutes.get(prefix);
+            if (Objects.isNull(targetGroup)) {
+                targetGroup = new RouteRuleGroup();
+                patternPathRoutes.put(prefix, targetGroup);
+            }
+        } else {
+            //常量路径的routeRule
+            targetGroup = constantPathRoutes.get(normalizePath);
+            if (Objects.isNull(targetGroup)) {
+                targetGroup = new RouteRuleGroup();
+                constantPathRoutes.put(normalizePath, targetGroup);
+            }
         }
         targetGroup.addRoute(route);
     }
@@ -72,12 +114,24 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         }
         RouteRule removedRoute = allRoutes.remove(routeId);
         String normalizePath = PathUtil.normalize(removedRoute.getUri().getPath());
-        RouteGroup targetGroup;
-        targetGroup = constantPathRoutes.get(normalizePath);
-        if (Objects.nonNull(targetGroup)) {
-            targetGroup.removeRouteById(routeId);
-            if (targetGroup.isEmpty()) {
-                constantPathRoutes.remove(normalizePath);
+
+        RouteRuleGroup targetGroup;
+        if (pathMatcher.isPattern(normalizePath)) {
+            String prefix = PathUtil.constantPrefix(normalizePath);
+            targetGroup = patternPathRoutes.get(prefix);
+            if (Objects.nonNull(targetGroup)) {
+                targetGroup.removeRouteById(routeId);
+                if (targetGroup.isEmpty()) {
+                    patternPathRoutes.remove(prefix);
+                }
+            }
+        } else {
+            targetGroup = constantPathRoutes.get(normalizePath);
+            if (Objects.nonNull(targetGroup)) {
+                targetGroup.removeRouteById(routeId);
+                if (targetGroup.isEmpty()) {
+                    constantPathRoutes.remove(normalizePath);
+                }
             }
         }
         return removedRoute;
@@ -91,7 +145,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
     }
 
-    private static class RouteGroup {
+    private static class RouteRuleGroup {
 
         volatile boolean changed = false;
 
