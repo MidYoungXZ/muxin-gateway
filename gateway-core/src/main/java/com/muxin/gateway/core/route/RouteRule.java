@@ -1,33 +1,20 @@
 package com.muxin.gateway.core.route;
 
-import com.muxin.gateway.core.common.Ordered;
 import com.muxin.gateway.core.filter.RouteRuleFilter;
-import com.muxin.gateway.core.predicate.RoutePredicate;
+import lombok.Builder;
 import lombok.Data;
 
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 路由规则 主要定义路由的准入条件和过滤器
- *
- * @author Administrator
- * @date 2024/11/19 14:51
- */
 @Data
-public class RouteRule implements Ordered {
-
-    private final String id;
-
-    private final URI uri;
-
-    private final int order;
-
-    private final RoutePredicate  predicate;
-
-    private final List<RouteRuleFilter> routeRuleFilters;
-
-    private final Map<String, Object> metadata;
-
+@Builder
+public class RouteRule {
+    private String id;
+    private URI uri;
+    private int order;
+    private List<RouteRuleFilter> routeRuleFilters;
+    private RoutePredicate predicate;
+    private Map<String, Object> metadata;
 }

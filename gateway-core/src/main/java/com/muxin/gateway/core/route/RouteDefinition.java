@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.route;
 
 import com.muxin.gateway.core.filter.FilterDefinition;
-import com.muxin.gateway.core.predicate.PredicateDefinition;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
