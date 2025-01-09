@@ -15,7 +15,8 @@ public enum ResponseStatusEnum implements ResponseStatusCode{
     //00-00-0000 模块-错误类型-具体错误码
 
     G00_00_0000(HttpResponseStatus.OK,"00-00-0000"),
-    G00_04_0004(HttpResponseStatus.NOT_FOUND,"00-04-0004")
+    G00_04_0004(HttpResponseStatus.NOT_FOUND,"00-04-0004"),
+    G00_05_0005(HttpResponseStatus.INTERNAL_SERVER_ERROR,"00-05-0005"),
     ;
 
     ResponseStatusEnum(HttpResponseStatus httpResponseStatus, String internalStatus) {

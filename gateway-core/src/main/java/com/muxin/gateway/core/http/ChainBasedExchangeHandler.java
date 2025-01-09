@@ -1,11 +1,16 @@
 package com.muxin.gateway.core.http;
 
 import com.muxin.gateway.core.common.Ordered;
+import com.muxin.gateway.core.common.ResponseStatusEnum;
 import com.muxin.gateway.core.filter.FilterTypeEnum;
-import com.muxin.gateway.core.filter.RouteRuleFilter;
 import com.muxin.gateway.core.filter.GatewayFilterChain;
+import com.muxin.gateway.core.filter.RouteRuleFilter;
 import com.muxin.gateway.core.route.RouteLocator;
 import com.muxin.gateway.core.route.RouteRule;
+import com.muxin.gateway.core.utils.ResponseUtil;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.util.ReferenceCountUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,6 +21,7 @@ import java.util.stream.Collectors;
  * @author Administrator
  * @date 2024/11/21 10:11
  */
+@Slf4j
 public class ChainBasedExchangeHandler implements ExchangeHandler {
 
     private final RouteLocator routeLocator;
@@ -24,6 +30,28 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
         this.routeLocator = routeLocator;
     }
 
+    /**
+     * 处理请求
+     *
+     * @param exchange
+     */
+    @Override
+    public void handle(ServerWebExchange exchange) {
+        try {
+            doHandle(exchange);
+        } catch (Throwable throwable) {
+            log.error("Request handle failed.", throwable);
+            HttpServerResponse response = ResponseUtil.createEmptyResponse(ResponseStatusEnum.G00_05_0005);
+            exchange.setResponse(response);
+        }finally {
+            //释放资源
+            ReferenceCountUtil.release(exchange.getRequest());
+            //写回
+            exchange.inboundContext()
+                    .writeAndFlush(exchange.getResponse())
+                    .addListener(ChannelFutureListener.CLOSE); //释放资源后关闭channel
+        }
+    }
 
     /**
      * 1.查找路由
@@ -33,44 +61,12 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
      *
      * @param exchange
      */
-    @Override
-    public void handle(ServerWebExchange exchange) {
+    private void doHandle(ServerWebExchange exchange) {
         //查找路由
         RouteRule routeRule = lookupRoute(exchange);
         //组装Filter
         List<RouteRuleFilter> ruleFilters = routeRule.getRouteRuleFilters();
-        Map<FilterTypeEnum, List<RouteRuleFilter>> filterTypeEnumListMap = ruleFilters.stream()
-                .collect(Collectors.groupingBy(
-                        // 按 filterType 分组
-                        RouteRuleFilter::filterType,
-                        // 每组的值为按 order 排序后的 List
-                        Collectors.collectingAndThen(
-                                Collectors.toList(),
-                                list -> list.stream()
-                                        .sorted(Comparator.comparingInt(Ordered::getOrder))
-                                        .collect(Collectors.toList())
-                        )
-                ));
-        //打印filter
-        printFilter(filterTypeEnumListMap);
-        //request phase
-        if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.REQUEST))) {
-            for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.REQUEST)) {
-                filter.filter(exchange);
-            }
-        }
-        //endpoint phase
-        if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.ENDPOINT))) {
-            for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.ENDPOINT)) {
-                filter.filter(exchange);
-            }
-        }
-        //response phase
-        if (Objects.nonNull(filterTypeEnumListMap.get(FilterTypeEnum.RESPONSE))) {
-            for (RouteRuleFilter filter : filterTypeEnumListMap.get(FilterTypeEnum.RESPONSE)) {
-                filter.filter(exchange);
-            }
-        }
+        new DefaultGatewayFilterChain(ruleFilters).filter(exchange);
     }
 
     /**
@@ -85,48 +81,37 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
                 .stream()
                 .filter(r -> r.getPredicate().test(exchange))
                 .findFirst()
-                .orElse(route404());
+                .orElse(RouteRule.ROUTE_404);
     }
-
-
-    /**
-     * 打印filter
-     *
-     * @param filterTypeEnumListMap
-     */
-    protected void printFilter(Map<FilterTypeEnum, List<RouteRuleFilter>> filterTypeEnumListMap) {
-
-
-    }
-
-
-    /**
-     * 默认404路由
-     *
-     * @return
-     */
-    protected RouteRule route404() {
-
-        return null;
-    }
-
 
     public static class DefaultGatewayFilterChain implements GatewayFilterChain {
 
-        private final List<RouteRuleFilter> filters;
+        private final Map<FilterTypeEnum, List<RouteRuleFilter>> filterTypeEnumListMap;
 
-        public DefaultGatewayFilterChain(List<RouteRuleFilter> filters) {
-            this.filters = filters;
+        public DefaultGatewayFilterChain(List<RouteRuleFilter> ruleFilters) {
+            this.filterTypeEnumListMap = ruleFilters.stream()
+                    .collect(Collectors.groupingBy(
+                            RouteRuleFilter::filterType,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> list.stream()
+                                            .sorted(Comparator.comparingInt(Ordered::getOrder))
+                                            .collect(Collectors.toList())
+                            )
+                    ));
         }
 
         @Override
         public void filter(ServerWebExchange exchange) {
-            for (RouteRuleFilter filter : filters) {
-                filter.filter(exchange);
+            for (FilterTypeEnum phase : FilterTypeEnum.values()) {
+                List<RouteRuleFilter> filters = filterTypeEnumListMap.get(phase);
+                if (Objects.nonNull(filters)) {
+                    for (RouteRuleFilter filter : filters) {
+                        filter.filter(exchange);
+                    }
+                }
             }
         }
-
     }
-
 
 }

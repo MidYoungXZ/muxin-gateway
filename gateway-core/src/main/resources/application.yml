@@ -2,6 +2,7 @@ spring:
   cloud:
     gateway:
       routes:
+
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:
@@ -9,6 +10,7 @@ spring:
           filters:
             - StripPrefix=1
             - AddRequestHeader=X-User-Header, UserValue
+
         - id: order-service
           uri: lb://ORDER-SERVICE
           predicates:

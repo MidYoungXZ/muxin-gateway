@@ -21,7 +21,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     /**
      * 路由定义定位器
      */
-    private final RouteDefinitionLocator routeDefinitionLocator;
+    private final RouteDefinitionRepository routeDefinitionRepository;
 
     /**
      * 所有路由规则
@@ -45,13 +45,14 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     private final PathMatcher pathMatcher = AntPathMatcher.getDefaultInstance();
 
     private final FilterFactory filterFactory;
+
     private final PredicateFactory predicateFactory;
 
     public RouteDefinitionRouteLocator(
-            RouteDefinitionLocator routeDefinitionLocator,
+            RouteDefinitionRepository routeDefinitionLocator,
             FilterFactory filterFactory,
             PredicateFactory predicateFactory) {
-        this.routeDefinitionLocator = routeDefinitionLocator;
+        this.routeDefinitionRepository = routeDefinitionLocator;
         this.filterFactory = filterFactory;
         this.predicateFactory = predicateFactory;
     }
@@ -67,7 +68,6 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         if (path == null || path.isEmpty()) {
             return Collections.emptyList();
         }
-
         //先解决常量路径
         String normalizePath = PathUtil.normalize(path);
         RouteRuleGroup routeRuleGroup = constantPathRoutes.get(normalizePath);
@@ -187,8 +187,8 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     @Override
     public void init() {
         // 从routeDefinitionLocator加载路由定义并初始化
-        if (routeDefinitionLocator != null) {
-            routeDefinitionLocator.getRouteDefinitions().forEach(definition -> {
+        if (routeDefinitionRepository != null) {
+            routeDefinitionRepository.getRouteDefinitions().forEach(definition -> {
                 RouteRule routeRule = convertToRouteRule(definition);
                 addRoute(routeRule);
             });
