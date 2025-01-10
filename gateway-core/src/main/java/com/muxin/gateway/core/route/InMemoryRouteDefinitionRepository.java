@@ -28,21 +28,6 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
         }
     }
 
-    @Override
-    public Collection<RouteDefinition> getRouteDefinitions() {
-        Map<String, RouteDefinition> routesSafeCopy = new LinkedHashMap<>(routes);
-        return routesSafeCopy.values();
-    }
-
-    @Override
-    public void save(RouteDefinition route) {
-
-    }
-
-    @Override
-    public void delete(String routeId) {
-
-    }
 
     @Override
     public void onApplicationEvent(RefreshRoutesEvent event) {
@@ -50,4 +35,23 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
     }
 
 
+    @Override
+    public RouteDefinition save(RouteDefinition entity) {
+        return null;
+    }
+
+    @Override
+    public void deleteById(String s) {
+
+    }
+
+    @Override
+    public RouteDefinition findById(String s) {
+        return null;
+    }
+
+    @Override
+    public Iterable<RouteDefinition> findAll() {
+        return null;
+    }
 }

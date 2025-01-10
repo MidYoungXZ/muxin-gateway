@@ -1,7 +1,5 @@
-package com.muxin.gateway.core.filter.loadbalance;
+package com.muxin.gateway.core.filter;
 
-import com.muxin.gateway.core.filter.FilterTypeEnum;
-import com.muxin.gateway.core.filter.GlobalFilter;
 import com.muxin.gateway.core.http.ServerWebExchange;
 
 /**

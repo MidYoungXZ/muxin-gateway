@@ -27,7 +27,7 @@ public final class GatewayConstants {
      */
     public static final String GATEWAY_REQUEST_URL_ATTR = qualify("gatewayRequestUrl");
 
-
+    public static final String SERVICE_ID = qualify("serviceId");
 
 
 }

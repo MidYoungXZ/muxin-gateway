@@ -188,7 +188,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     public void init() {
         // 从routeDefinitionLocator加载路由定义并初始化
         if (routeDefinitionRepository != null) {
-            routeDefinitionRepository.getRouteDefinitions().forEach(definition -> {
+            routeDefinitionRepository.findAll().forEach(definition -> {
                 RouteRule routeRule = convertToRouteRule(definition);
                 addRoute(routeRule);
             });

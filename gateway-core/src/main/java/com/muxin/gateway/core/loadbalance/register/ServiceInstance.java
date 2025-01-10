@@ -1,7 +1,7 @@
-package com.muxin.gateway.core.filter.loadbalance;
+package com.muxin.gateway.core.loadbalance.register;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.UUID;
 
 /**
  * [Class description]
@@ -11,11 +11,11 @@ import java.util.Map;
  */
 public interface ServiceInstance {
 
-    default String getInstanceId() {
-        return null;
-    }
+    ServiceDefinition serviceDefinition();
 
-    String getServiceId();
+    default String getInstanceId() {
+        return UUID.randomUUID().toString();
+    }
 
     String getHost();
 
@@ -25,9 +25,4 @@ public interface ServiceInstance {
 
     URI getUri();
 
-    Map<String, String> getMetadata();
-
-    default String getScheme() {
-        return null;
-    }
 }

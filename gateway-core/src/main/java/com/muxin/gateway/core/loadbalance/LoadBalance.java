@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.filter.loadbalance;
+package com.muxin.gateway.core.loadbalance;
 
 /**
  * [Class description]
