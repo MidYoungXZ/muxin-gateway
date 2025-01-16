@@ -6,6 +6,6 @@ import java.util.Map;
 
 public interface FilterFactory {
 
-    RouteRuleFilter create(String name, Map<String, String> args);
+    RouteRuleFilter create(Map<String, String> args);
 
 } 

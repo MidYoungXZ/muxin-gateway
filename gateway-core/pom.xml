@@ -19,6 +19,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>1.4.4</version>
+        </dependency>
+        <dependency>
             <groupId>org.asynchttpclient</groupId>
             <artifactId>async-http-client</artifactId>
             <version>${async-http-client.version}</version>

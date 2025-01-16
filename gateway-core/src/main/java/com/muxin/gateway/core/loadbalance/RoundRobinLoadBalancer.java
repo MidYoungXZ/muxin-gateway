@@ -38,4 +38,8 @@ public class RoundRobinLoadBalancer implements GatewayLoadBalance {
         return new DefaultLbResponse(instance);
     }
 
+    @Override
+    public String loadBalanceType() {
+        return "Round";
+    }
 }

@@ -30,7 +30,7 @@ public class RouteRule {
 
     static {
         ArrayList<RouteRuleFilter> filters = new ArrayList<>(1);
-        filters.add(new Filter404());
+        filters.add(Filter404.instance());
         ROUTE_404 = RouteRule.builder()
                 .id("404")
                 .uri(URI.create("/"))

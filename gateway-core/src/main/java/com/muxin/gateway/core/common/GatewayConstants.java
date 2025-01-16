@@ -1,5 +1,7 @@
 package com.muxin.gateway.core.common;
 
+import org.asynchttpclient.Response;
+
 /**
  * [Class description]
  *
@@ -29,5 +31,15 @@ public final class GatewayConstants {
 
     public static final String SERVICE_ID = qualify("serviceId");
 
+    public static final String META_DATA_KEY = qualify("meta");
+    /**
+     * Gateway original request URL attribute name.
+     */
+    public static final String GATEWAY_ORIGINAL_REQUEST_URL_ATTR = qualify("gatewayOriginalRequestUrl");
+
+    /**
+     * Gateway LoadBalancer {@link Response} attribute name.
+     */
+    public static final String GATEWAY_LOADBALANCER_RESPONSE_ATTR = qualify("gatewayLoadBalancerResponse");
 
 }

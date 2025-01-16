@@ -11,4 +11,6 @@ import com.muxin.gateway.core.loadbalance.register.ServiceInstance;
  */
 public interface GatewayLoadBalance extends LoadBalance<ServiceInstance, ServerWebExchange>{
 
+    String loadBalanceType();
+
 }

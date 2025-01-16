@@ -43,18 +43,19 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
      * AntPathMatcher
      */
     private final PathMatcher pathMatcher = AntPathMatcher.getDefaultInstance();
+    /**
+     * 过滤器工厂Map集合
+     */
+    private final Map<String,FilterFactory> filterFactoryMap;
+    /**
+     * 断言工厂Map集合
+     */
+    private final Map<String,PredicateFactory> predicateFactoryMap;
 
-    private final FilterFactory filterFactory;
-
-    private final PredicateFactory predicateFactory;
-
-    public RouteDefinitionRouteLocator(
-            RouteDefinitionRepository routeDefinitionLocator,
-            FilterFactory filterFactory,
-            PredicateFactory predicateFactory) {
-        this.routeDefinitionRepository = routeDefinitionLocator;
-        this.filterFactory = filterFactory;
-        this.predicateFactory = predicateFactory;
+    public RouteDefinitionRouteLocator(RouteDefinitionRepository routeDefinitionRepository, Map<String, FilterFactory> filterFactoryMap, Map<String, PredicateFactory> predicateFactoryMap) {
+        this.routeDefinitionRepository = routeDefinitionRepository;
+        this.filterFactoryMap = filterFactoryMap;
+        this.predicateFactoryMap = predicateFactoryMap;
     }
 
     /**
@@ -233,7 +234,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     private RouteRuleFilter convertToFilter(FilterDefinition filterDef) {
         try {
             // 这里需要通过FilterFactory来创建具体的过滤器实例
-            return filterFactory.create(filterDef.getName(), filterDef.getArgs());
+            return filterFactoryMap.get(filterDef.getName()).create(filterDef.getArgs());
         } catch (Exception e) {
             log.error("Failed to create filter from definition: {}", filterDef, e);
             return null;
@@ -248,7 +249,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         
         for (PredicateDefinition predicate : predicates) {
             try {
-                RoutePredicate routePredicate = predicateFactory.create(predicate.getName(), predicate.getArgs());
+                RoutePredicate routePredicate = predicateFactoryMap.get(predicate.getName()).create(predicate.getArgs());
                 if (routePredicate != null) {
                     routePredicates.add(routePredicate);
                 }
