@@ -12,6 +12,9 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import static com.muxin.gateway.core.common.GatewayConstants.*;
 
 /**
  * 路由定位器实现，同时作为RouteDefinition和RouteLocator的桥梁
@@ -189,10 +192,15 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     public void init() {
         // 从routeDefinitionLocator加载路由定义并初始化
         if (routeDefinitionRepository != null) {
-            routeDefinitionRepository.findAll().forEach(definition -> {
-                RouteRule routeRule = convertToRouteRule(definition);
-                addRoute(routeRule);
-            });
+            Iterable<RouteDefinition> definitions = routeDefinitionRepository.findAll();
+            if (definitions != null) {
+                definitions.forEach(definition -> {
+                    if (definition != null) {
+                        RouteRule routeRule = convertToRouteRule(definition);
+                        addRoute(routeRule);
+                    }
+                });
+            }
         }
     }
 
@@ -233,8 +241,14 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
      */
     private RouteRuleFilter convertToFilter(FilterDefinition filterDef) {
         try {
+            FilterFactory factory = filterFactoryMap.get(filterDef.getName());
+            if (factory == null) {
+                log.error(NO_FILTER_FACTORY_ERROR, 
+                    filterDef.getName(), filterFactoryMap.keySet());
+                return null;
+            }
             // 这里需要通过FilterFactory来创建具体的过滤器实例
-            return filterFactoryMap.get(filterDef.getName()).create(filterDef.getArgs());
+            return factory.create(filterDef.getArgs());
         } catch (Exception e) {
             log.error("Failed to create filter from definition: {}", filterDef, e);
             return null;
@@ -249,7 +263,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         
         for (PredicateDefinition predicate : predicates) {
             try {
-                RoutePredicate routePredicate = predicateFactoryMap.get(predicate.getName()).create(predicate.getArgs());
+                PredicateFactory factory = predicateFactoryMap.get(predicate.getName());
+                if (factory == null) {
+                    log.error(NO_PREDICATE_FACTORY_ERROR, 
+                        predicate.getName(), predicateFactoryMap.keySet());
+                    continue;
+                }
+                RoutePredicate routePredicate = factory.create(predicate.getArgs());
                 if (routePredicate != null) {
                     routePredicates.add(routePredicate);
                 }
@@ -258,8 +278,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
             }
         }
 
-        // 组合所有断言
+        // 组合多个断言（AND关系）
         return exchange -> routePredicates.stream().allMatch(p -> p.test(exchange));
+    }
+
+    @Override
+    public List<RouteRule> getAllRoutes() {
+        return new ArrayList<>(allRoutes.values());
     }
 
     private static class RouteRuleGroup {

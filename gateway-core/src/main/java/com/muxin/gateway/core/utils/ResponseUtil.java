@@ -40,7 +40,22 @@ public class ResponseUtil {
             headers.put(HttpHeaderNames.CONTENT_TYPE.toString(), HttpHeaderValues.APPLICATION_JSON.toString());
         }
         // 创建响应对象
-        return new DefaultHttpServerResponse(statusEnum.httpStatus(), headers, responseBody);
+        DefaultHttpServerResponse response = new DefaultHttpServerResponse(statusEnum.httpStatus());
+        
+        // 设置响应体
+        response.body(responseBody);
+        
+        // 设置自定义头
+        if (headers != null) {
+            response.headers(headers);
+        }
+        
+        // 设置默认的 Content-Type
+        if (!response.hasHeader(HttpHeaderNames.CONTENT_TYPE)) {
+            response.header(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
+        }
+        
+        return response;
     }
 
     /**
@@ -61,10 +76,21 @@ public class ResponseUtil {
      * @return FullHttpResponse 对象
      */
     public static HttpServerResponse clientResponseToHttpServerResponse(Response clientResponse) {
-        HttpHeaders responseHeaders = clientResponse.getHeaders();
         HttpResponseStatus responseStatus = HttpResponseStatus.valueOf(clientResponse.getStatusCode());
+        
+        // 创建响应对象
+        DefaultHttpServerResponse response = new DefaultHttpServerResponse(responseStatus);
+        
+        // 设置响应体
         ByteBuf byteBuf = Unpooled.wrappedBuffer(clientResponse.getResponseBodyAsBytes());
-        return new DefaultHttpServerResponse(HttpVersion.HTTP_1_1, responseStatus, responseHeaders, byteBuf, System.currentTimeMillis());
+        response.body(byteBuf);
+        
+        // 设置响应头
+        clientResponse.getHeaders().forEach(entry -> 
+            response.header(entry.getKey(), entry.getValue())
+        );
+        
+        return response;
     }
 
 

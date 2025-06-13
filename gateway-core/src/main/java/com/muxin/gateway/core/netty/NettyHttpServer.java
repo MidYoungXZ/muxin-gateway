@@ -3,6 +3,7 @@ package com.muxin.gateway.core.netty;
 import com.muxin.gateway.core.LifeCycle;
 import com.muxin.gateway.core.config.NettyHttpServerProperties;
 import com.muxin.gateway.core.http.ExchangeHandler;
+import com.muxin.gateway.core.utils.RemotingUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -64,7 +65,7 @@ public class NettyHttpServer implements LifeCycle {
     }
 
     public boolean useEpoll() {
-        return Epoll.isAvailable();
+        return RemotingUtil.isLinuxPlatform() && Epoll.isAvailable();
     }
 
     @Override
@@ -86,7 +87,7 @@ public class NettyHttpServer implements LifeCycle {
                                 new HttpServerCodec(), //http编解码
                                 new HttpObjectAggregator(properties.getMaxContentLength()), //请求报文聚合成FullHttpRequest
                                 new HttpServerExpectContinueHandler(),
-                                new ExchangeHandlerAdapter(null), //todo 路由处理器
+                                new ExchangeHandlerAdapter(exchangeHandler), // 传入正确的ExchangeHandler
                                 new NettyServerConnectManagerHandler()
                         );
                     }

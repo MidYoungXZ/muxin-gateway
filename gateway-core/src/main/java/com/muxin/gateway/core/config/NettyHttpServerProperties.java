@@ -1,17 +1,16 @@
 package com.muxin.gateway.core.config;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * [Class description]
- *
- * @author Administrator
- * @date 2024/11/20 16:57
+ * Netty HTTP服务器配置属性
  */
 @Data
+@ConfigurationProperties(prefix = "muxin.gateway.netty.server")
 public class NettyHttpServerProperties {
 
-    private int port;
+    private int port = 8080;
 
     private int eventLoopGroupBossNum = 1;
 
@@ -33,10 +32,9 @@ public class NettyHttpServerProperties {
 
     private int sndBuf = 65535;
 
-    private int rcvBuf =65535;
+    private int rcvBuf = 65535;
 
     private int soLinger;
 
     private int soTimeout;
-
 }

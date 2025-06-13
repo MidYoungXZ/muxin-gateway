@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.loadbalance;
 
 import com.muxin.gateway.core.http.ServerWebExchange;
-import com.muxin.gateway.core.loadbalance.register.RegisterCenter;
-import com.muxin.gateway.core.loadbalance.register.ServiceInstance;
+import com.muxin.gateway.registry.api.RegisterCenter;
+import com.muxin.gateway.registry.api.ServiceInstance;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;

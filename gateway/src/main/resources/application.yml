@@ -1,0 +1,199 @@
+spring:
+  application:
+    name: muxin-gateway
+
+# 网关配置
+muxin:
+  gateway:
+    # Netty服务器配置
+    netty:
+      server:
+        port: 8080
+        event-loop-group-boss-num: 1
+        event-loop-group-worker-num: 8
+        max-content-length: 67108864  # 64MB
+        backlog: 1024
+        re-use-address: true
+        tcp-no-delay: true
+        keep-alive: true
+        snd-buf: 65535
+        rcv-buf: 65535
+      client:
+        http-connect-timeout: 10000
+        http-request-timeout: 30000
+        http-max-request-retry: 3
+        http-max-connections: 1000
+        http-connections-per-host: 100
+        http-pooled-connection-idle-timeout: 60000
+        when-complete: false
+    
+    # 注册中心配置
+    register:
+      type: nacos
+      address: 10.100.0.140:10809
+      group: DEFAULT_GROUP
+    
+    # 路由配置
+    routes:
+      # 用户服务路由
+      - id: user-service
+        uri: http://localhost:8081
+        order: 1
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/user/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "用户服务路由"
+          version: "1.0"
+      
+      # 订单服务路由
+      - id: order-service
+        uri: http://localhost:8082
+        order: 2
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/order/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "订单服务路由"
+          version: "1.0"
+      
+      # 商品服务路由
+      - id: product-service
+        uri: http://localhost:8083
+        order: 3
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/product/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "商品服务路由"
+          version: "1.0"
+      
+      # 支付服务路由
+      - id: payment-service
+        uri: http://localhost:8084
+        order: 4
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/payment/**"
+          - name: Method
+            args:
+              methods: "GET,POST"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "支付服务路由"
+          version: "1.0"
+      
+      # 通知服务路由
+      - id: notification-service
+        uri: http://localhost:8085
+        order: 5
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/notification/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "通知服务路由"
+          version: "1.0"
+      
+      # 文件服务路由
+      - id: file-service
+        uri: http://localhost:8086
+        order: 6
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/files/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "文件上传下载服务路由"
+          version: "1.0"
+      
+      # 管理后台路由
+      - id: admin-service
+        uri: http://localhost:8087
+        order: 7
+        predicates:
+          - name: Path
+            args:
+              pattern: "/admin/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "1"
+        metadata:
+          description: "管理后台路由"
+          version: "1.0"
+      
+      # 测试路由 - httpbin.org
+      - id: test-httpbin
+        uri: http://httpbin.org
+        order: 10
+        predicates:
+          - name: Path
+            args:
+              pattern: "/test/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "1"
+        metadata:
+          description: "httpbin测试服务路由"
+          version: "1.0"
+      
+      # 健康检查路由
+      - id: health-check
+        uri: http://localhost:8080
+        order: 0
+        predicates:
+          - name: Path
+            args:
+              pattern: "/health"
+          - name: Method
+            args:
+              methods: "GET"
+        metadata:
+          description: "健康检查路由"
+          version: "1.0"
+
+# 日志配置
+logging:
+  level:
+    com.muxin.gateway: DEBUG
+    root: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n' 

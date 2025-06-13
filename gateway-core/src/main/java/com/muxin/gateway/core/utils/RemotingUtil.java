@@ -59,4 +59,11 @@ public class RemotingUtil {
         return "";
     }
 
+    /**
+     * 判断是否为Linux平台
+     */
+    public static boolean isLinuxPlatform() {
+        String osName = System.getProperty("os.name");
+        return osName != null && osName.toLowerCase().contains("linux");
+    }
 }

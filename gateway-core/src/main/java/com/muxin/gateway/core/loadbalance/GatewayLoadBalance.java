@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.loadbalance;
 
 import com.muxin.gateway.core.http.ServerWebExchange;
-import com.muxin.gateway.core.loadbalance.register.ServiceInstance;
+import com.muxin.gateway.registry.api.ServiceInstance;
 
 /**
  * [Class description]

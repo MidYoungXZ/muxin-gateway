@@ -2,16 +2,23 @@ package com.muxin.gateway.core.route;
 
 import com.muxin.gateway.core.filter.Filter404;
 import com.muxin.gateway.core.filter.RouteRuleFilter;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 路由规则
+ */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RouteRule {
 
     private String id;
@@ -39,4 +46,57 @@ public class RouteRule {
                 .build();
     }
 
+    public static RouteRuleBuilder builder() {
+        return new RouteRuleBuilder();
+    }
+
+    public static class RouteRuleBuilder {
+        private String id;
+        private URI uri;
+        private RoutePredicate predicate;
+        private List<RouteRuleFilter> routeRuleFilters;
+        private Map<String, Object> metadata;
+        private int order;
+
+        public RouteRuleBuilder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public RouteRuleBuilder uri(URI uri) {
+            this.uri = uri;
+            return this;
+        }
+
+        public RouteRuleBuilder predicate(RoutePredicate predicate) {
+            this.predicate = predicate;
+            return this;
+        }
+
+        public RouteRuleBuilder routeRuleFilters(List<RouteRuleFilter> routeRuleFilters) {
+            this.routeRuleFilters = routeRuleFilters;
+            return this;
+        }
+
+        public RouteRuleBuilder metadata(Map<String, Object> metadata) {
+            this.metadata = metadata;
+            return this;
+        }
+
+        public RouteRuleBuilder order(int order) {
+            this.order = order;
+            return this;
+        }
+
+        public RouteRule build() {
+            RouteRule routeRule = new RouteRule();
+            routeRule.id = this.id;
+            routeRule.uri = this.uri;
+            routeRule.predicate = this.predicate;
+            routeRule.routeRuleFilters = this.routeRuleFilters;
+            routeRule.metadata = this.metadata;
+            routeRule.order = this.order;
+            return routeRule;
+        }
+    }
 }

@@ -1,8 +1,10 @@
 package com.muxin.gateway.core.route;
 
 import com.muxin.gateway.core.filter.FilterDefinition;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
 
 import java.net.URI;
@@ -14,31 +16,46 @@ import java.util.Map;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
- * [Class description]
- *
- * @author Administrator
- * @date 2024/11/21 10:55
+ * 路由定义
  */
 @Data
-@EqualsAndHashCode
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RouteDefinition {
 
-
+    /**
+     * 路由id
+     */
     private String id;
 
-    private List<PredicateDefinition> predicates = new ArrayList<>();
-
-
-    private List<FilterDefinition> filters = new ArrayList<>();
-
+    /**
+     * 路由uri
+     */
     private URI uri;
 
+    /**
+     * 路由断言集合
+     */
+    @Builder.Default
+    private List<PredicateDefinition> predicates = new ArrayList<>();
+
+    /**
+     * 路由过滤器集合
+     */
+    @Builder.Default
+    private List<FilterDefinition> filters = new ArrayList<>();
+
+    /**
+     * 路由元数据
+     */
+    @Builder.Default
     private Map<String, Object> metadata = new HashMap<>();
 
+    /**
+     * 路由顺序
+     */
     private int order = 0;
-
-    public RouteDefinition() {
-    }
 
     public RouteDefinition(String text) {
         int eqIdx = text.indexOf('=');
@@ -58,4 +75,7 @@ public class RouteDefinition {
         }
     }
 
+    public String[] tokenizeToStringArray(String str, String delimiters) {
+        return str.split(delimiters);
+    }
 }

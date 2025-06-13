@@ -8,10 +8,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * [Class description]
- *
- * @author Administrator
- * @date 2024/11/20 17:22
+ * Netty服务器连接管理器
  */
 @Slf4j
 public class NettyServerConnectManagerHandler extends ChannelDuplexHandler {

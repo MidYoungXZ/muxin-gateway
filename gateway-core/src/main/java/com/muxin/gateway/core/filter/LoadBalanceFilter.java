@@ -5,7 +5,7 @@ import com.muxin.gateway.core.loadbalance.DefaultLbRequest;
 import com.muxin.gateway.core.loadbalance.GatewayLoadBalance;
 import com.muxin.gateway.core.loadbalance.GatewayLoadBalanceFactory;
 import com.muxin.gateway.core.loadbalance.LbResponse;
-import com.muxin.gateway.core.loadbalance.register.ServiceInstance;
+import com.muxin.gateway.registry.api.ServiceInstance;
 import com.muxin.gateway.core.utils.ExchangeUtil;
 
 import java.net.URI;
@@ -29,8 +29,6 @@ public class LoadBalanceFilter implements GlobalFilter {
 
     //定义Route包含Filter对象集合-》Filter持有GatewayLoadBalanceFactory-》
     // 根据参数获取LoadBalance单例对象
-
-
 
     @Override
     public void filter(ServerWebExchange exchange) {
