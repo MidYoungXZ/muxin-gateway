@@ -2,8 +2,8 @@ package com.muxin.gateway.core.route;
 
 import com.muxin.gateway.core.factory.FilterFactory;
 import com.muxin.gateway.core.factory.PredicateFactory;
+import com.muxin.gateway.core.filter.PartFilter;
 import com.muxin.gateway.core.filter.FilterDefinition;
-import com.muxin.gateway.core.filter.RouteRuleFilter;
 import com.muxin.gateway.core.route.path.AntPathMatcher;
 import com.muxin.gateway.core.route.path.PathMatcher;
 import com.muxin.gateway.core.route.path.PathUtil;
@@ -12,6 +12,8 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.muxin.gateway.core.common.GatewayConstants.*;
 
 /**
  * 路由定位器实现，同时作为RouteDefinition和RouteLocator的桥梁
@@ -71,17 +73,25 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         }
         //先解决常量路径
         String normalizePath = PathUtil.normalize(path);
+        log.debug("Looking for routes for path: {} (normalized: {})", path, normalizePath);
+        log.debug("Available constant paths: {}", constantPathRoutes.keySet());
+        log.debug("Available pattern paths: {}", patternPathRoutes.keySet());
+        
         RouteRuleGroup routeRuleGroup = constantPathRoutes.get(normalizePath);
         List<RouteRuleGroup> groups = findInPatternPathRoutes(normalizePath);
         
         if (Objects.nonNull(routeRuleGroup)) {
+            log.debug("Found constant path match for: {}", normalizePath);
             groups.add(0, routeRuleGroup);
         }
         
         if (groups.isEmpty()) {
+            log.debug("No routes found for path: {}", path);
             return Collections.emptyList();
         } else if (groups.size() == 1) {
-            return groups.get(0).getRoutes();
+            List<RouteRule> routes = groups.get(0).getRoutes();
+            log.debug("Found {} routes for path: {}", routes.size(), path);
+            return routes;
         }
 
         // 合并多个组的路由规则
@@ -89,6 +99,7 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         for (RouteRuleGroup rg : groups) {
             mergedRoutes.addAll(rg.getRoutes());
         }
+        log.debug("Found {} merged routes for path: {}", mergedRoutes.size(), path);
         return mergedRoutes;
     }
 
@@ -119,7 +130,16 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
         //添加到全量routeRule
         this.allRoutes.put(route.getId(), route);
-        String normalizePath = PathUtil.normalize(route.getUri().getPath());
+        
+        // 从路由的metadata中获取path配置，如果没有则使用URI的path
+        String routePath = extractPathFromRoute(route);
+        if (routePath == null || routePath.isEmpty()) {
+            log.warn("No valid path found for route: {}", route.getId());
+            return;
+        }
+        
+        String normalizePath = PathUtil.normalize(routePath);
+        log.debug("Adding route {} with normalized path: {}", route.getId(), normalizePath);
         
         try {
             addRouteToGroup(route, normalizePath);
@@ -150,15 +170,65 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         }
 
         RouteRule removedRoute = allRoutes.remove(routeId);
-        String normalizePath = PathUtil.normalize(removedRoute.getUri().getPath());
+        String routePath = extractPathFromRoute(removedRoute);
+        if (routePath != null && !routePath.isEmpty()) {
+            String normalizePath = PathUtil.normalize(routePath);
 
-        if (pathMatcher.isPattern(normalizePath)) {
-            removeFromPatternGroup(routeId, normalizePath);
-        } else {
-            removeFromConstantGroup(routeId, normalizePath);
+            if (pathMatcher.isPattern(normalizePath)) {
+                removeFromPatternGroup(routeId, normalizePath);
+            } else {
+                removeFromConstantGroup(routeId, normalizePath);
+            }
         }
 
         return removedRoute;
+    }
+    
+    /**
+     * 从RouteRule中提取路径，优先从metadata中的pathPattern获取，其次使用URI的path
+     */
+    private String extractPathFromRoute(RouteRule route) {
+        // 先尝试从metadata中获取path pattern
+        if (route.getMetadata() != null) {
+            Object pathPattern = route.getMetadata().get("pathPattern");
+            if (pathPattern instanceof String && !((String) pathPattern).isEmpty()) {
+                return (String) pathPattern;
+            }
+        }
+        
+        // 如果metadata中没有，则使用URI的path
+        if (route.getUri() != null && route.getUri().getPath() != null && !route.getUri().getPath().isEmpty()) {
+            return route.getUri().getPath();
+        }
+        
+        return null;
+    }
+    
+    /**
+     * 从断言定义列表中提取Path断言的pattern
+     */
+    private String extractPathPattern(List<PredicateDefinition> predicates) {
+        if (predicates == null) {
+            return null;
+        }
+        
+        for (PredicateDefinition predicate : predicates) {
+            if (PATH_PREDICATE_NAME.equals(predicate.getName())) {
+                Map<String, String> args = predicate.getArgs();
+                if (args != null) {
+                    // 尝试不同的参数名
+                    String pattern = args.get(PATTERN_ARG);
+                    if (pattern == null) {
+                        pattern = args.get(GENKEY_PREFIX + "0");
+                    }
+                    if (pattern != null && !pattern.isEmpty()) {
+                        return pattern;
+                    }
+                }
+            }
+        }
+        
+        return null;
     }
 
     private void removeFromPatternGroup(String routeId, String normalizePath) {
@@ -189,10 +259,15 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     public void init() {
         // 从routeDefinitionLocator加载路由定义并初始化
         if (routeDefinitionRepository != null) {
-            routeDefinitionRepository.findAll().forEach(definition -> {
-                RouteRule routeRule = convertToRouteRule(definition);
-                addRoute(routeRule);
-            });
+            Iterable<RouteDefinition> definitions = routeDefinitionRepository.findAll();
+            if (definitions != null) {
+                definitions.forEach(definition -> {
+                    if (definition != null) {
+                        RouteRule routeRule = convertToRouteRule(definition);
+                        addRoute(routeRule);
+                    }
+                });
+            }
         }
     }
 
@@ -201,10 +276,10 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
      */
     private RouteRule convertToRouteRule(RouteDefinition definition) {
         // 转换过滤器定义
-        List<RouteRuleFilter> filters = new ArrayList<>();
+        List<PartFilter> filters = new ArrayList<>();
         if (!CollectionUtils.isEmpty(definition.getFilters())) {
             for (FilterDefinition filterDef : definition.getFilters()) {
-                RouteRuleFilter filter = convertToFilter(filterDef);
+                PartFilter filter = convertToFilter(filterDef);
                 if (filter != null) {
                     filters.add(filter);
                 }
@@ -213,8 +288,20 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
 
         // 转换断言定义
         RoutePredicate predicate = null;
+        String pathPattern = null;
         if (!CollectionUtils.isEmpty(definition.getPredicates())) {
             predicate = convertToPredicate(definition.getPredicates());
+            // 提取Path断言的pattern
+            pathPattern = extractPathPattern(definition.getPredicates());
+        }
+
+        // 复制metadata并添加pathPattern
+        Map<String, Object> metadata = new HashMap<>();
+        if (definition.getMetadata() != null) {
+            metadata.putAll(definition.getMetadata());
+        }
+        if (pathPattern != null) {
+            metadata.put("pathPattern", pathPattern);
         }
 
         // 构建RouteRule
@@ -224,17 +311,23 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
                 .order(definition.getOrder())
                 .routeRuleFilters(filters)
                 .predicate(predicate != null ? predicate : exchange -> true)
-                .metadata(definition.getMetadata())
+                .metadata(metadata)
                 .build();
     }
 
     /**
      * 转换过滤器定义为具体的过滤器实例
      */
-    private RouteRuleFilter convertToFilter(FilterDefinition filterDef) {
+    private PartFilter convertToFilter(FilterDefinition filterDef) {
         try {
+            FilterFactory factory = filterFactoryMap.get(filterDef.getName());
+            if (factory == null) {
+                log.error("No FilterFactory found for filter name: {}. Available factories: {}", 
+                    filterDef.getName(), filterFactoryMap.keySet());
+                return null;
+            }
             // 这里需要通过FilterFactory来创建具体的过滤器实例
-            return filterFactoryMap.get(filterDef.getName()).create(filterDef.getArgs());
+            return factory.create(filterDef.getArgs());
         } catch (Exception e) {
             log.error("Failed to create filter from definition: {}", filterDef, e);
             return null;
@@ -249,7 +342,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         
         for (PredicateDefinition predicate : predicates) {
             try {
-                RoutePredicate routePredicate = predicateFactoryMap.get(predicate.getName()).create(predicate.getArgs());
+                PredicateFactory factory = predicateFactoryMap.get(predicate.getName());
+                if (factory == null) {
+                                    log.error("No PredicateFactory found for predicate name: {}. Available factories: {}", 
+                    predicate.getName(), predicateFactoryMap.keySet());
+                    continue;
+                }
+                RoutePredicate routePredicate = factory.create(predicate.getArgs());
                 if (routePredicate != null) {
                     routePredicates.add(routePredicate);
                 }
@@ -258,8 +357,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
             }
         }
 
-        // 组合所有断言
+        // 组合多个断言（AND关系）
         return exchange -> routePredicates.stream().allMatch(p -> p.test(exchange));
+    }
+
+    @Override
+    public List<RouteRule> getAllRoutes() {
+        return new ArrayList<>(allRoutes.values());
     }
 
     private static class RouteRuleGroup {

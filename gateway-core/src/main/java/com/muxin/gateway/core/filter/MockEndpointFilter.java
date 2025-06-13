@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.filter;
 
-import com.muxin.gateway.core.common.ResponseStatusEnum;
 import com.muxin.gateway.core.http.ServerWebExchange;
 import com.muxin.gateway.core.utils.ResponseUtil;
+import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
  * [Class description]
@@ -10,7 +10,7 @@ import com.muxin.gateway.core.utils.ResponseUtil;
  * @author Administrator
  * @date 2025/1/9 15:47
  */
-public class MockEndpointFilter implements GlobalFilter{
+public class MockEndpointFilter implements GlobalFilter {
 
 
     @Override
@@ -21,13 +21,6 @@ public class MockEndpointFilter implements GlobalFilter{
     @Override
     public void filter(ServerWebExchange exchange) {
         String body = "{\"code\": \"000000\", \"message\": \"success\", \"data\": { \"mockData\": \"mockData\" }}";
-        ResponseUtil.createResponse(ResponseStatusEnum.G00_00_0000,body);
+        exchange.setOriginalResponse(ResponseUtil.createResponse(HttpResponseStatus.OK, body));
     }
-
-    @Override
-    public FilterTypeEnum filterType() {
-        return FilterTypeEnum.ENDPOINT;
-    }
-
-
 }

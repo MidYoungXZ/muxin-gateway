@@ -36,7 +36,7 @@ public class RemotingUtil {
         SocketAddress remote = channel.remoteAddress();
         final String addr = remote != null ? remote.toString() : "";
 
-        if (addr.length() > 0) {
+        if (!addr.isEmpty()) {
             int index = addr.lastIndexOf("/");
             if (index >= 0) {
                 return addr.substring(index + 1);
@@ -52,11 +52,18 @@ public class RemotingUtil {
         if (socketAddress != null) {
             final String addr = socketAddress.toString();
 
-            if (addr.length() > 0) {
+            if (!addr.isEmpty()) {
                 return addr.substring(1);
             }
         }
         return "";
     }
 
+    /**
+     * 判断是否为Linux平台
+     */
+    public static boolean isLinuxPlatform() {
+        String osName = System.getProperty("os.name");
+        return osName != null && osName.toLowerCase().contains("linux");
+    }
 }

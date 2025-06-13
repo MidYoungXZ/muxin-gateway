@@ -1,19 +1,17 @@
 package com.muxin.gateway.core.http;
 
 import com.muxin.gateway.core.common.Ordered;
-import com.muxin.gateway.core.common.ResponseStatusEnum;
-import com.muxin.gateway.core.filter.FilterTypeEnum;
-import com.muxin.gateway.core.filter.GatewayFilterChain;
-import com.muxin.gateway.core.filter.RouteRuleFilter;
+import com.muxin.gateway.core.filter.*;
 import com.muxin.gateway.core.route.RouteLocator;
 import com.muxin.gateway.core.route.RouteRule;
+import com.muxin.gateway.core.utils.ExchangeUtil;
 import com.muxin.gateway.core.utils.ResponseUtil;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.muxin.gateway.core.common.GatewayConstants.SERVICE_ID;
 
 /**
  * [Class description]
@@ -26,8 +24,16 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
 
     private final RouteLocator routeLocator;
 
+    private final List<GlobalFilter> globalFilters;
+
     public ChainBasedExchangeHandler(RouteLocator routeLocator) {
         this.routeLocator = routeLocator;
+        this.globalFilters = Collections.emptyList();
+    }
+
+    public ChainBasedExchangeHandler(RouteLocator routeLocator, List<GlobalFilter> globalFilters) {
+        this.routeLocator = routeLocator;
+        this.globalFilters = globalFilters != null ? globalFilters : Collections.emptyList();
     }
 
     /**
@@ -41,21 +47,13 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
             doHandle(exchange);
         } catch (Throwable throwable) {
             log.error("Request handle failed.", throwable);
-            HttpServerResponse response = ResponseUtil.createEmptyResponse(ResponseStatusEnum.G00_05_0005);
-            exchange.setResponse(response);
-        }finally {
-            //释放资源
-            ReferenceCountUtil.release(exchange.getRequest());
-            //写回
-            exchange.inboundContext()
-                    .writeAndFlush(exchange.getResponse())
-                    .addListener(ChannelFutureListener.CLOSE); //释放资源后关闭channel
+            exchange.setOriginalResponse(ResponseUtil.error(throwable.getMessage()));
         }
     }
 
     /**
      * 1.查找路由
-     * 2.拼装filter
+     * 2.拼装filter (合并GlobalFilter和RouteRuleFilter)
      * 3.执行filter
      * 4.处理返回
      *
@@ -64,9 +62,25 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
     private void doHandle(ServerWebExchange exchange) {
         //查找路由
         RouteRule routeRule = lookupRoute(exchange);
-        //组装Filter
-        List<RouteRuleFilter> ruleFilters = routeRule.getRouteRuleFilters();
-        new DefaultGatewayFilterChain(ruleFilters).filter(exchange);
+
+        // 从路由URI中提取服务ID（如果是lb://协议）
+        if (routeRule.getUri() != null && ExchangeUtil.isLoadBalanceUri(routeRule.getUri())) {
+            String serviceId = ExchangeUtil.extractServiceId(routeRule.getUri());
+            if (serviceId != null) {
+                exchange.setAttribute(SERVICE_ID, serviceId);
+                log.debug("Set service ID: {} for route: {}", serviceId, routeRule.getId());
+            }
+        }
+        //组装Filter - 合并PartFilter和RouteFilter
+        List<PartFilter> ruleFilters = routeRule.getRouteFilters();
+        List<RouteFilter> allRouteFilters = new ArrayList<>();
+        if (ruleFilters != null) {
+            allRouteFilters.addAll(ruleFilters);
+        }
+        if (globalFilters != null) {
+            allRouteFilters.addAll(globalFilters);
+        }
+        new DefaultGatewayFilterChain(allRouteFilters).filter(exchange);
     }
 
     /**
@@ -86,12 +100,12 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
 
     public static class DefaultGatewayFilterChain implements GatewayFilterChain {
 
-        private final Map<FilterTypeEnum, List<RouteRuleFilter>> filterTypeEnumListMap;
+        private final Map<FilterTypeEnum, List<RouteFilter>> filterTypeEnumListMap;
 
-        public DefaultGatewayFilterChain(List<RouteRuleFilter> ruleFilters) {
+        public DefaultGatewayFilterChain(List<RouteFilter> ruleFilters) {
             this.filterTypeEnumListMap = ruleFilters.stream()
                     .collect(Collectors.groupingBy(
-                            RouteRuleFilter::filterType,
+                            RouteFilter::filterType,
                             Collectors.collectingAndThen(
                                     Collectors.toList(),
                                     list -> list.stream()
@@ -104,9 +118,12 @@ public class ChainBasedExchangeHandler implements ExchangeHandler {
         @Override
         public void filter(ServerWebExchange exchange) {
             for (FilterTypeEnum phase : FilterTypeEnum.values()) {
-                List<RouteRuleFilter> filters = filterTypeEnumListMap.get(phase);
+                List<RouteFilter> filters = filterTypeEnumListMap.get(phase);
                 if (Objects.nonNull(filters)) {
-                    for (RouteRuleFilter filter : filters) {
+                    for (RouteFilter filter : filters) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Executing filter: {} (order: {})", filter.getClass().getSimpleName(), filter.getOrder());
+                        }
                         filter.filter(exchange);
                     }
                 }

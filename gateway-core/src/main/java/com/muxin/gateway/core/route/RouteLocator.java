@@ -5,23 +5,27 @@ import com.muxin.gateway.core.LifeCycle;
 import java.util.List;
 
 /**
- * [Class description]
- *
- * @author Administrator
- * @date 2024/11/21 09:58
+ * 路由定位器接口
  */
-public interface RouteLocator  extends LifeCycle {
+public interface RouteLocator extends LifeCycle {
 
+    /**
+     * 根据路径获取路由列表
+     */
     List<RouteRule> getRoutes(String path);
+
+    /**
+     * 获取所有路由列表
+     */
+    List<RouteRule> getAllRoutes();
 
     /**
      * 启动
      */
-    default void start(){}
+    default void start() {}
 
     /**
      * 关闭
      */
-    default void shutdown(){}
-
+    default void shutdown() {}
 }

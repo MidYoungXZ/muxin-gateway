@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muxin Gateway - 管理控制台</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            background: #34495e;
+            border-bottom: 1px solid #3a5370;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .sidebar-header p {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            padding: 1rem 0;
+        }
+
+        .menu-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-item-header {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .menu-item-header:hover {
+            background: #34495e;
+        }
+
+        .menu-item-header.active {
+            background: #3498db;
+        }
+
+        .menu-arrow {
+            transition: transform 0.3s;
+        }
+
+        .menu-arrow.expanded {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            background: #34495e;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .submenu.expanded {
+            max-height: 200px;
+        }
+
+        .submenu-item {
+            padding: 0.5rem 2rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .submenu-item:hover {
+            background: #3a5370;
+        }
+
+        .submenu-item.active {
+            background: #3498db;
+        }
+
+
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .breadcrumb {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .home-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .home-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .home-btn.active {
+            background: #2c3e50;
+        }
+
+        .user-info {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-dropdown {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+            user-select: none;
+        }
+
+        .user-dropdown:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 120px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: none;
+            width: 100%;
+            text-align: left;
+            background: none;
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item.logout {
+            color: #e74c3c;
+            border-top: 1px solid #eee;
+        }
+
+        .dropdown-item.logout:hover {
+            background: #fdf2f2;
+        }
+
+        .content-area {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        /* 路由管理页面样式 */
+        .routes-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .routes-header {
+            padding: 1.5rem;
+            background: #2c3e50;
+            color: white;
+            border-bottom: 2px solid #34495e;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .routes-header h2 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .routes-stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: #ecf0f1;
+        }
+
+        .routes-list {
+            padding: 0;
+        }
+
+        .route-item {
+            border-bottom: 1px solid #eee;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .route-item:hover {
+            background: #f8f9fa;
+        }
+
+        .route-item:last-child {
+            border-bottom: none;
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 0.5rem;
+        }
+
+        .route-id {
+            font-weight: 600;
+            color: #e74c3c;
+            font-size: 1.1rem;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .route-order {
+            background: #bdc3c7;
+            color: #7f8c8d;
+            padding: 0.15rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .route-uri {
+            color: #27ae60;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .route-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .route-detail {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .route-detail.expanded {
+            display: block;
+        }
+
+        .detail-section {
+            margin-bottom: 1rem;
+        }
+
+        .detail-section h4 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .detail-content {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #333;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: #e74c3c;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 分页样式 */
+        .pagination-container {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+        }
+
+        .pagination-info {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #f8f9fa;
+        }
+
+        .pagination-btn.active {
+            background: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+
+        .pagination-btn.active:hover {
+            background: #34495e;
+            border-color: #34495e;
+        }
+
+        /* 模态对话框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-dialog {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            min-width: 300px;
+            max-width: 500px;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.show .modal-dialog {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        .modal-btn.primary:hover {
+            background: #c0392b;
+            border-color: #c0392b;
+        }
+
+        .modal-btn.secondary {
+            background: white;
+            color: #333;
+        }
+
+        .modal-btn.secondary:hover {
+            background: #f8f9fa;
+        }
+
+        /* 首页样式 */
+        .welcome-page {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .welcome-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .welcome-header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: 300;
+        }
+
+        .welcome-header p {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 0.5rem;
+        }
+
+        .current-time {
+            font-size: 0.9rem;
+            color: #95a5a6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.routes {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .stat-icon.status {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .stat-icon.uptime {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .quick-actions {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .quick-actions h3 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-card {
+            padding: 1.5rem;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-card:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .action-card .icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #3498db;
+        }
+
+        .action-card .title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-card .description {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Muxin Gateway</h1>
+            <p>管理控制台</p>
+        </div>
+        
+        <nav class="sidebar-menu">
+            <div class="menu-item">
+                <div class="menu-item-header" onclick="toggleMenu('system')">
+                    <span>系统管理</span>
+                    <span class="menu-arrow" id="system-arrow">▶</span>
+                </div>
+                <div class="submenu" id="system-submenu">
+                    <div class="submenu-item" onclick="showRoutes()">路由管理</div>
+                </div>
+            </div>
+        </nav>
+
+
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <button class="home-btn" id="home-btn" onclick="showWelcome()" title="返回首页">
+                    <span>🏠</span>
+                </button>
+                <div class="breadcrumb" id="breadcrumb">首页</div>
+            </div>
+            <div class="user-info">
+                <div class="user-dropdown" onclick="toggleUserDropdown()">
+                    <span>管理员 ▼</span>
+                </div>
+                <div class="dropdown-menu" id="user-dropdown">
+                    <button class="dropdown-item logout" onclick="logout()">退出登录</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <!-- 默认欢迎页面 -->
+            <div id="welcome-page" class="welcome-page">
+                <div class="welcome-header">
+                    <h1>欢迎使用 Muxin Gateway</h1>
+                    <p>管理控制台</p>
+                    <div class="current-time" id="current-time"></div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon routes">🚀</div>
+                        <div class="stat-number" id="total-routes">-</div>
+                        <div class="stat-label">总路由数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon status">✅</div>
+                        <div class="stat-number">运行中</div>
+                        <div class="stat-label">系统状态</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon uptime">⏰</div>
+                        <div class="stat-number" id="uptime">-</div>
+                        <div class="stat-label">运行时间</div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>快速操作</h3>
+                    <div class="action-grid">
+                        <div class="action-card" onclick="showRoutes()">
+                            <div class="icon">🛣️</div>
+                            <div class="title">路由管理</div>
+                            <div class="description">查看和管理网关路由配置</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="icon">📊</div>
+                            <div class="title">监控面板</div>
+                            <div class="description">查看系统运行状态和指标</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="icon">⚙️</div>
+                            <div class="title">系统设置</div>
+                            <div class="description">配置网关参数和选项</div>
+                        </div>
+                        <div class="action-card">
+                            <div class="icon">📋</div>
+                            <div class="title">操作日志</div>
+                            <div class="description">查看系统操作记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 路由管理页面 -->
+            <div id="routes-page" class="hidden">
+                <div class="routes-container">
+                    <div class="routes-header">
+                        <h2>路由管理</h2>
+                        <div class="routes-stats">
+                            <span>总路由数: <span id="routes-total">-</span></span>
+                        </div>
+                    </div>
+                    
+                    <div id="routes-loading" class="loading">正在加载路由信息...</div>
+                    <div id="routes-error" class="error hidden">加载失败，请重试</div>
+                    
+                    <div class="routes-list" id="routes-list">
+                        <!-- 路由列表将在这里动态生成 -->
+                    </div>
+
+                    <div class="pagination-container" id="pagination-container" style="display: none;">
+                        <div class="pagination-info" id="pagination-info"></div>
+                        <div class="pagination-controls" id="pagination-controls"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 模态对话框 -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-header" id="modal-title">确认操作</div>
+            <div class="modal-body" id="modal-message">确定要执行此操作吗？</div>
+            <div class="modal-footer">
+                <button class="modal-btn secondary" onclick="hideModal()">取消</button>
+                <button class="modal-btn primary" id="modal-confirm-btn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 'welcome';
+        let routes = [];
+        let currentRoutes = [];
+        let paginationConfig = {
+            currentPage: 1,
+            pageSize: 10,
+            totalPages: 0,
+            totalItems: 0
+        };
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            checkAuth();
+            
+            // 默认展开系统管理菜单
+            toggleMenu('system');
+            
+            // 点击其他地方关闭下拉菜单
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.user-info')) {
+                    closeUserDropdown();
+                }
+            });
+
+            // 初始化首页
+            initWelcomePage();
+            
+            // 设置初始导航状态
+            updateNavigation('welcome');
+        });
+
+        // 初始化首页
+        function initWelcomePage() {
+            updateCurrentTime();
+            loadDashboardStats();
+            
+            // 每秒更新时间
+            setInterval(updateCurrentTime, 1000);
+        }
+
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('current-time').textContent = `当前时间：${timeString}`;
+        }
+
+        // 加载仪表板统计数据
+        function loadDashboardStats() {
+            // 加载路由数量
+            fetch('/admin/api/routes', { credentials: 'include' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('total-routes').textContent = data.data.length;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('total-routes').textContent = 'N/A';
+                });
+
+            // 模拟运行时间（实际应该从后端获取）
+            const startTime = Date.now() - Math.random() * 86400000; // 随机1天内的时间
+            updateUptime(startTime);
+            setInterval(() => updateUptime(startTime), 60000); // 每分钟更新
+        }
+
+        // 更新运行时间
+        function updateUptime(startTime) {
+            const uptime = Date.now() - startTime;
+            const hours = Math.floor(uptime / (1000 * 60 * 60));
+            const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+        }
+
+        // 检查认证状态
+        function checkAuth() {
+            fetch('/admin/api/session/check', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success || !data.authenticated) {
+                    window.location.href = '/admin/index.html';
+                }
+            })
+            .catch(() => window.location.href = '/admin/index.html');
+        }
+
+        // 切换菜单展开状态
+        function toggleMenu(menuId) {
+            const arrow = document.getElementById(menuId + '-arrow');
+            const submenu = document.getElementById(menuId + '-submenu');
+            
+            const isExpanded = submenu.classList.contains('expanded');
+            
+            if (isExpanded) {
+                submenu.classList.remove('expanded');
+                arrow.classList.remove('expanded');
+            } else {
+                submenu.classList.add('expanded');
+                arrow.classList.add('expanded');
+            }
+        }
+
+        // 显示首页
+        function showWelcome() {
+            // 更新导航
+            document.getElementById('breadcrumb').textContent = '首页';
+            
+            // 更新按钮状态
+            updateNavigation('welcome');
+            
+            // 切换页面
+            showPage('welcome');
+        }
+
+        // 显示路由管理页面
+        function showRoutes() {
+            // 更新导航
+            document.getElementById('breadcrumb').textContent = '系统管理 > 路由管理';
+            
+            // 更新菜单高亮
+            document.querySelectorAll('.submenu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // 更新按钮状态
+            updateNavigation('routes');
+            
+            // 切换页面
+            showPage('routes');
+            
+            // 加载路由数据
+            loadRoutes();
+        }
+
+        // 更新导航状态
+        function updateNavigation(currentPageType) {
+            const homeBtn = document.getElementById('home-btn');
+            
+            // 清除所有菜单高亮
+            document.querySelectorAll('.submenu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            if (currentPageType === 'welcome') {
+                homeBtn.classList.add('active');
+            } else {
+                homeBtn.classList.remove('active');
+                
+                // 如果是路由页面，高亮对应菜单项
+                if (currentPageType === 'routes') {
+                    const routeMenuItem = document.querySelector('.submenu-item[onclick="showRoutes()"]');
+                    if (routeMenuItem) {
+                        routeMenuItem.classList.add('active');
+                    }
+                }
+            }
+        }
+
+        // 显示指定页面
+        function showPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.content-area > div').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // 显示目标页面
+            document.getElementById(pageId + '-page').classList.remove('hidden');
+            currentPage = pageId;
+        }
+
+        // 加载路由数据
+        function loadRoutes() {
+            const loading = document.getElementById('routes-loading');
+            const error = document.getElementById('routes-error');
+            const list = document.getElementById('routes-list');
+            
+            loading.classList.remove('hidden');
+            error.classList.add('hidden');
+            list.innerHTML = '';
+            
+            fetch('/admin/api/routes', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                
+                if (data.success) {
+                    routes = data.data;
+                    currentRoutes = [...routes];
+                    paginationConfig.totalItems = routes.length;
+                    paginationConfig.totalPages = Math.ceil(routes.length / paginationConfig.pageSize);
+                    paginationConfig.currentPage = 1;
+                    
+                    document.getElementById('routes-total').textContent = routes.length;
+                    renderPaginatedRoutes();
+                } else {
+                    throw new Error(data.message || '加载失败');
+                }
+            })
+            .catch(err => {
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+                console.error('Failed to load routes:', err);
+            });
+        }
+
+        // 渲染分页路由列表
+        function renderPaginatedRoutes() {
+            const startIndex = (paginationConfig.currentPage - 1) * paginationConfig.pageSize;
+            const endIndex = startIndex + paginationConfig.pageSize;
+            const pageRoutes = currentRoutes.slice(startIndex, endIndex);
+            
+            renderRoutes(pageRoutes);
+            renderPagination();
+            
+            // 显示分页控件
+            const paginationContainer = document.getElementById('pagination-container');
+            if (paginationConfig.totalPages > 1) {
+                paginationContainer.style.display = 'flex';
+            } else {
+                paginationContainer.style.display = 'none';
+            }
+        }
+
+        // 渲染路由列表
+        function renderRoutes(routeList) {
+            const container = document.getElementById('routes-list');
+            container.innerHTML = '';
+            
+            routeList.forEach(route => {
+                const routeElement = createRouteElement(route);
+                container.appendChild(routeElement);
+            });
+        }
+
+        // 渲染分页控件
+        function renderPagination() {
+            const infoContainer = document.getElementById('pagination-info');
+            const controlsContainer = document.getElementById('pagination-controls');
+            
+            // 更新分页信息
+            const startItem = (paginationConfig.currentPage - 1) * paginationConfig.pageSize + 1;
+            const endItem = Math.min(paginationConfig.currentPage * paginationConfig.pageSize, paginationConfig.totalItems);
+            infoContainer.textContent = `第 ${paginationConfig.currentPage} 页，共 ${paginationConfig.totalPages} 页，总计 ${paginationConfig.totalItems} 条记录`;
+            
+            // 清空控件
+            controlsContainer.innerHTML = '';
+            
+            // 上一页按钮
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn';
+            prevBtn.textContent = '上一页';
+            prevBtn.disabled = paginationConfig.currentPage === 1;
+            prevBtn.onclick = () => goToPage(paginationConfig.currentPage - 1);
+            controlsContainer.appendChild(prevBtn);
+            
+            // 页码按钮
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, paginationConfig.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(paginationConfig.totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = 'pagination-btn';
+                if (i === paginationConfig.currentPage) {
+                    pageBtn.classList.add('active');
+                }
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                controlsContainer.appendChild(pageBtn);
+            }
+            
+            // 下一页按钮
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn';
+            nextBtn.textContent = '下一页';
+            nextBtn.disabled = paginationConfig.currentPage === paginationConfig.totalPages;
+            nextBtn.onclick = () => goToPage(paginationConfig.currentPage + 1);
+            controlsContainer.appendChild(nextBtn);
+        }
+
+        // 跳转到指定页
+        function goToPage(page) {
+            if (page < 1 || page > paginationConfig.totalPages) return;
+            
+            paginationConfig.currentPage = page;
+            renderPaginatedRoutes();
+        }
+
+        // 创建路由元素
+        function createRouteElement(route) {
+            const div = document.createElement('div');
+            div.className = 'route-item';
+            div.onclick = () => toggleRouteDetail(route.id);
+            
+            div.innerHTML = `
+                <div class="route-header">
+                    <span class="route-id">${route.id}</span>
+                    <span class="route-order">Order: ${route.order}</span>
+                </div>
+                <div class="route-uri">${route.uri}</div>
+                <div class="route-meta">
+                    <span>断言: ${route.predicatesCount}</span>
+                    <span>过滤器: ${route.filtersCount}</span>
+                    ${route.metadata && route.metadata.description ? `<span>描述: ${route.metadata.description}</span>` : ''}
+                </div>
+                <div class="route-detail" id="detail-${route.id}">
+                    <div class="loading">正在加载详情...</div>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        // 切换路由详情显示
+        function toggleRouteDetail(routeId) {
+            const detail = document.getElementById('detail-' + routeId);
+            
+            if (detail.classList.contains('expanded')) {
+                detail.classList.remove('expanded');
+            } else {
+                // 先隐藏其他详情
+                document.querySelectorAll('.route-detail.expanded').forEach(el => {
+                    el.classList.remove('expanded');
+                });
+                
+                detail.classList.add('expanded');
+                loadRouteDetail(routeId);
+            }
+        }
+
+        // 加载路由详情
+        function loadRouteDetail(routeId) {
+            const detail = document.getElementById('detail-' + routeId);
+            
+            fetch(`/admin/api/routes/${routeId}`, {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderRouteDetail(detail, data.data);
+                } else {
+                    detail.innerHTML = '<div class="error">加载详情失败</div>';
+                }
+            })
+            .catch(err => {
+                detail.innerHTML = '<div class="error">加载详情失败</div>';
+                console.error('Failed to load route detail:', err);
+            });
+        }
+
+        // 渲染路由详情
+        function renderRouteDetail(container, route) {
+            container.innerHTML = `
+                <div class="detail-section">
+                    <h4>基本信息</h4>
+                    <div class="detail-content">ID: ${route.id}
+URI: ${route.uri}
+Order: ${route.order}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>断言配置</h4>
+                    <div class="detail-content">${JSON.stringify(route.predicates, null, 2)}</div>
+                </div>
+                
+                <div class="detail-section">
+                    <h4>过滤器配置</h4>
+                    <div class="detail-content">${JSON.stringify(route.filters, null, 2)}</div>
+                </div>
+                
+                ${route.metadata ? `
+                <div class="detail-section">
+                    <h4>元数据</h4>
+                    <div class="detail-content">${JSON.stringify(route.metadata, null, 2)}</div>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        // 切换用户下拉菜单
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // 关闭用户下拉菜单
+        function closeUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.remove('show');
+        }
+
+        // 显示模态对话框
+        function showModal(title, message, onConfirm) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').textContent = message;
+            document.getElementById('modal-confirm-btn').onclick = onConfirm;
+            document.getElementById('modal-overlay').classList.add('show');
+        }
+
+        // 隐藏模态对话框
+        function hideModal() {
+            document.getElementById('modal-overlay').classList.remove('show');
+        }
+
+        // 退出登录
+        function logout() {
+            closeUserDropdown();
+            showModal('退出登录', '确定要退出登录吗？', function() {
+                hideModal();
+                fetch('/admin/api/logout', {
+                    credentials: 'include'
+                })
+                .then(() => {
+                    window.location.href = '/admin/index.html';
+                })
+                .catch(() => window.location.href = '/admin/index.html');
+            });
+        }
+    </script>
+</body>
+</html> 

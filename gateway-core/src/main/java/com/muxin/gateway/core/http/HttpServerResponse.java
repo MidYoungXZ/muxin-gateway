@@ -1,9 +1,11 @@
 package com.muxin.gateway.core.http;
 
-
+import io.netty.buffer.ByteBuf;
+import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.cookie.Cookie;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,7 +41,6 @@ public interface HttpServerResponse extends HttpServerInfos {
      */
     HttpServerResponse chunkedTransfer(boolean chunked);
 
-
     /**
      * Enables/Disables compression handling (gzip/deflate) for the underlying response.
      *
@@ -73,21 +74,6 @@ public interface HttpServerResponse extends HttpServerInfos {
     HttpServerResponse keepAlive(boolean keepAlive);
 
     /**
-     * Returns the outbound HTTP headers, sent back to the clients.
-     *
-     * @return headers sent back to the clients
-     */
-    Map<String,String> responseHeaders();
-
-
-    /**
-     * Returns the assigned HTTP status.
-     *
-     * @return the assigned HTTP status
-     */
-    HttpResponseStatus status();
-
-    /**
      * Sets an HTTP status to be sent along with the headers.
      *
      * @param status an HTTP status to be sent along with the headers
@@ -101,7 +87,74 @@ public interface HttpServerResponse extends HttpServerInfos {
      * @param status an HTTP status to be sent along with the headers
      * @return this {@link HttpServerResponse}
      */
-    default HttpServerResponse status(int status) {
-        return status(HttpResponseStatus.valueOf(status));
-    }
+    HttpServerResponse status(int status);
+
+    /**
+     * Sets response body with string content
+     * 
+     * @param body string body
+     * @return this {@link HttpServerResponse}
+     */
+    HttpServerResponse body(String body);
+
+    /**
+     * Sets response body with byte array content
+     * 
+     * @param body byte array body
+     * @return this {@link HttpServerResponse}
+     */
+    HttpServerResponse body(byte[] body);
+
+    /**
+     * Sets response body with ByteBuf content
+     * 
+     * @param body ByteBuf body
+     * @return this {@link HttpServerResponse}
+     */
+    HttpServerResponse body(ByteBuf body);
+
+    /**
+     * Gets header value
+     * 
+     * @param name header name
+     * @return header value
+     */
+    String getHeader(CharSequence name);
+
+    /**
+     * Checks if header exists
+     * 
+     * @param name header name
+     * @return true if exists
+     */
+    boolean hasHeader(CharSequence name);
+
+    /**
+     * Returns the outbound HTTP headers, sent back to the clients.
+     *
+     * @return headers sent back to the clients
+     */
+    HttpHeaders responseHeaders();
+
+    /**
+     * Returns the assigned HTTP status.
+     *
+     * @return the assigned HTTP status
+     */
+    HttpResponseStatus status();
+
+    /**
+     * Get all cookies
+     * 
+     * @return list of cookies
+     */
+    List<Cookie> getCookies();
+
+    /**
+     * Get response content
+     * 
+     * @return ByteBuf content
+     */
+    ByteBuf content();
+
 }

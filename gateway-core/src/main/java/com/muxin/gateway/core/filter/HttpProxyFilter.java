@@ -6,6 +6,7 @@ import com.muxin.gateway.core.http.HttpServerRequest;
 import com.muxin.gateway.core.http.ServerWebExchange;
 import com.muxin.gateway.core.netty.NettyHttpClient;
 import com.muxin.gateway.core.utils.ResponseUtil;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,10 +15,11 @@ import org.asynchttpclient.Request;
 import org.asynchttpclient.RequestBuilder;
 import org.asynchttpclient.Response;
 
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -41,17 +43,23 @@ public class HttpProxyFilter implements GlobalFilter {
         //两种接口类型的转换
         Request request = buildRequest(exchange);
         //代理请求
+        log.info("HTTP request for URL: {}", request.getUrl());
         CompletableFuture<Response> future = nettyHttpClient.executeRequest(request);
-        if (properties.isWhenComplete()) {
-            future.whenComplete((response, throwable) -> {
-                complete(request, response, throwable, exchange);
-            });
-        } else {
-            future.whenCompleteAsync((response, throwable) -> {
-                complete(request, response, throwable, exchange);
-            });
+        try {
+            Response response1 = future.get(3, TimeUnit.SECONDS);
+            complete(request, response1, null, exchange);
+        } catch (Exception e) {
+            log.error("complete", e);
         }
-
+//        if (properties.isWhenComplete()) {
+//            future.whenCompleteAsync((response, throwable) -> {
+//                complete(request, response, throwable, exchange);
+//            });
+//        } else {
+//            future.whenComplete((response, throwable) -> {
+//                complete(request, response, throwable, exchange);
+//            });
+//        }
     }
 
 
@@ -59,37 +67,24 @@ public class HttpProxyFilter implements GlobalFilter {
                           Response response,
                           Throwable throwable,
                           ServerWebExchange exchange) {
-        //释放请求资源
 
         try {
             if (Objects.nonNull(throwable)) {
                 String url = request.getUrl();
                 if (throwable instanceof TimeoutException) {
-                    log.warn("complete time out {}", url);
-                    // todo
-
+                    log.warn("HTTP request timeout for URL: {}", url);
+                    exchange.setOriginalResponse(ResponseUtil.createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                 } else {
-                    log.error("complete error {}", url, throwable);
-                    //todo
-
+                    log.error("HTTP request error for URL: {}", url, throwable);
+                    exchange.setOriginalResponse(ResponseUtil.createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR));
                 }
             } else {
-                exchange.setResponse(ResponseUtil.clientResponseToHttpServerResponse(response));
+                exchange.setOriginalResponse(ResponseUtil.convertToFullHttpResponse(response));
             }
         } catch (Throwable t) {
-            log.error("complete error", t);
-            //todo
-
-        } finally {
-
-
+            log.error("Error during HTTP request completion", t);
+            exchange.setOriginalResponse(ResponseUtil.createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, t.getMessage()));
         }
-    }
-
-
-    @Override
-    public FilterTypeEnum filterType() {
-        return FilterTypeEnum.ENDPOINT;
     }
 
     @Override
@@ -111,11 +106,18 @@ public class HttpProxyFilter implements GlobalFilter {
         requestBuilder.setHeaders(request.requestHeaders());
         QueryStringDecoder stringDecoder = new QueryStringDecoder(exchange.getRequest().uri(), StandardCharsets.UTF_8);
         requestBuilder.setQueryParams(stringDecoder.parameters());
-        if(Objects.nonNull(request.body())){
+        if (Objects.nonNull(request.body())) {
             requestBuilder.setBody(request.body().nioBuffer());
         }
-        URL url = exchange.getRequiredAttribute(GatewayConstants.GATEWAY_REQUEST_URL_ATTR);
-        requestBuilder.setUrl(url.toString());
+
+        // 从LoadBalanceFilter设置的URI属性中获取目标URL
+        log.info("Built exchange: {}", exchange.getRequest().uri());
+        try {
+            URI targetUri = exchange.getRequiredAttribute(GatewayConstants.GATEWAY_REQUEST_URL_ATTR);
+            requestBuilder.setUrl(targetUri.toString());
+        } catch (Exception e) {
+            log.error("getRequiredAttribute request:{}", exchange.getRequest(), e);
+        }
         return requestBuilder.build();
     }
 

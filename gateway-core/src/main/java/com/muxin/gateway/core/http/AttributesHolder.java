@@ -32,4 +32,33 @@ public interface AttributesHolder {
         return (T) getAttributes().getOrDefault(name, defaultValue);
     }
 
+    /**
+     * 设置属性
+     * @param name 属性名
+     * @param value 属性值
+     */
+    default void setAttribute(String name, Object value) {
+        if (value != null) {
+            getAttributes().put(name, value);
+        } else {
+            getAttributes().remove(name);
+        }
+    }
+
+    /**
+     * 检查是否包含属性
+     * @param name 属性名
+     * @return 是否包含
+     */
+    default boolean hasAttribute(String name) {
+        return getAttributes().containsKey(name);
+    }
+
+    /**
+     * 移除属性
+     * @param name 属性名
+     */
+    default void removeAttribute(String name) {
+        getAttributes().remove(name);
+    }
 }

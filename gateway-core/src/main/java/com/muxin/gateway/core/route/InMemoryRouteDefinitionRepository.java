@@ -37,21 +37,27 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
 
     @Override
     public RouteDefinition save(RouteDefinition entity) {
+        if (entity != null && entity.getId() != null) {
+            routes.put(entity.getId(), entity);
+            return entity;
+        }
         return null;
     }
 
     @Override
-    public void deleteById(String s) {
-
+    public void deleteById(String id) {
+        if (id != null) {
+            routes.remove(id);
+        }
     }
 
     @Override
-    public RouteDefinition findById(String s) {
-        return null;
+    public RouteDefinition findById(String id) {
+        return id != null ? routes.get(id) : null;
     }
 
     @Override
     public Iterable<RouteDefinition> findAll() {
-        return null;
+        return routes.values();
     }
 }

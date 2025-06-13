@@ -36,7 +36,7 @@ public class PathUtil {
     }
 
     public static String constantPrefix(String normalizePath) {
-        int slashIndex = 0;
+        int lastSlashIndex = -1;
         boolean foundWildcardChar = false;
         for (int i = 0; i < normalizePath.length(); ++i) {
             char c = normalizePath.charAt(i);
@@ -44,16 +44,16 @@ public class PathUtil {
                 foundWildcardChar = true;
                 break;
             } else if (c == '/') {
-                slashIndex = i;
+                lastSlashIndex = i;
             }
         }
         if (!foundWildcardChar) {
             return normalizePath;
         }
-        if (slashIndex == 0) {
+        if (lastSlashIndex <= 0) {
             return SLASH;
         }
-        return normalizePath.substring(0, slashIndex);
+        return normalizePath.substring(0, lastSlashIndex);
     }
 
     public static String removeLast(String normalizePath) {

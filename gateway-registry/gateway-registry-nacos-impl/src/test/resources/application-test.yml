@@ -1,0 +1,22 @@
+# 测试环境配置
+spring:
+  application:
+    name: nacos-register-center-test
+
+# Nacos注册中心配置（带认证）
+muxin:
+  gateway:
+    register:
+      type: nacos
+      address: 10.100.0.140:10809
+      username: nacos
+      password: nacos
+      group: DEFAULT_GROUP
+
+# 日志配置
+logging:
+  level:
+    com.muxin.gateway: DEBUG
+    com.alibaba.nacos: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" 

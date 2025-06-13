@@ -8,9 +8,9 @@ package com.muxin.gateway.core.filter;
  */
 public enum FilterTypeEnum {
 
-    REQUEST("request"),
-    ENDPOINT("endpoint"),
-    RESPONSE("response");
+    PART("part"),
+
+    GLOBAL("global");
 
     private final String shortName;
 
@@ -22,20 +22,4 @@ public enum FilterTypeEnum {
     public String toString() {
         return shortName;
     }
-
-    public static FilterTypeEnum parse(String str) {
-        str = str.toLowerCase();
-        switch (str) {
-            case "request":
-                return REQUEST;
-            case "response":
-                return RESPONSE;
-            case "endpoint":
-                return ENDPOINT;
-            default:
-                throw new IllegalArgumentException("Unknown filter type! type=" + String.valueOf(str));
-        }
-    }
-
-
 }

@@ -1,18 +1,15 @@
 package com.muxin.gateway.core.filter;
 
-import com.muxin.gateway.core.common.Ordered;
-import com.muxin.gateway.core.http.ServerWebExchange;
-
 /**
  * [Class description]
  *
  * @author Administrator
  * @date 2024/11/22 15:40
  */
-public interface GlobalFilter extends Ordered {
+public interface GlobalFilter extends RouteFilter {
 
-    void filter(ServerWebExchange exchange);
-
-    FilterTypeEnum filterType();
+    default FilterTypeEnum filterType() {
+        return FilterTypeEnum.GLOBAL;
+    }
 
 }

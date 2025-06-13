@@ -4,6 +4,7 @@ import com.muxin.gateway.core.LifeCycle;
 import com.muxin.gateway.core.config.NettyHttpClientProperties;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.extern.slf4j.Slf4j;
 import org.asynchttpclient.*;
 
@@ -21,28 +22,30 @@ public class NettyHttpClient implements LifeCycle {
 
     private final NettyHttpClientProperties properties;
 
-    private final EventLoopGroup eventLoopGroupWorker;
-
     private AsyncHttpClient asyncHttpClient;
 
-    public NettyHttpClient(NettyHttpClientProperties properties, EventLoopGroup eventLoopGroupWorker) {
+    private EventLoopGroup eventLoopGroupWork;
+
+    public NettyHttpClient(NettyHttpClientProperties properties) {
         this.properties = properties;
-        this.eventLoopGroupWorker = eventLoopGroupWorker;
         init();
     }
 
     @Override
     public void init() {
+        this.eventLoopGroupWork = new NioEventLoopGroup(16);
+
         DefaultAsyncHttpClientConfig.Builder builder = new DefaultAsyncHttpClientConfig.Builder()
-                .setEventLoopGroup(eventLoopGroupWorker)
+                .setEventLoopGroup(eventLoopGroupWork)
                 .setConnectTimeout(properties.getHttpConnectTimeout())
                 .setRequestTimeout(properties.getHttpRequestTimeout())
-                .setMaxRedirects(properties.getHttpMaxRequestRetry())
-                .setAllocator(PooledByteBufAllocator.DEFAULT) //池化的byteBuf分配器，提升性能
+                .setMaxRequestRetry(properties.getHttpMaxRequestRetry())
+                .setAllocator(io.netty.buffer.PooledByteBufAllocator.DEFAULT)
                 .setCompressionEnforced(true)
                 .setMaxConnections(properties.getHttpMaxConnections())
                 .setMaxConnectionsPerHost(properties.getHttpConnectionsPerHost())
                 .setPooledConnectionIdleTimeout(properties.getHttpPooledConnectionIdleTimeout());
+
         this.asyncHttpClient = new DefaultAsyncHttpClient(builder.build());
     }
 
@@ -60,6 +63,9 @@ public class NettyHttpClient implements LifeCycle {
                 log.error("NettyHttpClient shutdown error", e);
             }
         }
+        if (eventLoopGroupWork != null) {
+            eventLoopGroupWork.shutdownGracefully();
+        }
     }
 
     public CompletableFuture<Response> executeRequest(Request request) {
@@ -72,6 +78,7 @@ public class NettyHttpClient implements LifeCycle {
         return future.toCompletableFuture();
     }
 
-
-
+    public AsyncHttpClient getAsyncHttpClient() {
+        return asyncHttpClient;
+    }
 }

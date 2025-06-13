@@ -37,7 +37,6 @@ public interface HttpServerRequest extends HttpServerInfos {
      * Specifies a params resolver.
      *
      * @param paramsResolver a params resolver
-     *
      * @return this {@link HttpServerRequest}
      */
     HttpServerRequest paramsResolver(Function<? super String, Map<String, String>> paramsResolver);

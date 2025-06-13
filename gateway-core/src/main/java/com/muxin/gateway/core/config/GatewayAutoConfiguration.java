@@ -1,28 +1,168 @@
 package com.muxin.gateway.core.config;
 
-import com.muxin.gateway.core.filter.MockEndpointFilter;
+import com.muxin.gateway.core.admin.AdminHandler;
+import com.muxin.gateway.core.factory.FilterFactory;
+import com.muxin.gateway.core.factory.PredicateFactory;
+import com.muxin.gateway.core.factory.impl.MethodPredicateFactory;
+import com.muxin.gateway.core.factory.impl.PathPredicateFactory;
+import com.muxin.gateway.core.factory.impl.StripPrefixFilterFactory;
+import com.muxin.gateway.core.filter.GlobalFilter;
+import com.muxin.gateway.core.filter.HttpProxyFilter;
+import com.muxin.gateway.core.filter.LoadBalanceFilter;
+import com.muxin.gateway.core.http.AdminAwareExchangeHandler;
+import com.muxin.gateway.core.http.ChainBasedExchangeHandler;
+import com.muxin.gateway.core.http.ExchangeHandler;
+import com.muxin.gateway.core.loadbalance.DefaultLoadBalanceFactory;
+import com.muxin.gateway.core.loadbalance.GatewayLoadBalance;
+import com.muxin.gateway.core.loadbalance.GatewayLoadBalanceFactory;
+import com.muxin.gateway.core.loadbalance.RoundRobinLoadBalancer;
+import com.muxin.gateway.core.netty.NettyHttpClient;
+import com.muxin.gateway.core.netty.NettyHttpServer;
 import com.muxin.gateway.core.route.InMemoryRouteDefinitionRepository;
+import com.muxin.gateway.core.route.RouteDefinitionRepository;
+import com.muxin.gateway.core.route.RouteDefinitionRouteLocator;
+import com.muxin.gateway.core.route.RouteLocator;
+import com.muxin.gateway.registry.api.RegisterCenter;
+import com.muxin.gateway.registry.nacos.NacosRegisterCenter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.muxin.gateway.core.common.GatewayConstants.ROUND_ROBIN_BALANCER;
+import static com.muxin.gateway.core.common.GatewayConstants.STRIP_PREFIX_FILTER_NAME;
+
 /**
- * [Class description]
- *
- * @author Administrator
- * @date 2025/1/9 15:13
+ * 网关自动配置类
  */
+@Slf4j
 @Configuration
+@EnableConfigurationProperties(GatewayProperties.class)
 public class GatewayAutoConfiguration {
 
     @Bean
-    public InMemoryRouteDefinitionRepository inMemoryRouteDefinitionRepository(GatewayProperties gatewayProperties) {
+    @ConditionalOnMissingBean
+    public RouteDefinitionRepository routeDefinitionRepository(GatewayProperties gatewayProperties) {
         return new InMemoryRouteDefinitionRepository(gatewayProperties.getRoutes());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "predicateFactoryMap")
+    public Map<String, PredicateFactory> predicateFactoryMap() {
+        Map<String, PredicateFactory> map = new HashMap<>();
+        PathPredicateFactory pathFactory = new PathPredicateFactory();
+        map.put(pathFactory.name(), pathFactory);
+        MethodPredicateFactory methodFactory = new MethodPredicateFactory();
+        map.put(methodFactory.name(), methodFactory);
+        log.info("Registered {} predicate factories: {}", map.size(), map.keySet());
+        return map;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "filterFactoryMap")
+    public Map<String, FilterFactory> filterFactoryMap() {
+        Map<String, FilterFactory> map = new HashMap<>();
+        StripPrefixFilterFactory stripPrefixFactory = new StripPrefixFilterFactory();
+        map.put(STRIP_PREFIX_FILTER_NAME, stripPrefixFactory);
+        log.info("Registered {} filter factories: {}", map.size(), map.keySet());
+        return map;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public RouteLocator routeLocator(RouteDefinitionRepository repository,
+                                     Map<String, FilterFactory> filterFactoryMap,
+                                     Map<String, PredicateFactory> predicateFactoryMap) {
+        RouteDefinitionRouteLocator locator = new RouteDefinitionRouteLocator(
+                repository, filterFactoryMap, predicateFactoryMap);
+        locator.init();
+        log.info("Creating RouteLocator with {} filter factories and {} predicate factories", filterFactoryMap.size(), predicateFactoryMap.size());
+        return locator;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "muxin.gateway.register.type", havingValue = "nacos", matchIfMissing = true)
+    public RegisterCenter nacosRegisterCenter(GatewayProperties gatewayProperties) {
+        GatewayProperties.RegisterProperties registerConfig = gatewayProperties.getRegister();
+        log.info("Creating Nacos RegisterCenter with address: {}, group: {}",
+                registerConfig.getAddress(), registerConfig.getGroup());
+        return new NacosRegisterCenter(
+                registerConfig.getAddress(),
+                registerConfig.getGroup(),
+                registerConfig.getNamespace(),
+                registerConfig.getUsername(),
+                registerConfig.getPassword()
+        );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public GatewayLoadBalanceFactory loadBalanceFactory(RegisterCenter registerCenter) {
+        Map<String, GatewayLoadBalance> balancers = new HashMap<>();
+        balancers.put(ROUND_ROBIN_BALANCER, new RoundRobinLoadBalancer(registerCenter));
+
+        DefaultLoadBalanceFactory factory = new DefaultLoadBalanceFactory();
+        factory.setGatewayLoadBalanceMap(balancers);
+        return factory;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public NettyHttpClient nettyHttpClient(GatewayProperties properties) {
+        return new NettyHttpClient(properties.getNetty().getClient());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public LoadBalanceFilter loadBalanceFilter(GatewayLoadBalanceFactory loadBalanceFactory) {
+        LoadBalanceFilter filter = new LoadBalanceFilter();
+        filter.setGatewayLoadBalanceFactory(loadBalanceFactory);
+        filter.setLoadBalanceType(ROUND_ROBIN_BALANCER);
+        return filter;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public HttpProxyFilter httpProxyFilter(NettyHttpClient nettyHttpClient, GatewayProperties properties) {
+        return new HttpProxyFilter(nettyHttpClient, properties.getNetty().getClient());
     }
 
 
     @Bean
-    public MockEndpointFilter mockEndpointFilter() {
-        return new MockEndpointFilter();
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "muxin.gateway.admin.enabled", havingValue = "true", matchIfMissing = true)
+    public AdminHandler adminHandler(GatewayProperties properties, RouteDefinitionRepository routeRepository) {
+        return new AdminHandler(properties.getAdmin(), routeRepository);
     }
 
+    @Bean
+    @ConditionalOnMissingBean
+    public ExchangeHandler exchangeHandler(RouteLocator routeLocator,
+                                           List<GlobalFilter> globalFilters,
+                                           @Autowired(required = false) AdminHandler adminHandler) {
+        log.info("Creating ExchangeHandler with {} global filters", globalFilters != null ? globalFilters.size() : 0);
+        if (globalFilters != null) {
+            log.debug("Registered global filters: {}", globalFilters.stream().map(f -> f.getClass().getSimpleName()).toArray());
+        }
+        ChainBasedExchangeHandler chainHandler = new ChainBasedExchangeHandler(routeLocator, globalFilters);
+        if (adminHandler != null) {
+            return new AdminAwareExchangeHandler(chainHandler, adminHandler);
+        }
+        return chainHandler;
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public NettyHttpServer nettyHttpServer(ExchangeHandler exchangeHandler,
+                                           GatewayProperties properties) {
+        return new NettyHttpServer(exchangeHandler, properties.getNetty().getServer());
+    }
 }

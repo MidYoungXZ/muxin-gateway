@@ -1,71 +1,59 @@
 package com.muxin.gateway.core.utils;
 
-import com.muxin.gateway.core.common.ResponseStatusEnum;
-import com.muxin.gateway.core.http.DefaultHttpServerResponse;
-import com.muxin.gateway.core.http.HttpServerResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
+import lombok.extern.slf4j.Slf4j;
 import org.asynchttpclient.Response;
 
-import java.util.Map;
 
+@Slf4j
 public class ResponseUtil {
 
 
-    /**
-     * 根据枚举和消息体生成 FullHttpResponse
-     *
-     * @param statusEnum ResponseStatusEnum 枚举值
-     * @param body       响应体内容
-     * @return FullHttpResponse 对象
-     */
-    public static HttpServerResponse createResponse(ResponseStatusEnum statusEnum, String body) {
-        return createResponse(statusEnum, body, null);
+    public static FullHttpResponse error() {
+        return error(HttpResponseStatus.INTERNAL_SERVER_ERROR.reasonPhrase());
     }
 
-    /**
-     * 根据枚举、消息体和自定义头生成 FullHttpResponse
-     *
-     * @param statusEnum ResponseStatusEnum 枚举值
-     * @param body       响应体内容
-     * @param headers    自定义 HTTP 头
-     * @return FullHttpResponse 对象
-     */
-    public static HttpServerResponse createResponse(ResponseStatusEnum statusEnum, String body, Map<String, String> headers) {
-        // 如果 body 为 null，设置为空字符串
-        String responseBody = body == null ? "" : body;
-        if (headers != null) {
-            // 设置默认的 Content-Type 和 Content-Length
-            headers.put(HttpHeaderNames.CONTENT_TYPE.toString(), HttpHeaderValues.APPLICATION_JSON.toString());
+    public static FullHttpResponse error(String message) {
+        return createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR, message);
+    }
+
+    public static FullHttpResponse createResponse(HttpResponseStatus statusEnum, String body) {
+        return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, statusEnum, Unpooled.wrappedBuffer(body.getBytes()));
+    }
+
+    public static FullHttpResponse createResponse(HttpResponseStatus statusEnum) {
+        return createResponse(statusEnum, statusEnum.reasonPhrase());
+    }
+
+    public static FullHttpResponse convertToFullHttpResponse(Response response) {
+        if (response == null) {
+            return null;
         }
-        // 创建响应对象
-        return new DefaultHttpServerResponse(statusEnum.httpStatus(), headers, responseBody);
+        try {
+            // 创建HTTP版本
+            HttpVersion httpVersion = HttpVersion.HTTP_1_1;
+            // 创建响应状态
+            HttpResponseStatus status = HttpResponseStatus.valueOf(response.getStatusCode());
+            // 获取响应体
+            ByteBuf content = Unpooled.EMPTY_BUFFER;
+            if (response.hasResponseBody()) {
+                content = Unpooled.wrappedBuffer(response.getResponseBodyAsByteBuffer());
+            }
+            // 创建FullHttpResponsew
+            FullHttpResponse fullResponse = new DefaultFullHttpResponse(httpVersion, status, content);
+            // 复制响应头
+            fullResponse.headers().add(response.getHeaders());
+            // 设置Content-Length（如果原响应没有设置的话）
+            if (!fullResponse.headers().contains(HttpHeaderNames.CONTENT_LENGTH)) {
+                fullResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+            }
+            return fullResponse;
+        } catch (Exception e) {
+            log.error("Failed to convert Response to FullHttpResponse: " + e.getMessage(), e);
+            return createResponse(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        }
     }
-
-    /**
-     * 快速生成仅包含状态码的 FullHttpResponse
-     *
-     * @param statusEnum ResponseStatusEnum 枚举值
-     * @return FullHttpResponse 对象
-     */
-    public static HttpServerResponse createEmptyResponse(ResponseStatusEnum statusEnum) {
-        return createResponse(statusEnum, null);
-    }
-
-
-    /**
-     * 快速生成仅包含状态码的 FullHttpResponse
-     *
-     * @param clientResponse Response 代理客户端的响应对象
-     * @return FullHttpResponse 对象
-     */
-    public static HttpServerResponse clientResponseToHttpServerResponse(Response clientResponse) {
-        HttpHeaders responseHeaders = clientResponse.getHeaders();
-        HttpResponseStatus responseStatus = HttpResponseStatus.valueOf(clientResponse.getStatusCode());
-        ByteBuf byteBuf = Unpooled.wrappedBuffer(clientResponse.getResponseBodyAsBytes());
-        return new DefaultHttpServerResponse(HttpVersion.HTTP_1_1, responseStatus, responseHeaders, byteBuf, System.currentTimeMillis());
-    }
-
 
 }

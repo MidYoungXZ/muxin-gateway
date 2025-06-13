@@ -2,9 +2,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.muxin</groupId>
+        <groupId>com.muxin.gateway</groupId>
         <artifactId>muxin-gateway</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>gateway-core</artifactId>
@@ -18,20 +18,28 @@
     </properties>
 
     <dependencies>
+        <!-- 新的注册中心模块依赖 -->
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-client</artifactId>
-            <version>1.4.4</version>
+            <groupId>com.muxin.gateway</groupId>
+            <artifactId>gateway-registry-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.muxin.gateway</groupId>
+            <artifactId>gateway-registry-nacos-impl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.asynchttpclient</groupId>
             <artifactId>async-http-client</artifactId>
             <version>${async-http-client.version}</version>
         </dependency>
+        
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.9.3</version>
         </dependency>
 
         <!-- Spring Boot Starter -->
@@ -46,6 +54,7 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.115.Final</version>
         </dependency>
+        
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
