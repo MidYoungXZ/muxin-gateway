@@ -1,11 +1,13 @@
 package com.muxin.gateway.core.config;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Netty HTTP服务器配置属性
  */
 @Data
+@ConfigurationProperties(prefix = "muxin.gateway.netty.server")
 public class NettyHttpServerProperties {
 
     private int port = 8080;

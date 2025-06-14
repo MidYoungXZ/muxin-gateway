@@ -1,11 +1,13 @@
 package com.muxin.gateway.core.config;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Netty HTTP客户端配置属性
  */
 @Data
+@ConfigurationProperties(prefix = "muxin.gateway.netty.client")
 public class NettyHttpClientProperties {
     //	连接超时时间
     private int httpConnectTimeout = 10000;
