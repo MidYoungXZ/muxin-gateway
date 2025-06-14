@@ -76,7 +76,7 @@ java -jar gateway/target/gateway-1.0-SNAPSHOT.jar
 打开浏览器访问: `http://localhost:8080/admin`
 
 默认账号: `admin` / `admin123`
-
+![img.png](img.png)
 ## 📋 配置说明
 
 ### 基础配置
