@@ -1,6 +1,36 @@
 spring:
   application:
     name: muxin-gateway
+  # 数据源配置
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:gateway
+    username: sa
+    password: 
+  # H2数据库控制台配置
+  h2:
+    console:
+      enabled: true
+  # 数据库初始化配置
+  sql:
+    init:
+      mode: embedded
+
+# Spring MVC Web服务器配置
+server:
+  port: 8081
+
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  global-config:
+    db-config:
+      id-type: INPUT  # 使用输入的ID
+      table-prefix: gateway_
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
 
 # 网关配置
 muxin:
@@ -10,6 +40,8 @@ muxin:
         port: 8080
         event-loop-group-boss-num: 1
         event-loop-group-worker-num: 4
+        event-loop-group-boss-thread-pool-name: gateway-boss
+        event-loop-group-worker-thread-pool-name: gateway-worker
         max-content-length: 67108864  # 64MB
         backlog: 1024
         re-use-address: true
@@ -313,13 +345,13 @@ muxin:
           tags: "cache,redis"
       
       # bsfit-sde服务路由（从Nacos注册中心发现）
-      - id: test-server-service
-        uri: lb://test-server
+      - id: bsfit-sde-service
+        uri: lb://bsfit-sde
         order: 13
         predicates:
           - name: Path
             args:
-              pattern: "/api/test-server/**"
+              pattern: "/api/bsfit-sde/**"
           - name: Method
             args:
               methods: "GET,POST,PUT,DELETE"
@@ -339,8 +371,14 @@ muxin:
 # 日志配置
 logging:
   level:
-    #    com.muxin.gateway: INFO
-    #    com.muxin.gateway.core.route.RouteDefinitionRouteLocator: debug
+    com.muxin.gateway: info
     root: INFO
   pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n' 
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+
+# Swagger配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html 

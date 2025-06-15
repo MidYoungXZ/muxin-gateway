@@ -57,7 +57,7 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
     }
 
     @Override
-    public Iterable<RouteDefinition> findAll() {
+    public Collection<RouteDefinition> findAll() {
         return routes.values();
     }
 }

@@ -39,11 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
         "muxin.gateway.register.gateway.metadata.env=test",
         "muxin.gateway.register.gateway.metadata.version=1.0",
         
-        "muxin.gateway.admin.enabled=true",
-        "muxin.gateway.admin.path-prefix=/admin",
-        "muxin.gateway.admin.username=admin",
-        "muxin.gateway.admin.password=admin123",
-        "muxin.gateway.admin.session-timeout=30"
+
 })
 class GatewayPropertiesTest {
 
@@ -99,17 +95,7 @@ class GatewayPropertiesTest {
         assertEquals("1.0", gateway.getMetadata().get("version"));
     }
 
-    @Test
-    void testAdminConfiguration() {
-        assertNotNull(gatewayProperties.getAdmin());
-        
-        AdminProperties admin = gatewayProperties.getAdmin();
-        assertTrue(admin.isEnabled());
-        assertEquals("/admin", admin.getPathPrefix());
-        assertEquals("admin", admin.getUsername());
-        assertEquals("admin123", admin.getPassword());
-        assertEquals(30, admin.getSessionTimeout());
-    }
+
 
     @Test
     void testDefaultValues() {
@@ -134,8 +120,5 @@ class GatewayPropertiesTest {
         assertNotNull(empty.getRegister().getGateway());
         assertTrue(empty.getRegister().getGateway().isEnabled());
         assertEquals(1.0, empty.getRegister().getGateway().getWeight());
-        
-        assertNotNull(empty.getAdmin());
-        assertTrue(empty.getAdmin().isEnabled());
     }
 } 

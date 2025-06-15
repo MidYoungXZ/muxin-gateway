@@ -1,5 +1,7 @@
 package com.muxin.gateway.core.common;
 
+import java.util.Collection;
+
 /**
  * [Class description]
  *
@@ -14,6 +16,6 @@ public interface CrudRepository <T,ID>{
 
     T findById(ID id);
 
-    Iterable<T> findAll();
+    Collection<T> findAll();
     
 }

@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.route;
 
+import com.muxin.gateway.core.cache.RouteCache;
 import com.muxin.gateway.core.factory.FilterFactory;
 import com.muxin.gateway.core.factory.PredicateFactory;
 import com.muxin.gateway.core.filter.PartFilter;
@@ -9,21 +10,29 @@ import com.muxin.gateway.core.route.path.PathMatcher;
 import com.muxin.gateway.core.route.path.PathUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.muxin.gateway.core.common.GatewayConstants.*;
 
 /**
  * 路由定位器实现，同时作为RouteDefinition和RouteLocator的桥梁
  */
+@Component
 @Slf4j
 public class RouteDefinitionRouteLocator implements RouteLocator {
     /**
      * 路由定义定位器
      */
     private final RouteDefinitionRepository routeDefinitionRepository;
+
+    /**
+     * 路由缓存
+     */
+    private final RouteCache routeCache;
 
     /**
      * 所有路由规则
@@ -54,10 +63,12 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
      */
     private final Map<String,PredicateFactory> predicateFactoryMap;
 
-    public RouteDefinitionRouteLocator(RouteDefinitionRepository routeDefinitionRepository, Map<String, FilterFactory> filterFactoryMap, Map<String, PredicateFactory> predicateFactoryMap) {
+    public RouteDefinitionRouteLocator(RouteDefinitionRepository routeDefinitionRepository, Map<String, FilterFactory> filterFactoryMap, Map<String, PredicateFactory> predicateFactoryMap, RouteCache routeCache) {
         this.routeDefinitionRepository = routeDefinitionRepository;
         this.filterFactoryMap = filterFactoryMap;
         this.predicateFactoryMap = predicateFactoryMap;
+        this.routeCache = routeCache;
+        init();
     }
 
     /**
@@ -71,6 +82,13 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         if (path == null || path.isEmpty()) {
             return Collections.emptyList();
         }
+        
+        // 先从缓存中查找
+        RouteRule cachedRule = routeCache.get(path);
+        if (cachedRule != null) {
+            return Collections.singletonList(cachedRule);
+        }
+        
         //先解决常量路径
         String normalizePath = PathUtil.normalize(path);
         log.debug("Looking for routes for path: {} (normalized: {})", path, normalizePath);
@@ -91,6 +109,10 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
         } else if (groups.size() == 1) {
             List<RouteRule> routes = groups.get(0).getRoutes();
             log.debug("Found {} routes for path: {}", routes.size(), path);
+            // 缓存第一个匹配的规则
+            if (!routes.isEmpty()) {
+                routeCache.put(path, routes.get(0));
+            }
             return routes;
         }
 
@@ -100,6 +122,12 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
             mergedRoutes.addAll(rg.getRoutes());
         }
         log.debug("Found {} merged routes for path: {}", mergedRoutes.size(), path);
+        
+        // 缓存第一个匹配的规则
+        if (!mergedRoutes.isEmpty()) {
+            routeCache.put(path, mergedRoutes.get(0));
+        }
+        
         return mergedRoutes;
     }
 
@@ -258,6 +286,21 @@ public class RouteDefinitionRouteLocator implements RouteLocator {
     @Override
     public void init() {
         // 从routeDefinitionLocator加载路由定义并初始化
+        loadRoutes();
+    }
+
+    /**
+     * 加载路由配置
+     */
+    private void loadRoutes() {
+        // 清空现有路由
+        allRoutes.clear();
+        constantPathRoutes.clear();
+        patternPathRoutes.clear();
+        
+        // 清空路由缓存
+        routeCache.invalidateAll();
+
         if (routeDefinitionRepository != null) {
             Iterable<RouteDefinition> definitions = routeDefinitionRepository.findAll();
             if (definitions != null) {

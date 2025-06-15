@@ -1,6 +1,5 @@
 package com.muxin.gateway.core.config;
 
-import com.muxin.gateway.core.admin.AdminHandler;
 import com.muxin.gateway.core.factory.FilterFactory;
 import com.muxin.gateway.core.factory.PredicateFactory;
 import com.muxin.gateway.core.factory.impl.MethodPredicateFactory;
@@ -9,7 +8,6 @@ import com.muxin.gateway.core.factory.impl.StripPrefixFilterFactory;
 import com.muxin.gateway.core.filter.GlobalFilter;
 import com.muxin.gateway.core.filter.HttpProxyFilter;
 import com.muxin.gateway.core.filter.LoadBalanceFilter;
-import com.muxin.gateway.core.http.AdminAwareExchangeHandler;
 import com.muxin.gateway.core.http.ChainBasedExchangeHandler;
 import com.muxin.gateway.core.http.ExchangeHandler;
 import com.muxin.gateway.core.loadbalance.DefaultLoadBalanceFactory;
@@ -20,6 +18,7 @@ import com.muxin.gateway.core.netty.NettyHttpClient;
 import com.muxin.gateway.core.netty.NettyHttpServer;
 import com.muxin.gateway.core.route.InMemoryRouteDefinitionRepository;
 import com.muxin.gateway.core.route.RouteDefinitionRepository;
+import com.muxin.gateway.core.cache.RouteCache;
 import com.muxin.gateway.core.route.RouteDefinitionRouteLocator;
 import com.muxin.gateway.core.route.RouteLocator;
 import com.muxin.gateway.registry.api.RegisterCenter;
@@ -31,6 +30,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +46,8 @@ import static com.muxin.gateway.core.common.GatewayConstants.STRIP_PREFIX_FILTER
 @Slf4j
 @Configuration
 @EnableConfigurationProperties(GatewayProperties.class)
+@EnableScheduling
+@Import(DatabaseConfig.class)
 public class GatewayAutoConfiguration {
 
     @Bean
@@ -79,9 +82,10 @@ public class GatewayAutoConfiguration {
     @ConditionalOnMissingBean
     public RouteLocator routeLocator(RouteDefinitionRepository repository,
                                      Map<String, FilterFactory> filterFactoryMap,
-                                     Map<String, PredicateFactory> predicateFactoryMap) {
+                                     Map<String, PredicateFactory> predicateFactoryMap,
+                                     RouteCache routeCache) {
         RouteDefinitionRouteLocator locator = new RouteDefinitionRouteLocator(
-                repository, filterFactoryMap, predicateFactoryMap);
+                repository, filterFactoryMap, predicateFactoryMap, routeCache);
         locator.init();
         log.info("Creating RouteLocator with {} filter factories and {} predicate factories", filterFactoryMap.size(), predicateFactoryMap.size());
         return locator;
@@ -138,25 +142,13 @@ public class GatewayAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnProperty(name = "muxin.gateway.admin.enabled", havingValue = "true", matchIfMissing = true)
-    public AdminHandler adminHandler(GatewayProperties properties, RouteDefinitionRepository routeRepository) {
-        return new AdminHandler(properties.getAdmin(), routeRepository);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
     public ExchangeHandler exchangeHandler(RouteLocator routeLocator,
-                                           List<GlobalFilter> globalFilters,
-                                           @Autowired(required = false) AdminHandler adminHandler) {
+                                           List<GlobalFilter> globalFilters) {
         log.info("Creating ExchangeHandler with {} global filters", globalFilters != null ? globalFilters.size() : 0);
         if (globalFilters != null) {
             log.debug("Registered global filters: {}", globalFilters.stream().map(f -> f.getClass().getSimpleName()).toArray());
         }
-        ChainBasedExchangeHandler chainHandler = new ChainBasedExchangeHandler(routeLocator, globalFilters);
-        if (adminHandler != null) {
-            return new AdminAwareExchangeHandler(chainHandler, adminHandler);
-        }
-        return chainHandler;
+        return new ChainBasedExchangeHandler(routeLocator, globalFilters);
     }
 
     @Bean

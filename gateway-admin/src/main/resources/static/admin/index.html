@@ -15,78 +15,93 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f7f8fa;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #262626;
         }
 
         .login-container {
             background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            padding: 48px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 400px;
+            max-width: 420px;
+            border: 1px solid #e8e8e8;
         }
 
         .logo {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 32px;
+        }
+
+        .logo .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
         }
 
         .logo h1 {
-            color: #333;
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
+            color: #262626;
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 8px;
         }
 
         .logo p {
-            color: #666;
-            font-size: 0.9rem;
+            color: #8c8c8c;
+            font-size: 14px;
         }
 
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 24px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.5rem;
-            color: #333;
+            margin-bottom: 8px;
+            color: #262626;
             font-weight: 500;
+            font-size: 14px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e1e5e9;
-            border-radius: 5px;
-            font-size: 1rem;
+            padding: 12px 16px;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            font-size: 14px;
             transition: border-color 0.3s;
+            background-color: white;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #1890ff;
+        }
+
+        .form-group input::placeholder {
+            color: #8c8c8c;
         }
 
         .login-btn {
             width: 100%;
-            padding: 0.75rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px 16px;
+            background-color: #1890ff;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 1rem;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: background-color 0.3s;
         }
 
         .login-btn:hover {
-            transform: translateY(-2px);
+            background-color: #40a9ff;
         }
 
         .login-btn:disabled {
@@ -123,19 +138,19 @@
         }
 
         .message.loading {
-            color: #667eea;
+            color: #1890ff;
             background: transparent;
             font-weight: 500;
         }
 
         .message.success {
-            background: #2ecc71;
+            background: #52c41a;
             color: white;
             font-weight: 500;
         }
 
         .message.error {
-            background: #e74c3c;
+            background: #ff4d4f;
             color: white;
             font-weight: 500;
         }
@@ -144,6 +159,7 @@
 <body>
     <div class="login-container">
         <div class="logo">
+            <div class="icon">🚀</div>
             <h1>Muxin Gateway</h1>
             <p>管理控制台</p>
         </div>
@@ -151,12 +167,12 @@
         <form id="loginForm">
             <div class="form-group">
                 <label for="username">用户名</label>
-                <input type="text" id="username" name="username" value="admin" required>
+                <input type="text" id="username" name="username" placeholder="请输入用户名" value="admin" required>
             </div>
 
             <div class="form-group">
                 <label for="password">密码</label>
-                <input type="password" id="password" name="password" value="admin123" required>
+                <input type="password" id="password" name="password" placeholder="请输入密码" value="admin123" required>
             </div>
 
             <button type="submit" class="login-btn" id="loginBtn">登录</button>
@@ -165,6 +181,10 @@
                 <div class="message" id="message"></div>
             </div>
         </form>
+        
+        <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e8e8e8; color: #8c8c8c; font-size: 12px;">
+            Muxin Gateway v1.0 - 高性能API网关
+        </div>
     </div>
 
     <script>
@@ -184,7 +204,7 @@
             .then(data => {
                 if (data.success && data.authenticated) {
                     // 已登录，直接跳转到管理页面
-                    window.location.href = '/admin/dashboard.html';
+                    window.location.href = '/admin/routes.html';
                 }
             })
             .catch(error => {
@@ -224,9 +244,12 @@
             fetch('/admin/api/login', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/json',
                 },
-                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                }),
                 credentials: 'include'
             })
             .then(response => response.json())
@@ -237,7 +260,7 @@
                     showMessage('登录成功！', 'success');
                     // 延迟跳转
                     setTimeout(() => {
-                        window.location.href = '/admin/dashboard.html';
+                        window.location.href = '/admin/routes.html';
                     }, 800);
                 } else {
                     showMessage(data.message || '用户名或密码错误', 'error');

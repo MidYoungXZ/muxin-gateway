@@ -16,25 +16,35 @@ public class NettyHttpServerProperties {
 
     private String eventLoopGroupBossThreadPoolName = "netty-boss-nio";
 
-    private int eventLoopGroupWorkerNum = Runtime.getRuntime().availableProcessors();
+    private int eventLoopGroupWorkerNum = Runtime.getRuntime().availableProcessors() * 2;
 
     private String eventLoopGroupWorkerThreadPoolName = "netty-worker-nio";
 
-    private int maxContentLength = 64 * 1024 * 1024;
+    private int maxContentLength = 1024 * 1024;
 
-    private int backlog = 1024;
+    private int backlog = 8192;
 
     private boolean reUseAddress = true;
 
     private boolean tcpNoDelay = true;
 
-    private boolean keepAlive = true;
+    private boolean keepAlive = false;
 
-    private int sndBuf = 65535;
+    private int sndBuf = 1048576;
 
-    private int rcvBuf = 65535;
+    private int rcvBuf = 1048576;
 
     private int soLinger;
 
     private int soTimeout;
+
+    private int writeBufferHighWaterMark = 65536;
+
+    private int writeBufferLowWaterMark = 32768;
+
+    private int writeSpinCount = 16;
+
+    private boolean compressionEnabled = true;
+
+    private int compressionLevel = 6;
 }

@@ -23,6 +23,11 @@
             <artifactId>gateway-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.muxin.gateway</groupId>
+            <artifactId>gateway-admin</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

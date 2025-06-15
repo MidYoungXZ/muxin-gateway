@@ -33,10 +33,7 @@ public class GatewayProperties {
      */
     private NettyConfig netty = new NettyConfig();
 
-    /**
-     * 管理界面配置
-     */
-    private AdminProperties admin = new AdminProperties();
+
 
     /**
      * 注册中心配置

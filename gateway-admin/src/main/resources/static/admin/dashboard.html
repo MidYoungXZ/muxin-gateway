@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仪表盘 - Muxin Gateway</title>
+    <link rel="icon" href="/favicon.ico">
+    <script src="js/vue.global.js"></script>
+    <script src="js/axios.min.js"></script>
+    <style>
+        :root {
+            --color-background: #f7f8fa;
+            --color-card: #ffffff;
+            --color-border: #e8e8e8;
+            --color-text-primary: #262626;
+            --color-text-secondary: #8c8c8c;
+            --color-primary: #1890ff;
+            --color-success: #52c41a;
+            --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+        }
+
+        .app-container { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 250px;
+            background: #2c3e50;
+            color: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            background: #34495e;
+            border-bottom: 1px solid #3a5370;
+        }
+
+        .sidebar-header h1 { font-size: 1.2rem; margin-bottom: 0.25rem; }
+        .sidebar-header p { font-size: 0.8rem; opacity: 0.8; }
+
+        .sidebar-menu { flex: 1; padding: 1rem 0; }
+
+        .menu-item { margin-bottom: 0.5rem; }
+
+        .menu-item-header {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 500;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+
+        .menu-item-header:hover { background: #34495e; }
+        .menu-item-header.active { background: #3498db; }
+        .menu-item-header.disabled { 
+            color: #7f8c8d; 
+            cursor: not-allowed; 
+        }
+        .menu-item-header.disabled:hover { 
+            background: transparent; 
+            color: #7f8c8d; 
+        }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+
+        .main-header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .breadcrumb { color: #666; font-size: 0.9rem; }
+
+        .user-info { position: relative; }
+
+        .user-dropdown {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .user-dropdown:hover { background: #f8f9fa; }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            min-width: 120px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.show { display: block; }
+
+        .dropdown-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            color: #ff4d4f;
+        }
+
+        .dropdown-item:hover { background: #f8f9fa; }
+
+        .content-area { flex: 1; padding: 2rem; }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .toolbar h1 { font-size: 24px; font-weight: 500; }
+
+        .btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-border);
+            background-color: var(--color-card);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .stat-card {
+            background: var(--color-card);
+            border-radius: 8px;
+            box-shadow: var(--shadow-card);
+            padding: 24px;
+            border: 1px solid var(--color-border);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            background: #e6f7ff;
+            color: var(--color-primary);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .stat-change {
+            font-size: 12px;
+            color: var(--color-success);
+        }
+
+        /* 欢迎区域样式 */
+        .welcome-section {
+            margin-bottom: 32px;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 32px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .welcome-content {
+            flex: 1;
+        }
+
+        .welcome-text h1 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .welcome-text p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .welcome-features {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .welcome-illustration {
+            flex: 0 0 300px;
+            margin-left: 32px;
+        }
+
+        .network-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .node {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+        }
+
+        .node.active {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .node small {
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        .arrow {
+            font-size: 20px;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* 统计区域样式 */
+        .stats-section h2,
+        .quick-actions-section h2 {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--color-text-primary);
+        }
+
+        .stats-section {
+            margin-bottom: 32px;
+        }
+
+        .stat-icon.success {
+            background: #f6ffed;
+            color: var(--color-success);
+        }
+
+        .stat-icon.warning {
+            background: #fffbe6;
+            color: var(--color-warning);
+        }
+
+        /* 快速操作样式 */
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .action-card {
+            background: var(--color-card);
+            border-radius: 8px;
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: var(--color-primary);
+        }
+
+        .action-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .action-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+
+        .action-desc {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        /* 自定义模态框样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            min-width: 400px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .modal-close:hover {
+            background: #f5f5f5;
+        }
+
+        .modal-body {
+            padding: 16px 20px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 0 20px 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="app-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+                    <h1>🚀 Muxin Gateway</h1>
+            <p>管理控制台</p>
+        </div>
+        
+                <div class="sidebar-menu">
+            <div class="menu-item">
+                        <a href="/admin/dashboard.html" class="menu-item-header active">
+                            • 仪表板
+                        </a>
+                </div>
+                    
+                    <div class="menu-item">
+                        <a href="/admin/routes.html" class="menu-item-header">
+                            • 路由管理
+                        </a>
+                </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-header disabled">
+                            • 监控统计
+            </div>
+                    </div>
+                    
+                    <div class="menu-item">
+                        <div class="menu-item-header disabled">
+                            • 系统设置
+                        </div>
+                    </div>
+                </div>
+    </div>
+
+    <div class="main-content">
+                <div class="main-header">
+                    <div class="breadcrumb">系统管理 > 仪表板</div>
+                    
+            <div class="user-info">
+                        <div class="user-dropdown" @click="toggleUserDropdown">
+                            管理员 ▼
+                </div>
+                        <div class="dropdown-menu" :class="{ show: showUserDropdown }">
+                            <button class="dropdown-item" @click="logout">退出登录</button>
+                </div>
+            </div>
+                </div>
+
+                <div class="content-area">
+                    <!-- 欢迎区域 -->
+                    <div class="welcome-section">
+                        <div class="welcome-card">
+                            <div class="welcome-content">
+                                <div class="welcome-text">
+                    <h1>欢迎使用 Muxin Gateway</h1>
+                                    <p>高性能API网关管理控制台</p>
+                                    <div class="welcome-features">
+                                        <span class="feature-tag">🚀 高并发</span>
+                                        <span class="feature-tag">⚡ 低延迟</span>
+                                        <span class="feature-tag">🛡️ 高可用</span>
+                                        <span class="feature-tag">📊 易监控</span>
+                                    </div>
+                                </div>
+                                <div class="welcome-actions">
+                                    <a href="/admin/routes.html" class="btn btn-primary btn-large">开始管理路由</a>
+                                    <button class="btn btn-outline" @click="refreshData">刷新数据</button>
+                                </div>
+                            </div>
+                            <div class="welcome-illustration">
+                                <div class="network-diagram">
+                                    <div class="node client">👥<br><small>客户端</small></div>
+                                    <div class="arrow">→</div>
+                                    <div class="node gateway active">🚀<br><small>网关</small></div>
+                                    <div class="arrow">→</div>
+                                    <div class="node service">🔧<br><small>服务</small></div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+
+                    <!-- 统计卡片 -->
+                    <div class="stats-section">
+                        <h2>系统概览</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-title">总路由数</div>
+                                    <div class="stat-icon">🛣️</div>
+                    </div>
+                                <div class="stat-value">{{ stats.totalRoutes }}</div>
+                                <div class="stat-change">活跃配置</div>
+                    </div>
+
+                    <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-title">启用路由</div>
+                                    <div class="stat-icon success">✅</div>
+                    </div>
+                                <div class="stat-value">{{ stats.enabledRoutes }}</div>
+                                <div class="stat-change">服务运行中</div>
+                </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-title">禁用路由</div>
+                                    <div class="stat-icon warning">⚠️</div>
+                        </div>
+                                <div class="stat-value">{{ stats.disabledRoutes }}</div>
+                                <div class="stat-change">待激活</div>
+                        </div>
+
+                            <div class="stat-card">
+                                <div class="stat-header">
+                                    <div class="stat-title">系统状态</div>
+                                    <div class="stat-icon success">💚</div>
+                        </div>
+                                <div class="stat-value">{{ systemStatus }}</div>
+                                <div class="stat-change">{{ uptime }}</div>
+                    </div>
+                </div>
+            </div>
+
+                    <!-- 快速操作 -->
+                    <div class="quick-actions-section">
+                        <h2>快速操作</h2>
+                        <div class="quick-actions-grid">
+                            <div class="action-card" @click="goToRoutes">
+                                <div class="action-icon">🛠️</div>
+                                <div class="action-title">路由管理</div>
+                                <div class="action-desc">添加、编辑、删除路由配置</div>
+                        </div>
+                            <div class="action-card" @click="showComingSoon">
+                                <div class="action-icon">📊</div>
+                                <div class="action-title">监控统计</div>
+                                <div class="action-desc">查看流量统计和性能指标</div>
+                    </div>
+                            <div class="action-card" @click="showComingSoon">
+                                <div class="action-icon">⚙️</div>
+                                <div class="action-title">系统设置</div>
+                                <div class="action-desc">配置网关参数和安全选项</div>
+                    </div>
+                            <div class="action-card" @click="showComingSoon">
+                                <div class="action-icon">📋</div>
+                                <div class="action-title">操作日志</div>
+                                <div class="action-desc">查看系统操作和变更记录</div>
+                    </div>
+                </div>
+            </div>
+    </div>
+
+                <!-- 自定义模态框 -->
+                <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+                    <div class="modal-box">
+                        <div class="modal-header">
+                            <h3 class="modal-title">{{ modal.title }}</h3>
+                            <button class="modal-close" @click="closeModal">✕</button>
+                        </div>
+                        <div class="modal-body">
+                            <p>{{ modal.message }}</p>
+                        </div>
+            <div class="modal-footer">
+                            <button class="btn" @click="closeModal">取消</button>
+                            <button class="btn btn-primary" @click="confirmModal" v-if="modal.showConfirm">确认</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    showUserDropdown: false,
+                    stats: {
+                        totalRoutes: 0,
+                        enabledRoutes: 0,
+                        disabledRoutes: 0
+                    },
+                    systemStatus: '正常',
+                    uptime: '运行中',
+                    showModal: false,
+                    modal: {
+                        title: '',
+                        message: '',
+                        showConfirm: false,
+                        callback: null
+                    }
+                };
+            },
+            mounted() {
+                this.checkAuth();
+                this.loadStats();
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.user-info')) {
+                        this.showUserDropdown = false;
+                    }
+                });
+            },
+            methods: {
+                async checkAuth() {
+                    try {
+                        const response = await axios.get('/admin/api/session/check');
+                        if (!response.data.success) {
+                            window.location.href = '/admin/index.html';
+                        }
+                    } catch (error) {
+                        window.location.href = '/admin/index.html';
+                    }
+                },
+
+                toggleUserDropdown() {
+                    this.showUserDropdown = !this.showUserDropdown;
+                },
+
+                async logout() {
+                    this.showModal = true;
+                    this.modal = {
+                        title: '退出登录',
+                        message: '确定要退出登录吗？',
+                        showConfirm: true,
+                        callback: async () => {
+                            try {
+                                await axios.post('/admin/api/logout');
+                            } catch (error) {
+                                console.error('Logout error:', error);
+                            } finally {
+                    window.location.href = '/admin/index.html';
+                }
+                        }
+                    };
+                },
+
+                async loadStats() {
+                    try {
+                        const response = await axios.get('/admin/api/routes');
+                        const routes = response.data.data || [];
+                        this.stats.totalRoutes = routes.length;
+                        this.stats.enabledRoutes = routes.filter(r => r.enabled).length;
+                        this.stats.disabledRoutes = routes.filter(r => !r.enabled).length;
+                    } catch (error) {
+                        console.error('加载统计数据失败:', error);
+                        this.showErrorModal('加载统计数据失败，请稍后重试');
+                    }
+                },
+
+                refreshData() {
+                    this.loadStats();
+                    this.showSuccessModal('数据已刷新');
+                },
+
+                goToRoutes() {
+                    window.location.href = '/admin/routes.html';
+                },
+
+                showComingSoon() {
+                    this.showInfoModal('敬请期待', '该功能正在开发中，敬请期待！');
+                },
+
+                // 模态框相关方法
+                showInfoModal(title, message) {
+                    this.showModal = true;
+                    this.modal = {
+                        title: title,
+                        message: message,
+                        showConfirm: false,
+                        callback: null
+                    };
+                },
+
+                showSuccessModal(message) {
+                    this.showInfoModal('成功', message);
+                },
+
+                showErrorModal(message) {
+                    this.showInfoModal('错误', message);
+                },
+
+                closeModal() {
+                    this.showModal = false;
+                    this.modal.callback = null;
+                },
+
+                confirmModal() {
+                    if (this.modal.callback) {
+                        this.modal.callback();
+                    }
+                    this.closeModal();
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html> 
