@@ -134,9 +134,9 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '权限管理' }
           },
           {
-            path: '/system/logs',
+            path: '/system/operation-logs',
             name: 'OperationLog',
-            component: () => import('@/views/system/logs/index.vue'),
+            component: () => import('@/views/system/operation-logs/index.vue'),
             meta: { title: '操作日志' }
           },
           {
@@ -154,6 +154,37 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+})
+
+// 路由守卫
+router.beforeEach(async (to, from, next) => {
+  const { useUserStore } = await import('@/stores/user')
+  const userStore = useUserStore()
+  
+  // 初始化用户信息
+  if (!userStore.isLoggedIn) {
+    await userStore.init()
+  }
+  
+  // 白名单路由（无需登录）
+  const whiteList = ['/login']
+  
+  if (userStore.isLoggedIn) {
+    if (to.path === '/login') {
+      // 已登录用户访问登录页，重定向到首页
+      next({ path: '/' })
+    } else {
+      next()
+    }
+  } else {
+    if (whiteList.includes(to.path)) {
+      // 在白名单中，直接进入
+      next()
+    } else {
+      // 未登录且不在白名单中，重定向到登录页
+      next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+    }
+  }
 })
 
 export default router 

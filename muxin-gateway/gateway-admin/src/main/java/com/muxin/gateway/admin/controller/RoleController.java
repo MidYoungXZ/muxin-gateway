@@ -134,4 +134,22 @@ public class RoleController {
     public Result<List<Long>> getRoleMenuIds(@PathVariable Long id) {
         return Result.success(roleService.getRoleMenuIds(id));
     }
+    
+    /**
+     * 检查角色编码是否可用
+     */
+    @GetMapping("/check-code")
+    public Result<Boolean> checkRoleCode(@RequestParam String roleCode, 
+                                        @RequestParam(required = false) Long excludeId) {
+        return Result.success(roleService.checkRoleCodeAvailable(roleCode, excludeId));
+    }
+    
+    /**
+     * 获取角色统计信息
+     */
+    @GetMapping("/stats")
+    @SaCheckPermission("system:role:list")
+    public Result<Object> getRoleStats() {
+        return Result.success(roleService.getRoleStats());
+    }
 } 

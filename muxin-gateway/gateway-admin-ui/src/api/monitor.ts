@@ -1,10 +1,13 @@
-import { apiGet, debugApiUrl } from '@/utils/api'
+import request from '@/utils/request'
 
 export const monitorApi = {
   // 获取实时指标（对应后端的监控概览）
   getRealtimeMetrics() {
     console.log('🚀 [MONITOR] 获取实时指标: /api/metrics/overview')
-    return apiGet<any>('/api/metrics/overview')
+    return request({
+      url: '/api/metrics/overview',
+      method: 'get'
+    })
   },
 
   // 获取历史指标（对应后端的趋势分析）
@@ -15,14 +18,21 @@ export const monitorApi = {
     routeId?: string
   }) {
     console.log('🚀 [MONITOR] 获取历史指标: /api/metrics/trends')
-    return apiGet<any[]>('/api/metrics/trends', params)
+    return request({
+      url: '/api/metrics/trends',
+      method: 'get',
+      params
+    })
   },
 
   // 获取系统健康状态（暂时使用测试接口）
   getHealthStatus() {
     console.log('🚀 [MONITOR] 获取健康状态: /api/test/check-user/admin')
     // 临时使用已存在的测试接口
-    return apiGet<any>('/api/test/check-user/admin')
+    return request({
+      url: '/api/test/check-user/admin',
+      method: 'get'
+    })
   },
 
   // 获取日志列表 - 后端暂未实现

@@ -330,4 +330,47 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         
         return vo;
     }
+    
+    @Override
+    public Boolean checkRoleCodeAvailable(String roleCode, Long excludeId) {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_ROLE)
+                .where(SYS_ROLE.ROLE_CODE.eq(roleCode))
+                .and(SYS_ROLE.DELETED.eq(0));
+        
+        if (excludeId != null) {
+            wrapper.and(SYS_ROLE.ID.ne(excludeId));
+        }
+        
+        return count(wrapper) == 0;
+    }
+    
+    @Override
+    public Object getRoleStats() {
+        // 总角色数
+        QueryWrapper totalWrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_ROLE)
+                .where(SYS_ROLE.DELETED.eq(0));
+        long totalRoles = count(totalWrapper);
+        
+        // 启用角色数
+        QueryWrapper enabledWrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_ROLE)
+                .where(SYS_ROLE.DELETED.eq(0))
+                .and(SYS_ROLE.STATUS.eq(1));
+        long enabledRoles = count(enabledWrapper);
+        
+        // 禁用角色数
+        long disabledRoles = totalRoles - enabledRoles;
+        
+        // 返回统计信息
+        return new Object() {
+            public final long total = totalRoles;
+            public final long enabled = enabledRoles;
+            public final long disabled = disabledRoles;
+        };
+    }
 } 

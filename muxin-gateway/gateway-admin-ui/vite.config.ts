@@ -40,6 +40,16 @@ export default defineConfig({
           // 不自动导入样式，统一在main.ts中导入
           importStyle: false,
         }),
+        // Element Plus 图标自动导入
+        (componentName) => {
+          // 处理 Element Plus 图标组件
+          if (componentName.match(/^(Arrow|ArrowDown|Document|Edit|Delete|Plus|Minus|Close|Check|Search|Setting|User|Lock|House|Monitor|Connection|Warning|Timer|TrendCharts|Bottom|FullScreen|CircleCheck|CircleClose|Bell|Operation|UserFilled|Cpu|More|SwitchButton|Expand|Fold|Aim)$/)) {
+            return {
+              name: componentName,
+              from: '@element-plus/icons-vue'
+            }
+          }
+        }
       ],
       dirs: ['src/components'],
       dts: 'src/components.d.ts',
@@ -65,6 +75,25 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     open: false,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log(`🔀 代理请求: ${req.method} ${req.url} -> ${proxyReq.getHeader('host')}${proxyReq.path}`)
+          })
+          proxy.on('proxyRes', (proxyRes, req) => {
+            console.log(`🔙 代理响应: ${req.url} -> ${proxyRes.statusCode}`)
+          })
+          proxy.on('error', (err, req) => {
+            console.error(`❌ 代理错误: ${req.url}`, err.message)
+          })
+        }
+      }
+    }
   },
   
   build: {

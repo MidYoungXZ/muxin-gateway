@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut, apiDelete, debugApiUrl } from '@/utils/api'
+import request from '@/utils/request'
 import type { PageParams, PageResult } from '@/types/common'
 
 export const predicatesApi = {
@@ -7,14 +7,21 @@ export const predicatesApi = {
     routeId?: number
     type?: string
   }) {
-    debugApiUrl('predicates') // 调试用，生产环境可删除
-    return apiGet<PageResult<any>>('predicates', params)
+    console.log('🚀 [PREDICATES] 获取断言列表: /api/predicates', params)
+    return request({
+      url: '/api/predicates',
+      method: 'get',
+      params
+    })
   },
 
   // 获取断言详情
   getPredicate(id: number) {
-    debugApiUrl(`predicates/${id}`) // 调试用，生产环境可删除
-    return apiGet(`predicates/${id}`)
+    console.log('🚀 [PREDICATES] 获取断言详情: /api/predicates/' + id)
+    return request({
+      url: `/api/predicates/${id}`,
+      method: 'get'
+    })
   },
 
   // 创建断言
@@ -25,20 +32,31 @@ export const predicatesApi = {
     config: any
     enabled?: boolean
   }) {
-    debugApiUrl('predicates') // 调试用，生产环境可删除
-    return apiPost('predicates', data)
+    console.log('🚀 [PREDICATES] 创建断言: /api/predicates', data)
+    return request({
+      url: '/api/predicates',
+      method: 'post',
+      data
+    })
   },
 
   // 更新断言
   updatePredicate(id: number, data: any) {
-    debugApiUrl(`predicates/${id}`) // 调试用，生产环境可删除
-    return apiPut(`predicates/${id}`, data)
+    console.log('🚀 [PREDICATES] 更新断言: /api/predicates/' + id, data)
+    return request({
+      url: `/api/predicates/${id}`,
+      method: 'put',
+      data
+    })
   },
 
   // 删除断言
   deletePredicate(id: number) {
-    debugApiUrl(`predicates/${id}`) // 调试用，生产环境可删除
-    return apiDelete(`predicates/${id}`)
+    console.log('🚀 [PREDICATES] 删除断言: /api/predicates/' + id)
+    return request({
+      url: `/api/predicates/${id}`,
+      method: 'delete'
+    })
   },
 
   // 切换断言状态 - 后端未实现
@@ -56,7 +74,10 @@ export const predicatesApi = {
   // 获取所有可用的断言类型
   getPredicateTypes() {
     console.log('🚀 [PREDICATES] 获取断言类型: /api/predicates/types')
-    return apiGet<any[]>('predicates/types')
+    return request({
+      url: '/api/predicates/types',
+      method: 'get'
+    })
   },
 
   // 获取路由的断言列表 - 后端未实现

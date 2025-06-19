@@ -79,4 +79,14 @@ public interface RoleService {
      * 根据用户ID获取角色ID列表
      */
     List<Long> getRoleIdsByUserId(Long userId);
+    
+    /**
+     * 检查角色编码是否可用
+     */
+    Boolean checkRoleCodeAvailable(String roleCode, Long excludeId);
+    
+    /**
+     * 获取角色统计信息
+     */
+    Object getRoleStats();
 } 

@@ -220,25 +220,46 @@ export interface Permission {
 // 操作日志类型
 export interface OperationLog {
   id: number
-  userId: number
-  username: string
+  module: string
   operation: string
   method: string
+  requestUrl: string
   params: string
-  time: number
-  ip: string
-  location: string
-  status: 'success' | 'failure'
+  result?: string
+  error?: string
+  duration: number
+  operator: string
+  operatorId: number
+  operatorIp: string
+  operatorLocation?: string
+  browser?: string
+  os?: string
+  status: number // 0-失败，1-成功
+  statusText: string
+  operateTime: string
+  // 兼容老字段
+  userId?: number
+  username?: string
+  time?: number
+  ip?: string
+  location?: string
   errorMsg?: string
-  createTime: string
+  createTime?: string
 }
 
 export interface OperationLogQueryParams extends PageParams {
-  username?: string
+  pageNum?: number
+  pageSize?: number
+  module?: string
   operation?: string
-  status?: 'success' | 'failure'
+  operator?: string
+  status?: number
+  method?: string
+  keyword?: string
   startTime?: string
   endTime?: string
+  // 兼容老字段
+  username?: string
 }
 
 // 系统配置类型

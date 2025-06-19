@@ -83,4 +83,30 @@ public interface DeptService extends IService<SysDept> {
      * @param targetParentId 目标父部门ID
      */
     void moveDept(Long id, Long targetParentId);
+    
+    /**
+     * 检查部门名称是否可用
+     *
+     * @param deptName 部门名称
+     * @param parentId 父部门ID
+     * @param excludeId 排除的部门ID
+     * @return 是否可用
+     */
+    boolean checkDeptNameAvailable(String deptName, Long parentId, Long excludeId);
+    
+    /**
+     * 检查部门编码是否可用
+     *
+     * @param deptCode 部门编码
+     * @param excludeId 排除的部门ID
+     * @return 是否可用
+     */
+    boolean checkDeptCodeAvailable(String deptCode, Long excludeId);
+    
+    /**
+     * 获取部门统计信息
+     *
+     * @return 统计信息
+     */
+    Object getDeptStats();
 } 

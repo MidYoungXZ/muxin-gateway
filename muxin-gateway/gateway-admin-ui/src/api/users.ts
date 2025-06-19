@@ -1,94 +1,182 @@
-import axios from 'axios'
-import type { ApiResponse } from '@/types/auth'
-import type { 
-  User, 
-  UserCreateRequest, 
-  UserUpdateRequest,
-  UserQueryParams,
-  PageResult,
-  PasswordUpdateRequest
-} from '@/types/system'
+import request from '@/utils/request'
+import type { PageParams, PageResult } from '@/types/common'
 
-const API_BASE = '/api/users'
+// 用户数据类型
+export interface User {
+  id: number
+  username: string
+  nickname: string
+  email: string
+  mobile: string
+  avatar?: string
+  deptId?: number
+  deptName?: string
+  status: 0 | 1
+  roles?: any[]
+  createTime: string
+  updateTime?: string
+  createBy?: string
+  updateBy?: string
+}
+
+// 用户查询参数
+export interface UserQueryParams extends PageParams {
+  username?: string
+  nickname?: string
+  email?: string
+  mobile?: string
+  status?: 0 | 1
+  deptId?: number
+}
+
+// 用户创建参数
+export interface UserCreateRequest {
+  username: string
+  password: string
+  nickname: string
+  email?: string
+  mobile?: string
+  status?: 0 | 1
+  deptId?: number
+}
+
+// 用户更新参数
+export interface UserUpdateRequest {
+  nickname: string
+  email?: string
+  mobile?: string
+  status?: 0 | 1
+  deptId?: number
+}
 
 export const userApi = {
   // 获取用户列表
   list: (params?: UserQueryParams) => {
-    return axios.get<ApiResponse<PageResult<User>>>(`${API_BASE}`, { params })
+    return request<PageResult<User>>({
+      url: '/api/users',
+      method: 'get',
+      params
+    })
   },
 
   // 获取用户详情
   getDetail: (id: number) => {
-    return axios.get<ApiResponse<User>>(`${API_BASE}/${id}`)
+    return request<User>({
+      url: `/api/users/${id}`,
+      method: 'get'
+    })
   },
 
   // 获取当前用户信息
   getCurrentUser: () => {
-    return axios.get<ApiResponse<User>>(`${API_BASE}/current`)
+    return request<User>({
+      url: '/api/users/current',
+      method: 'get'
+    })
   },
 
   // 创建用户
   create: (data: UserCreateRequest) => {
-    return axios.post<ApiResponse<{ id: number }>>(`${API_BASE}`, data)
+    return request<number>({
+      url: '/api/users',
+      method: 'post',
+      data
+    })
   },
 
   // 更新用户
   update: (id: number, data: UserUpdateRequest) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}`, data)
+    return request<void>({
+      url: `/api/users/${id}`,
+      method: 'put',
+      data
+    })
   },
 
   // 删除用户
   delete: (id: number) => {
-    return axios.delete<ApiResponse<void>>(`${API_BASE}/${id}`)
+    return request({
+      url: `/api/users/${id}`,
+      method: 'delete'
+    })
   },
 
   // 批量删除用户
   batchDelete: (ids: number[]) => {
-    return axios.delete<ApiResponse<void>>(`${API_BASE}/batch`, { data: ids })
+    return request({
+      url: '/api/users/batch',
+      method: 'delete',
+      data: ids
+    })
   },
 
   // 启用用户
   enable: (id: number) => {
-    return axios.post<ApiResponse<void>>(`${API_BASE}/${id}/enable`)
+    return request({
+      url: `/api/users/${id}/enable`,
+      method: 'post'
+    })
   },
 
   // 禁用用户
   disable: (id: number) => {
-    return axios.post<ApiResponse<void>>(`${API_BASE}/${id}/disable`)
+    return request({
+      url: `/api/users/${id}/disable`,
+      method: 'post'
+    })
   },
 
   // 重置密码
   resetPassword: (id: number, newPassword: string) => {
-    return axios.post<ApiResponse<void>>(`${API_BASE}/${id}/reset-password`, null, {
+    return request({
+      url: `/api/users/${id}/reset-password`,
+      method: 'post',
       params: { newPassword }
     })
   },
 
   // 修改密码
-  updatePassword: (id: number, data: PasswordUpdateRequest) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}/password`, data)
+  updatePassword: (id: number, data: any) => {
+    return request({
+      url: `/api/users/${id}/password`,
+      method: 'put',
+      data
+    })
   },
 
   // 分配角色
   assignRoles: (id: number, roleIds: number[]) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}/roles`, roleIds)
+    return request({
+      url: `/api/users/${id}/roles`,
+      method: 'put',
+      data: roleIds
+    })
   },
 
   // 获取用户的角色ID列表
   getUserRoleIds: (id: number) => {
-    return axios.get<ApiResponse<number[]>>(`${API_BASE}/${id}/role-ids`)
+    return request({
+      url: `/api/users/${id}/role-ids`,
+      method: 'get'
+    })
   },
 
   // 批量操作用户状态
   batchUpdateStatus: (ids: number[], status: 0 | 1) => {
-    return axios.patch<ApiResponse<void>>(`${API_BASE}/batch/status`, { ids, status })
+    return request({
+      url: '/api/users/batch/status',
+      method: 'patch',
+      data: { ids, status }
+    })
   },
 
   // 导出用户数据
-  export: (params?: UserQueryParams) => {
-    return axios.get<ApiResponse<string>>(`${API_BASE}/export`, { 
+  export: (params?: any) => {
+    return request({
+      url: '/api/users/export',
+      method: 'get',
       params,
-      responseType: 'blob' as any
+      responseType: 'blob'
     })
   },
 
@@ -96,11 +184,10 @@ export const userApi = {
   import: (file: File) => {
     const formData = new FormData()
     formData.append('file', file)
-    return axios.post<ApiResponse<{
-      successCount: number
-      failedCount: number
-      errors?: string[]
-    }>>(`${API_BASE}/import`, formData, {
+    return request({
+      url: '/api/users/import',
+      method: 'post',
+      data: formData,
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -109,43 +196,27 @@ export const userApi = {
 
   // 获取用户统计信息
   getStats: () => {
-    return axios.get<ApiResponse<{
-      totalUsers: number
-      activeUsers: number
-      inactiveUsers: number
-      todayNewUsers: number
-      usersByDept: Array<{
-        deptName: string
-        userCount: number
-      }>
-      usersByRole: Array<{
-        roleName: string
-        userCount: number
-      }>
-    }>>(`${API_BASE}/stats`)
+    return request({
+      url: '/api/users/stats',
+      method: 'get'
+    })
   },
 
   // 检查用户名是否可用
   checkUsername: (username: string, excludeId?: number) => {
-    return axios.get<ApiResponse<boolean>>(`${API_BASE}/check-username`, {
+    return request({
+      url: '/api/users/check-username',
+      method: 'get',
       params: { username, excludeId }
     })
   },
 
   // 获取用户操作日志
-  getUserLogs: (userId: number, params?: {
-    page?: number
-    size?: number
-    startTime?: string
-    endTime?: string
-  }) => {
-    return axios.get<ApiResponse<PageResult<{
-      id: number
-      operation: string
-      details: string
-      ip: string
-      userAgent: string
-      createTime: string
-    }>>>(`${API_BASE}/${userId}/logs`, { params })
+  getUserLogs: (userId: number, params?: any) => {
+    return request({
+      url: `/api/users/${userId}/logs`,
+      method: 'get',
+      params
+    })
   }
 } 

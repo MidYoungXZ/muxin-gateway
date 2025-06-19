@@ -1,81 +1,156 @@
-import axios from 'axios'
-import type { ApiResponse } from '@/types/auth'
-import type { 
-  Department, 
-  DepartmentTree,
-  DepartmentCreateRequest, 
-  DepartmentUpdateRequest
-} from '@/types/system'
+import request from '@/utils/request'
 
 const API_BASE = '/api/dept'
+
+// 部门类型定义
+export interface Department {
+  id: number
+  parentId: number
+  deptName: string
+  orderNum: number
+  leader?: string
+  phone?: string
+  email?: string
+  status: number
+  createTime: string
+  updateTime: string
+  children?: Department[]
+}
+
+export interface DepartmentTree {
+  id: number
+  deptName: string
+  parentId: number
+  children?: DepartmentTree[]
+}
+
+export interface DepartmentCreateRequest {
+  parentId: number
+  deptName: string
+  orderNum: number
+  leader?: string
+  phone?: string
+  email?: string
+  status: number
+}
+
+export interface DepartmentUpdateRequest {
+  deptName: string
+  orderNum: number
+  leader?: string
+  phone?: string
+  email?: string
+  status: number
+}
 
 export const departmentApi = {
   // 获取部门树
   getTree: () => {
-    return axios.get<ApiResponse<DepartmentTree[]>>(`${API_BASE}/tree`)
+    return request({
+      url: '/api/dept/tree',
+      method: 'get'
+    })
+  },
+
+  // 获取部门列表
+  list: (params?: { deptName?: string; status?: number }) => {
+    return request({
+      url: '/api/dept',
+      method: 'get',
+      params
+    })
   },
 
   // 获取部门详情
   getDetail: (id: number) => {
-    return axios.get<ApiResponse<Department>>(`${API_BASE}/${id}`)
-  },
-
-  // 获取子部门列表
-  getChildren: (parentId: number) => {
-    return axios.get<ApiResponse<Department[]>>(`${API_BASE}/children/${parentId}`)
+    return request({
+      url: `/api/dept/${id}`,
+      method: 'get'
+    })
   },
 
   // 创建部门
   create: (data: DepartmentCreateRequest) => {
-    return axios.post<ApiResponse<{ id: number }>>(`${API_BASE}`, data)
+    return request({
+      url: '/api/dept',
+      method: 'post',
+      data
+    })
   },
 
   // 更新部门
   update: (id: number, data: DepartmentUpdateRequest) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}`, data)
+    return request({
+      url: `/api/dept/${id}`,
+      method: 'put',
+      data
+    })
   },
 
   // 删除部门
   delete: (id: number) => {
-    return axios.delete<ApiResponse<void>>(`${API_BASE}/${id}`)
+    return request({
+      url: `/api/dept/${id}`,
+      method: 'delete'
+    })
   },
 
-  // 启用部门
-  enable: (id: number) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}/enable`)
-  },
-
-  // 禁用部门
-  disable: (id: number) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}/disable`)
+  // 获取子部门
+  getChildren: (id: number) => {
+    return request({
+      url: `/api/dept/children/${id}`,
+      method: 'get'
+    })
   },
 
   // 移动部门
   move: (id: number, targetParentId: number) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}/move/${targetParentId}`)
+    return request({
+      url: `/api/dept/${id}/move/${targetParentId}`,
+      method: 'put'
+    })
+  },
+
+  // 检查部门名称是否可用
+  checkDeptName: (deptName: string, parentId: number, excludeId?: number) => {
+    return request({
+      url: '/api/dept/check-name',
+      method: 'get',
+      params: { deptName, parentId, excludeId }
+    })
+  },
+
+  // 启用部门
+  enable: (id: number) => {
+    return request({
+      url: `/api/dept/${id}/enable`,
+      method: 'put'
+    })
+  },
+
+  // 禁用部门
+  disable: (id: number) => {
+    return request({
+      url: `/api/dept/${id}/disable`,
+      method: 'put'
+    })
   },
 
   // 检查部门编码是否可用
   checkDeptCode: (deptCode: string, excludeId?: number) => {
-    return axios.get<ApiResponse<boolean>>(`${API_BASE}/check-code`, {
+    return request({
+      url: '/api/dept/check-code',
+      method: 'get',
       params: { deptCode, excludeId }
     })
   },
 
   // 获取部门统计信息
   getStats: () => {
-    return axios.get<ApiResponse<{
-      totalDepts: number
-      activeDepts: number
-      inactiveDepts: number
-      deptUserCounts: Array<{
-        deptId: number
-        deptName: string
-        userCount: number
-        level: number
-      }>
-      maxLevel: number
-    }>>(`${API_BASE}/stats`)
+    return request({
+      url: '/api/dept/stats',
+      method: 'get'
+    })
   },
 
   // 获取部门下的用户列表
@@ -85,23 +160,20 @@ export const departmentApi = {
     username?: string
     includeSubDepts?: boolean // 是否包含子部门
   }) => {
-    return axios.get<ApiResponse<{
-      total: number
-      list: Array<{
-        id: number
-        username: string
-        nickname: string
-        email: string
-        mobile: string
-        status: number
-        roles: string[]
-      }>
-    }>>(`${API_BASE}/${deptId}/users`, { params })
+    return request({
+      url: `/api/dept/${deptId}/users`,
+      method: 'get',
+      params
+    })
   },
 
   // 批量移动用户到部门
   moveUsers: (targetDeptId: number, userIds: number[]) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${targetDeptId}/move-users`, userIds)
+    return request({
+      url: `/api/dept/${targetDeptId}/move-users`,
+      method: 'put',
+      data: userIds
+    })
   },
 
   // 复制部门结构
@@ -112,12 +184,18 @@ export const departmentApi = {
     copyUsers?: boolean // 是否复制用户
     copySubDepts?: boolean // 是否复制子部门
   }) => {
-    return axios.post<ApiResponse<{ id: number }>>(`${API_BASE}/${id}/copy`, data)
+    return request({
+      url: `/api/system/departments/${id}/copy`,
+      method: 'post',
+      data
+    })
   },
 
   // 导出部门结构
   export: (rootDeptId?: number) => {
-    return axios.get<ApiResponse<string>>(`${API_BASE}/export`, {
+    return request({
+      url: '/api/system/departments/export',
+      method: 'get',
       params: { rootDeptId },
       responseType: 'blob' as any
     })
@@ -132,11 +210,10 @@ export const departmentApi = {
     if (options?.mergeMode) {
       formData.append('mergeMode', options.mergeMode)
     }
-    return axios.post<ApiResponse<{
-      successCount: number
-      failedCount: number
-      errors?: string[]
-    }>>(`${API_BASE}/import`, formData, {
+    return request({
+      url: '/api/system/departments/import',
+      method: 'post',
+      data: formData,
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -145,10 +222,10 @@ export const departmentApi = {
 
   // 获取部门路径
   getDeptPath: (id: number) => {
-    return axios.get<ApiResponse<Array<{
-      id: number
-      deptName: string
-    }>>>(`${API_BASE}/${id}/path`)
+    return request({
+      url: `/api/system/departments/${id}/path`,
+      method: 'get'
+    })
   },
 
   // 调整部门排序
@@ -156,12 +233,18 @@ export const departmentApi = {
     id: number
     orderNum: number
   }>) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/sort`, items)
+    return request({
+      url: '/api/system/departments/sort',
+      method: 'put',
+      data: items
+    })
   },
 
   // 获取可选的父部门列表（排除自己和子部门）
   getSelectableParents: (excludeId?: number) => {
-    return axios.get<ApiResponse<DepartmentTree[]>>(`${API_BASE}/selectable-parents`, {
+    return request({
+      url: '/api/system/departments/selectable-parents',
+      method: 'get',
       params: { excludeId }
     })
   }

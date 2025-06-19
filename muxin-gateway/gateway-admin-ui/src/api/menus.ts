@@ -1,5 +1,4 @@
-import axios from 'axios'
-import type { ApiResponse } from '@/types/auth'
+import request from '@/utils/request'
 import type { 
   Menu, 
   MenuTree,
@@ -14,51 +13,93 @@ const API_BASE = '/api/menus'
 export const menuApi = {
   // 获取当前用户菜单树
   getUserMenuTree: () => {
-    return axios.get<ApiResponse<MenuTree[]>>(`${API_BASE}/user-tree`)
+    return request({
+      url: `${API_BASE}/user-tree`,
+      method: 'get'
+    })
   },
 
-  // 获取所有菜单树
+  // 获取所有菜单树（用于权限分配）
+  getMenuTree: () => {
+    return request({
+      url: `${API_BASE}/tree`,
+      method: 'get'
+    })
+  },
+
+  // 获取所有菜单树（旧方法名兼容）
   getAllMenuTree: () => {
-    return axios.get<ApiResponse<MenuTree[]>>(`${API_BASE}/tree`)
+    return request({
+      url: `${API_BASE}/tree`,
+      method: 'get'
+    })
   },
 
   // 分页查询菜单列表
   list: (params?: MenuQueryParams) => {
-    return axios.get<ApiResponse<PageResult<Menu>>>(`${API_BASE}`, { params })
+    return request({
+      url: API_BASE,
+      method: 'get',
+      params
+    })
   },
 
   // 获取菜单详情
   getDetail: (id: number) => {
-    return axios.get<ApiResponse<Menu>>(`${API_BASE}/${id}`)
+    return request({
+      url: `${API_BASE}/${id}`,
+      method: 'get'
+    })
   },
 
   // 创建菜单
   create: (data: MenuCreateRequest) => {
-    return axios.post<ApiResponse<{ id: number }>>(`${API_BASE}`, data)
+    return request({
+      url: API_BASE,
+      method: 'post',
+      data
+    })
   },
 
   // 更新菜单
   update: (id: number, data: MenuUpdateRequest) => {
-    return axios.put<ApiResponse<void>>(`${API_BASE}/${id}`, data)
+    return request({
+      url: `${API_BASE}/${id}`,
+      method: 'put',
+      data
+    })
   },
 
   // 删除菜单
   delete: (id: number) => {
-    return axios.delete<ApiResponse<void>>(`${API_BASE}/${id}`)
+    return request({
+      url: `${API_BASE}/${id}`,
+      method: 'delete'
+    })
   },
 
   // 批量删除菜单
   batchDelete: (ids: number[]) => {
-    return axios.delete<ApiResponse<void>>(`${API_BASE}/batch`, { data: ids })
+    return request({
+      url: `${API_BASE}/batch`,
+      method: 'delete',
+      data: ids
+    })
   },
 
   // 启用菜单
   enable: (id: number) => {
-    return axios.post<ApiResponse<void>>(`${API_BASE}/${id}/enable`)
+    return request({
+      url: `${API_BASE}/${id}/enable`,
+      method: 'post'
+    })
   },
 
   // 禁用菜单
   disable: (id: number) => {
-    return axios.post<ApiResponse<void>>(`${API_BASE}/${id}/disable`)
+    return request({
+      url: `${API_BASE}/${id}/disable`,
+      method: 'post'
+    })
   }
 } 

@@ -44,6 +44,9 @@ import {
 // 全局样式
 import './styles/index.scss'
 
+// 自定义指令
+import permission from './directives/permission'
+
 const app = createApp(App)
 const pinia = createPinia()
 
@@ -92,6 +95,9 @@ app.use(ElementPlus, {
 
 app.use(pinia)
 app.use(router)
+
+// 注册自定义指令
+app.directive('permission', permission)
 
 // 强制应用亮色主题
 document.documentElement.className = 'light'

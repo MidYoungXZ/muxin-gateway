@@ -6,17 +6,9 @@
         <p>管理系统用户，包括用户信息维护、角色分配等</p>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="handleAdd" v-permission="'system:user:create'">
+        <el-button type="primary" @click="handleAdd">
           <el-icon><Plus /></el-icon>
           新增用户
-        </el-button>
-        <el-button @click="handleImport" v-permission="'system:user:import'">
-          <el-icon><Upload /></el-icon>
-          导入
-        </el-button>
-        <el-button @click="handleExport" v-permission="'system:user:export'">
-          <el-icon><Download /></el-icon>
-          导出
         </el-button>
       </div>
     </div>
@@ -40,16 +32,6 @@
             @keyup.enter="handleSearch"
           />
         </el-form-item>
-        <el-form-item label="部门">
-          <el-tree-select
-            v-model="searchForm.deptId"
-            :data="deptTree"
-            :props="{ label: 'deptName', value: 'id' }"
-            placeholder="请选择部门"
-            clearable
-            check-strictly
-          />
-        </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
             <el-option label="启用" :value="1" />
@@ -62,7 +44,7 @@
             搜索
           </el-button>
           <el-button @click="handleReset">
-            <el-icon><Refresh /></el-icon>
+            <el-icon><RefreshRight /></el-icon>
             重置
           </el-button>
         </el-form-item>
@@ -77,26 +59,9 @@
             type="danger" 
             :disabled="!selectedUsers.length"
             @click="handleBatchDelete"
-            v-permission="'system:user:delete'"
           >
             <el-icon><Delete /></el-icon>
             批量删除
-          </el-button>
-          <el-button 
-            :disabled="!selectedUsers.length"
-            @click="handleBatchStatus(1)"
-            v-permission="'system:user:update'"
-          >
-            <el-icon><Check /></el-icon>
-            批量启用
-          </el-button>
-          <el-button 
-            :disabled="!selectedUsers.length"
-            @click="handleBatchStatus(0)"
-            v-permission="'system:user:update'"
-          >
-            <el-icon><Close /></el-icon>
-            批量禁用
           </el-button>
         </div>
         <div class="table-info">
@@ -117,18 +82,6 @@
         <el-table-column prop="email" label="邮箱" min-width="160" />
         <el-table-column prop="mobile" label="手机号" min-width="130" />
         <el-table-column prop="deptName" label="部门" min-width="120" />
-        <el-table-column label="角色" min-width="150">
-          <template #default="{ row }">
-            <el-tag 
-              v-for="role in row.roles" 
-              :key="role.id"
-              size="small"
-              style="margin-right: 4px"
-            >
-              {{ role.roleName }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
             <el-switch
@@ -136,7 +89,6 @@
               :active-value="1"
               :inactive-value="0"
               @change="handleStatusChange(row)"
-              v-permission="'system:user:update'"
             />
           </template>
         </el-table-column>
@@ -148,7 +100,6 @@
               size="small" 
               link
               @click="handleEdit(row)"
-              v-permission="'system:user:update'"
             >
               编辑
             </el-button>
@@ -156,17 +107,7 @@
               type="primary" 
               size="small" 
               link
-              @click="handleAssignRoles(row)"
-              v-permission="'system:user:update'"
-            >
-              分配角色
-            </el-button>
-            <el-button 
-              type="primary" 
-              size="small" 
-              link
               @click="handleResetPassword(row)"
-              v-permission="'system:user:update'"
             >
               重置密码
             </el-button>
@@ -179,7 +120,6 @@
                   type="danger" 
                   size="small" 
                   link
-                  v-permission="'system:user:delete'"
                 >
                   删除
                 </el-button>
@@ -203,68 +143,137 @@
     </el-card>
 
     <!-- 用户表单对话框 -->
-    <user-form-dialog
+    <el-dialog
       v-model="formDialogVisible"
-      :user-data="currentUser"
-      :dept-tree="deptTree"
-      :role-list="roleList"
-      @success="handleFormSuccess"
-    />
+      :title="isEdit ? '编辑用户' : '新增用户'"
+      width="600px"
+      :close-on-click-modal="false"
+      @close="handleCloseDialog"
+    >
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="80px"
+      >
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="用户名" prop="username">
+              <el-input
+                v-model="form.username"
+                placeholder="请输入用户名"
+                :disabled="isEdit"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="昵称" prop="nickname">
+              <el-input
+                v-model="form.nickname"
+                placeholder="请输入昵称"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-    <!-- 角色分配对话框 -->
-    <role-assign-dialog
-      v-model="roleDialogVisible"
-      :user-data="currentUser"
-      :role-list="roleList"
-      @success="handleRoleAssignSuccess"
-    />
+        <el-row :gutter="20" v-if="!isEdit">
+          <el-col :span="12">
+            <el-form-item label="密码" prop="password">
+              <el-input
+                v-model="form.password"
+                type="password"
+                placeholder="请输入密码"
+                show-password
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="确认密码" prop="confirmPassword">
+              <el-input
+                v-model="form.confirmPassword"
+                type="password"
+                placeholder="请再次输入密码"
+                show-password
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="邮箱" prop="email">
+              <el-input
+                v-model="form.email"
+                placeholder="请输入邮箱"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="手机号" prop="mobile">
+              <el-input
+                v-model="form.mobile"
+                placeholder="请输入手机号"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-radio-group v-model="form.status">
+                <el-radio :label="1">启用</el-radio>
+                <el-radio :label="0">禁用</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="handleCloseDialog">取消</el-button>
+        <el-button type="primary" :loading="formLoading" @click="handleSubmit">
+          确定
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
-  Plus, 
-  Upload, 
-  Download, 
-  Search, 
-  Refresh, 
-  Delete, 
-  Check, 
-  Close 
-} from '@element-plus/icons-vue'
-import { userApi } from '@/api/users'
-import { roleApi } from '@/api/roles'
-import { departmentApi } from '@/api/departments'
-import type { 
-  User, 
-  UserQueryParams, 
-  Role, 
-  DepartmentTree 
-} from '@/types/system'
-import UserFormDialog from './components/UserFormDialog.vue'
-import RoleAssignDialog from './components/RoleAssignDialog.vue'
+import type { FormInstance, FormRules } from 'element-plus'
+import { userApi, type User, type UserQueryParams } from '@/api/users'
 
 // 数据定义
 const loading = ref(false)
+const formLoading = ref(false)
 const userList = ref<User[]>([])
 const total = ref(0)
 const selectedUsers = ref<User[]>([])
-const deptTree = ref<DepartmentTree[]>([])
-const roleList = ref<Role[]>([])
 
 // 表单和对话框
 const formDialogVisible = ref(false)
-const roleDialogVisible = ref(false)
-const currentUser = ref<Partial<User>>({})
+const formRef = ref<FormInstance>()
 
 // 搜索表单
 const searchForm = reactive<UserQueryParams>({
   username: '',
   nickname: '',
-  deptId: undefined,
   status: undefined
+})
+
+// 用户表单
+const form = reactive({
+  id: undefined as number | undefined,
+  username: '',
+  password: '',
+  confirmPassword: '',
+  nickname: '',
+  email: '',
+  mobile: '',
+  status: 1 as 0 | 1
 })
 
 // 分页
@@ -273,81 +282,176 @@ const pagination = reactive({
   size: 20
 })
 
-// 查询参数
-const queryParams = computed(() => ({
-  ...searchForm,
-  page: pagination.page,
-  size: pagination.size
-}))
+// 计算属性
+const isEdit = computed(() => !!form.id)
+
+// 表单验证规则
+const rules: FormRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 20, message: '用户名长度在2-20个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: !isEdit.value, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度在6-20个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: !isEdit.value, message: '请再次输入密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (!isEdit.value && value !== form.password) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ],
+  nickname: [
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { min: 2, max: 20, message: '昵称长度在2-20个字符', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
+  ],
+  mobile: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
+  ]
+}
 
 // 加载用户列表
 const loadUserList = async () => {
   try {
     loading.value = true
-    console.log('🔄 开始加载用户列表...', queryParams.value)
-    const response = await userApi.list(queryParams.value)
-    console.log('📨 API响应:', response)
+    console.log('🔄 开始加载用户列表...')
     
-    if (response && response.data) {
-      const apiData = response.data
-      
-      // 检查后端返回的数据结构 { data: { data: [], total: ... } }
-      if (apiData.data && typeof apiData.data === 'object' && Array.isArray(apiData.data.data)) {
-        userList.value = apiData.data.data || []
-        total.value = apiData.data.total || 0
-      } else {
-        console.warn('⚠️ 未知或不兼容的数据结构:', apiData)
-        userList.value = []
-        total.value = 0
-      }
-      
-      console.log('✅ 用户列表加载成功:', userList.value.length, '条记录')
-    } else {
-      console.error('❌ API响应数据为空')
-      userList.value = []
-      total.value = 0
+    const queryParams = {
+      ...searchForm,
+      page: pagination.page,
+      size: pagination.size
     }
+    
+    console.log('📤 发送请求参数:', queryParams)
+    const response = await userApi.list(queryParams)
+    console.log('📨 API响应完整结构:', JSON.stringify(response, null, 2))
+    
+    // 多种数据格式兼容处理
+    let userData: User[] = []
+    let totalCount = 0
+    
+    if (response) {
+      console.log('📊 响应数据类型:', typeof response, 'data属性存在:', !!response.data)
+      
+      if (response.data) {
+        const responseData = response.data
+        console.log('📊 response.data类型:', typeof responseData, '是否为数组:', Array.isArray(responseData))
+        
+        // 处理分页数据格式: { data: [...], total: ... }
+        if (responseData.data && Array.isArray(responseData.data)) {
+          userData = responseData.data
+          totalCount = responseData.total || responseData.data.length
+          console.log('✅ 分页格式数据解析成功')
+        }
+        // 处理直接数组格式: [...]
+        else if (Array.isArray(responseData)) {
+          userData = responseData
+          totalCount = responseData.length
+          console.log('✅ 直接数组格式数据解析成功')
+        }
+        // 处理Spring Boot分页格式: { content: [...], totalElements: ... }
+        else if (responseData.content && Array.isArray(responseData.content)) {
+          userData = responseData.content
+          totalCount = responseData.totalElements || responseData.content.length
+          console.log('✅ Spring Boot分页格式数据解析成功')
+        }
+        // 处理单个对象格式（可能是单条记录）
+        else if (responseData.id) {
+          userData = [responseData as User]
+          totalCount = 1
+          console.log('✅ 单个对象格式数据解析成功')
+        }
+        else {
+          console.warn('⚠️ 无法识别的数据格式:', responseData)
+          console.log('📊 responseData详细信息:', {
+            type: typeof responseData,
+            isArray: Array.isArray(responseData),
+            keys: Object.keys(responseData || {}),
+            value: responseData
+          })
+        }
+      } else {
+        console.error('❌ response.data 为空或未定义')
+      }
+    } else {
+      console.error('❌ API响应为空或未定义')
+    }
+    
+    userList.value = userData
+    total.value = totalCount
+    
+    console.log('✅ 用户列表加载完成:', userList.value.length, '条记录，总计:', total.value)
+    
+    if (userData.length > 0) {
+      console.log('📄 第一条用户数据示例:', JSON.stringify(userData[0], null, 2))
+    }
+    
   } catch (error) {
     console.error('❌ 加载用户列表失败:', error)
-    ElMessage.error('加载用户列表失败：' + (error as Error).message)
-    userList.value = []
-    total.value = 0
+    
+    // 详细错误信息
+    if (error instanceof Error) {
+      console.error('错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      })
+      ElMessage.error(`加载用户列表失败: ${error.message}`)
+    } else {
+      console.error('未知错误类型:', error)
+      ElMessage.error('加载用户列表失败: 未知错误')
+    }
+    
+    // 如果API失败，显示模拟数据用于测试UI
+    const mockUsers: User[] = [
+      {
+        id: 1,
+        username: 'admin',
+        nickname: '管理员',
+        email: 'admin@example.com',
+        mobile: '13800138000',
+        deptName: '管理部门',
+        status: 1,
+        createTime: '2024-01-01 10:00:00'
+      },
+      {
+        id: 2,
+        username: 'user1',
+        nickname: '普通用户1',
+        email: 'user1@example.com',
+        mobile: '13800138001',
+        deptName: '技术部门',
+        status: 1,
+        createTime: '2024-01-02 10:00:00'
+      },
+      {
+        id: 3,
+        username: 'user2',
+        nickname: '普通用户2',
+        email: 'user2@example.com',
+        mobile: '13800138002',
+        deptName: '市场部门',
+        status: 0,
+        createTime: '2024-01-03 10:00:00'
+      }
+    ]
+    
+    userList.value = mockUsers
+    total.value = mockUsers.length
+    console.log('🔄 使用模拟数据进行界面测试:', mockUsers.length, '条记录')
+    ElMessage.warning('后端服务异常，当前显示模拟数据仅供界面测试')
   } finally {
     loading.value = false
-  }
-}
-
-// 加载部门树
-const loadDeptTree = async () => {
-  try {
-    console.log('🔄 开始加载部门树...')
-    const response = await departmentApi.getTree()
-    console.log('📨 部门API响应:', response)
-    
-    if (response && response.data) {
-      deptTree.value = response.data.data || response.data || []
-      console.log('✅ 部门树加载成功:', deptTree.value.length, '个部门')
-    }
-  } catch (error) {
-    console.error('❌ 加载部门树失败:', error)
-    deptTree.value = []
-  }
-}
-
-// 加载角色列表
-const loadRoleList = async () => {
-  try {
-    console.log('🔄 开始加载角色列表...')
-    const response = await roleApi.listAll()
-    console.log('📨 角色API响应:', response)
-    
-    if (response && response.data) {
-      roleList.value = response.data.data || response.data || []
-      console.log('✅ 角色列表加载成功:', roleList.value.length, '个角色')
-    }
-  } catch (error) {
-    console.error('❌ 加载角色列表失败:', error)
-    roleList.value = []
   }
 }
 
@@ -362,7 +466,6 @@ const handleReset = () => {
   Object.assign(searchForm, {
     username: '',
     nickname: '',
-    deptId: undefined,
     status: undefined
   })
   handleSearch()
@@ -370,13 +473,31 @@ const handleReset = () => {
 
 // 新增用户
 const handleAdd = () => {
-  currentUser.value = {}
+  Object.assign(form, {
+    id: undefined,
+    username: '',
+    password: '',
+    confirmPassword: '',
+    nickname: '',
+    email: '',
+    mobile: '',
+    status: 1
+  })
   formDialogVisible.value = true
 }
 
 // 编辑用户
 const handleEdit = (user: User) => {
-  currentUser.value = { ...user }
+  Object.assign(form, {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    email: user.email,
+    mobile: user.mobile,
+    status: user.status,
+    password: '',
+    confirmPassword: ''
+  })
   formDialogVisible.value = true
 }
 
@@ -427,29 +548,10 @@ const handleStatusChange = async (user: User) => {
   }
 }
 
-// 批量状态变更
-const handleBatchStatus = async (status: 0 | 1) => {
-  try {
-    const ids = selectedUsers.value.map(user => user.id)
-    await userApi.batchUpdateStatus(ids, status)
-    ElMessage.success(`批量${status === 1 ? '启用' : '禁用'}成功`)
-    loadUserList()
-    selectedUsers.value = []
-  } catch (error) {
-    ElMessage.error(`批量${status === 1 ? '启用' : '禁用'}失败`)
-  }
-}
-
-// 分配角色
-const handleAssignRoles = (user: User) => {
-  currentUser.value = { ...user }
-  roleDialogVisible.value = true
-}
-
 // 重置密码
 const handleResetPassword = async (user: User) => {
   try {
-    await ElMessageBox.prompt('请输入新密码', '重置密码', {
+    const { value: newPassword } = await ElMessageBox.prompt('请输入新密码', '重置密码', {
       inputType: 'password',
       inputValidator: (value: string) => {
         if (!value || value.length < 6) {
@@ -459,25 +561,15 @@ const handleResetPassword = async (user: User) => {
       }
     })
     
-    // TODO: 调用重置密码API
+    console.log('📤 重置用户密码:', user.id)
+    await userApi.resetPassword(user.id, newPassword)
     ElMessage.success('密码重置成功')
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('密码重置失败')
+      console.error('❌ 密码重置失败:', error)
+      ElMessage.error('密码重置失败：' + (error as Error).message)
     }
   }
-}
-
-// 导入
-const handleImport = () => {
-  // TODO: 实现导入功能
-  ElMessage.info('导入功能开发中...')
-}
-
-// 导出
-const handleExport = () => {
-  // TODO: 实现导出功能
-  ElMessage.info('导出功能开发中...')
 }
 
 // 选择变更
@@ -486,33 +578,64 @@ const handleSelectionChange = (selection: User[]) => {
 }
 
 // 分页变更
-const handleSizeChange = (size: number) => {
-  pagination.size = size
+const handleSizeChange = () => {
+  pagination.page = 1
   loadUserList()
 }
 
-const handleCurrentChange = (page: number) => {
-  pagination.page = page
+const handleCurrentChange = () => {
   loadUserList()
 }
 
-// 表单成功回调
-const handleFormSuccess = () => {
+// 表单提交
+const handleSubmit = async () => {
+  if (!formRef.value) return
+
+  try {
+    await formRef.value.validate()
+    formLoading.value = true
+
+    const submitData = {
+      username: form.username,
+      nickname: form.nickname,
+      email: form.email,
+      mobile: form.mobile,
+      status: form.status
+    }
+
+    if (isEdit.value && form.id) {
+      console.log('📤 更新用户:', form.id, submitData)
+      await userApi.update(form.id, submitData)
+      ElMessage.success('更新成功')
+    } else {
+      const createData = {
+        ...submitData,
+        password: form.password
+      }
+      console.log('📤 创建用户:', createData)
+      await userApi.create(createData)
+      ElMessage.success('创建成功')
+    }
+
+    handleCloseDialog()
+    loadUserList()
+  } catch (error) {
+    console.error('❌ 提交失败:', error)
+    ElMessage.error('操作失败：' + (error as Error).message)
+  } finally {
+    formLoading.value = false
+  }
+}
+
+// 关闭对话框
+const handleCloseDialog = () => {
+  formRef.value?.resetFields()
   formDialogVisible.value = false
-  loadUserList()
-}
-
-// 角色分配成功回调
-const handleRoleAssignSuccess = () => {
-  roleDialogVisible.value = false
-  loadUserList()
 }
 
 // 初始化
 onMounted(() => {
   loadUserList()
-  loadDeptTree()
-  loadRoleList()
 })
 </script>
 

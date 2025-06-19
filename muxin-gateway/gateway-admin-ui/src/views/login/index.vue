@@ -35,8 +35,38 @@
           />
         </el-form-item>
         
+        <!-- 验证码 - 当需要时显示 -->
+        <el-form-item v-if="showCaptcha" label="验证码" prop="captcha">
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <el-input
+              v-model="loginForm.captcha"
+              placeholder="请输入验证码"
+              size="large"
+              style="flex: 1;"
+            />
+            <div 
+              class="captcha-image" 
+              @click="refreshCaptcha"
+              style="width: 100px; height: 40px; background: #f0f0f0; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #666;"
+            >
+              点击刷新
+            </div>
+          </div>
+        </el-form-item>
+        
         <el-form-item>
           <el-checkbox v-model="loginForm.rememberMe">记住我</el-checkbox>
+        </el-form-item>
+        
+        <!-- 账号锁定提示 -->
+        <el-form-item v-if="accountLocked">
+          <el-alert
+            title="账号已被锁定"
+            :description="`登录失败次数过多，请 ${formatLockTime} 后重试`"
+            type="warning"
+            :closable="false"
+            show-icon
+          />
         </el-form-item>
         
         <el-form-item>
@@ -44,10 +74,11 @@
             type="primary"
             size="large"
             :loading="loading"
+            :disabled="accountLocked"
             @click="handleLogin"
             class="login-button"
           >
-            登录
+            {{ accountLocked ? `锁定中 ${formatLockTime}` : '登录' }}
           </el-button>
         </el-form-item>
       </el-form>
@@ -67,6 +98,10 @@
 </template>
 
 <script setup lang="ts">
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 import Logo from '@/components/Logo.vue'
 
 const router = useRouter()
@@ -89,6 +124,9 @@ const rules = reactive({
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度为 6 到 20 个字符', trigger: 'blur' }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
 })
 

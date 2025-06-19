@@ -7,6 +7,10 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    Bell: typeof import('@element-plus/icons-vue')['Bell']
+    Cpu: typeof import('@element-plus/icons-vue')['Cpu']
+    Delete: typeof import('@element-plus/icons-vue')['Delete']
+    ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']
@@ -30,6 +34,7 @@ declare module 'vue' {
     ElHeader: typeof import('element-plus/es')['ElHeader']
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElInput: typeof import('element-plus/es')['ElInput']
+    ElInputNumber: typeof import('element-plus/es')['ElInputNumber']
     ElLink: typeof import('element-plus/es')['ElLink']
     ElMain: typeof import('element-plus/es')['ElMain']
     ElMenu: typeof import('element-plus/es')['ElMenu']
@@ -51,13 +56,22 @@ declare module 'vue' {
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
-    ElTransfer: typeof import('element-plus/es')['ElTransfer']
+    ElTree: typeof import('element-plus/es')['ElTree']
     ElTreeSelect: typeof import('element-plus/es')['ElTreeSelect']
-    ElUpload: typeof import('element-plus/es')['ElUpload']
+    FullScreen: typeof import('@element-plus/icons-vue')['FullScreen']
     Logo: typeof import('./components/Logo.vue')['default']
+    Monitor: typeof import('@element-plus/icons-vue')['Monitor']
+    More: typeof import('@element-plus/icons-vue')['More']
+    Operation: typeof import('@element-plus/icons-vue')['Operation']
+    Plus: typeof import('@element-plus/icons-vue')['Plus']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Search: typeof import('@element-plus/icons-vue')['Search']
+    Setting: typeof import('@element-plus/icons-vue')['Setting']
+    SwitchButton: typeof import('@element-plus/icons-vue')['SwitchButton']
     ThemeToggle: typeof import('./components/ThemeToggle.vue')['default']
+    TrendCharts: typeof import('@element-plus/icons-vue')['TrendCharts']
+    User: typeof import('@element-plus/icons-vue')['User']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

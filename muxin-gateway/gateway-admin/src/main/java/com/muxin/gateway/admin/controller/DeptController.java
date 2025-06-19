@@ -110,4 +110,30 @@ public class DeptController {
         deptService.moveDept(id, targetParentId);
         return Result.success();
     }
+    
+    @GetMapping("/check-name")
+    @Operation(summary = "检查部门名称", description = "检查部门名称是否可用")
+    @SaCheckPermission("system:dept:query")
+    public Result<Boolean> checkDeptName(@RequestParam String deptName, 
+                                        @RequestParam Long parentId,
+                                        @RequestParam(required = false) Long excludeId) {
+        boolean available = deptService.checkDeptNameAvailable(deptName, parentId, excludeId);
+        return Result.success(available);
+    }
+    
+    @GetMapping("/check-code")
+    @Operation(summary = "检查部门编码", description = "检查部门编码是否可用")
+    @SaCheckPermission("system:dept:query")
+    public Result<Boolean> checkDeptCode(@RequestParam String deptCode,
+                                        @RequestParam(required = false) Long excludeId) {
+        boolean available = deptService.checkDeptCodeAvailable(deptCode, excludeId);
+        return Result.success(available);
+    }
+    
+    @GetMapping("/stats")
+    @Operation(summary = "获取部门统计", description = "获取部门统计信息")
+    @SaCheckPermission("system:dept:query")
+    public Result<Object> getDeptStats() {
+        return Result.success(deptService.getDeptStats());
+    }
 } 

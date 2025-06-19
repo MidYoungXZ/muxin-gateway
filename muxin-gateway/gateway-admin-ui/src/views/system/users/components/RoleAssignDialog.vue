@@ -8,50 +8,48 @@
   >
     <div class="user-info">
       <el-descriptions :column="2" border>
-        <el-descriptions-item label="用户名">{{ userData.username }}</el-descriptions-item>
-        <el-descriptions-item label="昵称">{{ userData.nickname }}</el-descriptions-item>
-        <el-descriptions-item label="邮箱">{{ userData.email }}</el-descriptions-item>
-        <el-descriptions-item label="手机号">{{ userData.mobile }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ userData?.username }}</el-descriptions-item>
+        <el-descriptions-item label="昵称">{{ userData?.nickname }}</el-descriptions-item>
       </el-descriptions>
     </div>
 
-    <div class="role-selection">
+    <div class="role-selection" style="margin-top: 20px;">
       <h4>选择角色</h4>
-      <el-transfer
-        v-model="selectedRoleIds"
-        :data="roleOptions"
-        :titles="['可选角色', '已分配角色']"
-        :button-texts="['移除', '添加']"
-        :format="{
-          noChecked: '${total}',
-          hasChecked: '${checked}/${total}'
-        }"
-        filterable
-        filter-placeholder="搜索角色"
-        style="text-align: left; display: inline-block"
-      />
+      <el-checkbox-group v-model="selectedRoleIds">
+        <div class="role-list">
+          <el-checkbox
+            v-for="role in roleList"
+            :key="role.id"
+            :label="role.id"
+            class="role-item"
+          >
+            <div class="role-info">
+              <div class="role-name">{{ role.roleName }}</div>
+              <div class="role-desc">{{ role.description }}</div>
+            </div>
+          </el-checkbox>
+        </div>
+      </el-checkbox-group>
     </div>
 
     <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="loading">
-          确定
-        </el-button>
-      </div>
+      <el-button @click="handleClose">取消</el-button>
+      <el-button type="primary" :loading="loading" @click="handleSubmit">
+        确定
+      </el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, reactive } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { userApi } from '@/api/users'
 import type { User, Role } from '@/types/system'
 
 interface Props {
   modelValue: boolean
-  userData: Partial<User>
+  userData?: Partial<User>
   roleList: Role[]
 }
 
@@ -60,74 +58,54 @@ interface Emits {
   (e: 'success'): void
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  userData: () => ({})
+})
+
 const emit = defineEmits<Emits>()
 
+// 响应式数据
 const loading = ref(false)
 const selectedRoleIds = ref<number[]>([])
 
+// 计算属性
 const visible = computed({
   get: () => props.modelValue,
   set: (value) => emit('update:modelValue', value)
 })
 
-// 角色选项
-const roleOptions = computed(() => {
-  return props.roleList.map(role => ({
-    key: role.id,
-    label: role.roleName,
-    disabled: false
-  }))
-})
-
 // 监听用户数据变化
 watch(
   () => props.userData,
-  async (newData) => {
-    if (newData && newData.id && visible.value) {
-      try {
-        // 获取用户当前的角色
-        const { data } = await userApi.getUserRoleIds(newData.id)
-        selectedRoleIds.value = data.data || []
-      } catch (error) {
-        console.error('获取用户角色失败:', error)
-        selectedRoleIds.value = []
-      }
+  (userData) => {
+    if (userData?.roles) {
+      selectedRoleIds.value = userData.roles.map(role => role.id)
+    } else {
+      selectedRoleIds.value = []
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
 
-// 监听对话框显示状态
-watch(visible, (newVisible) => {
-  if (!newVisible) {
-    selectedRoleIds.value = []
-  }
-})
-
-// 处理关闭
-const handleClose = () => {
-  visible.value = false
-}
-
-// 处理提交
+// 方法
 const handleSubmit = async () => {
-  if (!props.userData.id) {
-    ElMessage.error('用户信息错误')
-    return
-  }
+  if (!props.userData?.id) return
 
   try {
     loading.value = true
     await userApi.assignRoles(props.userData.id, selectedRoleIds.value)
     ElMessage.success('角色分配成功')
     emit('success')
-    handleClose()
   } catch (error) {
-    ElMessage.error('角色分配失败')
+    console.error('角色分配失败:', error)
   } finally {
     loading.value = false
   }
+}
+
+const handleClose = () => {
+  selectedRoleIds.value = []
+  visible.value = false
 }
 </script>
 
@@ -138,20 +116,48 @@ const handleSubmit = async () => {
 
 .role-selection {
   h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
+    margin: 0 0 15px 0;
+    color: var(--text-primary);
     font-weight: 600;
-    color: var(--el-text-color-primary);
   }
-  
-  :deep(.el-transfer) {
-    .el-transfer-panel {
-      width: 200px;
+
+  .role-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+
+    .role-item {
+      margin: 0;
+      padding: 12px;
+      border: 1px solid var(--border-primary);
+      border-radius: 8px;
+      transition: all 0.3s;
+
+      &:hover {
+        border-color: var(--primary-color);
+        background-color: var(--primary-50);
+      }
+
+      :deep(.el-checkbox__input.is-checked + .el-checkbox__label) {
+        color: var(--primary-color);
+      }
+
+      .role-info {
+        .role-name {
+          font-weight: 500;
+          color: var(--text-primary);
+          margin-bottom: 4px;
+        }
+
+        .role-desc {
+          font-size: 12px;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+      }
     }
   }
-}
-
-.dialog-footer {
-  text-align: right;
 }
 </style> 

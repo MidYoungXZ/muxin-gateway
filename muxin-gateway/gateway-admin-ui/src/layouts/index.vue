@@ -20,7 +20,9 @@
               :unique-opened="false"
               :collapse-transition="false"
               mode="vertical"
+              router
               class="sidebar-menu"
+              @select="handleMenuSelect"
             >
               <sidebar-item
                 v-for="route in menuRoutes"
@@ -136,36 +138,13 @@
           
           <!-- 主题切换 -->
           <theme-toggle class="theme-toggle" />
-          
-          <!-- 用户下拉菜单（折叠状态显示） -->
-          <el-dropdown v-if="isCollapse" trigger="click" class="user-dropdown">
-            <div class="user-info-collapsed">
-              <el-avatar :src="userStore.user?.avatar" :size="32" />
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="handleProfile">
-                  <el-icon><User /></el-icon>
-                  个人中心
-                </el-dropdown-item>
-                <el-dropdown-item @click="handleSettings">
-                  <el-icon><Setting /></el-icon>
-                  偏好设置
-                </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">
-                  <el-icon><SwitchButton /></el-icon>
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
         </div>
       </el-header>
       
       <!-- 主内容区 -->
       <el-main class="layout-main">
         <!-- 页面标签栏 -->
-        <div v-if="!isCollapse" class="page-tabs">
+        <div class="page-tabs">
           <el-tabs
             v-model="activeTab"
             type="card"
@@ -263,16 +242,18 @@ const showNotifications = ref(false)
 const isFullscreen = ref(false)
 const unreadNotifications = ref(5)
 const activeNotificationTab = ref('all')
-const activeTab = ref('')
+const activeTab = ref('Dashboard')
 const openTabs = ref([
-  { name: 'dashboard', title: '仪表板', path: '/dashboard' }
+  { name: 'Dashboard', title: '首页', path: '/dashboard' }
 ])
 
 // 计算属性
 const activeMenu = computed(() => route.path)
 const menuRoutes = computed(() => {
   const mainRoute = router.options.routes.find(r => r.path === '/')
-  return mainRoute?.children || []
+  const routes = mainRoute?.children || []
+  console.log('🧭 菜单路由:', routes)
+  return routes
 })
 
 // 搜索建议
@@ -395,17 +376,47 @@ const handleSettings = () => {
   router.push('/system/settings')
 }
 
+const handleMenuSelect = (index: string) => {
+  console.log('🔥 菜单选择:', index)
+  
+  // 直接跳转到选中的路径
+  if (index && index !== route.path) {
+    console.log('🚀 跳转到菜单路径:', index)
+    router.push(index)
+  }
+}
+
 const handleLogout = async () => {
   try {
+    console.log('🔄 开始退出登录流程...')
+    
     await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
     
+    console.log('✅ 用户确认退出登录')
+    
+    // 调用store的logout方法清除状态
     await userStore.logout()
-  } catch {
-    // 用户取消
+    console.log('✅ 用户状态已清除')
+    
+    // 显示退出成功消息
+    ElMessage.success('退出登录成功')
+    
+    // 跳转到登录页
+    console.log('🔄 跳转到登录页...')
+    await router.push('/login')
+    console.log('✅ 已跳转到登录页')
+    
+  } catch (error) {
+    if (error === 'cancel') {
+      console.log('ℹ️ 用户取消退出登录')
+    } else {
+      console.error('❌ 退出登录失败:', error)
+      ElMessage.error('退出登录失败，请刷新页面重试')
+    }
   }
 }
 
@@ -436,9 +447,16 @@ const removeTab = (targetName: string) => {
 }
 
 const handleTabClick = (tab: any) => {
+  console.log('🔥 点击标签页:', tab)
   const tabInfo = openTabs.value.find(t => t.name === tab.props.name)
+  console.log('🔍 找到标签页信息:', tabInfo)
+  console.log('📋 当前所有标签页:', openTabs.value)
+  
   if (tabInfo) {
+    console.log('🚀 跳转到路径:', tabInfo.path)
     router.push(tabInfo.path)
+  } else {
+    console.warn('⚠️ 未找到标签页信息')
   }
 }
 
@@ -459,15 +477,38 @@ const formatTime = (date: Date) => {
 
 // 监听路由变化，添加标签页
 watch(route, (newRoute) => {
+  console.log('🔍 路由变化:', {
+    path: newRoute.path,
+    name: newRoute.name,
+    meta: newRoute.meta
+  })
+  
   const routeMeta = newRoute.meta as any
-  if (routeMeta?.title && !openTabs.value.find(tab => tab.path === newRoute.path)) {
-    openTabs.value.push({
-      name: newRoute.name as string,
-      title: routeMeta.title,
-      path: newRoute.path
-    })
+  
+  // 只为有组件的路由添加标签页（排除重定向路由）
+  if (routeMeta?.title && newRoute.matched.some(record => record.components)) {
+    const existingTab = openTabs.value.find(tab => tab.path === newRoute.path)
+    
+    if (!existingTab) {
+      console.log('➕ 添加新标签页:', {
+        name: newRoute.name,
+        title: routeMeta.title,
+        path: newRoute.path
+      })
+      
+      openTabs.value.push({
+        name: newRoute.name as string,
+        title: routeMeta.title,
+        path: newRoute.path
+      })
+    }
   }
-  activeTab.value = newRoute.name as string
+  
+  // 设置当前活跃标签
+  if (newRoute.name) {
+    activeTab.value = newRoute.name as string
+    console.log('🎯 设置活跃标签:', newRoute.name)
+  }
 })
 
 // 监听窗口大小变化
@@ -508,8 +549,33 @@ onMounted(() => {
   
   // 初始化当前路由的标签页
   const routeMeta = route.meta as any
-  if (routeMeta?.title) {
-    activeTab.value = route.name as string
+  console.log('🚀 初始化标签页:', {
+    path: route.path,
+    name: route.name,
+    meta: route.meta
+  })
+  
+  if (routeMeta?.title && route.matched.some(record => record.components)) {
+    const existingTab = openTabs.value.find(tab => tab.path === route.path)
+    
+    if (!existingTab) {
+      console.log('➕ 初始化添加标签页:', {
+        name: route.name,
+        title: routeMeta.title,
+        path: route.path
+      })
+      
+      openTabs.value.push({
+        name: route.name as string,
+        title: routeMeta.title,
+        path: route.path
+      })
+    }
+    
+    if (route.name) {
+      activeTab.value = route.name as string
+      console.log('🎯 初始化设置活跃标签:', route.name)
+    }
   }
 })
 
@@ -577,6 +643,8 @@ onUnmounted(() => {
           transition: all var(--transition-fast);
           position: relative;
           overflow: hidden;
+          font-weight: var(--font-semibold);
+          font-size: 15px;
           
           &::before {
             content: '';
@@ -855,18 +923,7 @@ onUnmounted(() => {
         margin: 0 var(--space-2);
       }
       
-      .user-dropdown {
-        .user-info-collapsed {
-          cursor: pointer;
-          padding: var(--space-1);
-          border-radius: var(--radius-lg);
-          transition: background var(--transition-fast);
-          
-          &:hover {
-            background: var(--primary-50);
-          }
-        }
-      }
+
     }
   }
   

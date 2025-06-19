@@ -16,6 +16,15 @@ export interface PageParams {
 
 // 分页响应数据
 export interface PageResult<T> {
+  data: T[]
+  total: number
+  pageNum: number
+  pageSize: number
+  totalPages: number
+}
+
+// Spring Boot分页响应数据（兼容Spring Data）
+export interface SpringPageResult<T> {
   content: T[]
   totalElements: number
   totalPages: number

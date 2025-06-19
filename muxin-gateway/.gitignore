@@ -27,7 +27,9 @@ dist-ssr
 .env.local
 .env.*.local
 
-*.target/*
+
+
+*.class
 
 # 忽略IDE生成的文件和配置
 .idea/
@@ -45,3 +47,8 @@ dist/
 *.dll
 *.exe
 node_modules/
+
+*.target/*
+*.static/*
+static/
+target/

@@ -24,7 +24,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -226,6 +228,65 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         updateAncestors(id, targetParentId);
         
         log.info("移动部门成功：{} -> {}", dept.getDeptName(), targetParentId);
+    }
+    
+    @Override
+    public boolean checkDeptNameAvailable(String deptName, Long parentId, Long excludeId) {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_DEPT)
+                .where(SYS_DEPT.DEPT_NAME.eq(deptName))
+                .and(SYS_DEPT.PARENT_ID.eq(parentId))
+                .and(SYS_DEPT.DELETED.eq(0));
+        
+        if (excludeId != null) {
+            wrapper.and(SYS_DEPT.ID.ne(excludeId));
+        }
+        
+        long count = count(wrapper);
+        return count == 0;
+    }
+    
+    @Override
+    public boolean checkDeptCodeAvailable(String deptCode, Long excludeId) {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_DEPT)
+                .where(SYS_DEPT.DEPT_CODE.eq(deptCode))
+                .and(SYS_DEPT.DELETED.eq(0));
+        
+        if (excludeId != null) {
+            wrapper.and(SYS_DEPT.ID.ne(excludeId));
+        }
+        
+        long count = count(wrapper);
+        return count == 0;
+    }
+    
+    @Override
+    public Object getDeptStats() {
+        // 统计总部门数
+        long totalCount = count(QueryWrapper.create()
+                .select()
+                .from(SYS_DEPT)
+                .where(SYS_DEPT.DELETED.eq(0)));
+        
+        // 统计启用部门数
+        long enabledCount = count(QueryWrapper.create()
+                .select()
+                .from(SYS_DEPT)
+                .where(SYS_DEPT.DELETED.eq(0))
+                .and(SYS_DEPT.STATUS.eq(1)));
+        
+        // 统计禁用部门数
+        long disabledCount = totalCount - enabledCount;
+        
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalCount", totalCount);
+        stats.put("enabledCount", enabledCount);
+        stats.put("disabledCount", disabledCount);
+        
+        return stats;
     }
     
     /**
