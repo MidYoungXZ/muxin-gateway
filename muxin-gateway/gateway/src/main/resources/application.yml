@@ -1,0 +1,426 @@
+spring:
+  application:
+    name: muxin-gateway
+  profiles:
+    active: mysql # 使用MySQL数据库
+  mvc:
+    # 静态路径匹配模式，明确排除API路径
+    static-path-pattern: /static/**
+  web:
+    resources:
+      # 静态资源缓存配置
+      cache:
+        cachecontrol:
+          # JS和CSS文件缓存7天
+          max-age: 604800
+          must-revalidate: true
+      # 静态资源处理链配置
+      chain:
+        strategy:
+          content:
+            enabled: true
+            # 只对明确的静态资源路径启用内容策略，明确排除API路径
+            paths: /static/**, /assets/**, /css/**, /js/**, /images/**, /favicon.ico, /index.html, /*.html, /*.css, /*.js, /*.png, /*.jpg, /*.gif, /*.ico, /*.svg
+        cache: true
+        compressed: true
+      # 静态资源映射路径
+      static-locations: classpath:/static/
+  datasource:
+    url: jdbc:mysql://10.100.1.45:3306/muxin_gateway?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# MyBatis-Flex配置
+mybatis-flex:
+  # 打印SQL
+  print-sql: true
+  # 逻辑删除配置
+  logic-delete-column: deleted
+  logic-delete-value: 1
+  logic-not-delete-value: 0
+  # 配置文件位置
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 配置别名包
+  type-aliases-package: com.muxin.gateway.admin.entity
+  # 全局配置
+  global-config:
+    # 打印banner
+    print-banner: false
+    # 开启审计
+    audit-enable: true
+
+# Sa-Token配置
+sa-token:
+  # token名称
+  token-name: Authorization
+  # token有效期，单位秒，-1代表永不过期
+  timeout: 2592000
+  # token临时有效期（指定时间内无操作就过期），单位秒
+  active-timeout: -1
+  # 是否允许同一账号并发登录
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token
+  is-share: true
+  # token风格
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: false
+  # jwt密钥
+  jwt-secret-key: muxin-gateway-jwt-secret-key-2024
+
+# Spring MVC Web服务器配置
+server:
+  port: 8080
+
+
+# 网关配置
+muxin:
+  gateway:
+    netty:
+      server:
+        port: 8081
+        event-loop-group-boss-num: 1
+        event-loop-group-worker-num: 4
+        event-loop-group-boss-thread-pool-name: gateway-boss
+        event-loop-group-worker-thread-pool-name: gateway-worker
+        max-content-length: 67108864  # 64MB
+        backlog: 1024
+        re-use-address: true
+        tcp-no-delay: true
+        keep-alive: true
+        snd-buf: 65535
+        rcv-buf: 65535
+      client:
+        http-connect-timeout: 10000
+        http-request-timeout: 30000
+        http-max-request-retry: 3
+        http-max-connections: 1000
+        http-connections-per-host: 100
+        http-pooled-connection-idle-timeout: 60000
+        when-complete: false
+    
+    # 注册中心配置
+    register:
+      type: nacos
+      address: 10.100.0.140:10809
+      username: nacos
+      password: nacos
+      group: DEFAULT_GROUP
+      # 网关自注册配置
+      gateway:
+        enabled: true               # 是否启用网关自注册
+        weight: 1.0                # 网关实例权重
+        version: 1.0               # 网关服务版本
+        description: "Muxin API Gateway - 统一网关服务"
+    
+    # 管理界面配置
+    admin:
+      enabled: true
+      path-prefix: /admin
+      username: admin
+      password: admin123
+      session-timeout: 30
+    
+    # 路由配置
+    routes:
+      # 用户服务路由
+      - id: user-service
+        uri: http://localhost:8081
+        order: 1
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/user/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "用户服务路由"
+          version: "1.0"
+      
+      # 订单服务路由
+      - id: order-service
+        uri: http://localhost:8082
+        order: 2
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/order/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "订单服务路由"
+          version: "1.0"
+      
+      # 商品服务路由
+      - id: product-service
+        uri: http://localhost:8083
+        order: 3
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/product/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "商品服务路由"
+          version: "1.0"
+      
+      # 支付服务路由
+      - id: payment-service
+        uri: http://localhost:8084
+        order: 4
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/payment/**"
+          - name: Method
+            args:
+              methods: "GET,POST"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "支付服务路由"
+          version: "1.0"
+      
+      # 通知服务路由
+      - id: notification-service
+        uri: http://localhost:8085
+        order: 5
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/notification/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "通知服务路由"
+          version: "1.0"
+      
+      # 文件服务路由
+      - id: file-service
+        uri: http://localhost:8086
+        order: 6
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/files/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "文件上传下载服务路由"
+          version: "1.0"
+      
+
+      # 测试路由 - httpbin.org
+      - id: test-httpbin
+        uri: http://httpbin.org
+        order: 10
+        predicates:
+          - name: Path
+            args:
+              pattern: "/test/**"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "1"
+        metadata:
+          description: "httpbin测试服务路由"
+          version: "1.0"
+      
+      # 健康检查路由
+      - id: health-check
+        uri: http://localhost:8080
+        order: 0
+        predicates:
+          - name: Path
+            args:
+              pattern: "/health"
+          - name: Method
+            args:
+              methods: "GET"
+        metadata:
+          description: "健康检查路由"
+          version: "1.0"
+      
+      # 消息服务路由
+      - id: message-service
+        uri: http://localhost:8087
+        order: 7
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/message/**"
+          - name: Method
+            args:
+              methods: "GET,POST,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+        metadata:
+          description: "消息服务路由 - 聊天和消息推送"
+          version: "1.1"
+      
+      # 数据分析服务路由
+      - id: analytics-service
+        uri: http://localhost:8088
+        order: 8
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/analytics/**"
+          - name: Method
+            args:
+              methods: "GET,POST"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+          - name: RequestRateLimit
+            args:
+              rate: "100"
+              duration: "60s"
+        metadata:
+          description: "数据分析服务路由 - 业务数据统计分析"
+          version: "2.0"
+          tags: "analytics,reporting"
+      
+      # 权限管理服务路由
+      - id: auth-service
+        uri: http://localhost:8089
+        order: 9
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/auth/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+          - name: Header
+            args:
+              name: "Authorization"
+              regex: "Bearer .*"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+          - name: AddRequestHeader
+            args:
+              name: "X-Service-Name"
+              value: "auth-service"
+        metadata:
+          description: "权限管理服务路由 - 用户认证与授权"
+          version: "1.5"
+          tags: "security,auth"
+      
+      # 搜索服务路由
+      - id: search-service
+        uri: http://localhost:8090
+        order: 11
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/search/**"
+          - name: Method
+            args:
+              methods: "GET,POST"
+          - name: Query
+            args:
+              param: "q"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+          - name: RequestRateLimit
+            args:
+              rate: "50"
+              duration: "60s"
+        metadata:
+          description: "搜索服务路由 - 全文搜索和智能推荐"
+          version: "3.0"
+          tags: "search,elasticsearch"
+      
+      # 缓存服务路由
+      - id: cache-service
+        uri: http://localhost:8091
+        order: 12
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/cache/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+          - name: AddRequestHeader
+            args:
+              name: "X-Cache-Strategy"
+              value: "redis"
+        metadata:
+          description: "缓存服务路由 - Redis缓存管理"
+          version: "1.0"
+          tags: "cache,redis"
+      
+      # bsfit-sde服务路由（从Nacos注册中心发现）
+      - id: bsfit-sde-service
+        uri: lb://bsfit-sde
+        order: 13
+        predicates:
+          - name: Path
+            args:
+              pattern: "/api/bsfit-sde/**"
+          - name: Method
+            args:
+              methods: "GET,POST,PUT,DELETE"
+        filters:
+          - name: StripPrefix
+            args:
+              parts: "2"
+          - name: AddRequestHeader
+            args:
+              name: "X-Gateway-Source"
+              value: "muxin-gateway"
+        metadata:
+          description: "bsfit-sde服务路由 - 从Nacos注册中心动态发现"
+          version: "1.0"
+          tags: "nacos,discovery"
+
+# 日志配置
+logging:
+  level:
+    com.muxin.gateway: info
+    root: INFO
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
+
+# Swagger配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html 

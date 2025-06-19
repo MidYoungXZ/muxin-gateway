@@ -1,0 +1,108 @@
+# 性能优化配置
+muxin:
+  gateway:
+    # Netty 服务器配置
+    netty:
+      server:
+        port: 8080
+        # Boss线程数
+        event-loop-group-boss-num: 1
+        # Worker线程数 - CPU核心数的2倍
+        event-loop-group-worker-num: ${WORKER_THREADS:16}
+        # 最大内容长度 - 1MB
+        max-content-length: 1048576
+        # TCP backlog
+        backlog: 8192
+        # TCP参数优化
+        re-use-address: true
+        tcp-nodelay: true
+        keep-alive: false
+        # 缓冲区大小 - 1MB
+        snd-buf: 1048576
+        rcv-buf: 1048576
+        # 写缓冲区水位
+        write-buffer-high-water-mark: 65536
+        write-buffer-low-water-mark: 32768
+        write-spin-count: 16
+        # 启用响应压缩
+        compression-enabled: true
+        compression-level: 6
+      
+      # Netty 客户端配置
+      client:
+        # 连接超时 - 5秒
+        http-connect-timeout: 5000
+        # 请求超时 - 30秒
+        http-request-timeout: 30000
+        # 读取超时 - 30秒
+        http-read-timeout: 30000
+        # 重试次数
+        http-max-request-retry: 3
+        # 最大连接数
+        http-max-connections: 2000
+        # 每个主机最大连接数
+        http-connections-per-host: 500
+        # 空闲连接超时 - 60秒
+        http-pooled-connection-idle-timeout: 60000
+        # 连接TTL - 5分钟
+        http-connection-ttl: 300000
+        # IO线程数
+        io-threads-count: ${IO_THREADS:16}
+        # 启用连接池
+        pooling-enabled: true
+        # 启用压缩
+        compression-enabled: true
+        # 不跟随重定向
+        follow-redirect: false
+        # 异步处理
+        when-complete: true
+        # TCP参数
+        tcp-nodelay: true
+        so-keep-alive: false
+        so-snd-buf: 1048576
+        so-rcv-buf: 1048576
+
+# Spring Boot 配置
+spring:
+  application:
+    name: muxin-gateway
+  
+  # 线程池配置
+  task:
+    execution:
+      pool:
+        core-size: 16
+        max-size: 32
+        queue-capacity: 1000
+        keep-alive: 60s
+        thread-name-prefix: gateway-exec-
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# JVM 启动参数建议（在启动脚本中配置）
+# -Xms4g -Xmx4g
+# -XX:+UseG1GC
+# -XX:MaxGCPauseMillis=50
+# -XX:G1HeapRegionSize=16m
+# -XX:InitiatingHeapOccupancyPercent=40
+# -XX:+ParallelRefProcEnabled
+# -XX:+UnlockExperimentalVMOptions
+# -XX:+DisableExplicitGC
+# -XX:+AlwaysPreTouch
+# -XX:G1NewSizePercent=30
+# -XX:G1MaxNewSizePercent=40
+# -Dio.netty.allocator.type=pooled
+# -Dio.netty.leakDetection.level=DISABLED
+# -Dio.netty.recycler.maxCapacityPerThread=32768
+# -Dlog4j2.contextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector 

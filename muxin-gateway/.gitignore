@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+gateway-admin-ui/node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment files
+.env.local
+.env.*.local
+
+*.target/*
+
+# 忽略IDE生成的文件和配置
+.idea/
+*.iml
+.vscode/
+
+# 忽略敏感信息
+config.js
+*.env
+*.pem
+
+# 忽略编译生成的文件
+build/
+dist/
+*.dll
+*.exe
+node_modules/

@@ -1,0 +1,1 @@
+import{k as t,l as o,q as n,m as s}from"./vendor-BXFTKy7Z.js";import"./element-plus-B7HFs7Ri.js";const a={class:"page-container"},i=t({__name:"index",setup(r){return(l,e)=>(s(),o("div",a,e[0]||(e[0]=[n("h1",null,"白名单配置",-1),n("p",null,"该功能正在开发中...",-1)])))}});export{i as default};
