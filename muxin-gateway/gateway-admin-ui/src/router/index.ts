@@ -80,6 +80,12 @@ const routes: RouteRecordRaw[] = [
             name: 'FilterManage',
             component: () => import('@/views/routes/filters/index.vue'),
             meta: { title: '过滤器管理' }
+          },
+          {
+            path: '/routes/predicates',
+            name: 'PredicateManage',
+            component: () => import('@/views/routes/predicates/index.vue'),
+            meta: { title: '断言管理' }
           }
         ]
       },

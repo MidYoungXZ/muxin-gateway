@@ -59,15 +59,23 @@ export const predicatesApi = {
     })
   },
 
-  // 切换断言状态 - 后端未实现
+  // 批量删除断言
+  batchDelete(ids: number[]) {
+    console.log('🚀 [PREDICATES] 批量删除断言: /api/predicates/batch', ids)
+    return request({
+      url: '/api/predicates/batch',
+      method: 'delete',
+      data: ids
+    })
+  },
+
+  // 切换断言状态
   togglePredicate(id: number, enabled: boolean) {
-    const action = enabled ? 'enable' : 'disable'
-    console.log(`⚠️ [PREDICATES] 断言状态切换后端未实现，返回模拟数据`)
-    // 模拟数据
-    return Promise.resolve({
-      code: 200,
-      message: `${action} 成功（模拟）`,
-      data: null
+    console.log(`🚀 [PREDICATES] 切换断言状态: /api/predicates/${id}`, { enabled })
+    return request({
+      url: `/api/predicates/${id}`,
+      method: 'put',
+      data: { enabled }
     })
   },
 
@@ -80,40 +88,12 @@ export const predicatesApi = {
     })
   },
 
-  // 获取路由的断言列表 - 后端未实现
+  // 获取路由的断言列表（在路由管理中使用）
   getRoutePredicates(routeId: number) {
-    console.log('⚠️ [PREDICATES] 路由断言列表后端未实现，返回模拟数据')
-    // 模拟数据
-    return Promise.resolve({
-      code: 200,
-      message: '获取成功（模拟）',
-      data: [
-        { id: 1, type: 'Path', config: { pattern: '/api/**' }, enabled: true },
-        { id: 2, type: 'Method', config: { methods: ['GET', 'POST'] }, enabled: true }
-      ]
-    })
-  },
-
-  // 测试断言 - 后端未实现
-  testPredicate(data: {
-    type: string
-    config: any
-    testRequest: {
-      method: string
-      path: string
-      headers: Record<string, string>
-      query: Record<string, string>
-    }
-  }) {
-    console.log('⚠️ [PREDICATES] 断言测试后端未实现，返回模拟数据')
-    // 模拟数据
-    return Promise.resolve({
-      code: 200,
-      message: '测试成功（模拟）',
-      data: {
-        matched: true,
-        reason: '模拟测试结果'
-      }
+    console.log('🚀 [PREDICATES] 获取路由断言列表: /api/routes/' + routeId + '/predicates')
+    return request({
+      url: `/api/routes/${routeId}/predicates`,
+      method: 'get'
     })
   }
 } 

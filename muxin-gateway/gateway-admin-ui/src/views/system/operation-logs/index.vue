@@ -282,9 +282,10 @@ const loadData = async () => {
     const response = await operationLogApi.getOperationLogs(params)
     
     if (response.code === 200) {
-      tableData.value = response.data.list
-      pagination.total = response.data.total
+      tableData.value = response.data.data || []
+      pagination.total = response.data.total || 0
       console.log('✅ [OPERATION_LOG] 数据加载成功，共', response.data.total, '条记录')
+      console.log('📊 [OPERATION_LOG] 表格数据:', tableData.value)
     } else {
       console.error('❌ [OPERATION_LOG] 数据加载失败:', response.message)
       ElMessage.error(response.message || '数据加载失败')

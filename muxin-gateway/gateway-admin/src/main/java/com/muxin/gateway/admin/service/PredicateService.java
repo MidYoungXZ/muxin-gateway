@@ -1,5 +1,7 @@
 package com.muxin.gateway.admin.service;
 
+import com.mybatisflex.core.service.IService;
+import com.muxin.gateway.admin.entity.GwPredicate;
 import com.muxin.gateway.admin.model.dto.PredicateCreateDTO;
 import com.muxin.gateway.admin.model.dto.PredicateQueryDTO;
 import com.muxin.gateway.admin.model.dto.PredicateUpdateDTO;
@@ -14,7 +16,7 @@ import java.util.List;
  *
  * @author muxin
  */
-public interface PredicateService {
+public interface PredicateService extends IService<GwPredicate> {
     
     /**
      * 分页查询断言列表
