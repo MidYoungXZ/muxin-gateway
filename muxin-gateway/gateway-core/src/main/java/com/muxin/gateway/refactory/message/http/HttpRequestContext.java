@@ -1,36 +1,36 @@
-package com.muxin.gateway.refactory;
+package com.muxin.gateway.refactory.message.http;
 
+import com.muxin.gateway.refactory.*;
 import com.muxin.gateway.refactory.connect.Connection;
 import com.muxin.gateway.refactory.message.Message;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 默认请求上下文实现 - 协议无关
- * 
+ * HTTP请求上下文实现
+ *
  * @author muxin
  */
-public class DefaultRequestContext implements UniversalRequestContext {
-    
-    private final long startTime;
-    private final Map<String, Object> attributes;
+public class HttpRequestContext implements UniversalRequestContext {
     
     private Message inboundMessage;
     private Message outboundMessage;
-    private Connection inboundConnection;
+    private final Connection inboundConnection;
     private Connection outboundConnection;
     private Object matchedRoute;
     private Object selectedNode;
-    private boolean completed;
+    private final long startTime;
+    private final Map<String, Object> attributes;
     private Throwable error;
+    private boolean completed;
     
-    public DefaultRequestContext(Message inboundMessage, Connection inboundConnection) {
-        this.startTime = System.currentTimeMillis();
-        this.attributes = new ConcurrentHashMap<>();
-        this.inboundMessage = inboundMessage;
+    public HttpRequestContext(Connection inboundConnection, Message inboundMessage) {
         this.inboundConnection = inboundConnection;
+        this.inboundMessage = inboundMessage;
+        this.startTime = System.currentTimeMillis();
+        this.attributes = new HashMap<>();
         this.completed = false;
     }
     
@@ -101,45 +101,28 @@ public class DefaultRequestContext implements UniversalRequestContext {
     
     @Override
     public boolean needsProtocolConversion() {
-        Protocol inboundProto = getInboundProtocol();
-        Protocol outboundProto = getOutboundProtocol();
-        
-        if (inboundProto == null || outboundProto == null) {
-            return false;
-        }
-        
-        return !inboundProto.equals(outboundProto);
+        Protocol inbound = getInboundProtocol();
+        Protocol outbound = getOutboundProtocol();
+        return inbound != null && outbound != null && !inbound.equals(outbound);
     }
     
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T getAttribute(String key, Class<T> type) {
         Object value = attributes.get(key);
-        if (value == null) {
-            return null;
+        if (value != null && type.isInstance(value)) {
+            return type.cast(value);
         }
-        
-        if (type.isInstance(value)) {
-            return (T) value;
-        }
-        
-        throw new ClassCastException("无法将属性 " + key + " 转换为类型 " + type.getName());
+        return null;
     }
     
     @Override
     public void setAttribute(String key, Object value) {
-        if (key != null) {
-            if (value != null) {
-                attributes.put(key, value);
-            } else {
-                attributes.remove(key);
-            }
-        }
+        attributes.put(key, value);
     }
     
     @Override
     public Map<String, Object> getAttributes() {
-        return new ConcurrentHashMap<>(attributes);
+        return new HashMap<>(attributes);
     }
     
     @Override
@@ -170,35 +153,5 @@ public class DefaultRequestContext implements UniversalRequestContext {
     @Override
     public boolean hasError() {
         return error != null;
-    }
-    
-    /**
-     * 获取请求处理持续时间（毫秒）
-     */
-    public long getDuration() {
-        return System.currentTimeMillis() - startTime;
-    }
-    
-    /**
-     * 获取跟踪ID，用于分布式链路追踪
-     */
-    public String getTraceId() {
-        if (inboundMessage != null && inboundMessage.getMetadata() != null) {
-            return inboundMessage.getMetadata().getTraceId();
-        }
-        return null;
-    }
-    
-    @Override
-    public String toString() {
-        return "DefaultRequestContext{" +
-                "startTime=" + startTime +
-                ", duration=" + getDuration() +
-                ", traceId='" + getTraceId() + '\'' +
-                ", inboundProtocol=" + getInboundProtocol() +
-                ", outboundProtocol=" + getOutboundProtocol() +
-                ", completed=" + completed +
-                ", hasError=" + hasError() +
-                '}';
     }
 } 

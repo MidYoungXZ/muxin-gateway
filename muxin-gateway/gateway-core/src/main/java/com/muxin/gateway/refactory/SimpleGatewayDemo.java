@@ -1,6 +1,20 @@
 package com.muxin.gateway.refactory;
 
-import com.muxin.gateway.refactory.http.*;
+import com.muxin.gateway.refactory.connect.Connection;
+import com.muxin.gateway.refactory.connect.HttpConnection;
+import com.muxin.gateway.refactory.filter.FilterManager;
+import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.message.MessageType;
+import com.muxin.gateway.refactory.message.NodeManager;
+import com.muxin.gateway.refactory.message.http.*;
+import com.muxin.gateway.refactory.node.DefaultServiceNode;
+import com.muxin.gateway.refactory.node.EndpointAddress;
+import com.muxin.gateway.refactory.node.UniversalServiceNode;
+import com.muxin.gateway.refactory.node.health.HealthCheckConfig;
+import com.muxin.gateway.refactory.route.DefaultRoute;
+import com.muxin.gateway.refactory.route.RouteManager;
+import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import com.muxin.gateway.refactory.route.UniversalRoute;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -67,7 +81,9 @@ public class SimpleGatewayDemo {
         Protocol httpProtocol = new HttpProtocol();
         
         // 用户服务路由
-        UniversalRoute userRoute = new DefaultRoute.Builder("user-route", "用户服务")
+        UniversalRoute userRoute = new DefaultRoute.Builder()
+            .id("user-route")
+            .name("用户服务")
             .protocol(httpProtocol)
             .predicate(new HttpPathPredicate("/api/users/**"))
             .target(new SimpleRouteTarget("user-service", 
@@ -75,7 +91,9 @@ public class SimpleGatewayDemo {
             .build();
         
         // 订单服务路由  
-        UniversalRoute orderRoute = new DefaultRoute.Builder("order-route", "订单服务")
+        UniversalRoute orderRoute = new DefaultRoute.Builder()
+            .id("order-route")
+            .name("订单服务")
             .protocol(httpProtocol)
             .predicate(new HttpPathPredicate("/api/orders/**"))
             .target(new SimpleRouteTarget("order-service",

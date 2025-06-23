@@ -1,6 +1,10 @@
 package com.muxin.gateway.refactory;
 
 
+import com.muxin.gateway.refactory.connect.Connection;
+import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.node.EndpointAddress;
+
 import java.util.Map;
 
 /**

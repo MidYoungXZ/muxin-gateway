@@ -1,7 +1,18 @@
 package com.muxin.gateway.refactory;
 
-import com.muxin.gateway.refactory.http.HttpProtocol;
-import com.muxin.gateway.refactory.http.HttpProtocolAdapter;
+import com.muxin.gateway.refactory.connect.Connection;
+import com.muxin.gateway.refactory.filter.FilterManager;
+import com.muxin.gateway.refactory.filter.UniversalFilterManager;
+import com.muxin.gateway.refactory.loadbalance.DefaultLoadBalanceManager;
+import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
+import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.message.NodeManager;
+import com.muxin.gateway.refactory.message.http.HttpProtocol;
+import com.muxin.gateway.refactory.message.http.HttpProtocolAdapter;
+import com.muxin.gateway.refactory.node.DefaultNodeManager;
+import com.muxin.gateway.refactory.route.RouteManager;
+import com.muxin.gateway.refactory.route.SimpleRouteManager;
+import com.muxin.gateway.refactory.route.UniversalRequestContext;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +43,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
         LoadBalanceManager loadBalanceManager = new DefaultLoadBalanceManager();
         NodeManager nodeManager = new DefaultNodeManager();
         
-        this.gatewayProcessor = new DefaultGatewayProcessor(
+        this.gatewayProcessor = new EnhancedGatewayProcessor(
             routeManager, filterManager, loadBalanceManager, nodeManager);
         
         // 注册默认协议适配器

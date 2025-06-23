@@ -1,5 +1,8 @@
 package com.muxin.gateway.refactory;
 
+import com.muxin.gateway.refactory.connect.Connection;
+import com.muxin.gateway.refactory.message.Message;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
