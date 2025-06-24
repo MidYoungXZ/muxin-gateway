@@ -1,9 +1,6 @@
 package com.muxin.gateway.refactory;
 
-import com.muxin.gateway.refactory.filter.FilterManager;
-import com.muxin.gateway.refactory.filter.FilterType;
-import com.muxin.gateway.refactory.filter.UniversalFilter;
-import com.muxin.gateway.refactory.filter.UniversalFilterChain;
+import com.muxin.gateway.refactory.filter.*;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.refactory.message.Message;
 import com.muxin.gateway.refactory.message.MessageMetadata;
@@ -52,7 +49,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
     private final AtomicLong errorCounter = new AtomicLong(0);
     
     public EnhancedGatewayProcessor(RouteManager routeManager,
-                                  FilterManager filterManager,
+                                    FilterManager filterManager,
                                   LoadBalanceManager loadBalanceManager,
                                   NodeManager nodeManager) {
         this.routeManager = routeManager;

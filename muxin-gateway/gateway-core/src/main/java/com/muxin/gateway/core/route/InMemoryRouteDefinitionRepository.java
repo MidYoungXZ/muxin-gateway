@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static java.util.Collections.synchronizedMap;
 
@@ -37,14 +39,14 @@ public class InMemoryRouteDefinitionRepository implements RouteDefinitionReposit
     }
 
     @Override
-    public void deleteById(String id) {
+    public void removeByUniqueCode(String id) {
         if (id != null) {
             routes.remove(id);
         }
     }
 
     @Override
-    public RouteDefinition findById(String id) {
+    public RouteDefinition findByUniqueCode(String id) {
         return id != null ? routes.get(id) : null;
     }
 

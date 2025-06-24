@@ -8,35 +8,44 @@ import com.muxin.gateway.refactory.message.Message;
  *
  * @author muxin
  */
-public interface ConnectionListener {
-    
+public interface ConnectionListener<R> {
+
+
+    String id();
+
     /**
      * 连接建立事件
      */
-    default void onConnectionEstablished(Connection connection) {}
-    
+    default void onConnectionEstablished(Connection<R> connection) {
+    }
+
     /**
      * 连接关闭事件
      */
-    default void onConnectionClosed(Connection connection) {}
-    
+    default void onConnectionClosed(Connection<R> connection) {
+    }
+
     /**
      * 连接错误事件
      */
-    default void onConnectionError(Connection connection, Throwable error) {}
-    
+    default void onConnectionError(Connection<R> connection, Throwable error) {
+    }
+
     /**
      * 消息接收事件
      */
-    default void onMessageReceived(Connection connection, Message message) {}
-    
+    default void onMessageReceived(Connection<R> connection, Message message) {
+    }
+
     /**
      * 消息发送事件
      */
-    default void onMessageSent(Connection connection, Message message) {}
-    
+    default void onMessageSent(Connection<R> connection, Message message) {
+    }
+
     /**
      * 连接状态变更事件
      */
-    default void onStatusChanged(Connection connection, ConnectionStatus oldStatus, ConnectionStatus newStatus) {}
+    default void onStatusChanged(Connection<R> connection, ConnectionStatus oldStatus, ConnectionStatus newStatus) {
+    }
 } 

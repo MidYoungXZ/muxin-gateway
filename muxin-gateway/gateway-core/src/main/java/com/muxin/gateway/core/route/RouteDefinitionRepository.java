@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.route;
 
-import com.muxin.gateway.core.common.CrudRepository;
+import com.muxin.gateway.core.common.Repository;
 
 /**
  * [Class description]
@@ -8,6 +8,6 @@ import com.muxin.gateway.core.common.CrudRepository;
  * @author Administrator
  * @date 2024/11/21 11:10
  */
-public interface RouteDefinitionRepository extends CrudRepository<RouteDefinition, String> {
+public interface RouteDefinitionRepository extends Repository<String,RouteDefinition> {
 
 }

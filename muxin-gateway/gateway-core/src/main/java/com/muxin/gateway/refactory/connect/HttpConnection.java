@@ -4,31 +4,34 @@ import com.muxin.gateway.refactory.Protocol;
 import com.muxin.gateway.refactory.message.Message;
 import com.muxin.gateway.refactory.node.EndpointAddress;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 
 /**
  * HTTP连接实现
- * 
+ *
  * @author muxin
  */
-public class HttpConnection implements Connection {
-    
+public class HttpConnection implements Connection<Void> {
+
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
-    
+
     private final String connectionId;
     private final Protocol protocol;
     private final EndpointAddress localAddress;
     private final EndpointAddress remoteAddress;
     private final Map<String, Object> attributes;
-    private final CopyOnWriteArrayList<ConnectionListener> listeners;
-    
+    private final CopyOnWriteArrayList<ConnectionListener<Void>> listeners;
+
     private volatile ConnectionStatus status;
     private volatile long lastActiveTime;
-    
+
     public HttpConnection(Protocol protocol, EndpointAddress localAddress, EndpointAddress remoteAddress) {
         this.connectionId = "http-conn-" + ID_GENERATOR.incrementAndGet();
         this.protocol = protocol;
@@ -38,49 +41,49 @@ public class HttpConnection implements Connection {
         this.listeners = new CopyOnWriteArrayList<>();
         this.status = ConnectionStatus.CONNECTING;
         this.lastActiveTime = System.currentTimeMillis();
-        
+
         // 模拟连接建立
         this.status = ConnectionStatus.CONNECTED;
     }
-    
+
     @Override
     public String getConnectionId() {
         return connectionId;
     }
-    
+
     @Override
     public Protocol getProtocol() {
         return protocol;
     }
-    
+
     @Override
     public EndpointAddress getLocalAddress() {
         return localAddress;
     }
-    
+
     @Override
     public EndpointAddress getRemoteAddress() {
         return remoteAddress;
     }
-    
+
     @Override
     public ConnectionStatus getStatus() {
         return status;
     }
-    
+
     @Override
     public CompletableFuture<Void> send(Message message) {
         updateLastActiveTime();
-        
+
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 模拟HTTP请求发送
-                System.out.println("[HTTP_CONNECTION] 发送消息: " + message.getMessageId() + 
+                System.out.println("[HTTP_CONNECTION] 发送消息: " + message.getMessageId() +
                     " 到 " + remoteAddress.toUri());
-                
+
                 // 通知监听器
                 notifyListeners(listener -> listener.onMessageSent(this, message));
-                
+
                 return null;
             } catch (Exception e) {
                 setStatus(ConnectionStatus.ERROR);
@@ -88,19 +91,19 @@ public class HttpConnection implements Connection {
             }
         });
     }
-    
+
     @Override
     public CompletableFuture<Void> close() {
         return CompletableFuture.runAsync(() -> {
             setStatus(ConnectionStatus.DISCONNECTING);
-            
+
             try {
                 // 执行连接关闭逻辑
                 System.out.println("[HTTP_CONNECTION] 关闭连接: " + connectionId);
-                
+
                 // 通知监听器
                 notifyListeners(listener -> listener.onConnectionClosed(this));
-                
+
                 setStatus(ConnectionStatus.DISCONNECTED);
             } catch (Exception e) {
                 setStatus(ConnectionStatus.ERROR);
@@ -108,17 +111,17 @@ public class HttpConnection implements Connection {
             }
         });
     }
-    
+
     @Override
     public boolean isActive() {
         return status == ConnectionStatus.CONNECTED;
     }
-    
+
     @Override
     public Map<String, Object> getAttributes() {
         return new ConcurrentHashMap<>(attributes);
     }
-    
+
     @Override
     public void setAttribute(String key, Object value) {
         if (key != null) {
@@ -129,7 +132,7 @@ public class HttpConnection implements Connection {
             }
         }
     }
-    
+
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getAttribute(String key, Class<T> type) {
@@ -137,67 +140,41 @@ public class HttpConnection implements Connection {
         if (value == null) {
             return null;
         }
-        
+
         if (type.isInstance(value)) {
             return (T) value;
         }
-        
+
         throw new ClassCastException("无法将属性 " + key + " 转换为类型 " + type.getName());
     }
-    
-    @Override
-    public void addConnectionListener(ConnectionListener listener) {
-        if (listener != null) {
-            listeners.add(listener);
-        }
-    }
-    
-    @Override
-    public void removeConnectionListener(ConnectionListener listener) {
-        if (listener != null) {
-            listeners.remove(listener);
-        }
-    }
-    
+
     /**
      * 设置连接状态
      */
     private void setStatus(ConnectionStatus newStatus) {
         ConnectionStatus oldStatus = this.status;
         this.status = newStatus;
-        
+
         if (oldStatus != newStatus) {
             notifyListeners(listener -> listener.onStatusChanged(this, oldStatus, newStatus));
         }
     }
-    
+
     /**
      * 更新最后活跃时间
      */
     private void updateLastActiveTime() {
         this.lastActiveTime = System.currentTimeMillis();
     }
-    
+
     /**
      * 获取最后活跃时间
      */
     public long getLastActiveTime() {
         return lastActiveTime;
     }
-    
-    /**
-     * 通知所有监听器
-     */
-    private void notifyListeners(java.util.function.Consumer<ConnectionListener> action) {
-        for (ConnectionListener listener : listeners) {
-            try {
-                action.accept(listener);
-            } catch (Exception e) {
-                System.err.println("通知连接监听器时发生错误: " + e.getMessage());
-            }
-        }
-    }
-    
+
+
     @Override
     public String toString() {
         return "HttpConnection{" +
@@ -209,4 +186,29 @@ public class HttpConnection implements Connection {
                 ", lastActiveTime=" + lastActiveTime +
                 '}';
     }
-} 
+
+    @Override
+    public ConnectionListener<Void> save(ConnectionListener<Void> entity) {
+        return null;
+    }
+
+    @Override
+    public void removeByUniqueCode(String s) {
+
+    }
+
+    @Override
+    public ConnectionListener<Void> findByUniqueCode(String s) {
+        return null;
+    }
+
+    @Override
+    public Collection<ConnectionListener<Void>> findAll() {
+        return List.of();
+    }
+
+    @Override
+    public Collection<ConnectionListener<Void>> findBy(Predicate<ConnectionListener<Void>> predicate) {
+        return List.of();
+    }
+}
