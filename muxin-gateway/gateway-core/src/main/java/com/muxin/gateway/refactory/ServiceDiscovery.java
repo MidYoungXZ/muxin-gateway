@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author muxin
  */
-public interface ServiceDiscovery {
+public interface ServiceDiscovery extends LifeCycle{
     
     /**
      * 发现服务节点
@@ -67,17 +67,7 @@ public interface ServiceDiscovery {
      * @param listener 变化监听器
      */
     void unsubscribeServiceChange(String serviceName, ServiceChangeListener listener);
-    
-    /**
-     * 启动服务发现
-     */
-    void start();
-    
-    /**
-     * 停止服务发现
-     */
-    void stop();
-    
+
     /**
      * 获取服务发现状态
      */

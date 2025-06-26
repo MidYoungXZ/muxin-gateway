@@ -1,6 +1,7 @@
 package com.muxin.gateway.refactory.route;
 
 import com.muxin.gateway.refactory.Protocol;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,42 +12,46 @@ import java.util.stream.Collectors;
  *
  * @author muxin
  */
+@Slf4j
 public class SimpleRouteManager implements RouteManager {
     
     private final Map<String, UniversalRoute> routes = new ConcurrentHashMap<>();
     
+    // Repository 接口实现
     @Override
-    public void addRoute(UniversalRoute route) {
-        if (route == null || route.getId() == null) {
+    public UniversalRoute save(UniversalRoute entity) {
+        if (entity == null || entity.getId() == null) {
             throw new IllegalArgumentException("Route and route ID cannot be null");
         }
         
-        routes.put(route.getId(), route);
-        System.out.println("Added route: " + route.getId() + " - " + route.getName());
+        routes.put(entity.getId(), entity);
+        log.info("保存路由: {} - {}", entity.getId(), entity.getName());
+        return entity;
     }
     
     @Override
-    public void removeRoute(String routeId) {
-        if (routeId == null) {
+    public void removeByUniqueCode(String id) {
+        if (id == null) {
             return;
         }
         
-        UniversalRoute removed = routes.remove(routeId);
+        UniversalRoute removed = routes.remove(id);
         if (removed != null) {
-            System.out.println("Removed route: " + routeId + " - " + removed.getName());
+            log.info("移除路由: {} - {}", id, removed.getName());
         }
     }
     
     @Override
-    public UniversalRoute getRoute(String routeId) {
-        return routes.get(routeId);
+    public UniversalRoute findByUniqueCode(String id) {
+        return routes.get(id);
     }
     
     @Override
-    public List<UniversalRoute> getAllRoutes() {
+    public Collection<UniversalRoute> findAll() {
         return new ArrayList<>(routes.values());
     }
     
+    // 业务特定方法
     @Override
     public UniversalRoute matchRoute(UniversalRequestContext context) {
         if (context == null) {
@@ -63,15 +68,15 @@ public class SimpleRouteManager implements RouteManager {
         for (UniversalRoute route : sortedRoutes) {
             try {
                 if (route.matches(context)) {
-                    System.out.println("Matched route: " + route.getId() + " for request");
+                    log.debug("匹配路由: {} 用于请求", route.getId());
                     return route;
                 }
             } catch (Exception e) {
-                System.err.println("Error matching route " + route.getId() + ": " + e.getMessage());
+                log.error("路由匹配错误 {}: {}", route.getId(), e.getMessage());
             }
         }
         
-        System.out.println("No route matched for request");
+        log.debug("请求未匹配到任何路由");
         return null;
     }
     
@@ -109,4 +114,19 @@ public class SimpleRouteManager implements RouteManager {
         
         return stats;
     }
-} 
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void shutdown() {
+
+    }
+}

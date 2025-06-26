@@ -15,7 +15,7 @@ import java.util.function.Consumer;
  *
  * @author muxin
  */
-public interface Connection<R> extends Repository<String, ConnectionListener<R>> {
+public interface Connection extends Repository<String, ConnectionListener> {
 
     /**
      * 连接ID
@@ -45,7 +45,7 @@ public interface Connection<R> extends Repository<String, ConnectionListener<R>>
     /**
      * 发送消息
      */
-    CompletableFuture<R> send(Message message);
+    CompletableFuture<Message> send(Message message);
 
     /**
      * 关闭连接
@@ -73,8 +73,8 @@ public interface Connection<R> extends Repository<String, ConnectionListener<R>>
     <T> T getAttribute(String key, Class<T> type);
 
 
-    default void notifyListeners(Consumer<ConnectionListener<R>> action) {
-        for (ConnectionListener<R> listener : findAll()) {
+    default void notifyListeners(Consumer<ConnectionListener> action) {
+        for (ConnectionListener listener : findAll()) {
             action.accept(listener);
         }
     }

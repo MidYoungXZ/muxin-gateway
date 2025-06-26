@@ -3,14 +3,13 @@ package com.muxin.gateway.refactory.filter;
 import com.muxin.gateway.refactory.Protocol;
 
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  * 通用过滤器管理器实现
  *
  * @author muxin
  */
-public class UniversalFilterRepository implements FilterManager {
+public class UniversalFilterManager implements FilterManager {
 
     private final Map<String, UniversalFilter> filters = new HashMap<>();
 
@@ -46,5 +45,20 @@ public class UniversalFilterRepository implements FilterManager {
     @Override
     public UniversalFilterChain createFilterChain(Protocol protocol, FilterType type) {
         return null;
+    }
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void shutdown() {
+
     }
 }

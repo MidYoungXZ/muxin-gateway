@@ -19,7 +19,7 @@ public class DefaultRequestContext implements UniversalRequestContext {
     
     private Message inboundMessage;
     private Message outboundMessage;
-    private Connection inboundConnection;
+    private final Connection inboundConnection;
     private Connection outboundConnection;
     private Object matchedRoute;
     private Object selectedNode;
@@ -54,16 +54,16 @@ public class DefaultRequestContext implements UniversalRequestContext {
         this.outboundMessage = message;
     }
     
-    @Override
+        @Override
     public Connection getInboundConnection() {
         return inboundConnection;
     }
-    
+
     @Override
     public Connection getOutboundConnection() {
         return outboundConnection;
     }
-    
+
     @Override
     public void setOutboundConnection(Connection connection) {
         this.outboundConnection = connection;

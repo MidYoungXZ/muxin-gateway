@@ -8,6 +8,7 @@ import com.muxin.gateway.refactory.predicate.UniversalPredicate;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.route.UniversalRoute;
 
+import java.time.Duration;
 import java.util.*;
 
 /**
@@ -183,5 +184,37 @@ public class EnhancedHttpRoute implements UniversalRoute {
         
         // 转换为优先级（数值越小优先级越高）
         return 1000 - specificity;
+    }
+    
+    // ========== 超时配置方法实现 ==========
+    
+    @Override
+    public Duration getConnectionTimeout() {
+        return Duration.ofSeconds(5); // HTTP连接超时5秒
+    }
+    
+    @Override
+    public Duration getRequestTimeout() {
+        return Duration.ofSeconds(30); // HTTP请求超时30秒
+    }
+    
+    @Override
+    public Duration getTotalTimeout() {
+        return Duration.ofSeconds(60); // HTTP总超时60秒
+    }
+    
+    @Override
+    public Duration getReadTimeout() {
+        return Duration.ofSeconds(30); // HTTP读取超时30秒
+    }
+    
+    @Override
+    public Duration getWriteTimeout() {
+        return Duration.ofSeconds(10); // HTTP写入超时10秒
+    }
+    
+    @Override
+    public Duration getCircuitBreakerTimeout() {
+        return Duration.ofSeconds(60); // HTTP熔断器超时60秒
     }
 } 

@@ -1,7 +1,7 @@
-package com.muxin.gateway.refactory.message;
+package com.muxin.gateway.refactory.node;
 
-import com.muxin.gateway.refactory.node.NodeStatus;
-import com.muxin.gateway.refactory.node.UniversalServiceNode;
+import com.muxin.gateway.core.common.Repository;
+import com.muxin.gateway.refactory.LifeCycle;
 
 import java.util.List;
 
@@ -11,17 +11,7 @@ import java.util.List;
  *
  * @author muxin
  */
-public interface NodeManager {
-    
-    /**
-     * 添加服务节点
-     */
-    void addNode(String serviceName, UniversalServiceNode node);
-    
-    /**
-     * 移除服务节点
-     */
-    void removeNode(String serviceName, String nodeId);
+public interface NodeManager extends Repository<String, UniversalServiceNode>, LifeCycle {
     
     /**
      * 获取服务的所有节点

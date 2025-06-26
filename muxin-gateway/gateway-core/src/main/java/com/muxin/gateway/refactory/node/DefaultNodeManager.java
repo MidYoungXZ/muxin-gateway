@@ -1,9 +1,9 @@
 package com.muxin.gateway.refactory.node;
 
 import com.muxin.gateway.refactory.*;
-import com.muxin.gateway.refactory.message.NodeManager;
 import com.muxin.gateway.refactory.node.health.HealthCheckResult;
 import com.muxin.gateway.refactory.node.health.HealthChecker;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,8 +18,12 @@ import java.util.stream.Collectors;
  * 
  * @author muxin
  */
+@Slf4j
 public class DefaultNodeManager implements NodeManager {
     
+    // 直接按节点ID管理 - Repository 接口需要
+    private final Map<String, UniversalServiceNode> nodes;
+    // 按服务名分组管理 - 业务方法需要  
     private final Map<String, Map<String, UniversalServiceNode>> serviceNodes;
     private final ServiceDiscovery serviceDiscovery;
     private final HealthChecker healthChecker;
@@ -28,6 +32,7 @@ public class DefaultNodeManager implements NodeManager {
     private volatile boolean running = false;
     
     public DefaultNodeManager() {
+        this.nodes = new ConcurrentHashMap<>();
         this.serviceNodes = new ConcurrentHashMap<>();
         this.serviceDiscovery = new DefaultServiceDiscovery();
         this.healthChecker = new DefaultHealthChecker();
@@ -35,47 +40,77 @@ public class DefaultNodeManager implements NodeManager {
         this.listeners = new ArrayList<>();
     }
     
+    // Repository 接口实现
     @Override
-    public void addNode(String serviceName, UniversalServiceNode node) {
-        if (serviceName != null && node != null && node.getId() != null) {
-            serviceNodes.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>())
-                       .put(node.getId(), node);
-            System.out.println("[NODE_MANAGER] 添加节点: " + serviceName + "/" + node.getId() + " - " + node.getAddress().toUri());
-            
-            // 通知监听器
-            notifyListeners(listener -> listener.onNodeAdded(serviceName, node));
+    public UniversalServiceNode save(UniversalServiceNode entity) {
+        if (entity == null || entity.getId() == null) {
+            throw new IllegalArgumentException("Node and node ID cannot be null");
         }
+        
+        // 从节点的元数据中获取服务名称，如果没有则使用默认值
+        String serviceName = getServiceNameFromNode(entity);
+        
+        // 同时更新两个数据结构
+        nodes.put(entity.getId(), entity);
+        serviceNodes.computeIfAbsent(serviceName, k -> new ConcurrentHashMap<>())
+                   .put(entity.getId(), entity);
+        
+        log.info("保存节点: {}/{} - {}", serviceName, entity.getId(), entity.getAddress().toUri());
+        
+        // 通知监听器
+        notifyListeners(listener -> listener.onNodeAdded(serviceName, entity));
+        
+        return entity;
     }
     
     @Override
-    public void removeNode(String serviceName, String nodeId) {
-        Map<String, UniversalServiceNode> nodes = serviceNodes.get(serviceName);
-        if (nodes != null) {
-            UniversalServiceNode removed = nodes.remove(nodeId);
-            if (removed != null) {
-                System.out.println("[NODE_MANAGER] 移除节点: " + serviceName + "/" + nodeId);
-                
-                // 通知监听器
-                notifyListeners(listener -> listener.onNodeRemoved(serviceName, nodeId));
-                
+    public void removeByUniqueCode(String nodeId) {
+        if (nodeId == null) {
+            return;
+        }
+        
+        UniversalServiceNode removed = nodes.remove(nodeId);
+        if (removed != null) {
+            String serviceName = getServiceNameFromNode(removed);
+            
+            // 从服务映射中移除
+            Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+            if (serviceNodeMap != null) {
+                serviceNodeMap.remove(nodeId);
                 // 如果服务没有节点了，移除服务
-                if (nodes.isEmpty()) {
+                if (serviceNodeMap.isEmpty()) {
                     serviceNodes.remove(serviceName);
                 }
             }
+            
+            log.info("移除节点: {}/{}", serviceName, nodeId);
+            
+            // 通知监听器
+            notifyListeners(listener -> listener.onNodeRemoved(serviceName, nodeId));
         }
     }
     
     @Override
+    public UniversalServiceNode findByUniqueCode(String nodeId) {
+        return nodes.get(nodeId);
+    }
+    
+    @Override
+    public Collection<UniversalServiceNode> findAll() {
+        return new ArrayList<>(nodes.values());
+    }
+    
+    // 业务特定方法
+    @Override
     public List<UniversalServiceNode> getNodes(String serviceName) {
-        Map<String, UniversalServiceNode> nodes = serviceNodes.get(serviceName);
-        return nodes != null ? new ArrayList<>(nodes.values()) : new ArrayList<>();
+        Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+        return serviceNodeMap != null ? new ArrayList<>(serviceNodeMap.values()) : new ArrayList<>();
     }
     
     @Override
     public UniversalServiceNode getNode(String serviceName, String nodeId) {
-        Map<String, UniversalServiceNode> nodes = serviceNodes.get(serviceName);
-        return nodes != null ? nodes.get(nodeId) : null;
+        Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+        return serviceNodeMap != null ? serviceNodeMap.get(nodeId) : null;
     }
     
     @Override
@@ -87,7 +122,7 @@ public class DefaultNodeManager implements NodeManager {
     
     @Override
     public void updateNodeStatus(String serviceName, String nodeId, NodeStatus status) {
-        UniversalServiceNode node = getNode(serviceName, nodeId);
+        UniversalServiceNode node = nodes.get(nodeId);
         if (node != null) {
             NodeStatus oldStatus = node.getStatus();
             node.updateStatus(status);
@@ -101,7 +136,12 @@ public class DefaultNodeManager implements NodeManager {
     public List<String> getAllServiceNames() {
         return new ArrayList<>(serviceNodes.keySet());
     }
-    
+
+    @Override
+    public void init() {
+
+    }
+
     @Override
     public void start() {
         if (running) {
@@ -116,9 +156,14 @@ public class DefaultNodeManager implements NodeManager {
         // 启动服务发现
         serviceDiscovery.start();
         
-        System.out.println("[NODE_MANAGER] 节点管理器启动完成");
+        log.info("节点管理器启动完成");
     }
-    
+
+    @Override
+    public void shutdown() {
+
+    }
+
     @Override
     public void stop() {
         if (!running) {
@@ -139,18 +184,27 @@ public class DefaultNodeManager implements NodeManager {
         }
         
         // 停止服务发现
-        serviceDiscovery.stop();
+        serviceDiscovery.shutdown();
         
-        System.out.println("[NODE_MANAGER] 节点管理器停止完成");
+        log.info("节点管理器停止完成");
+    }
+    
+    /**
+     * 从节点中获取服务名称
+     */
+    private String getServiceNameFromNode(UniversalServiceNode node) {
+        if (node.getMetadata() != null && node.getMetadata().containsKey("serviceName")) {
+            return (String) node.getMetadata().get("serviceName");
+        }
+        // 默认使用节点名称作为服务名称
+        return node.getName() != null ? node.getName() : "default-service";
     }
     
     /**
      * 获取所有节点（用于兼容）
      */
     public List<UniversalServiceNode> getAllNodes() {
-        return serviceNodes.values().stream()
-                .flatMap(nodes -> nodes.values().stream())
-                .collect(Collectors.toList());
+        return new ArrayList<>(nodes.values());
     }
     
     /**
@@ -179,7 +233,7 @@ public class DefaultNodeManager implements NodeManager {
             try {
                 performHealthCheck();
             } catch (Exception e) {
-                System.err.println("[NODE_MANAGER] 健康检查失败: " + e.getMessage());
+                log.error("健康检查失败: {}", e.getMessage());
             }
         }, 10, 30, TimeUnit.SECONDS);
     }
@@ -188,38 +242,34 @@ public class DefaultNodeManager implements NodeManager {
      * 执行健康检查
      */
     private void performHealthCheck() {
-        for (String serviceName : serviceNodes.keySet()) {
-            Map<String, UniversalServiceNode> nodes = serviceNodes.get(serviceName);
-            if (nodes != null) {
-                for (UniversalServiceNode node : nodes.values()) {
-                    try {
-                        HealthCheckResult result = healthChecker.checkHealth(node);
-                        
-                        NodeStatus oldStatus = node.getStatus();
-                        NodeStatus newStatus = result.isHealthy() ? NodeStatus.HEALTHY : NodeStatus.UNHEALTHY;
-                        
-                        if (oldStatus != newStatus) {
-                            node.updateStatus(newStatus);
-                            
-                            // 更新失败计数
-                            if (result.isHealthy()) {
-                                node.resetFailureCount();
-                            } else {
-                                node.incrementFailureCount();
-                            }
-                            
-                            // 通知监听器
-                            notifyListeners(listener -> listener.onNodeStatusChanged(
-                                serviceName, node.getId(), oldStatus, newStatus));
-                        }
-                        
-                        node.updateLastHealthCheckTime(System.currentTimeMillis());
-                        
-                    } catch (Exception e) {
-                        System.err.println("[NODE_MANAGER] 节点健康检查失败: " + serviceName + "/" + node.getId() + ", 错误: " + e.getMessage());
+        for (UniversalServiceNode node : nodes.values()) {
+            try {
+                HealthCheckResult result = healthChecker.checkHealth(node);
+                
+                NodeStatus oldStatus = node.getStatus();
+                NodeStatus newStatus = result.isHealthy() ? NodeStatus.HEALTHY : NodeStatus.UNHEALTHY;
+                
+                if (oldStatus != newStatus) {
+                    node.updateStatus(newStatus);
+                    
+                    // 更新失败计数
+                    if (result.isHealthy()) {
+                        node.resetFailureCount();
+                    } else {
                         node.incrementFailureCount();
                     }
+                    
+                    // 通知监听器
+                    String serviceName = getServiceNameFromNode(node);
+                    notifyListeners(listener -> listener.onNodeStatusChanged(
+                        serviceName, node.getId(), oldStatus, newStatus));
                 }
+                
+                node.updateLastHealthCheckTime(System.currentTimeMillis());
+                
+            } catch (Exception e) {
+                log.error("节点健康检查失败: {}, 错误: {}", node.getId(), e.getMessage());
+                node.incrementFailureCount();
             }
         }
     }
@@ -232,7 +282,7 @@ public class DefaultNodeManager implements NodeManager {
             try {
                 action.accept(listener);
             } catch (Exception e) {
-                System.err.println("[NODE_MANAGER] 通知监听器失败: " + e.getMessage());
+                log.error("通知监听器失败: {}", e.getMessage());
             }
         }
     }
@@ -277,17 +327,17 @@ public class DefaultNodeManager implements NodeManager {
         
         @Override
         public void registerNode(String serviceName, UniversalServiceNode node) {
-            System.out.println("[SERVICE_DISCOVERY] 注册节点: " + serviceName + "/" + node.getId());
+            log.debug("注册节点: {}/{}", serviceName, node.getId());
         }
         
         @Override
         public void unregisterNode(String serviceName, String nodeId) {
-            System.out.println("[SERVICE_DISCOVERY] 注销节点: " + serviceName + "/" + nodeId);
+            log.debug("注销节点: {}/{}", serviceName, nodeId);
         }
         
         @Override
         public void updateNodeStatus(String serviceName, String nodeId, NodeStatus status) {
-            System.out.println("[SERVICE_DISCOVERY] 更新节点状态: " + serviceName + "/" + nodeId + " -> " + status);
+            log.debug("更新节点状态: {}/{} -> {}", serviceName, nodeId, status);
         }
         
         @Override
@@ -304,17 +354,22 @@ public class DefaultNodeManager implements NodeManager {
         public void unsubscribeServiceChange(String serviceName, ServiceChangeListener listener) {
             // 简单实现
         }
-        
+
+        @Override
+        public void init() {
+
+        }
+
         @Override
         public void start() {
             running = true;
-            System.out.println("[SERVICE_DISCOVERY] 服务发现启动");
+            log.info("服务发现启动");
         }
-        
+
         @Override
-        public void stop() {
+        public void shutdown() {
             running = false;
-            System.out.println("[SERVICE_DISCOVERY] 服务发现停止");
+            log.info("服务发现停止");
         }
         
         @Override
@@ -348,23 +403,23 @@ public class DefaultNodeManager implements NodeManager {
         @Override
         public void startScheduler() {
             running = true;
-            System.out.println("[HEALTH_CHECKER] 健康检查调度器启动");
+            log.info("健康检查调度器启动");
         }
         
         @Override
         public void stopScheduler() {
             running = false;
-            System.out.println("[HEALTH_CHECKER] 健康检查调度器停止");
+            log.info("健康检查调度器停止");
         }
         
         @Override
         public void addNode(UniversalServiceNode node) {
-            System.out.println("[HEALTH_CHECKER] 添加健康检查节点: " + node.getId());
+            log.debug("添加健康检查节点: {}", node.getId());
         }
         
         @Override
         public void removeNode(String nodeId) {
-            System.out.println("[HEALTH_CHECKER] 移除健康检查节点: " + nodeId);
+            log.debug("移除健康检查节点: {}", nodeId);
         }
         
         @Override

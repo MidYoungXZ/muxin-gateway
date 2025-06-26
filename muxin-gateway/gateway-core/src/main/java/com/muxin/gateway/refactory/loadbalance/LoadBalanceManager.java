@@ -1,5 +1,7 @@
 package com.muxin.gateway.refactory.loadbalance;
 
+import com.muxin.gateway.core.common.Repository;
+import com.muxin.gateway.refactory.LifeCycle;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.node.EndpointAddress;
 
@@ -10,17 +12,7 @@ import java.util.List;
  *
  * @author muxin
  */
-public interface LoadBalanceManager {
-    
-    /**
-     * 注册负载均衡策略
-     */
-    void registerStrategy(String name, LoadBalanceStrategy strategy);
-    
-    /**
-     * 获取负载均衡策略
-     */
-    LoadBalanceStrategy getStrategy(String name);
+public interface LoadBalanceManager extends Repository<String, LoadBalanceStrategy>, LifeCycle {
     
     /**
      * 选择目标节点

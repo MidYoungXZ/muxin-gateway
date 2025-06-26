@@ -5,6 +5,7 @@ import com.muxin.gateway.refactory.RouteTarget;
 import com.muxin.gateway.refactory.filter.UniversalFilter;
 import com.muxin.gateway.refactory.predicate.UniversalPredicate;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -69,4 +70,57 @@ public interface UniversalRoute {
      * 匹配请求上下文
      */
     boolean matches(UniversalRequestContext context);
+    
+    // ========== 超时配置方法 ==========
+    
+    /**
+     * 获取连接超时时间
+     */
+    Duration getConnectionTimeout();
+    
+    /**
+     * 获取请求超时时间
+     */
+    Duration getRequestTimeout();
+    
+    /**
+     * 获取总超时时间（包含重试）
+     */
+    Duration getTotalTimeout();
+    
+    /**
+     * 获取读取超时时间
+     */
+    Duration getReadTimeout();
+    
+    /**
+     * 获取写入超时时间
+     */
+    Duration getWriteTimeout();
+    
+    /**
+     * 获取熔断器超时时间
+     */
+    Duration getCircuitBreakerTimeout();
+    
+    /**
+     * 是否启用超时控制
+     */
+    default boolean isTimeoutEnabled() {
+        return true;
+    }
+    
+    /**
+     * 获取指定类型的超时时间
+     */
+    default Duration getTimeout(TimeoutType type) {
+        return switch (type) {
+            case CONNECTION -> getConnectionTimeout();
+            case REQUEST -> getRequestTimeout();
+            case TOTAL -> getTotalTimeout();
+            case READ -> getReadTimeout();
+            case WRITE -> getWriteTimeout();
+            case CIRCUIT_BREAKER -> getCircuitBreakerTimeout();
+        };
+    }
 } 

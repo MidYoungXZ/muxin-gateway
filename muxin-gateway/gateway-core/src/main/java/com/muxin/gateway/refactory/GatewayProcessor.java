@@ -2,7 +2,7 @@ package com.muxin.gateway.refactory;
 
 import com.muxin.gateway.refactory.filter.FilterManager;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
-import com.muxin.gateway.refactory.message.NodeManager;
+import com.muxin.gateway.refactory.node.NodeManager;
 import com.muxin.gateway.refactory.route.RouteManager;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 

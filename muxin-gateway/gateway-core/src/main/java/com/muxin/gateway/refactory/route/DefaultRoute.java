@@ -5,6 +5,7 @@ import com.muxin.gateway.refactory.RouteTarget;
 import com.muxin.gateway.refactory.filter.UniversalFilter;
 import com.muxin.gateway.refactory.predicate.UniversalPredicate;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -267,5 +268,62 @@ public class DefaultRoute implements UniversalRoute {
             
             return new DefaultRoute(this);
         }
+    }
+    
+    // ========== 超时配置方法实现 ==========
+    
+    @Override
+    public Duration getConnectionTimeout() {
+        // 从元数据中获取配置，或使用默认值
+        Object timeout = metadata.get("connectionTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(5); // 默认连接超时5秒
+    }
+    
+    @Override
+    public Duration getRequestTimeout() {
+        Object timeout = metadata.get("requestTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(30); // 默认请求超时30秒
+    }
+    
+    @Override
+    public Duration getTotalTimeout() {
+        Object timeout = metadata.get("totalTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(60); // 默认总超时60秒
+    }
+    
+    @Override
+    public Duration getReadTimeout() {
+        Object timeout = metadata.get("readTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(30); // 默认读取超时30秒
+    }
+    
+    @Override
+    public Duration getWriteTimeout() {
+        Object timeout = metadata.get("writeTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(10); // 默认写入超时10秒
+    }
+    
+    @Override
+    public Duration getCircuitBreakerTimeout() {
+        Object timeout = metadata.get("circuitBreakerTimeout");
+        if (timeout instanceof Duration) {
+            return (Duration) timeout;
+        }
+        return Duration.ofSeconds(60); // 默认熔断器超时60秒
     }
 } 

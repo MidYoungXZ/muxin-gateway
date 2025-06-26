@@ -1,34 +1,15 @@
 package com.muxin.gateway.refactory.route;
 
-import java.util.List;
+import com.muxin.gateway.core.common.Repository;
+import com.muxin.gateway.refactory.LifeCycle;
 
 /**
  * 路由管理器接口
  *
  * @author muxin
  */
-public interface RouteManager {
-    
-    /**
-     * 添加路由
-     */
-    void addRoute(UniversalRoute route);
-    
-    /**
-     * 删除路由
-     */
-    void removeRoute(String routeId);
-    
-    /**
-     * 获取路由
-     */
-    UniversalRoute getRoute(String routeId);
-    
-    /**
-     * 获取所有路由
-     */
-    List<UniversalRoute> getAllRoutes();
-    
+public interface RouteManager extends Repository<String, UniversalRoute>, LifeCycle {
+
     /**
      * 匹配路由
      */

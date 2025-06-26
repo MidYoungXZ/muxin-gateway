@@ -1,13 +1,14 @@
 package com.muxin.gateway.refactory.filter;
 
 import com.muxin.gateway.core.common.Repository;
+import com.muxin.gateway.refactory.LifeCycle;
 import com.muxin.gateway.refactory.Protocol;
 
 /**
  * @author Administrator
  * @since 1.0
  */
-public interface FilterManager extends Repository<String, UniversalFilter> {
+public interface FilterManager extends Repository<String, UniversalFilter>, LifeCycle {
 
     /**
      * 创建过滤器链

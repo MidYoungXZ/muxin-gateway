@@ -2,11 +2,11 @@ package com.muxin.gateway.refactory;
 
 import com.muxin.gateway.refactory.connect.Connection;
 import com.muxin.gateway.refactory.filter.FilterManager;
-import com.muxin.gateway.refactory.filter.UniversalFilterRepository;
+import com.muxin.gateway.refactory.filter.UniversalFilterManager;
 import com.muxin.gateway.refactory.loadbalance.DefaultLoadBalanceManager;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.refactory.message.Message;
-import com.muxin.gateway.refactory.message.NodeManager;
+import com.muxin.gateway.refactory.node.NodeManager;
 import com.muxin.gateway.refactory.message.http.HttpProtocol;
 import com.muxin.gateway.refactory.message.http.HttpProtocolAdapter;
 import com.muxin.gateway.refactory.node.DefaultNodeManager;
@@ -39,7 +39,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
         
         // 初始化网关处理器
         RouteManager routeManager = new SimpleRouteManager();
-        FilterManager filterManager = new UniversalFilterRepository();
+        FilterManager filterManager = new UniversalFilterManager();
         LoadBalanceManager loadBalanceManager = new DefaultLoadBalanceManager();
         NodeManager nodeManager = new DefaultNodeManager();
         

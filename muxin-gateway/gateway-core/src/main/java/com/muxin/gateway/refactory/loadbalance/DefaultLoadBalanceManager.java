@@ -2,7 +2,9 @@ package com.muxin.gateway.refactory.loadbalance;
 
 import com.muxin.gateway.refactory.node.EndpointAddress;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @author muxin
  */
+@Slf4j
 public class DefaultLoadBalanceManager implements LoadBalanceManager {
     
     private final Map<String, LoadBalanceStrategy> strategies;
@@ -22,22 +25,41 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
         this.defaultStrategyName = "ROUND_ROBIN";
         
         // 注册默认策略
-        registerStrategy("ROUND_ROBIN", new RoundRobinLoadBalancer());
+        save(new RoundRobinLoadBalancer());
+    }
+    
+    // Repository 接口实现
+    @Override
+    public LoadBalanceStrategy save(LoadBalanceStrategy entity) {
+        if (entity != null && entity.getName() != null) {
+            strategies.put(entity.getName(), entity);
+            log.info("注册负载均衡策略: {}", entity.getName());
+            return entity;
+        }
+        return null;
     }
     
     @Override
-    public void registerStrategy(String name, LoadBalanceStrategy strategy) {
-        if (name != null && strategy != null) {
-            strategies.put(name, strategy);
-            System.out.println("[LOAD_BALANCE_MANAGER] 注册负载均衡策略: " + name);
+    public void removeByUniqueCode(String name) {
+        if (name != null) {
+            LoadBalanceStrategy removed = strategies.remove(name);
+            if (removed != null) {
+                log.info("移除负载均衡策略: {}", name);
+            }
         }
     }
     
     @Override
-    public LoadBalanceStrategy getStrategy(String name) {
+    public LoadBalanceStrategy findByUniqueCode(String name) {
         return strategies.get(name);
     }
     
+    @Override
+    public Collection<LoadBalanceStrategy> findAll() {
+        return strategies.values();
+    }
+    
+    // 业务特定方法
     @Override
     public EndpointAddress selectTarget(String serviceName, List<EndpointAddress> availableTargets,
                                         UniversalRequestContext context) {
@@ -64,30 +86,18 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
         
         if (strategy == null) {
             // 如果还没有策略，返回第一个地址
-            System.err.println("[LOAD_BALANCE_MANAGER] 没有可用的负载均衡策略，使用第一个地址");
+            log.warn("没有可用的负载均衡策略，使用第一个地址");
             return availableTargets.get(0);
         }
         
         try {
             EndpointAddress selected = strategy.select(availableTargets, context);
-            System.out.println(String.format("[LOAD_BALANCE_MANAGER] 为服务 %s 选择端点: %s 使用策略: %s", 
-                serviceName, selected != null ? selected.toUri() : "null", strategy.getName()));
+            log.debug("为服务 {} 选择端点: {} 使用策略: {}", 
+                serviceName, selected != null ? selected.toUri() : "null", strategy.getName());
             return selected;
         } catch (Exception e) {
-            System.err.println("负载均衡选择失败: " + e.getMessage());
+            log.error("负载均衡选择失败: {}", e.getMessage());
             return availableTargets.get(0);
-        }
-    }
-    
-    /**
-     * 移除策略
-     */
-    public void removeStrategy(String name) {
-        if (name != null) {
-            LoadBalanceStrategy removed = strategies.remove(name);
-            if (removed != null) {
-                System.out.println("[LOAD_BALANCE_MANAGER] 移除负载均衡策略: " + name);
-            }
         }
     }
     
@@ -97,17 +107,15 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
     public void setDefaultStrategy(String strategyName) {
         if (strategies.containsKey(strategyName)) {
             this.defaultStrategyName = strategyName;
-            System.out.println("[LOAD_BALANCE_MANAGER] 设置默认策略: " + strategyName);
-        } else {
-            throw new IllegalArgumentException("策略不存在: " + strategyName);
+            log.info("设置默认负载均衡策略: {}", strategyName);
         }
     }
     
     /**
-     * 获取所有策略名称
+     * 获取默认策略名称
      */
-    public java.util.Set<String> getStrategyNames() {
-        return new java.util.HashSet<>(strategies.keySet());
+    public String getDefaultStrategyName() {
+        return defaultStrategyName;
     }
     
     /**
@@ -117,7 +125,22 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
         Map<String, Object> stats = new ConcurrentHashMap<>();
         stats.put("totalStrategies", strategies.size());
         stats.put("defaultStrategy", defaultStrategyName);
-        stats.put("availableStrategies", getStrategyNames());
+        stats.put("availableStrategies", strategies.keySet());
         return stats;
     }
-} 
+
+    @Override
+    public void init() {
+
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void shutdown() {
+
+    }
+}

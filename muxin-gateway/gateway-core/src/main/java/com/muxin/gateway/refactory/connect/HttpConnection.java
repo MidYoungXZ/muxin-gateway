@@ -18,7 +18,7 @@ import java.util.function.Predicate;
  *
  * @author muxin
  */
-public class HttpConnection implements Connection<Void> {
+public class HttpConnection implements Connection {
 
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
 
@@ -27,7 +27,7 @@ public class HttpConnection implements Connection<Void> {
     private final EndpointAddress localAddress;
     private final EndpointAddress remoteAddress;
     private final Map<String, Object> attributes;
-    private final CopyOnWriteArrayList<ConnectionListener<Void>> listeners;
+    private final CopyOnWriteArrayList<ConnectionListener> listeners;
 
     private volatile ConnectionStatus status;
     private volatile long lastActiveTime;
@@ -72,7 +72,7 @@ public class HttpConnection implements Connection<Void> {
     }
 
     @Override
-    public CompletableFuture<Void> send(Message message) {
+    public CompletableFuture<Message> send(Message message) {
         updateLastActiveTime();
 
         return CompletableFuture.supplyAsync(() -> {
@@ -84,7 +84,8 @@ public class HttpConnection implements Connection<Void> {
                 // 通知监听器
                 notifyListeners(listener -> listener.onMessageSent(this, message));
 
-                return null;
+                // 模拟响应
+                return message.createResponse();
             } catch (Exception e) {
                 setStatus(ConnectionStatus.ERROR);
                 throw new RuntimeException("发送消息失败", e);
@@ -174,6 +175,33 @@ public class HttpConnection implements Connection<Void> {
         return lastActiveTime;
     }
 
+    // Repository 接口实现
+    @Override
+    public ConnectionListener save(ConnectionListener entity) {
+        if (entity != null) {
+            listeners.add(entity);
+            return entity;
+        }
+        return null;
+    }
+
+    @Override
+    public void removeByUniqueCode(String uniqueCode) {
+        listeners.removeIf(listener -> uniqueCode.equals(listener.id()));
+    }
+
+    @Override
+    public ConnectionListener findByUniqueCode(String uniqueCode) {
+        return listeners.stream()
+                .filter(listener -> uniqueCode.equals(listener.id()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
+    public List<ConnectionListener> findAll() {
+        return List.copyOf(listeners);
+    }
 
     @Override
     public String toString() {
@@ -185,30 +213,5 @@ public class HttpConnection implements Connection<Void> {
                 ", status=" + status +
                 ", lastActiveTime=" + lastActiveTime +
                 '}';
-    }
-
-    @Override
-    public ConnectionListener<Void> save(ConnectionListener<Void> entity) {
-        return null;
-    }
-
-    @Override
-    public void removeByUniqueCode(String s) {
-
-    }
-
-    @Override
-    public ConnectionListener<Void> findByUniqueCode(String s) {
-        return null;
-    }
-
-    @Override
-    public Collection<ConnectionListener<Void>> findAll() {
-        return List.of();
-    }
-
-    @Override
-    public Collection<ConnectionListener<Void>> findBy(Predicate<ConnectionListener<Void>> predicate) {
-        return List.of();
     }
 }

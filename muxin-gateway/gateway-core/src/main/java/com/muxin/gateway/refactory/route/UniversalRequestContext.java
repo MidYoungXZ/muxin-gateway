@@ -29,8 +29,8 @@ public interface UniversalRequestContext {
     /**
      * 入站连接
      */
-    Connection getInboundConnection();
-    
+        Connection getInboundConnection();
+
     /**
      * 出站连接
      */
