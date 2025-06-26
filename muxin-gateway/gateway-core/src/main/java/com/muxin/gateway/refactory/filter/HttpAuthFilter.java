@@ -1,11 +1,9 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.filter;
 
-import com.muxin.gateway.refactory.*;
-import com.muxin.gateway.refactory.filter.FilterType;
-import com.muxin.gateway.refactory.filter.UniversalFilter;
-import com.muxin.gateway.refactory.filter.UniversalFilterChain;
 import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +13,7 @@ import java.util.Set;
  *
  * @author muxin
  */
+@Slf4j
 public class HttpAuthFilter implements UniversalFilter {
     
     private final int order;
@@ -31,23 +30,23 @@ public class HttpAuthFilter implements UniversalFilter {
             String authorization = inbound.getHeaders().get("Authorization", String.class);
             
             if (authorization == null || authorization.isEmpty()) {
-                System.out.println("[AUTH] No authorization header found");
+                log.warn("[AUTH] 未找到授权头");
                 // 设置认证失败标记
                 context.setAttribute("auth.status", "FAILED");
                 context.setAttribute("auth.reason", "Missing Authorization header");
             } else if (authorization.startsWith("Bearer ")) {
                 String token = authorization.substring(7);
                 if (isValidToken(token)) {
-                    System.out.println("[AUTH] Token validation successful");
+                    log.debug("[AUTH] Token验证成功");
                     context.setAttribute("auth.status", "SUCCESS");
                     context.setAttribute("auth.user", extractUserFromToken(token));
                 } else {
-                    System.out.println("[AUTH] Invalid token");
+                    log.warn("[AUTH] 无效的token");
                     context.setAttribute("auth.status", "FAILED");
                     context.setAttribute("auth.reason", "Invalid token");
                 }
             } else {
-                System.out.println("[AUTH] Invalid authorization format");
+                log.warn("[AUTH] 无效的授权格式");
                 context.setAttribute("auth.status", "FAILED");
                 context.setAttribute("auth.reason", "Invalid authorization format");
             }
@@ -80,7 +79,7 @@ public class HttpAuthFilter implements UniversalFilter {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new HttpProtocol());
+        protocols.add(new Protocol.HttpProtocol());
         return protocols;
     }
     

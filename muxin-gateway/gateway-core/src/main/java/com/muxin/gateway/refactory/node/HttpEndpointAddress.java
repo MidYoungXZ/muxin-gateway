@@ -1,7 +1,7 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.node;
 
 import com.muxin.gateway.refactory.node.EndpointAddress;
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ public class HttpEndpointAddress implements EndpointAddress {
     
     public HttpEndpointAddress(String uri) {
         this.originalUri = uri;
-        this.protocol = new HttpProtocol();
+        this.protocol = new Protocol.HttpProtocol();
         this.parameters = new HashMap<>();
         
         try {

@@ -2,6 +2,7 @@ package com.muxin.gateway.refactory.loadbalance;
 
 import com.muxin.gateway.refactory.node.EndpointAddress;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  *
  * @author muxin
  */
+@Slf4j
 public class RoundRobinLoadBalancer implements LoadBalanceStrategy {
     
     private final AtomicInteger currentIndex = new AtomicInteger(0);
@@ -39,8 +41,8 @@ public class RoundRobinLoadBalancer implements LoadBalanceStrategy {
         int index = currentIndex.getAndIncrement() % healthyAddresses.size();
         EndpointAddress selected = healthyAddresses.get(index);
         
-        System.out.println(String.format("[LOAD_BALANCER] RoundRobin selected: %s (index=%d/%d)", 
-            selected.toUri(), index, healthyAddresses.size()));
+        log.debug("[LOAD_BALANCER] RoundRobin选择: {} (index={}/{})", 
+            selected.toUri(), index, healthyAddresses.size());
         
         return selected;
     }
@@ -53,8 +55,8 @@ public class RoundRobinLoadBalancer implements LoadBalanceStrategy {
     @Override
     public void updateHealthStatus(EndpointAddress address, boolean isHealthy) {
         healthStatus.put(address.toUri(), isHealthy);
-        System.out.println(String.format("[LOAD_BALANCER] Health status updated: %s -> %s", 
-            address.toUri(), isHealthy ? "HEALTHY" : "UNHEALTHY"));
+        log.info("[LOAD_BALANCER] 健康状态更新: {} -> {}", 
+            address.toUri(), isHealthy ? "HEALTHY" : "UNHEALTHY");
     }
     
     @Override

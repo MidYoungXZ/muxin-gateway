@@ -1,6 +1,6 @@
 package com.muxin.gateway.refactory.node.health;
 
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.node.UniversalServiceNode;
 
 import java.util.concurrent.CompletableFuture;

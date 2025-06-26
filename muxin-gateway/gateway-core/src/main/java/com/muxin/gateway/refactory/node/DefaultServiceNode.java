@@ -1,7 +1,8 @@
 package com.muxin.gateway.refactory.node;
 
 import com.muxin.gateway.refactory.node.health.HealthCheckConfig;
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  * @author muxin
  */
+@Slf4j
 public class DefaultServiceNode implements UniversalServiceNode {
     
     private final String id;
@@ -96,8 +98,8 @@ public class DefaultServiceNode implements UniversalServiceNode {
         this.status = status;
         
         if (oldStatus != status) {
-            System.out.println(String.format("[SERVICE_NODE] 节点状态变更: %s %s -> %s", 
-                id, oldStatus.getDescription(), status.getDescription()));
+            log.info("[SERVICE_NODE] 节点状态变更: {} {} -> {}", 
+                id, oldStatus.getDescription(), status.getDescription());
         }
     }
     
@@ -129,7 +131,7 @@ public class DefaultServiceNode implements UniversalServiceNode {
     @Override
     public void incrementFailureCount() {
         int count = failureCount.incrementAndGet();
-        System.out.println(String.format("[SERVICE_NODE] 节点 %s 失败次数增加至: %d", id, count));
+        log.warn("[SERVICE_NODE] 节点 {} 失败次数增加至: {}", id, count);
         
         // 如果失败次数过多，标记为不健康
         if (count >= 3) {
@@ -141,7 +143,7 @@ public class DefaultServiceNode implements UniversalServiceNode {
     public void resetFailureCount() {
         int oldCount = failureCount.getAndSet(0);
         if (oldCount > 0) {
-            System.out.println(String.format("[SERVICE_NODE] 节点 %s 失败次数重置", id));
+            log.info("[SERVICE_NODE] 节点 {} 失败次数重置", id);
             
             // 失败次数重置时，如果节点状态是不健康，恢复为健康状态
             if (status == NodeStatus.UNHEALTHY) {

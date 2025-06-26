@@ -1,10 +1,11 @@
 package com.muxin.gateway.refactory;
 
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.node.EndpointAddress;
 import com.muxin.gateway.refactory.node.health.HealthCheckConfig;
+import com.muxin.gateway.refactory.route.RouteTarget;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
-import com.muxin.gateway.refactory.message.http.HttpProtocol;
-import com.muxin.gateway.refactory.message.http.HttpEndpointAddress;
+import com.muxin.gateway.refactory.node.HttpEndpointAddress;
 
 import java.time.Duration;
 import java.util.*;
@@ -42,7 +43,7 @@ public class SimpleRouteTarget implements RouteTarget {
     public SimpleRouteTarget(String serviceName, List<EndpointAddress> endpoints) {
         this.serviceName = serviceName;
         this.endpoints = new ArrayList<>(endpoints);
-        this.protocol = new HttpProtocol();
+        this.protocol = new Protocol.HttpProtocol();
         this.config = createDefaultConfig();
     }
     
@@ -53,7 +54,7 @@ public class SimpleRouteTarget implements RouteTarget {
                            Protocol protocol, Map<String, Object> config) {
         this.serviceName = serviceName;
         this.endpoints = new ArrayList<>(endpoints);
-        this.protocol = protocol != null ? protocol : new HttpProtocol();
+        this.protocol = protocol != null ? protocol : new Protocol.HttpProtocol();
         this.config = config != null ? new HashMap<>(config) : createDefaultConfig();
     }
     

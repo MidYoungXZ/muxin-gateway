@@ -1,11 +1,10 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.filter;
 
-import com.muxin.gateway.refactory.*;
-import com.muxin.gateway.refactory.filter.FilterType;
-import com.muxin.gateway.refactory.filter.UniversalFilter;
-import com.muxin.gateway.refactory.filter.UniversalFilterChain;
 import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.message.http.HttpMetadata;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,6 +14,7 @@ import java.util.Set;
  *
  * @author muxin
  */
+@Slf4j
 public class HttpLoggingFilter implements UniversalFilter {
     
     private final String name;
@@ -68,7 +68,7 @@ public class HttpLoggingFilter implements UniversalFilter {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new HttpProtocol());
+        protocols.add(new Protocol.HttpProtocol());
         return protocols;
     }
     
@@ -76,20 +76,20 @@ public class HttpLoggingFilter implements UniversalFilter {
         Message inbound = context.getInboundMessage();
         if (inbound != null && inbound.getMetadata() instanceof HttpMetadata) {
             HttpMetadata metadata = (HttpMetadata) inbound.getMetadata();
-            System.out.println(String.format("[%s] Request: %s %s", 
-                type.name(), metadata.getMethod(), metadata.getPath()));
+            log.info("[{}] 请求: {} {}", 
+                type.name(), metadata.getMethod(), metadata.getPath());
         }
     }
     
     private void logResponse(UniversalRequestContext context, long startTime) {
         long duration = System.currentTimeMillis() - startTime;
-        System.out.println(String.format("[%s] Response completed in %dms", 
-            type.name(), duration));
+        log.info("[{}] 响应完成，耗时: {}ms", 
+            type.name(), duration);
     }
     
     private void logError(UniversalRequestContext context, Exception e, long startTime) {
         long duration = System.currentTimeMillis() - startTime;
-        System.out.println(String.format("[%s] Error after %dms: %s", 
-            type.name(), duration, e.getMessage()));
+        log.error("[{}] {}ms后发生错误: {}", 
+            type.name(), duration, e.getMessage(), e);
     }
 } 

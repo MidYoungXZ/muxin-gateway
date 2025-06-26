@@ -1,6 +1,6 @@
 package com.muxin.gateway.refactory.predicate;
 
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 
 import java.util.Map;

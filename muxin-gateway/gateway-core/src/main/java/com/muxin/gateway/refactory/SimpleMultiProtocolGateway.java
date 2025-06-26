@@ -6,13 +6,15 @@ import com.muxin.gateway.refactory.filter.UniversalFilterManager;
 import com.muxin.gateway.refactory.loadbalance.DefaultLoadBalanceManager;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.refactory.message.Message;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.message.ProtocolAdapter;
 import com.muxin.gateway.refactory.node.NodeManager;
-import com.muxin.gateway.refactory.message.http.HttpProtocol;
 import com.muxin.gateway.refactory.message.http.HttpProtocolAdapter;
 import com.muxin.gateway.refactory.node.DefaultNodeManager;
 import com.muxin.gateway.refactory.route.RouteManager;
 import com.muxin.gateway.refactory.route.SimpleRouteManager;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * @author muxin
  */
+@Slf4j
 public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
     
     private final Map<Protocol, ProtocolAdapter> protocolAdapters;
@@ -54,7 +57,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
     public CompletableFuture<Message> handleInbound(Message inboundMessage, Connection inboundConnection) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                System.out.println("[MULTI_PROTOCOL_GATEWAY] 处理入站消息: " + inboundMessage.getMessageId());
+                log.debug("[MULTI_PROTOCOL_GATEWAY] 处理入站消息: {}", inboundMessage.getMessageId());
                 
                 // 创建请求上下文
                 UniversalRequestContext context = new DefaultRequestContext(inboundMessage, inboundConnection);
@@ -72,11 +75,11 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
                     response = inboundMessage.createResponse();
                 }
                 
-                System.out.println("[MULTI_PROTOCOL_GATEWAY] 完成处理: " + response.getMessageId());
+                log.debug("[MULTI_PROTOCOL_GATEWAY] 完成处理: {}", response.getMessageId());
                 return response;
                 
             } catch (Exception e) {
-                System.err.println("[MULTI_PROTOCOL_GATEWAY] 处理失败: " + e.getMessage());
+                log.error("[MULTI_PROTOCOL_GATEWAY] 处理失败: {}", e.getMessage(), e);
                 throw new RuntimeException("网关处理失败", e);
             }
         });
@@ -96,7 +99,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
             // 初始化协议统计
             protocolStats.put(protocol, createProtocolStats(protocol));
             
-            System.out.println("[MULTI_PROTOCOL_GATEWAY] 注册协议适配器: " + protocol.getName());
+            log.info("[MULTI_PROTOCOL_GATEWAY] 注册协议适配器: {}", protocol.getName());
         }
     }
     
@@ -113,11 +116,10 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
             
             protocolListeners.put(protocol, listener);
             
-            System.out.println(String.format("[MULTI_PROTOCOL_GATEWAY] 启动协议监听器: %s 端口: %d", 
-                protocol.getName(), port));
+            log.info("[MULTI_PROTOCOL_GATEWAY] 启动协议监听器: {} 端口: {}", protocol.getName(), port);
                 
         } catch (Exception e) {
-            System.err.println("启动协议监听器失败: " + e.getMessage());
+            log.error("启动协议监听器失败: {}", e.getMessage(), e);
             throw new RuntimeException("启动协议监听器失败", e);
         }
     }
@@ -128,9 +130,9 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
         if (listener instanceof ProtocolListener) {
             try {
                 ((ProtocolListener) listener).stop();
-                System.out.println("[MULTI_PROTOCOL_GATEWAY] 停止协议监听器: " + protocol.getName());
+                log.info("[MULTI_PROTOCOL_GATEWAY] 停止协议监听器: {}", protocol.getName());
             } catch (Exception e) {
-                System.err.println("停止协议监听器失败: " + e.getMessage());
+                log.error("停止协议监听器失败: {}", e.getMessage(), e);
             }
         }
     }
@@ -146,10 +148,10 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
             return;
         }
         
-        System.out.println("[MULTI_PROTOCOL_GATEWAY] 启动网关");
+        log.info("[MULTI_PROTOCOL_GATEWAY] 启动网关");
         
         // 启动默认HTTP监听器
-        Protocol httpProtocol = new HttpProtocol();
+        Protocol httpProtocol = new Protocol.HttpProtocol();
         Map<String, Object> httpConfig = new HashMap<>();
         httpConfig.put("maxConnections", 1000);
         httpConfig.put("readTimeout", 30000);
@@ -157,7 +159,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
         startProtocolListener(httpProtocol, 8080, httpConfig);
         
         running = true;
-        System.out.println("[MULTI_PROTOCOL_GATEWAY] 网关启动完成");
+        log.info("[MULTI_PROTOCOL_GATEWAY] 网关启动完成");
     }
     
     @Override
@@ -166,7 +168,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
             return;
         }
         
-        System.out.println("[MULTI_PROTOCOL_GATEWAY] 停止网关");
+        log.info("[MULTI_PROTOCOL_GATEWAY] 停止网关");
         
         // 停止所有协议监听器
         for (Protocol protocol : new HashSet<>(protocolListeners.keySet())) {
@@ -179,7 +181,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
         }
         
         running = false;
-        System.out.println("[MULTI_PROTOCOL_GATEWAY] 网关停止完成");
+        log.info("[MULTI_PROTOCOL_GATEWAY] 网关停止完成");
     }
     
     @Override
@@ -259,8 +261,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
             }
             
             // 模拟启动监听器
-            System.out.println(String.format("[PROTOCOL_LISTENER] 启动 %s 监听器，端口: %d", 
-                protocol.getName(), port));
+            log.debug("[PROTOCOL_LISTENER] 启动 {} 监听器，端口: {}", protocol.getName(), port);
             
             running = true;
         }
@@ -271,7 +272,7 @@ public class SimpleMultiProtocolGateway implements MultiProtocolGateway {
                 return;
             }
             
-            System.out.println(String.format("[PROTOCOL_LISTENER] 停止 %s 监听器", protocol.getName()));
+            log.debug("[PROTOCOL_LISTENER] 停止 {} 监听器", protocol.getName());
             running = false;
         }
         

@@ -1,6 +1,6 @@
 package com.muxin.gateway.refactory.node;
 
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 
 import java.util.Map;
 

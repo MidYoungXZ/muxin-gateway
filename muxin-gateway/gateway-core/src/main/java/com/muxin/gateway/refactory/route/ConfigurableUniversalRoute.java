@@ -1,7 +1,6 @@
 package com.muxin.gateway.refactory.route;
 
-import com.muxin.gateway.refactory.Protocol;
-import com.muxin.gateway.refactory.RouteTarget;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.filter.UniversalFilter;
 import com.muxin.gateway.refactory.predicate.UniversalPredicate;
 import lombok.extern.slf4j.Slf4j;

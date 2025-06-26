@@ -1,6 +1,8 @@
 package com.muxin.gateway.refactory.node;
 
 import com.muxin.gateway.refactory.*;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.message.ProtocolType;
 import com.muxin.gateway.refactory.node.health.HealthCheckResult;
 import com.muxin.gateway.refactory.node.health.HealthChecker;
 import lombok.extern.slf4j.Slf4j;

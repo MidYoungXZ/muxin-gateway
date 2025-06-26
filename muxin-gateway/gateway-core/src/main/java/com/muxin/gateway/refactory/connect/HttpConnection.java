@@ -1,23 +1,23 @@
 package com.muxin.gateway.refactory.connect;
 
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.message.Message;
 import com.muxin.gateway.refactory.node.EndpointAddress;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
 
 /**
  * HTTP连接实现
  *
  * @author muxin
  */
+@Slf4j
 public class HttpConnection implements Connection {
 
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
@@ -78,8 +78,8 @@ public class HttpConnection implements Connection {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 // 模拟HTTP请求发送
-                System.out.println("[HTTP_CONNECTION] 发送消息: " + message.getMessageId() +
-                    " 到 " + remoteAddress.toUri());
+                log.debug("[HTTP_CONNECTION] 发送消息: {} 到 {}", 
+                    message.getMessageId(), remoteAddress.toUri());
 
                 // 通知监听器
                 notifyListeners(listener -> listener.onMessageSent(this, message));
@@ -100,7 +100,7 @@ public class HttpConnection implements Connection {
 
             try {
                 // 执行连接关闭逻辑
-                System.out.println("[HTTP_CONNECTION] 关闭连接: " + connectionId);
+                log.debug("[HTTP_CONNECTION] 关闭连接: {}", connectionId);
 
                 // 通知监听器
                 notifyListeners(listener -> listener.onConnectionClosed(this));

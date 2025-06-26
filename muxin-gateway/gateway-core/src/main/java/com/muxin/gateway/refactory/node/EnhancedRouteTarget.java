@@ -1,9 +1,9 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.node;
 
-import com.muxin.gateway.refactory.*;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceStrategy;
-import com.muxin.gateway.refactory.node.EndpointAddress;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.node.health.HealthCheckConfig;
+import com.muxin.gateway.refactory.route.RouteTarget;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 
 import java.util.*;
@@ -22,7 +22,7 @@ public class EnhancedRouteTarget implements RouteTarget {
     private final HealthCheckConfig healthCheckConfig;
     
     public EnhancedRouteTarget(List<String> targetUris, LoadBalanceStrategy loadBalanceStrategy) {
-        this.targetProtocol = new HttpProtocol();
+        this.targetProtocol = new Protocol.HttpProtocol();
         this.targetAddresses = new ArrayList<>();
         
         // 创建端点地址

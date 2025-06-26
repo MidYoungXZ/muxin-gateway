@@ -2,7 +2,7 @@ package com.muxin.gateway.refactory.filter;
 
 import com.muxin.gateway.core.common.Repository;
 import com.muxin.gateway.refactory.LifeCycle;
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 
 /**
  * @author Administrator

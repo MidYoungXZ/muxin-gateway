@@ -1,7 +1,7 @@
 package com.muxin.gateway.refactory.connect;
 
-import com.muxin.gateway.refactory.Protocol;
-import com.muxin.gateway.refactory.ProtocolAdapter;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.message.ProtocolAdapter;
 import com.muxin.gateway.refactory.node.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 

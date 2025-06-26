@@ -1,10 +1,15 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.node;
 
-import com.muxin.gateway.refactory.*;
 import com.muxin.gateway.refactory.filter.FilterType;
+import com.muxin.gateway.refactory.filter.HttpAuthFilter;
+import com.muxin.gateway.refactory.filter.HttpLoggingFilter;
 import com.muxin.gateway.refactory.filter.UniversalFilter;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.predicate.HttpMethodPredicate;
+import com.muxin.gateway.refactory.predicate.HttpPathPredicate;
 import com.muxin.gateway.refactory.predicate.UniversalPredicate;
+import com.muxin.gateway.refactory.route.RouteTarget;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.route.UniversalRoute;
 
@@ -38,7 +43,7 @@ public class EnhancedHttpRoute implements UniversalRoute {
         this.enabled = true;
         
         // 支持HTTP协议
-        this.supportedProtocols = Arrays.asList(new HttpProtocol());
+        this.supportedProtocols = Arrays.asList(new Protocol.HttpProtocol());
         
         // 创建断言
         this.predicates = createPredicates(pathPattern);

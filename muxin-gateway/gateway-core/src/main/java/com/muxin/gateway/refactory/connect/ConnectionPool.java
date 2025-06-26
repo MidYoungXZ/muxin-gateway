@@ -2,7 +2,7 @@ package com.muxin.gateway.refactory.connect;
 
 import com.muxin.gateway.refactory.LifeCycle;
 import com.muxin.gateway.refactory.node.EndpointAddress;
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

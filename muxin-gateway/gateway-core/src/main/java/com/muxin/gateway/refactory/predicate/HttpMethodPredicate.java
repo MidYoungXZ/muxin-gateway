@@ -1,8 +1,8 @@
-package com.muxin.gateway.refactory.message.http;
+package com.muxin.gateway.refactory.predicate;
 
 import com.muxin.gateway.refactory.message.Message;
-import com.muxin.gateway.refactory.Protocol;
-import com.muxin.gateway.refactory.predicate.UniversalPredicate;
+import com.muxin.gateway.refactory.message.Protocol;
+import com.muxin.gateway.refactory.message.http.HttpMetadata;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 
 import java.util.*;
@@ -58,7 +58,7 @@ public class HttpMethodPredicate implements UniversalPredicate {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new HttpProtocol());
+        protocols.add(new Protocol.HttpProtocol());
         return protocols;
     }
     

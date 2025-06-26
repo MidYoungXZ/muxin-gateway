@@ -1,8 +1,6 @@
 package com.muxin.gateway.refactory.message;
 
 
-import com.muxin.gateway.refactory.*;
-
 /**
  * 通用消息接口 - 协议无关的消息抽象
  *

@@ -1,6 +1,7 @@
 package com.muxin.gateway.refactory.filter;
 
-import com.muxin.gateway.refactory.Protocol;
+import com.muxin.gateway.refactory.message.Protocol;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
@@ -9,6 +10,7 @@ import java.util.*;
  *
  * @author muxin
  */
+@Slf4j
 public class UniversalFilterManager implements FilterManager {
 
     private final Map<String, UniversalFilter> filters = new HashMap<>();
@@ -16,7 +18,7 @@ public class UniversalFilterManager implements FilterManager {
     @Override
     public UniversalFilter save(UniversalFilter filter) {
         filters.put(filter.getName(), filter);
-        System.out.println("Registered filter: " + filter.getName());
+        log.info("注册过滤器: {}", filter.getName());
         return filter;
     }
 

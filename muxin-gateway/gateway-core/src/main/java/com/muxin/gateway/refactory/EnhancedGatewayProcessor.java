@@ -4,9 +4,11 @@ import com.muxin.gateway.refactory.filter.*;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.refactory.message.Message;
 import com.muxin.gateway.refactory.message.MessageMetadata;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.node.NodeManager;
 import com.muxin.gateway.refactory.node.EndpointAddress;
 import com.muxin.gateway.refactory.route.RouteManager;
+import com.muxin.gateway.refactory.route.RouteTarget;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.route.UniversalRoute;
 import com.muxin.gateway.refactory.connect.*;
@@ -90,7 +92,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
         context.setAttribute("traceId", traceId);
         context.setAttribute("startTime", startTime);
 
-        System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 开始处理请求 - TraceId: %s", traceId));
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 开始处理请求 - TraceId: {}", traceId);
 
         try {
             // ===== 第1步：请求前处理 =====
@@ -115,8 +117,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
                         recordSuccessMetrics(context, startTime);
 
                         successCounter.incrementAndGet();
-                        System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 请求处理成功 - TraceId: %s, Duration: %dms",
-                                traceId, System.currentTimeMillis() - startTime));
+                        log.info("[ENHANCED_GATEWAY_PROCESSOR] 请求处理成功 - TraceId: {}, Duration: {}ms",
+                                traceId, System.currentTimeMillis() - startTime);
                     })
                     .exceptionally(ex -> {
                         // 处理异步异常
@@ -138,7 +140,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
             String traceId = context.getAttribute("traceId", String.class);
 
             try {
-                System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 开始处理响应 - TraceId: %s", traceId));
+                log.debug("[ENHANCED_GATEWAY_PROCESSOR] 开始处理响应 - TraceId: {}", traceId);
 
                 // ===== 第1步：后置过滤器链 =====
                 executePostFilters(context);
@@ -149,11 +151,11 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
                 // 标记处理完成
                 context.markComplete();
 
-                System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 响应处理完成 - TraceId: %s", traceId));
+                log.debug("[ENHANCED_GATEWAY_PROCESSOR] 响应处理完成 - TraceId: {}", traceId);
 
             } catch (Exception e) {
-                System.err.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 响应处理失败 - TraceId: %s, Error: %s",
-                        traceId, e.getMessage()));
+                log.error("[ENHANCED_GATEWAY_PROCESSOR] 响应处理失败 - TraceId: {}, Error: {}", 
+                        traceId, e.getMessage(), e);
                 processError(context, e);
             }
         });
@@ -165,8 +167,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
         Long startTime = context.getAttribute("startTime", Long.class);
 
         try {
-            System.err.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 处理错误 - TraceId: %s, Error: %s",
-                    traceId, exception.getMessage()));
+            log.error("[ENHANCED_GATEWAY_PROCESSOR] 处理错误 - TraceId: {}, Error: {}", 
+                    traceId, exception.getMessage(), exception);
 
             // 设置错误信息
             context.setError(exception);
@@ -186,8 +188,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
             recordErrorMetrics(context, exception, startTime);
 
         } catch (Exception e) {
-            System.err.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 错误处理失败 - TraceId: %s, Error: %s",
-                    traceId, e.getMessage()));
+            log.error("[ENHANCED_GATEWAY_PROCESSOR] 错误处理失败 - TraceId: {}, Error: {}", 
+                    traceId, e.getMessage(), e);
         } finally {
             // 确保上下文标记完成
             context.markComplete();
@@ -200,7 +202,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第1步：请求前处理
      */
     private void executePreProcessing(UniversalRequestContext context) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行请求前处理");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行请求前处理");
 
         // 验证请求基本格式
         validateRequest(context);
@@ -216,7 +218,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第2步：路由匹配
      */
     private UniversalRoute executeRouteMatching(UniversalRequestContext context) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行路由匹配");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行路由匹配");
 
         UniversalRoute matchedRoute = routeManager.matchRoute(context);
         if (matchedRoute == null) {
@@ -226,8 +228,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
         context.setMatchedRoute(matchedRoute);
         context.setAttribute("routeId", matchedRoute.getId());
 
-        System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 路由匹配成功 - RouteId: %s",
-                matchedRoute.getId()));
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 路由匹配成功 - RouteId: {}", 
+                matchedRoute.getId());
 
         return matchedRoute;
     }
@@ -236,7 +238,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第3步：前置过滤器处理
      */
     private void executePreFilters(UniversalRequestContext context, UniversalRoute route) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行前置过滤器链");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行前置过滤器链");
 
         Protocol protocol = context.getInboundProtocol();
         if (protocol != null) {
@@ -249,7 +251,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第4步：负载均衡和节点选择
      */
     private EndpointAddress executeLoadBalancing(UniversalRequestContext context, UniversalRoute route) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行负载均衡");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行负载均衡");
 
         RouteTarget target = route.getTarget();
         if (target == null) {
@@ -273,8 +275,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
         context.setSelectedNode(selectedTarget);
         context.setAttribute("targetAddress", selectedTarget.toUri());
 
-        System.out.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 负载均衡选择成功 - Target: %s",
-                selectedTarget.toUri()));
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 负载均衡选择成功 - Target: {}", 
+                selectedTarget.toUri());
 
         return selectedTarget;
     }
@@ -283,7 +285,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第5步：路由过滤器处理
      */
     private void executeRouteFilters(UniversalRequestContext context, UniversalRoute route) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行路由过滤器链");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行路由过滤器链");
 
         // 执行路由特定的过滤器
         for (UniversalFilter filter : route.getFilters()) {
@@ -293,8 +295,8 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
                     filter.filter(context, null);
                 }
             } catch (Exception e) {
-                System.err.println(String.format("路由过滤器执行失败: %s, 错误: %s",
-                        filter.getName(), e.getMessage()));
+                log.error("路由过滤器执行失败: {}, 错误: {}", 
+                        filter.getName(), e.getMessage(), e);
                 throw new RuntimeException("路由过滤器执行失败: " + filter.getName(), e);
             }
         }
@@ -349,7 +351,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第1步（响应）：后置过滤器处理
      */
     private void executePostFilters(UniversalRequestContext context) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行后置过滤器链");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行后置过滤器链");
 
         Protocol protocol = context.getInboundProtocol();
         if (protocol != null) {
@@ -362,7 +364,7 @@ public class EnhancedGatewayProcessor implements GatewayProcessor {
      * 第2步（响应）：响应后处理
      */
     private void executePostProcessing(UniversalRequestContext context) {
-        System.out.println("[ENHANCED_GATEWAY_PROCESSOR] 执行响应后处理");
+        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行响应后处理");
 
         // 设置响应头
         setResponseHeaders(context);

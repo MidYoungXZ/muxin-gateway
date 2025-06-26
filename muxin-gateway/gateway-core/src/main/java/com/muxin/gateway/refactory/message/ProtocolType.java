@@ -1,4 +1,4 @@
-package com.muxin.gateway.refactory;
+package com.muxin.gateway.refactory.message;
 
 
 /**

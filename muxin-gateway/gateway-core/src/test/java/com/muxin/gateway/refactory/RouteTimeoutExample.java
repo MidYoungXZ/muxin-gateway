@@ -1,6 +1,6 @@
 package com.muxin.gateway.refactory;
 
-import com.muxin.gateway.refactory.message.http.HttpProtocol;
+import com.muxin.gateway.refactory.message.Protocol;
 import com.muxin.gateway.refactory.route.*;
 
 import java.time.Duration;
@@ -54,7 +54,7 @@ public class RouteTimeoutExample {
                 .id("fast-api-route")
                 .name("快速API路由")
                 .description("用于快速响应的API服务")
-                .addProtocol(new HttpProtocol())
+                .addProtocol(new Protocol.HttpProtocol())
                 .target(target)
                 .fastApi() // 使用预设的快速API超时配置
                 .build();
@@ -70,7 +70,7 @@ public class RouteTimeoutExample {
                 .id("slow-api-route")
                 .name("慢速API路由")
                 .description("用于处理时间较长的API服务")
-                .addProtocol(new HttpProtocol())
+                .addProtocol(new Protocol.HttpProtocol())
                 .target(target)
                 .slowApi() // 使用预设的慢速API超时配置
                 .build();
@@ -86,7 +86,7 @@ public class RouteTimeoutExample {
                 .id("file-upload-route")
                 .name("文件上传路由")
                 .description("用于处理文件上传的服务")
-                .addProtocol(new HttpProtocol())
+                .addProtocol(new Protocol.HttpProtocol())
                 .target(target)
                 .fileUploadApi() // 使用预设的文件上传超时配置
                 .build();
@@ -102,7 +102,7 @@ public class RouteTimeoutExample {
                 .id("custom-timeout-route")
                 .name("自定义超时路由")
                 .description("使用自定义超时配置的路由")
-                .addProtocol(new HttpProtocol())
+                .addProtocol(new Protocol.HttpProtocol())
                 .target(target)
                 // 自定义超时配置
                 .connectionTimeout(Duration.ofSeconds(3))
@@ -124,7 +124,7 @@ public class RouteTimeoutExample {
                 .id("config-route")
                 .name("配置驱动路由")
                 .description("使用RouteConfig创建的路由")
-                .supportedProtocols(Arrays.asList(new HttpProtocol()))
+                .supportedProtocols(Arrays.asList(new Protocol.HttpProtocol()))
                 .target(target)
                 .connectionTimeout(Duration.ofSeconds(8))
                 .requestTimeout(Duration.ofSeconds(25))
@@ -173,7 +173,7 @@ public class RouteTimeoutExample {
             UniversalRoute invalidRoute = UniversalRouteBuilder.create()
                     .id("invalid-route")
                     .name("配置不合理的路由")
-                    .addProtocol(new HttpProtocol())
+                    .addProtocol(new Protocol.HttpProtocol())
                     .target(target)
                     .connectionTimeout(Duration.ofSeconds(60)) // 连接超时60秒
                     .requestTimeout(Duration.ofSeconds(30))    // 请求超时30秒（不合理）
@@ -208,7 +208,7 @@ public class RouteTimeoutExample {
         UniversalRoute originalRoute = UniversalRouteBuilder.create()
                 .id("dynamic-route")
                 .name("动态路由")
-                .addProtocol(new HttpProtocol())
+                .addProtocol(new Protocol.HttpProtocol())
                 .target(target)
                 .fastApi()
                 .build();
