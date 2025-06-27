@@ -61,7 +61,7 @@ public class UniversalRouteManager implements RouteManager {
         List<UniversalRoute> sortedRoutes = routes.values().stream()
                 .filter(UniversalRoute::isEnabled)
                 .sorted(Comparator.comparingInt(UniversalRoute::getOrder))
-                .collect(Collectors.toList());
+                .toList();
         
         // 遍历路由进行匹配
         for (UniversalRoute route : sortedRoutes) {

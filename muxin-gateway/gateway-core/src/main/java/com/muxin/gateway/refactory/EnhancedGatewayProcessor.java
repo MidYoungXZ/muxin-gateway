@@ -1,777 +1,356 @@
 package com.muxin.gateway.refactory;
 
-import com.muxin.gateway.refactory.filter.*;
+import com.muxin.gateway.refactory.connect.ConnectionFactoryManager;
+import com.muxin.gateway.refactory.filter.FilterManager;
 import com.muxin.gateway.refactory.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.refactory.message.Message;
-import com.muxin.gateway.refactory.message.MessageMetadata;
+import com.muxin.gateway.refactory.message.MessageType;
 import com.muxin.gateway.refactory.message.Protocol;
-import com.muxin.gateway.refactory.node.NodeManager;
+import com.muxin.gateway.refactory.message.ProtocolConverterManager;
 import com.muxin.gateway.refactory.node.EndpointAddress;
+import com.muxin.gateway.refactory.node.NodeManager;
 import com.muxin.gateway.refactory.route.RouteManager;
-import com.muxin.gateway.refactory.route.RouteTarget;
 import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.route.UniversalRoute;
-import com.muxin.gateway.refactory.connect.*;
 import lombok.extern.slf4j.Slf4j;
+import io.netty.handler.codec.http.FullHttpRequest;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * 增强版网关处理器实现
- * 整合所有网关组件，提供完整的请求处理流程
- * <p>
- * 处理流程：
- * 1. 请求前处理（验证、限流、认证）
- * 2. 路由匹配和断言验证
- * 3. 负载均衡和节点选择
- * 4. 连接池获取连接
- * 5. 后端服务调用
- * 6. 响应后处理
- * 7. 连接归还和清理
+ * 重构后的网关处理器实现
+ * 继承 GatewayProcessor 抽象类，使用模板方法定义的处理流程
  *
  * @author muxin
  */
 @Slf4j
-public class EnhancedGatewayProcessor implements GatewayProcessor {
-
-    // ========== 核心组件 ==========
-    private final RouteManager routeManager;
-    private final FilterManager filterManager;
-    private final LoadBalanceManager loadBalanceManager;
-    private final NodeManager nodeManager;
-
-    // ========== 增强组件 ==========
-    private final ConnectionPool connectionPool;
-    private final GatewayMetrics gatewayMetrics;
-    private final GatewayConfig gatewayConfig;
-
-    // ========== 统计信息 ==========
-    private final AtomicLong requestCounter = new AtomicLong(0);
-    private final AtomicLong successCounter = new AtomicLong(0);
-    private final AtomicLong errorCounter = new AtomicLong(0);
-
-    public EnhancedGatewayProcessor(RouteManager routeManager,
-                                    FilterManager filterManager,
-                                    LoadBalanceManager loadBalanceManager,
-                                    NodeManager nodeManager) {
-        this(routeManager, filterManager, loadBalanceManager, nodeManager,
-                new DefaultConnectionPool(ConnectionPoolConfig.defaultConfig()));
-    }
+public class EnhancedGatewayProcessor extends GatewayProcessor {
 
     public EnhancedGatewayProcessor(RouteManager routeManager,
                                     FilterManager filterManager,
                                     LoadBalanceManager loadBalanceManager,
                                     NodeManager nodeManager,
-                                    ConnectionPool connectionPool) {
-        this.routeManager = routeManager;
-        this.filterManager = filterManager;
-        this.loadBalanceManager = loadBalanceManager;
-        this.nodeManager = nodeManager;
-        this.connectionPool = connectionPool;
-
-        // 初始化增强组件
-        this.gatewayMetrics = new GatewayMetrics();
-        this.gatewayConfig = new GatewayConfig();
-
-        log.info("增强版网关处理器初始化完成，连接池配置: {}",
-                connectionPool.getConfig());
-    }
-
-    @Override
-    public CompletableFuture<Void> processRequest(UniversalRequestContext context) {
-        requestCounter.incrementAndGet();
-        long startTime = System.currentTimeMillis();
-        String traceId = generateTraceId();
-
-        context.setAttribute("traceId", traceId);
-        context.setAttribute("startTime", startTime);
-
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 开始处理请求 - TraceId: {}", traceId);
-
-        try {
-            // ===== 第1步：请求前处理 =====
-            executePreProcessing(context);
-
-            // ===== 第2步：路由匹配 =====
-            UniversalRoute matchedRoute = executeRouteMatching(context);
-
-            // ===== 第3步：前置过滤器链 =====
-            executePreFilters(context, matchedRoute);
-
-            // ===== 第4步：负载均衡和节点选择 =====
-            EndpointAddress targetEndpoint = executeLoadBalancing(context, matchedRoute);
-
-            // ===== 第5步：路由过滤器链 =====
-            executeRouteFilters(context, matchedRoute);
-
-            // ===== 第6步：后端服务调用（异步） =====
-            return executeBackendInvocation(context, targetEndpoint)
-                    .thenRun(() -> {
-                        // ===== 第7步：记录成功指标 =====
-                        recordSuccessMetrics(context, startTime);
-
-                        successCounter.incrementAndGet();
-                        log.info("[ENHANCED_GATEWAY_PROCESSOR] 请求处理成功 - TraceId: {}, Duration: {}ms",
-                                traceId, System.currentTimeMillis() - startTime);
-                    })
-                    .exceptionally(ex -> {
-                        // 处理异步异常
-                        Exception exception = ex instanceof Exception ? (Exception) ex : new RuntimeException(ex);
-                        handleRequestException(context, exception, startTime, traceId);
-                        throw new RuntimeException(exception);
-                    });
-
-        } catch (Exception e) {
-            // 处理同步阶段的异常
-            handleRequestException(context, e, startTime, traceId);
-            return CompletableFuture.failedFuture(e);
-        }
-    }
-
-    @Override
-    public CompletableFuture<Void> processResponse(UniversalRequestContext context) {
-        return CompletableFuture.runAsync(() -> {
-            String traceId = context.getAttribute("traceId", String.class);
-
-            try {
-                log.debug("[ENHANCED_GATEWAY_PROCESSOR] 开始处理响应 - TraceId: {}", traceId);
-
-                // ===== 第1步：后置过滤器链 =====
-                executePostFilters(context);
-
-                // ===== 第2步：响应后处理 =====
-                executePostProcessing(context);
-
-                // 标记处理完成
-                context.markComplete();
-
-                log.debug("[ENHANCED_GATEWAY_PROCESSOR] 响应处理完成 - TraceId: {}", traceId);
-
-            } catch (Exception e) {
-                log.error("[ENHANCED_GATEWAY_PROCESSOR] 响应处理失败 - TraceId: {}, Error: {}", 
-                        traceId, e.getMessage(), e);
-                processError(context, e);
-            }
-        });
-    }
-
-    @Override
-    public void processError(UniversalRequestContext context, Exception exception) {
-        String traceId = context.getAttribute("traceId", String.class);
-        Long startTime = context.getAttribute("startTime", Long.class);
-
-        try {
-            log.error("[ENHANCED_GATEWAY_PROCESSOR] 处理错误 - TraceId: {}, Error: {}", 
-                    traceId, exception.getMessage(), exception);
-
-            // 设置错误信息
-            context.setError(exception);
-            errorCounter.incrementAndGet();
-
-            // ===== 第1步：错误分类 =====
-            ErrorType errorType = classifyError(exception);
-            context.setAttribute("errorType", errorType);
-
-            // ===== 第2步：错误过滤器处理 =====
-            executeErrorFilters(context, exception);
-
-            // ===== 第3步：创建错误响应 =====
-            createErrorResponse(context, exception, errorType);
-
-            // ===== 第4步：记录错误指标 =====
-            recordErrorMetrics(context, exception, startTime);
-
-        } catch (Exception e) {
-            log.error("[ENHANCED_GATEWAY_PROCESSOR] 错误处理失败 - TraceId: {}, Error: {}", 
-                    traceId, e.getMessage(), e);
-        } finally {
-            // 确保上下文标记完成
-            context.markComplete();
-        }
-    }
-
-    // ========== 请求处理各阶段实现 ==========
-
-    /**
-     * 第1步：请求前处理
-     */
-    private void executePreProcessing(UniversalRequestContext context) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行请求前处理");
-
-        // 验证请求基本格式
-        validateRequest(context);
-
-        // 提取请求信息
-        extractRequestInfo(context);
-
-        // 设置默认属性
-        setDefaultAttributes(context);
-    }
-
-    /**
-     * 第2步：路由匹配
-     */
-    private UniversalRoute executeRouteMatching(UniversalRequestContext context) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行路由匹配");
-
-        UniversalRoute matchedRoute = routeManager.matchRoute(context);
-        if (matchedRoute == null) {
-            throw new RuntimeException("未找到匹配的路由");
-        }
-
-        context.setMatchedRoute(matchedRoute);
-        context.setAttribute("routeId", matchedRoute.getId());
-
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 路由匹配成功 - RouteId: {}", 
-                matchedRoute.getId());
-
-        return matchedRoute;
-    }
-
-    /**
-     * 第3步：前置过滤器处理
-     */
-    private void executePreFilters(UniversalRequestContext context, UniversalRoute route) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行前置过滤器链");
-
-        Protocol protocol = context.getInboundProtocol();
-        if (protocol != null) {
-            UniversalFilterChain preChain = filterManager.createFilterChain(protocol, FilterType.PRE);
-            preChain.filter(context);
-        }
-    }
-
-    /**
-     * 第4步：负载均衡和节点选择
-     */
-    private EndpointAddress executeLoadBalancing(UniversalRequestContext context, UniversalRoute route) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行负载均衡");
-
-        RouteTarget target = route.getTarget();
-        if (target == null) {
-            throw new RuntimeException("路由目标为空");
-        }
-
-        // 获取可用节点
-        List<EndpointAddress> availableTargets = target.getTargetAddresses();
-        if (availableTargets.isEmpty()) {
-            throw new RuntimeException("没有可用的目标节点");
-        }
-
-        // 负载均衡选择
-        EndpointAddress selectedTarget = loadBalanceManager.selectTarget(
-                route.getId(), availableTargets, context);
-
-        if (selectedTarget == null) {
-            throw new RuntimeException("负载均衡未能选择目标节点");
-        }
-
-        context.setSelectedNode(selectedTarget);
-        context.setAttribute("targetAddress", selectedTarget.toUri());
-
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 负载均衡选择成功 - Target: {}", 
-                selectedTarget.toUri());
-
-        return selectedTarget;
-    }
-
-    /**
-     * 第5步：路由过滤器处理
-     */
-    private void executeRouteFilters(UniversalRequestContext context, UniversalRoute route) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行路由过滤器链");
-
-        // 执行路由特定的过滤器
-        for (UniversalFilter filter : route.getFilters()) {
-            try {
-                if (filter.isEnabled() &&
-                        filter.getSupportedProtocols().contains(context.getInboundProtocol())) {
-                    filter.filter(context, null);
-                }
-            } catch (Exception e) {
-                log.error("路由过滤器执行失败: {}, 错误: {}", 
-                        filter.getName(), e.getMessage(), e);
-                throw new RuntimeException("路由过滤器执行失败: " + filter.getName(), e);
-            }
-        }
-    }
-
-    /**
-     * 第6步：后端服务调用
-     */
-    private CompletableFuture<Void> executeBackendInvocation(UniversalRequestContext context, EndpointAddress target) {
-        log.debug("执行后端服务调用，目标地址: {}", target.toUri());
-
-        // 1. 从连接池获取连接，使用路由配置的连接超时
-        Protocol protocol = context.getInboundProtocol();
-        UniversalRoute route = (UniversalRoute) context.getMatchedRoute();
-        Duration connectionTimeout = route != null ? route.getConnectionTimeout() : 
-                Duration.ofMillis(gatewayConfig.getDefaultTimeout());
-
-        return connectionPool.getConnection(target, protocol)
-                .orTimeout(connectionTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .thenCompose(connection -> {
-                    log.debug("连接池获取连接成功: {}", connection.getConnectionId());
-
-                    // 2. 异步执行后端调用
-                    return performBackendCallWithConnection(context, target, connection)
-                            .thenApply(response -> {
-                                context.setOutboundMessage(response);
-                                log.info("后端服务调用成功，连接: {}", connection.getConnectionId());
-                                return null; // CompletableFuture<Void>
-                            })
-                            .whenComplete((result, ex) -> {
-                                // 3. 确保连接在任何情况下都被归还
-                                connectionPool.returnConnection(connection);
-                                log.debug("连接已归还到连接池: {}", connection.getConnectionId());
-                            });
-                })
-                .handle((result, ex) -> {
-                    if (ex != null) {
-                        log.error("后端服务调用失败，目标: {} - {}", target.toUri(), ex.getMessage());
-
-                        // 更新错误计数
-                        context.setAttribute("errorType", ErrorType.BACKEND_INVOCATION_FAILED);
-                        
-                        // 设置错误响应到上下文
-                        Message errorResponse = handleBackendError(context, target, ex);
-                        context.setOutboundMessage(errorResponse);
-                    }
-                    return null; // 始终返回null表示CompletableFuture<Void>
-                });
-    }
-
-    /**
-     * 第1步（响应）：后置过滤器处理
-     */
-    private void executePostFilters(UniversalRequestContext context) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行后置过滤器链");
-
-        Protocol protocol = context.getInboundProtocol();
-        if (protocol != null) {
-            UniversalFilterChain postChain = filterManager.createFilterChain(protocol, FilterType.POST);
-            postChain.filter(context);
-        }
-    }
-
-    /**
-     * 第2步（响应）：响应后处理
-     */
-    private void executePostProcessing(UniversalRequestContext context) {
-        log.debug("[ENHANCED_GATEWAY_PROCESSOR] 执行响应后处理");
-
-        // 设置响应头
-        setResponseHeaders(context);
-    }
-
-    // ========== 辅助方法实现 ==========
-
-    /**
-     * 验证请求
-     */
-    private void validateRequest(UniversalRequestContext context) {
-        Message inboundMessage = context.getInboundMessage();
-        if (inboundMessage == null) {
-            throw new RuntimeException("入站消息为空");
-        }
-
-        if (inboundMessage.getProtocol() == null) {
-            throw new RuntimeException("请求协议未指定");
-        }
-    }
-
-    /**
-     * 提取请求信息
-     */
-    private void extractRequestInfo(UniversalRequestContext context) {
-        Message message = context.getInboundMessage();
-        MessageMetadata metadata = message.getMetadata();
-
-        if (metadata != null) {
-            // 通过属性获取协议相关信息
-            context.setAttribute("requestPath", metadata.getAttribute("path", String.class));
-            context.setAttribute("requestMethod", metadata.getAttribute("method", String.class));
-            context.setAttribute("sourceAddress", metadata.getSourceAddress());
-            context.setAttribute("userAgent", message.getHeaders().get("User-Agent", String.class));
-        }
-    }
-
-    /**
-     * 设置默认属性
-     */
-    private void setDefaultAttributes(UniversalRequestContext context) {
-        context.setAttribute("requestStartTime", LocalDateTime.now());
-        context.setAttribute("timeout", gatewayConfig.getDefaultTimeout());
-        context.setAttribute("maxRetries", gatewayConfig.getDefaultMaxRetries());
-    }
-
-    /**
-     * 异步处理连接清理和日志记录
-     */
-    private void handleConnectionCleanup(Connection connection, Throwable ex, 
-                                       UniversalRequestContext context, EndpointAddress target) {
-        try {
-            if (ex == null) {
-                // 成功情况下的日志记录
-                log.debug("后端调用响应接收成功，连接: {}, 耗时: {}ms", 
-                         connection.getConnectionId(), 
-                         System.currentTimeMillis() - context.getStartTime());
-            } else {
-                // 异常情况下的连接处理
-                if (ex instanceof java.util.concurrent.TimeoutException) {
-                    log.warn("连接超时: {}", connection.getConnectionId());
-                    // 连接可能需要重置或标记，具体实现依赖Connection接口
-                } else {
-                    log.warn("连接发生异常: {} - {}", connection.getConnectionId(), ex.getMessage());
-                }
-            }
-        } catch (Exception cleanupException) {
-            log.error("连接清理过程中发生异常", cleanupException);
-        }
-    }
-
-    /**
-     * 异步处理后端调用错误
-     */
-    private Message handleBackendError(UniversalRequestContext context, EndpointAddress target, Throwable ex) {
-        // 解包 CompletionException
-        Throwable cause = ex instanceof java.util.concurrent.CompletionException ? ex.getCause() : ex;
+                                    ProtocolConverterManager converterManager,
+                                    ConnectionFactoryManager connectionFactoryManager) {
+        super(routeManager, filterManager, loadBalanceManager, nodeManager, 
+              converterManager, connectionFactoryManager);
         
-        if (cause instanceof java.util.concurrent.TimeoutException) {
-            UniversalRoute route = (UniversalRoute) context.getMatchedRoute();
-            Duration timeout = route != null ? route.getRequestTimeout() : 
-                    Duration.ofMillis(gatewayConfig.getDefaultTimeout());
-            log.error("后端调用超时: {}, 超时配置: {}, 路由: {}", 
-                     target.toUri(), timeout, route != null ? route.getId() : "unknown");
+        log.info("[EnhancedGatewayProcessor] 网关处理器初始化完成");
+    }
+    
+    @Override
+    protected Protocol detectProtocol(Object protocolSpecific, UniversalRequestContext context) {
+        if (protocolSpecific instanceof FullHttpRequest) {
+            return new Protocol.HttpProtocol();
+        }
+        throw new GatewayException("不支持的协议类型: " + protocolSpecific.getClass().getName());
+    }
+    
+    @Override
+    protected Protocol determineTargetProtocol(UniversalRequestContext context) {
+        // 对于HTTP网关，通常返回HTTP协议
+        // 可以根据路由配置或其他条件来决定目标协议
+        return new Protocol.HttpProtocol();
+    }
+
+    @Override
+    public UniversalRoute matchRoute(UniversalRequestContext context) {
+        if (routeManager == null) {
+            throw new GatewayException("RouteManager 未配置");
+        }
+        
+        UniversalRoute route = routeManager.matchRoute(context);
+        log.debug("[EnhancedGatewayProcessor] 路由匹配结果: {}", 
+            route != null ? route.getId() : "无匹配路由");
+        return route;
+    }
+
+    @Override
+    public EndpointAddress selectTargetNode(UniversalRequestContext context, UniversalRoute route) {
+        if (loadBalanceManager == null) {
+            throw new GatewayException("LoadBalanceManager 未配置");
+        }
+        
+        List<EndpointAddress> targets = getRouteTargets(route);
+        if (targets.isEmpty()) {
+            throw new GatewayException("路由 " + route.getId() + " 没有可用的目标节点");
+        }
+        
+        EndpointAddress selected = loadBalanceManager.selectTarget(route.getId(), targets, context);
+        log.debug("[EnhancedGatewayProcessor] 负载均衡选择节点: {}", 
+            selected != null ? selected.toUri() : "null");
+        return selected;
+    }
+
+    @Override
+    public Message invokeBackendService(UniversalRequestContext context, EndpointAddress target, Message request) {
+        try {
+            log.debug("[EnhancedGatewayProcessor] 调用后端服务: {} -> {}", 
+                request.getMessageId(), target.toUri());
             
-            // 创建超时错误响应
-            return createTimeoutErrorResponse(context, target, timeout);
-        } else {
-            log.error("后端调用执行失败: {} - {}", target.toUri(), cause.getMessage());
-            
-            // 创建通用错误响应
-            return createGenericErrorResponse(context, target, cause);
-        }
-    }
-
-    /**
-     * 创建超时错误响应
-     */
-    private Message createTimeoutErrorResponse(UniversalRequestContext context, EndpointAddress target, Duration timeout) {
-        // 基于原始请求创建错误响应
-        Message request = context.getInboundMessage();
-        Message response = request.createResponse();
-        
-        // 设置错误信息到响应头中
-        response.getHeaders().set("Error-Type", "REQUEST_TIMEOUT");
-        response.getHeaders().set("Error-Message", "后端服务响应超时");
-        response.getHeaders().set("Error-Target", target.toUri());
-        response.getHeaders().set("Error-Timeout", timeout.toString());
-        response.getHeaders().set("Error-Timestamp", String.valueOf(System.currentTimeMillis()));
-        response.getHeaders().set("Status-Code", "504"); // Gateway Timeout
-        
-        return response;
-    }
-
-    /**
-     * 创建通用错误响应
-     */
-    private Message createGenericErrorResponse(UniversalRequestContext context, EndpointAddress target, Throwable cause) {
-        // 基于原始请求创建错误响应
-        Message request = context.getInboundMessage();
-        Message response = request.createResponse();
-        
-        // 设置错误信息到响应头中
-        response.getHeaders().set("Error-Type", "BACKEND_ERROR");
-        response.getHeaders().set("Error-Message", "后端服务调用失败");
-        response.getHeaders().set("Error-Target", target.toUri());
-        response.getHeaders().set("Error-Cause", cause.getMessage());
-        response.getHeaders().set("Error-Timestamp", String.valueOf(System.currentTimeMillis()));
-        response.getHeaders().set("Status-Code", "502"); // Bad Gateway
-        
-        return response;
-    }
-
-    /**
-     * 执行实际的后端调用（使用连接池连接）
-     */
-    private CompletableFuture<Message> performBackendCallWithConnection(UniversalRequestContext context,
-                                                                        EndpointAddress target,
-                                                                        Connection connection) {
-        Message request = context.getInboundMessage();
-
-        // 从路由获取超时配置
-        UniversalRoute route = (UniversalRoute) context.getMatchedRoute();
-        Duration requestTimeout = route != null ? route.getRequestTimeout() : 
-                Duration.ofMillis(gatewayConfig.getDefaultTimeout());
-
-        log.debug("异步发送请求: {} -> {}, 请求超时: {}", 
-                 connection.getConnectionId(), target.toUri(), requestTimeout);
-
-        // 使用连接发送消息并异步处理响应
-        return connection.send(request)
-                .orTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .whenComplete((response, ex) -> {
-                    // 异步处理连接清理和日志记录
-                    handleConnectionCleanup(connection, ex, context, target);
-                })
-                .exceptionally(ex -> {
-                    // 异步错误处理
-                    return handleBackendError(context, target, ex);
-                });
-    }
-
-    /**
-     * 执行实际的后端调用（向后兼容方法）
-     */
-    private Message performBackendCall(UniversalRequestContext context, EndpointAddress target) {
-        try {
-            Message request = context.getInboundMessage();
-
-            // 模拟后端调用延迟
-            Thread.sleep(10);
-
-            // 模拟创建响应
-            Message response = request.createResponse();
-
+            Message response = createMockResponse(request);
+            log.debug("[EnhancedGatewayProcessor] 后端服务调用完成");
             return response;
 
         } catch (Exception e) {
-            throw new RuntimeException("后端调用执行失败", e);
+            throw new GatewayException("后端服务调用失败: " + e.getMessage(), e);
         }
     }
+    
 
-    /**
-     * 错误分类
-     */
-    private ErrorType classifyError(Exception exception) {
-        if (exception instanceof RuntimeException) {
-            return ErrorType.INTERNAL_ERROR;
-        } else if (exception instanceof CompletionException) {
-            return ErrorType.INTERNAL_ERROR;
-        } else {
-            return ErrorType.UNKNOWN_ERROR;
+    
+    @Override
+    public Message createErrorResponse(UniversalRequestContext context, ErrorType errorType, Throwable ex) {
+        String errorMessage = buildErrorMessage(errorType, ex);
+        int statusCode = getStatusCode(errorType);
+        
+        Message errorResponse = createSimpleResponse(statusCode, errorMessage);
+        log.debug("[EnhancedGatewayProcessor] 创建错误响应 - Type: {}, Code: {}", 
+            errorType, statusCode);
+        return errorResponse;
+    }
+    
+    // 组件访问器方法从父类继承
+    
+    // 辅助方法
+    private Message createMessageFromHttpRequest(FullHttpRequest request, UniversalRequestContext context) {
+        return new SimpleMessage(
+            "msg-" + System.nanoTime(),
+            MessageType.REQUEST,
+            new Protocol.HttpProtocol(),
+            request.uri(),
+            extractRequestBody(request)
+        );
+    }
+    
+    private Message createMockResponse(Message request) {
+        return new SimpleMessage(
+            "resp-" + request.getMessageId(),
+            MessageType.RESPONSE,
+            request.getProtocol(),
+            "/mock/response",
+            "{\"status\":\"success\",\"message\":\"Mock response from enhanced gateway\"}"
+        );
+    }
+    
+    private Message createSimpleResponse(int statusCode, String content) {
+        return new SimpleMessage(
+            "err-" + System.nanoTime(),
+            MessageType.RESPONSE,
+            new Protocol.HttpProtocol(),
+            "/error",
+            content
+        );
+    }
+    
+    private List<EndpointAddress> getRouteTargets(UniversalRoute route) {
+        if (route.getTarget() != null && route.getTarget().getTargetAddresses() != null) {
+            return route.getTarget().getTargetAddresses();
+        }
+        return Collections.emptyList();
+    }
+    
+    private String extractRequestBody(FullHttpRequest request) {
+        if (request.content().readableBytes() > 0) {
+            byte[] bytes = new byte[request.content().readableBytes()];
+            request.content().readBytes(bytes);
+            return new String(bytes);
+        }
+        return "";
+    }
+    
+    private String buildErrorMessage(ErrorType errorType, Throwable ex) {
+        switch (errorType) {
+            case ROUTE_NOT_FOUND:
+                return "路由未找到";
+            case TARGET_NOT_FOUND:
+                return "目标节点未找到";
+            case LOAD_BALANCE_FAILED:
+                return "负载均衡失败";
+            case BACKEND_INVOCATION_FAILED:
+                return "后端服务调用失败: " + ex.getMessage();
+            default:
+                return "网关内部错误: " + ex.getMessage();
         }
     }
+    
+    private int getStatusCode(ErrorType errorType) {
+        switch (errorType) {
+            case ROUTE_NOT_FOUND:
+            case TARGET_NOT_FOUND:
+                return 404;
+            case LOAD_BALANCE_FAILED:
+            case BACKEND_INVOCATION_FAILED:
+                return 502;
+            default:
+                return 500;
+        }
+    }
+    
+    // 简单的 Message 实现
+    private static class SimpleMessage implements Message {
+        private final String messageId;
+        private final MessageType type;
+        private final Protocol protocol;
+        private final String path;
+        private final String content;
+        
+        public SimpleMessage(String messageId, MessageType type, Protocol protocol, String path, String content) {
+            this.messageId = messageId;
+            this.type = type;
+            this.protocol = protocol;
+            this.path = path;
+            this.content = content;
+        }
+        
+        @Override
+        public String getMessageId() {
+            return messageId;
+        }
+        
+        @Override
+        public MessageType getType() {
+            return type;
+        }
+        
+        @Override
+        public Protocol getProtocol() {
+            return protocol;
+        }
+        
+        @Override
+        public com.muxin.gateway.refactory.message.MessageHeaders getHeaders() {
+            return new SimpleMessageHeaders();
+        }
+        
+        @Override
+        public com.muxin.gateway.refactory.message.MessageBody getBody() {
+            return new SimpleMessageBody(content);
+        }
+        
+        @Override
+        public com.muxin.gateway.refactory.message.MessageMetadata getMetadata() {
+            return null;
+        }
+        
+        @Override
+        public Message createResponse() {
+            return new SimpleMessage(
+                "resp-" + messageId,
+                MessageType.RESPONSE,
+                protocol,
+                path,
+                "{\"response\":\"created from " + messageId + "\"}"
+            );
+        }
+        
+        @Override
+        public Message copy() {
+            return new SimpleMessage(messageId, type, protocol, path, content);
+        }
+    }
+    
+    // 简单的 MessageHeaders 实现
+    private static class SimpleMessageHeaders implements com.muxin.gateway.refactory.message.MessageHeaders {
+        private final java.util.Map<String, Object> headers = new java.util.HashMap<>();
+        
+        @Override
+        public void set(String name, Object value) {
+            headers.put(name, value);
+        }
+        
+        @Override
+        public <T> T get(String name, Class<T> type) {
+            Object value = headers.get(name);
+            return type.isInstance(value) ? type.cast(value) : null;
+        }
 
-    /**
-     * 执行错误过滤器
-     */
-    private void executeErrorFilters(UniversalRequestContext context, Exception exception) {
-        try {
-            Protocol protocol = context.getInboundProtocol();
-            if (protocol != null) {
-                UniversalFilterChain errorChain = filterManager.createFilterChain(protocol, FilterType.ERROR);
-                errorChain.filter(context);
+    @Override
+        public <T> java.util.Optional<T> getOptional(String name, Class<T> type) {
+            return java.util.Optional.ofNullable(get(name, type));
+    }
+
+    @Override
+        public boolean contains(String name) {
+            return headers.containsKey(name);
+    }
+
+    @Override
+        public void remove(String name) {
+            headers.remove(name);
+    }
+
+    @Override
+        public java.util.Set<String> getNames() {
+            return headers.keySet();
+        }
+        
+        @Override
+        public java.util.Map<String, Object> asMap() {
+            return new java.util.HashMap<>(headers);
+        }
+        
+        @Override
+        public void setProtocolHeaders(java.util.Map<String, Object> headers) {
+            this.headers.putAll(headers);
+        }
+        
+        @Override
+        public java.util.Map<String, Object> getProtocolHeaders() {
+            return asMap();
+        }
+    }
+    
+    // 简单的 MessageBody 实现
+    private static class SimpleMessageBody implements com.muxin.gateway.refactory.message.MessageBody {
+        private final String content;
+        
+        public SimpleMessageBody(String content) {
+            this.content = content != null ? content : "";
+        }
+        
+        @Override
+        public byte[] getBytes() {
+            return content.getBytes();
+        }
+        
+        @Override
+        public String getString() {
+            return content;
+        }
+        
+        @Override
+        public <T> T getContent(Class<T> type) {
+            if (type == String.class) {
+                return type.cast(content);
             }
-        } catch (Exception e) {
-            System.err.println("[ENHANCED_GATEWAY_PROCESSOR] 错误过滤器执行失败: " + e.getMessage());
+            return null;
         }
-    }
-
-    /**
-     * 创建错误响应
-     */
-    private void createErrorResponse(UniversalRequestContext context, Exception exception, ErrorType errorType) {
-        try {
-            // 创建错误响应消息
-            Message errorResponse = context.getInboundMessage().createResponse();
-            context.setOutboundMessage(errorResponse);
-        } catch (Exception e) {
-            System.err.println("[ENHANCED_GATEWAY_PROCESSOR] 创建错误响应失败: " + e.getMessage());
+        
+        @Override
+        public java.io.InputStream getInputStream() {
+            return new java.io.ByteArrayInputStream(getBytes());
         }
-    }
-
-    /**
-     * 记录成功指标
-     */
-    private void recordSuccessMetrics(UniversalRequestContext context, long startTime) {
-        long duration = System.currentTimeMillis() - startTime;
-        String routeId = context.getAttribute("routeId", String.class);
-        String targetAddress = context.getAttribute("targetAddress", String.class);
-
-        gatewayMetrics.recordSuccess(routeId, targetAddress, duration);
-    }
-
-    /**
-     * 记录错误指标
-     */
-    private void recordErrorMetrics(UniversalRequestContext context, Exception exception, Long startTime) {
-        if (startTime != null) {
-            long duration = System.currentTimeMillis() - startTime;
-            String routeId = context.getAttribute("routeId", String.class);
-            String targetAddress = context.getAttribute("targetAddress", String.class);
-
-            gatewayMetrics.recordError(routeId, targetAddress, duration, exception);
+        
+        @Override
+        public boolean isEmpty() {
+            return content.isEmpty();
         }
-    }
-
-    /**
-     * 处理请求异常
-     */
-    private void handleRequestException(UniversalRequestContext context, Exception e, long startTime, String traceId) {
-        errorCounter.incrementAndGet();
-        recordErrorMetrics(context, e, startTime);
-
-        System.err.println(String.format("[ENHANCED_GATEWAY_PROCESSOR] 请求处理异常 - TraceId: %s, Duration: %dms, Error: %s",
-                traceId, System.currentTimeMillis() - startTime, e.getMessage()));
-
-        // 设置错误信息到上下文
-        context.setError(e);
-    }
-
-    /**
-     * 生成跟踪ID
-     */
-    private String generateTraceId() {
-        return "trace-" + System.currentTimeMillis() + "-" +
-                Long.toHexString(System.nanoTime()).substring(8);
-    }
-
-    /**
-     * 设置响应头
-     */
-    private void setResponseHeaders(UniversalRequestContext context) {
-        Message response = context.getOutboundMessage();
-        if (response != null) {
-            // 设置通用响应头
-            response.getHeaders().set("X-Gateway-Version", "1.0");
-            response.getHeaders().set("X-Trace-Id", context.getAttribute("traceId", String.class));
-            response.getHeaders().set("X-Response-Time",
-                    String.valueOf(System.currentTimeMillis() - context.getStartTime()));
+        
+        @Override
+        public long getContentLength() {
+            return content.length();
         }
-    }
-
-    // ========== Getter方法 ==========
-
-    @Override
-    public RouteManager getRouteManager() {
-        return routeManager;
-    }
-
-    @Override
-    public FilterManager getFilterManager() {
-        return filterManager;
-    }
-
-    @Override
-    public LoadBalanceManager getLoadBalanceManager() {
-        return loadBalanceManager;
-    }
-
-    @Override
-    public NodeManager getNodeManager() {
-        return nodeManager;
-    }
-
-    /**
-     * 获取连接池
-     */
-    public ConnectionPool getConnectionPool() {
-        return connectionPool;
-    }
-
-    /**
-     * 获取网关指标
-     */
-    public GatewayMetrics getGatewayMetrics() {
-        return gatewayMetrics;
-    }
-
-    /**
-     * 获取统计信息
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalRequests", requestCounter.get());
-        stats.put("successRequests", successCounter.get());
-        stats.put("errorRequests", errorCounter.get());
-        stats.put("successRate", calculateSuccessRate());
-        return stats;
-    }
-
-    /**
-     * 计算成功率
-     */
-    private double calculateSuccessRate() {
-        long total = requestCounter.get();
-        if (total == 0) {
-            return 0.0;
+        
+        @Override
+        public String getContentType() {
+            return "application/json";
         }
-        return (double) successCounter.get() / total * 100.0;
-    }
-
-    // ========== 内部类定义 ==========
-
-    /**
-     * 错误类型枚举
-     */
-    public enum ErrorType {
-        ROUTE_NOT_FOUND,
-        TARGET_NOT_FOUND,
-        NO_AVAILABLE_TARGETS,
-        LOAD_BALANCE_FAILED,
-        FILTER_EXECUTION_FAILED,
-        BACKEND_INVOCATION_FAILED,
-        CONNECTION_POOL_EXHAUSTED,
-        RETRY_EXHAUSTED,
-        CIRCUIT_BREAKER_OPEN,
-        INTERNAL_ERROR,
-        UNKNOWN_ERROR
-    }
-
-    /**
-     * 网关配置类
-     */
-    public static class GatewayConfig {
-        private final int defaultTimeout = 30000;  // 30秒
-        private final int defaultMaxRetries = 3;   // 3次重试
-
-        public int getDefaultTimeout() {
-            return defaultTimeout;
-        }
-
-        public int getDefaultMaxRetries() {
-            return defaultMaxRetries;
-        }
-    }
-
-    /**
-     * 网关指标类
-     */
-    public static class GatewayMetrics {
-        private final long startTime = System.currentTimeMillis();
-        private final Map<String, Long> successCounts = new HashMap<>();
-        private final Map<String, Long> errorCounts = new HashMap<>();
-        private final Map<String, Long> totalDurations = new HashMap<>();
-
-        public void recordSuccess(String routeId, String targetAddress, long duration) {
-            String key = routeId + "@" + targetAddress;
-            successCounts.merge(key, 1L, Long::sum);
-            totalDurations.merge(key, duration, Long::sum);
-        }
-
-        public void recordError(String routeId, String targetAddress, long duration, Exception exception) {
-            String key = routeId + "@" + targetAddress;
-            errorCounts.merge(key, 1L, Long::sum);
-        }
-
-        public long getStartTime() {
-            return startTime;
-        }
-
-        public Map<String, Long> getSuccessCounts() {
-            return new HashMap<>(successCounts);
-        }
-
-        public Map<String, Long> getErrorCounts() {
-            return new HashMap<>(errorCounts);
+        
+        @Override
+        public boolean isStreaming() {
+            return false;
         }
     }
 } 

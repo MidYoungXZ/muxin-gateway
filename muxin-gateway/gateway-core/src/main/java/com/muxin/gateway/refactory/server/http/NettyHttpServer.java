@@ -1,11 +1,11 @@
 package com.muxin.gateway.refactory.server.http;
 
+import com.muxin.gateway.refactory.GatewayProcessor;
+import com.muxin.gateway.refactory.DefaultRequestContext;
+import com.muxin.gateway.refactory.route.UniversalRequestContext;
 import com.muxin.gateway.refactory.connect.NettyServerConnection;
 import com.muxin.gateway.refactory.message.Protocol;
-import com.muxin.gateway.refactory.message.ProtocolAdapter;
-import com.muxin.gateway.refactory.message.http.HttpProtocolAdapter;
-import com.muxin.gateway.refactory.server.GenericProtocolServer;
-import com.muxin.gateway.refactory.server.MessageHandler;
+import com.muxin.gateway.refactory.message.Message;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -21,78 +21,98 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
 
 /**
- * 基于泛型设计的HTTP协议服务器实现
- * 继承GenericProtocolServer，支持类型安全的HTTP处理
- * 
- * 泛型参数：
- * - REQ: FullHttpRequest (HTTP请求)
- * - RESP: FullHttpResponse (HTTP响应)  
- * - CTX: ChannelHandlerContext (Netty上下文)
- * - CONN: NettyServerConnection (服务器连接)
+ * 简化的 HTTP 服务器实现
+ * 专注于网络层功能，业务逻辑委托给 GatewayProcessor
  * 
  * @author muxin
  */
 @Slf4j
-public class NettyHttpServer 
-    extends GenericProtocolServer<FullHttpRequest, FullHttpResponse, ChannelHandlerContext, NettyServerConnection> {
+public class NettyHttpServer {
     
+    private final int port;
     private final HttpServerConfig httpConfig;
+    private final GatewayProcessor gatewayProcessor;
+    
     private ServerBootstrap bootstrap;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
     private Channel serverChannel;
+    private volatile boolean running = false;
     
-    public NettyHttpServer(int port, HttpServerConfig httpConfig) {
-        super(new Protocol.HttpProtocol(), port, new HttpProtocolAdapter());
+    public NettyHttpServer(int port, HttpServerConfig httpConfig, GatewayProcessor gatewayProcessor) {
+        this.port = port;
         this.httpConfig = httpConfig != null ? httpConfig : HttpServerConfig.builder().build();
+        this.gatewayProcessor = gatewayProcessor;
         
-        log.info("[NettyHttpServer] 创建泛型HTTP服务器 - 端口: {}, 配置: {}", port, this.httpConfig);
-    }
-    
-    public NettyHttpServer(int port) {
-        this(port, HttpServerConfig.builder().build());
-    }
-    
-    @Override
-    public void init() {
-        // 初始化方法 - 可以在这里进行一些预处理
-        log.info("[NettyHttpServer] 初始化HTTP服务器 - 端口: {}", port);
-    }
-    
-    @Override
-    protected void doStart() throws Exception {
-        // 检查MessageHandler
-        if (messageHandler == null) {
-            throw new IllegalStateException("MessageHandler未设置，无法启动服务器");
+        if (gatewayProcessor == null) {
+            throw new IllegalArgumentException("GatewayProcessor 不能为空");
         }
         
+        log.info("[NettyHttpServer] 创建简化HTTP服务器 - 端口: {}, 配置: {}", port, this.httpConfig);
+    }
+    
+    public NettyHttpServer(int port, GatewayProcessor gatewayProcessor) {
+        this(port, HttpServerConfig.builder().build(), gatewayProcessor);
+    }
+    
+    /**
+     * 启动服务器
+     */
+    public void start() {
+        if (running) {
+            log.warn("[NettyHttpServer] 服务器已在运行中，忽略启动请求");
+            return;
+        }
+        
+        try {
+            log.info("[NettyHttpServer] 开始启动HTTP服务器 - 端口: {}", port);
+        
         // 初始化线程组
-        initEventLoopGroups();
+            bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("boss"));
+            workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("worker"));
         
         // 配置ServerBootstrap
         bootstrap = new ServerBootstrap();
-        configureBootstrap();
+            bootstrap.group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .option(ChannelOption.SO_BACKLOG, 1024)
+                .childOption(ChannelOption.SO_KEEPALIVE, true)
+                .childOption(ChannelOption.TCP_NODELAY, true)
+                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .childHandler(new HttpChannelInitializer());
         
         // 绑定端口并启动
         ChannelFuture future = bootstrap.bind(new InetSocketAddress(port)).sync();
         serverChannel = future.channel();
         
+            running = true;
         log.info("[NettyHttpServer] HTTP服务器启动成功 - 监听端口: {}", port);
+            
+        } catch (Exception e) {
+            log.error("[NettyHttpServer] HTTP服务器启动失败 - 端口: {}", port, e);
+            throw new RuntimeException("HTTP服务器启动失败", e);
+        }
     }
     
-    @Override
-    protected void doStop() throws Exception {
+    /**
+     * 停止服务器
+     */
+    public void stop() {
+        if (!running) {
+            log.warn("[NettyHttpServer] 服务器未运行，忽略停止请求");
+            return;
+        }
+        
         try {
-            // 关闭服务器通道
+            log.info("[NettyHttpServer] 开始停止HTTP服务器 - 端口: {}", port);
+            
             if (serverChannel != null) {
                 serverChannel.close().sync();
                 serverChannel = null;
             }
-        } finally {
-            // 优雅关闭线程组
+            
             if (workerGroup != null) {
                 workerGroup.shutdownGracefully().sync();
                 workerGroup = null;
@@ -101,33 +121,16 @@ public class NettyHttpServer
                 bossGroup.shutdownGracefully().sync();
                 bossGroup = null;
             }
+            
+            running = false;
+            log.info("[NettyHttpServer] HTTP服务器停止完成 - 端口: {}", port);
+            
+        } catch (Exception e) {
+            log.error("[NettyHttpServer] HTTP服务器停止失败 - 端口: {}", port, e);
         }
-        
-        log.info("[NettyHttpServer] HTTP服务器停止完成 - 端口: {}", port);
     }
     
-    // ========== 实现GenericProtocolServer抽象方法 ==========
     
-    @Override
-    protected void writeResponse(FullHttpResponse response, ChannelHandlerContext context) {
-        // 检查是否需要保持连接
-        boolean keepAlive = HttpUtil.isKeepAlive((HttpMessage) context.channel().attr(
-            io.netty.util.AttributeKey.valueOf("request")).get());
-        
-        if (keepAlive) {
-            context.writeAndFlush(response);
-        } else {
-            context.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-        }
-        
-        log.debug("[NettyHttpServer] HTTP响应写入完成 - keepAlive: {}", keepAlive);
-    }
-    
-    @Override
-    protected void closeConnection(ChannelHandlerContext context) {
-        log.debug("[NettyHttpServer] 关闭HTTP连接 - 远程地址: {}", context.channel().remoteAddress());
-        context.close();
-    }
     
     // ========== 私有方法 ==========
     
@@ -186,7 +189,6 @@ public class NettyHttpServer
     
     /**
      * HTTP Channel初始化器
-     * 使用泛型设计的HTTP处理器
      */
     private class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
         @Override
@@ -218,78 +220,201 @@ public class NettyHttpServer
                 ));
             }
             
-            // ===== 关键：使用泛型设计的HTTP处理器 =====
-            pipeline.addLast(new GenericHttpServerHandler(NettyHttpServer.this));
+            // 简化的HTTP处理器
+            pipeline.addLast(new SimpleHttpServerHandler(gatewayProcessor));
             
-            log.debug("[NettyHttpServer] HTTP Channel管道初始化完成 - 远程地址: {}", 
-                ch.remoteAddress());
+            log.debug("[NettyHttpServer] HTTP Channel管道初始化完成 - 远程地址: {}", ch.remoteAddress());
         }
     }
     
     /**
-     * 泛型HTTP服务器处理器
-     * 继承SimpleChannelInboundHandler，处理FullHttpRequest
+     * 简化的HTTP服务器处理器
+     * 直接与GatewayProcessor对接，处理HTTP请求到网关处理的完整流程
      */
-    private static class GenericHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+    private static class SimpleHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         
-        private final NettyHttpServer server;
+        private final GatewayProcessor gatewayProcessor;
         
-        public GenericHttpServerHandler(NettyHttpServer server) {
-            this.server = server;
+        public SimpleHttpServerHandler(GatewayProcessor gatewayProcessor) {
+            this.gatewayProcessor = gatewayProcessor;
         }
         
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
             // 存储请求到Channel属性中，用于后续判断Keep-Alive
-            ctx.channel().attr(io.netty.util.AttributeKey.valueOf("request")).set(request);
+            ctx.channel().attr(io.netty.util.AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             
-            // 调用父类的模板方法处理请求
-            server.handleInboundRequest(request, ctx);
+            try {
+                // 直接创建上下文并处理
+                UniversalRequestContext context = createRequestContext(request, ctx);
+                
+                // 委托给GatewayProcessor处理（业务逻辑）
+                gatewayProcessor.process(context)
+                    .thenAccept(response -> writeHttpResponse(response, ctx, request))
+                    .exceptionally(ex -> {
+                        writeErrorResponse(ex, ctx);
+                        return null;
+                    });
+                    
+            } catch (Exception e) {
+                log.error("[SimpleHttpServerHandler] 处理请求异常", e);
+                writeErrorResponse(e, ctx);
+            }
+        }
+        
+        /**
+         * 创建请求上下文
+         */
+        private UniversalRequestContext createRequestContext(FullHttpRequest request, ChannelHandlerContext ctx) {
+            // 创建HTTP协议
+            Protocol httpProtocol = new Protocol.HttpProtocol();
+            
+            // 创建服务器连接
+            NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);
+            
+            // 创建上下文（先传null作为message，后续会设置）
+            UniversalRequestContext context = new DefaultRequestContext(null, connection);
+            
+            // 设置原始请求信息到上下文属性中
+            context.setAttribute("nettyRequest", request);
+            context.setAttribute("nettyContext", ctx);
+            context.setAttribute("protocol", httpProtocol);
+            context.setAttribute("startTime", System.currentTimeMillis());
+            
+            // 从HTTP请求中提取基本信息
+            context.setAttribute("method", request.method().name());
+            context.setAttribute("uri", request.uri());
+            context.setAttribute("path", extractPath(request.uri()));
+            context.setAttribute("queryString", extractQueryString(request.uri()));
+            
+            return context;
+        }
+        
+        /**
+         * 写入HTTP响应
+         */
+        private void writeHttpResponse(Message response, ChannelHandlerContext ctx, FullHttpRequest originalRequest) {
+            try {
+                // 创建Netty HTTP响应
+                FullHttpResponse httpResponse = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1,
+                    HttpResponseStatus.OK
+                );
+                
+                // 设置响应内容
+                if (response != null && response.getBody() != null) {
+                    byte[] content = response.getBody().getBytes();
+                    httpResponse.content().writeBytes(content);
+                    httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
+                }
+                
+                // 设置响应头
+                httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=UTF-8");
+                if (response != null && response.getHeaders() != null) {
+                    response.getHeaders().asMap().forEach((name, value) -> {
+                        if (value != null) {
+                            httpResponse.headers().set(name, value.toString());
+                        }
+                    });
+                }
+                
+                // 检查Keep-Alive
+                boolean keepAlive = HttpUtil.isKeepAlive(originalRequest);
+                
+                if (keepAlive) {
+                    httpResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+                    ctx.writeAndFlush(httpResponse);
+                } else {
+                    ctx.writeAndFlush(httpResponse).addListener(ChannelFutureListener.CLOSE);
+                }
+                
+                log.debug("[SimpleHttpServerHandler] HTTP响应写入完成 - keepAlive: {}", keepAlive);
+                
+            } catch (Exception e) {
+                log.error("[SimpleHttpServerHandler] 写入响应失败", e);
+                ctx.close();
+            }
+        }
+        
+        /**
+         * 写入错误响应
+         */
+        private void writeErrorResponse(Throwable ex, ChannelHandlerContext ctx) {
+            try {
+                String errorMessage = String.format(
+                    "{\"error\":{\"code\":500,\"message\":\"%s\",\"timestamp\":%d}}", 
+                    ex.getMessage(), System.currentTimeMillis()
+                );
+                
+                FullHttpResponse response = new DefaultFullHttpResponse(
+                    HttpVersion.HTTP_1_1,
+                    HttpResponseStatus.INTERNAL_SERVER_ERROR,
+                    ctx.alloc().buffer().writeBytes(errorMessage.getBytes())
+                );
+                
+                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=UTF-8");
+                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, errorMessage.length());
+                
+                ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+                
+            } catch (Exception e) {
+                log.error("[SimpleHttpServerHandler] 写入错误响应失败", e);
+                ctx.close();
+            }
+        }
+        
+        /**
+         * 从URI中提取路径
+         */
+        private String extractPath(String uri) {
+            if (uri == null) return "/";
+            int queryIndex = uri.indexOf('?');
+            return queryIndex > 0 ? uri.substring(0, queryIndex) : uri;
+        }
+        
+        /**
+         * 从URI中提取查询字符串
+         */
+        private String extractQueryString(String uri) {
+            if (uri == null) return null;
+            int queryIndex = uri.indexOf('?');
+            return queryIndex > 0 && queryIndex < uri.length() - 1 ? uri.substring(queryIndex + 1) : null;
         }
         
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            server.handleConnectionEstablished(ctx);
+            log.debug("[SimpleHttpServerHandler] 连接建立 - 远程地址: {}", ctx.channel().remoteAddress());
             super.channelActive(ctx);
         }
         
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            server.handleConnectionClosed(ctx);
+            log.debug("[SimpleHttpServerHandler] 连接关闭 - 远程地址: {}", ctx.channel().remoteAddress());
             super.channelInactive(ctx);
         }
         
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            server.handleConnectionException(ctx, cause);
-            // 异常时关闭连接
+            log.error("[SimpleHttpServerHandler] 连接异常 - 远程地址: {}", ctx.channel().remoteAddress(), cause);
             ctx.close();
         }
     }
     
-    /**
-     * 获取HTTP配置
-     */
+    // ========== 访问器方法 ==========
+    
+    public int getPort() {
+        return port;
+    }
+    
     public HttpServerConfig getHttpConfig() {
         return httpConfig;
     }
     
-    /**
-     * 将HttpServerConfig转换为Map用于父类
-     */
-    private static Map<String, Object> convertConfigToMap(HttpServerConfig config) {
-        if (config == null) {
-            return java.util.Collections.emptyMap();
-        }
-        
-        Map<String, Object> map = new java.util.HashMap<>();
-        map.put("bossThreads", config.getBossThreads());
-        map.put("workerThreads", config.getWorkerThreads());
-        map.put("backlog", config.getBacklog());
-        map.put("keepAlive", config.isKeepAlive());
-        map.put("tcpNoDelay", config.isTcpNoDelay());
-        map.put("maxContentLength", config.getMaxContentLength());
-        map.put("compressionEnabled", config.isCompressionEnabled());
-        return map;
+    public GatewayProcessor getGatewayProcessor() {
+        return gatewayProcessor;
+    }
+    
+    public boolean isRunning() {
+        return running;
     }
 } 

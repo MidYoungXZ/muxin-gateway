@@ -44,11 +44,59 @@ java -jar gateway/target/gateway-1.0-SNAPSHOT.jar
 muxin-gateway/
 ├── gateway/              # 网关主程序
 ├── gateway-core/         # 核心功能模块
+│   ├── processor/        # 网关处理器
+│   ├── refactory/        # 重构后的新架构
+│   │   ├── connect/      # 连接管理（连接工厂、Netty连接实现）
+│   │   ├── message/      # 协议转换（转换器、管理器）
+│   │   └── node/         # 节点和地址管理
+│   └── common/           # 公共组件
 ├── gateway-admin/        # 管理界面模块
 │   └── src/main/resources/static/  # 前端文件
 ├── gateway-registry/     # 注册中心模块
 └── doc/                  # 项目文档
+    └── 架构重构总结.md   # 详细的重构文档
 ```
+
+## 🏗️ 架构设计
+
+### 核心架构组件
+
+#### 1. 协议转换体系
+```java
+ProtocolConverter          // 协议转换接口
+├── HttpProtocolConverter  // HTTP协议转换器
+└── ...                    // 其他协议转换器
+
+ProtocolConverterManager   // 转换管理器
+└── DefaultProtocolConverterManager  // 支持转换链和统计
+```
+
+#### 2. 连接工厂体系
+```java
+ConnectionFactory          // 连接工厂接口
+├── NettyConnectionFactory // Netty连接工厂
+└── ...                    // 其他连接工厂
+
+ConnectionFactoryManager   // 工厂管理器
+└── DefaultConnectionFactoryManager  // 支持事件监听
+```
+
+#### 3. 连接接口层次
+```java
+BaseConnection             // 基础连接接口
+├── ServerConnection       // 服务器端连接
+│   └── NettyServerConnection
+└── ClientConnection       // 客户端连接
+    └── NettyClientConnection
+```
+
+### 架构优势
+
+- **🔄 职责分离**：协议转换、连接管理、业务处理完全分离
+- **🚀 高性能**：基于Netty的异步IO和连接池化
+- **📈 可扩展**：新协议和连接类型的轻松扩展
+- **📊 可监控**：全面的事件监听和统计信息
+- **🔒 向后兼容**：现有代码无缝迁移
 
 ## 🛠️ 技术栈
 
@@ -66,6 +114,28 @@ muxin-gateway/
 - Axios 1.6.5
 
 ## 📝 版本更新
+
+### v2.4.0 (2025-01-24) - 架构重构与性能优化
+- 🏗️ **核心架构重构**
+  - 协议转换体系完全分离，支持ProtocolConverterManager
+  - 连接工厂体系重新设计，支持多协议ConnectionFactory
+  - GatewayProcessor职责单一化，专注业务处理流程
+- ⚡ **Netty连接优化**
+  - 新增NettyServerConnection和NettyClientConnection
+  - 支持连接池化和复用，提升性能
+  - 完整的连接生命周期管理和统计信息
+- 🔄 **协议转换增强**
+  - 支持协议转换链，实现多级转换
+  - 协议转换性能统计和监控
+  - HTTP、Universal等协议转换器实现
+- 📊 **事件驱动设计**
+  - 连接事件监听和处理机制
+  - 协议转换事件跟踪
+  - 全面的性能统计和监控体系
+- 🔧 **可扩展性提升**
+  - 新协议扩展只需实现ProtocolConverter
+  - 新连接类型扩展只需实现ConnectionFactory
+  - 向后兼容，现有代码无缝迁移
 
 ### v2.1.0 (2025-01-16) - 现代化界面升级
 - 🎨 **全面现代化设计升级**

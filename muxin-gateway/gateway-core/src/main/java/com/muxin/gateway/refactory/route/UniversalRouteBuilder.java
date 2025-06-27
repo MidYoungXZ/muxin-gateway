@@ -326,27 +326,29 @@ public class UniversalRouteBuilder {
     public UniversalRoute build() {
         validate();
         
-        RouteConfig config = RouteConfig.builder()
-                .id(id)
-                .name(name)
-                .description(description)
-                .order(order)
-                .enabled(enabled)
-                .supportedProtocols(supportedProtocols)
-                .predicates(predicates)
-                .filters(filters)
-                .target(target)
-                .metadata(metadata)
-                .connectionTimeout(connectionTimeout)
-                .requestTimeout(requestTimeout)
-                .totalTimeout(totalTimeout)
-                .readTimeout(readTimeout)
-                .writeTimeout(writeTimeout)
-                .circuitBreakerTimeout(circuitBreakerTimeout)
-                .timeoutEnabled(timeoutEnabled)
-                .build();
+        // 从metadata中提取pathPattern和targetUris，如果没有则使用默认值
+        String pathPattern = (String) metadata.getOrDefault("pathPattern", "/**");
+        @SuppressWarnings("unchecked")
+        List<String> targetUris = (List<String>) metadata.get("targetUris");
         
-        ConfigurableUniversalRoute route = new ConfigurableUniversalRoute(config);
+        // 如果没有配置targetUris，从target中提取
+        if (targetUris == null && target != null && target.getTargetAddresses() != null) {
+            targetUris = target.getTargetAddresses().stream()
+                    .map(addr -> addr.toUri())
+                    .toList();
+        }
+        
+        // 如果还是没有，使用默认值
+        if (targetUris == null || targetUris.isEmpty()) {
+            targetUris = List.of("http://localhost:8080");
+        }
+        
+        // 获取负载均衡策略
+        com.muxin.gateway.refactory.loadbalance.LoadBalanceStrategy loadBalanceStrategy = 
+            new com.muxin.gateway.refactory.loadbalance.RoundRobinLoadBalancer();
+        
+        // 创建 EnhancedHttpRoute
+        EnhancedHttpRoute route = new EnhancedHttpRoute(id, name, pathPattern, targetUris, loadBalanceStrategy);
         
         log.debug("构建路由完成: {}", route);
         

@@ -12,6 +12,11 @@ import java.util.Objects;
 public interface Protocol {
     
     /**
+     * 通用协议常量 - 用于协议无关的消息表示
+     */
+    Protocol UNIVERSAL = new UniversalProtocol();
+    
+    /**
      * 协议名称 (HTTP, TCP, UDP, WebSocket, gRPC, MQTT等)
      */
     String getName();
@@ -133,6 +138,69 @@ public interface Protocol {
             return "HttpProtocol{" +
                     "version='" + version + '\'' +
                     '}';
+        }
+    }
+    
+    /**
+     * 通用协议实现 - 用于协议无关的消息表示
+     * 
+     * @author muxin
+     */
+    class UniversalProtocol implements Protocol {
+        
+        @Override
+        public String getName() {
+            return "UNIVERSAL";
+        }
+        
+        @Override
+        public String getVersion() {
+            return "1.0";
+        }
+        
+        @Override
+        public ProtocolType getType() {
+            return ProtocolType.CUSTOM;
+        }
+        
+        @Override
+        public boolean isConnectionOriented() {
+            return false;
+        }
+        
+        @Override
+        public boolean isRequestResponseBased() {
+            return true;
+        }
+        
+        @Override
+        public boolean isStreamingSupported() {
+            return true;
+        }
+        
+        @Override
+        public int getDefaultPort() {
+            return -1; // 不适用
+        }
+        
+        @Override
+        public Map<String, Object> getProtocolConfig() {
+            return new HashMap<>();
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            return obj instanceof UniversalProtocol;
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hash(getName(), getVersion());
+        }
+        
+        @Override
+        public String toString() {
+            return "UniversalProtocol{version='1.0'}";
         }
     }
 }
