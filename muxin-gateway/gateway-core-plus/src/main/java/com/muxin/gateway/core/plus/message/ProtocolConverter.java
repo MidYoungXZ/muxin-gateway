@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.message;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 /**
  * 协议转换器接口 - 纯粹的协议转换功能
@@ -33,7 +33,7 @@ public interface ProtocolConverter {
      * @return 统一消息对象
      * @throws ProtocolConversionException 转换失败时抛出
      */
-    Message convertToUniversal(Object protocolSpecific, UniversalRequestContext context)
+    Message convertToUniversal(Object protocolSpecific, RequestContext context)
             throws ProtocolConversionException;
     
     /**
@@ -44,7 +44,7 @@ public interface ProtocolConverter {
      * @return 协议特定的数据对象
      * @throws ProtocolConversionException 转换失败时抛出
      */
-    Object convertFromUniversal(Message universal, UniversalRequestContext context) 
+    Object convertFromUniversal(Message universal, RequestContext context)
             throws ProtocolConversionException;
     
     /**

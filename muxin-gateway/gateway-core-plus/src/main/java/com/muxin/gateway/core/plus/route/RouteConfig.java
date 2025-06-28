@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.predicate.UniversalPredicate;
+import com.muxin.gateway.core.plus.predicate.Predicate;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.filter.UniversalFilter;
+import com.muxin.gateway.core.plus.filter.Filter;
 import lombok.Builder;
 import lombok.Data;
 
@@ -55,12 +55,12 @@ public class RouteConfig {
     /**
      * 断言列表（AND关系）
      */
-    private List<UniversalPredicate> predicates;
+    private List<Predicate> predicates;
     
     /**
      * 过滤器列表
      */
-    private List<UniversalFilter> filters;
+    private List<Filter> filters;
     
     /**
      * 目标服务配置

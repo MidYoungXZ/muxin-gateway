@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author muxin
  */
 @Slf4j
-public class DefaultServiceNode implements UniversalServiceNode {
+public class DefaultServiceNode implements ServiceNode {
     
     private final String id;
     private final String name;

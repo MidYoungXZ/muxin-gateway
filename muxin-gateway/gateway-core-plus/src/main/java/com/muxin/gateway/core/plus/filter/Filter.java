@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.filter;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Protocol;
 
 import java.util.Set;
@@ -10,12 +10,12 @@ import java.util.Set;
  *
  * @author muxin
  */
-public interface UniversalFilter {
+public interface Filter {
     
     /**
      * 过滤器执行
      */
-    void filter(UniversalRequestContext context, UniversalFilterChain chain);
+    void filter(RequestContext context, FilterChain chain);
     
     /**
      * 过滤器名称

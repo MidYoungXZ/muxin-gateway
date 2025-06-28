@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.predicate;
 
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
 
@@ -12,7 +12,7 @@ import java.util.*;
  *
  * @author muxin
  */
-public class HttpMethodPredicate implements UniversalPredicate {
+public class HttpMethodPredicate implements Predicate {
     
     private final Set<String> allowedMethods;
     private final Map<String, Object> config;
@@ -36,7 +36,7 @@ public class HttpMethodPredicate implements UniversalPredicate {
     }
     
     @Override
-    public boolean test(UniversalRequestContext context) {
+    public boolean test(RequestContext context) {
         if (context == null || context.getInboundMessage() == null) {
             return false;
         }
@@ -67,7 +67,7 @@ public class HttpMethodPredicate implements UniversalPredicate {
         return new HashMap<>(config);
     }
     
-    private String getRequestMethod(UniversalRequestContext context) {
+    private String getRequestMethod(RequestContext context) {
         Message message = context.getInboundMessage();
         if (message == null) {
             return null;

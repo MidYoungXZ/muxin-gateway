@@ -15,42 +15,42 @@ public interface PredicateFactory {
     /**
      * 创建路径断言
      */
-    UniversalPredicate createPathPredicate(String pattern);
+    Predicate createPathPredicate(String pattern);
     
     /**
      * 创建协议断言
      */
-    UniversalPredicate createProtocolPredicate(Protocol protocol);
+    Predicate createProtocolPredicate(Protocol protocol);
     
     /**
      * 创建头部断言
      */
-    UniversalPredicate createHeaderPredicate(String headerName, String expectedValue);
+    Predicate createHeaderPredicate(String headerName, String expectedValue);
     
     /**
      * 创建方法断言
      */
-    UniversalPredicate createMethodPredicate(String... methods);
+    Predicate createMethodPredicate(String... methods);
     
     /**
      * 创建复合断言 (AND)
      */
-    UniversalPredicate createAndPredicate(UniversalPredicate... predicates);
+    Predicate createAndPredicate(Predicate... predicates);
     
     /**
      * 创建复合断言 (OR)
      */
-    UniversalPredicate createOrPredicate(UniversalPredicate... predicates);
+    Predicate createOrPredicate(Predicate... predicates);
     
     /**
      * 创建取反断言 (NOT)
      */
-    UniversalPredicate createNotPredicate(UniversalPredicate predicate);
+    Predicate createNotPredicate(Predicate predicate);
     
     /**
      * 根据配置创建断言
      */
-    UniversalPredicate createFromConfig(String type, Map<String, Object> config);
+    Predicate createFromConfig(String type, Map<String, Object> config);
     
     /**
      * 注册自定义断言类型
@@ -62,6 +62,6 @@ public interface PredicateFactory {
      */
     @FunctionalInterface
     interface PredicateCreator {
-        UniversalPredicate create(Map<String, Object> config);
+        Predicate create(Map<String, Object> config);
     }
 } 

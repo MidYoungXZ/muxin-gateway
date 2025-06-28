@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.filter;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import java.util.Set;
  * @author muxin
  */
 @Slf4j
-public class HttpAuthFilter implements UniversalFilter {
+public class HttpAuthFilter implements Filter {
     
     private final int order;
     
@@ -23,7 +23,7 @@ public class HttpAuthFilter implements UniversalFilter {
     }
     
     @Override
-    public void filter(UniversalRequestContext context, UniversalFilterChain chain) {
+    public void filter(RequestContext context, FilterChain chain) {
         Message inbound = context.getInboundMessage();
         
         if (inbound != null && inbound.getHeaders() != null) {

@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.filter;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,9 +11,9 @@ import java.util.List;
  *
  * @author muxin
  */
-public class SimpleFilterChain implements UniversalFilterChain {
+public class SimpleFilterChain implements FilterChain {
     
-    private final List<UniversalFilter> filters;
+    private final List<Filter> filters;
     private int currentIndex;
     
     public SimpleFilterChain() {
@@ -21,17 +21,17 @@ public class SimpleFilterChain implements UniversalFilterChain {
         this.currentIndex = 0;
     }
     
-    public SimpleFilterChain(List<UniversalFilter> filters) {
+    public SimpleFilterChain(List<Filter> filters) {
         this.filters = new ArrayList<>(filters);
         // 按order排序
-        this.filters.sort(Comparator.comparingInt(UniversalFilter::getOrder));
+        this.filters.sort(Comparator.comparingInt(Filter::getOrder));
         this.currentIndex = 0;
     }
     
     @Override
-    public void filter(UniversalRequestContext context) {
+    public void filter(RequestContext context) {
         if (hasNext()) {
-            UniversalFilter filter = filters.get(currentIndex++);
+            Filter filter = filters.get(currentIndex++);
             if (filter.isEnabled()) {
                 filter.filter(context, this);
             } else {
@@ -48,10 +48,10 @@ public class SimpleFilterChain implements UniversalFilterChain {
     }
     
     @Override
-    public void addFilter(UniversalFilter filter) {
+    public void addFilter(Filter filter) {
         filters.add(filter);
         // 重新排序
-        filters.sort(Comparator.comparingInt(UniversalFilter::getOrder));
+        filters.sort(Comparator.comparingInt(Filter::getOrder));
     }
     
     @Override
@@ -74,7 +74,7 @@ public class SimpleFilterChain implements UniversalFilterChain {
     /**
      * 获取所有过滤器（只读）
      */
-    public List<UniversalFilter> getFilters() {
+    public List<Filter> getFilters() {
         return new ArrayList<>(filters);
     }
 } 

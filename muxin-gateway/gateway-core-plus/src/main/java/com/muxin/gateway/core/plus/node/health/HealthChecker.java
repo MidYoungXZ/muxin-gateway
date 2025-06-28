@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.node.health;
 
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.node.UniversalServiceNode;
+import com.muxin.gateway.core.plus.node.ServiceNode;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -19,7 +19,7 @@ public interface HealthChecker {
      * @param node 服务节点
      * @return 健康检查结果
      */
-    HealthCheckResult checkHealth(UniversalServiceNode node);
+    HealthCheckResult checkHealth(ServiceNode node);
     
     /**
      * 异步健康检查
@@ -27,7 +27,7 @@ public interface HealthChecker {
      * @param node 服务节点
      * @return 健康检查结果的Future
      */
-    CompletableFuture<HealthCheckResult> checkHealthAsync(UniversalServiceNode node);
+    CompletableFuture<HealthCheckResult> checkHealthAsync(ServiceNode node);
     
     /**
      * 启动健康检查调度器
@@ -42,7 +42,7 @@ public interface HealthChecker {
     /**
      * 添加节点到健康检查列表
      */
-    void addNode(UniversalServiceNode node);
+    void addNode(ServiceNode node);
     
     /**
      * 从健康检查列表移除节点

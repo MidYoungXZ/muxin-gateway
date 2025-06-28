@@ -1,0 +1,296 @@
+package com.muxin.gateway.core.plus;
+
+import com.muxin.gateway.core.plus.config.GatewayConfig;
+import com.muxin.gateway.core.plus.config.GatewayCoreConfig;
+import com.muxin.gateway.core.plus.config.RouteSystemConfig;
+import com.muxin.gateway.core.plus.config.ServerConfig;
+import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
+import com.muxin.gateway.core.plus.connect.DefaultConnectionPoolManager;
+import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
+import com.muxin.gateway.core.plus.filter.FilterManager;
+import com.muxin.gateway.core.plus.filter.UniversalFilterManager;
+import com.muxin.gateway.core.plus.loadbalance.LoadBalanceManager;
+import com.muxin.gateway.core.plus.loadbalance.DefaultLoadBalanceManager;
+import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
+import com.muxin.gateway.core.plus.message.DefaultProtocolConverterManager;
+import com.muxin.gateway.core.plus.node.NodeManager;
+import com.muxin.gateway.core.plus.node.DefaultNodeManager;
+import com.muxin.gateway.core.plus.route.RouteManager;
+import com.muxin.gateway.core.plus.route.DefaultRouteManager;
+import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
+import com.muxin.gateway.core.plus.server.http.HttpServerConfig;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * 网关引导类
+ * 负责网关所有组件的创建、初始化、启动和关闭
+ * 
+ * @author muxin
+ */
+@Slf4j
+public class GatewayBootstrap implements LifeCycle {
+    
+    // ========== 配置 ==========
+    private GatewayConfig gatewayConfig;
+    private GatewayCoreConfig coreConfig;
+    private RouteSystemConfig routeSystemConfig;
+    private ServerConfig serverConfig;
+    
+    // ========== 核心组件 ==========
+    private ConnectionPoolManager connectionPoolManager;
+    private RouteManager routeManager;
+    private FilterManager filterManager;
+    private LoadBalanceManager loadBalanceManager;
+    private NodeManager nodeManager;
+    private ProtocolConverterManager protocolConverterManager;
+    private GatewayProcessor gatewayProcessor;
+    
+    // ========== 服务器 ==========
+    private NettyHttpServer httpServer;
+    
+    // ========== 状态管理 ==========
+    private volatile boolean initialized = false;
+    private volatile boolean running = false;
+    
+    @Override
+    public void init() {
+        if (initialized) {
+            return;
+        }
+        
+        try {
+            log.info("Initializing gateway components...");
+            
+            // 1. 初始化配置
+            initConfigs();
+            
+            // 2. 按依赖顺序初始化组件
+            initCoreComponents();
+            
+            // 3. 初始化网关处理器
+            initGatewayProcessor();
+            
+            // 4. 初始化服务器
+            initServers();
+            
+            initialized = true;
+            log.info("Gateway components initialized successfully");
+            
+        } catch (Exception e) {
+            log.error("Failed to initialize gateway components", e);
+            throw new RuntimeException("Gateway initialization failed", e);
+        }
+    }
+    
+    @Override
+    public void start() {
+        if (!initialized) {
+            init();
+        }
+        
+        if (running) {
+            return;
+        }
+        
+        try {
+            log.info("Starting gateway services...");
+            
+            // 1. 启动核心组件
+            startCoreComponents();
+            
+            // 2. 启动网关处理器
+            startGatewayProcessor();
+            
+            // 3. 启动服务器
+            startServers();
+            
+            running = true;
+            log.info("Gateway services started successfully");
+            
+        } catch (Exception e) {
+            log.error("Failed to start gateway services", e);
+            throw new RuntimeException("Gateway startup failed", e);
+        }
+    }
+    
+    @Override
+    public void shutdown() {
+        if (!running) {
+            return;
+        }
+        
+        try {
+            log.info("Shutting down gateway services...");
+            
+            // 按相反顺序关闭组件
+            shutdownServers();
+            shutdownGatewayProcessor();
+            shutdownCoreComponents();
+            
+            running = false;
+            initialized = false;
+            
+            log.info("Gateway services shutdown completed");
+            
+        } catch (Exception e) {
+            log.error("Error during gateway shutdown", e);
+        }
+    }
+    
+    // ========== 初始化方法 ==========
+    
+    private void initConfigs() {
+        log.debug("Initializing configurations...");
+        
+        // 使用默认配置
+        this.coreConfig = GatewayCoreConfig.builder().build();
+        this.routeSystemConfig = RouteSystemConfig.defaultConfig();
+        this.serverConfig = ServerConfig.defaultConfig();
+        
+        // 创建主配置
+        this.gatewayConfig = GatewayConfig.builder()
+                .coreConfig(coreConfig)
+                .build();
+        
+        log.debug("Configurations initialized");
+    }
+    
+    private void initCoreComponents() {
+        log.debug("Initializing core components...");
+        
+        // 连接池管理器
+        ConnectionPoolConfig poolConfig = ConnectionPoolConfig.defaultConfig();
+        this.connectionPoolManager = new DefaultConnectionPoolManager(poolConfig);
+        connectionPoolManager.init();
+        
+        // 协议转换管理器
+        this.protocolConverterManager = new DefaultProtocolConverterManager();
+        protocolConverterManager.init();
+        
+        // 路由管理器
+        this.routeManager = new DefaultRouteManager();
+        routeManager.init();
+        
+        // 过滤器管理器
+        this.filterManager = new UniversalFilterManager();
+        filterManager.init();
+        
+        // 负载均衡管理器
+        this.loadBalanceManager = new DefaultLoadBalanceManager();
+        loadBalanceManager.init();
+        
+        // 节点管理器
+        this.nodeManager = new DefaultNodeManager();
+        nodeManager.init();
+        
+        log.debug("Core components initialized");
+    }
+    
+    private void initGatewayProcessor() {
+        log.debug("Initializing gateway processor...");
+        
+        this.gatewayProcessor = new EnhancedGatewayProcessor(
+                gatewayConfig,
+                connectionPoolManager,
+                routeManager,
+                filterManager,
+                loadBalanceManager,
+                nodeManager,
+                protocolConverterManager
+        );
+        
+        gatewayProcessor.init();
+        log.debug("Gateway processor initialized");
+    }
+    
+    private void initServers() {
+        log.debug("Initializing servers...");
+        
+        // HTTP服务器配置
+        HttpServerConfig httpConfig = HttpServerConfig.builder()
+                .build();
+        
+        // 创建HTTP服务器
+        this.httpServer = new NettyHttpServer(8080, httpConfig, gatewayProcessor);
+        
+        log.debug("Servers initialized");
+    }
+    
+    // ========== 启动方法 ==========
+    
+    private void startCoreComponents() {
+        log.debug("Starting core components...");
+        
+        connectionPoolManager.start();
+        protocolConverterManager.start();
+        routeManager.start();
+        filterManager.start();
+        loadBalanceManager.start();
+        nodeManager.start();
+        
+        log.debug("Core components started");
+    }
+    
+    private void startGatewayProcessor() {
+        log.debug("Starting gateway processor...");
+        gatewayProcessor.start();
+        log.debug("Gateway processor started");
+    }
+    
+    private void startServers() {
+        log.debug("Starting servers...");
+        
+        // 启动HTTP服务器
+        httpServer.start();
+        log.info("HTTP server started on port 8080");
+        
+        log.debug("Servers started");
+    }
+    
+    // ========== 关闭方法 ==========
+    
+    private void shutdownServers() {
+        log.debug("Shutting down servers...");
+        
+        if (httpServer != null) {
+            httpServer.stop();
+        }
+        
+        log.debug("Servers shut down");
+    }
+    
+    private void shutdownGatewayProcessor() {
+        log.debug("Shutting down gateway processor...");
+        
+        if (gatewayProcessor != null) {
+            gatewayProcessor.shutdown();
+        }
+        
+        log.debug("Gateway processor shut down");
+    }
+    
+    private void shutdownCoreComponents() {
+        log.debug("Shutting down core components...");
+        
+        if (nodeManager != null) {
+            nodeManager.shutdown();
+        }
+        if (loadBalanceManager != null) {
+            loadBalanceManager.shutdown();
+        }
+        if (filterManager != null) {
+            filterManager.shutdown();
+        }
+        if (routeManager != null) {
+            routeManager.shutdown();
+        }
+        if (protocolConverterManager != null) {
+            protocolConverterManager.shutdown();
+        }
+        if (connectionPoolManager != null) {
+            connectionPoolManager.shutdown();
+        }
+        
+        log.debug("Core components shut down");
+    }
+} 

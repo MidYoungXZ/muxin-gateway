@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.predicate.UniversalPredicate;
+import com.muxin.gateway.core.plus.predicate.Predicate;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.filter.UniversalFilter;
+import com.muxin.gateway.core.plus.filter.Filter;
 import lombok.extern.slf4j.Slf4j;
 import com.muxin.gateway.core.plus.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.loadbalance.RoundRobinLoadBalancer;
@@ -20,7 +20,7 @@ import java.util.Map;
  * @author muxin
  */
 @Slf4j
-public class UniversalRouteBuilder {
+public class RouteBuilder {
     
     private String id;
     private String name;
@@ -28,8 +28,8 @@ public class UniversalRouteBuilder {
     private int order = 0;
     private boolean enabled = true;
     private List<Protocol> supportedProtocols = new ArrayList<>();
-    private List<UniversalPredicate> predicates = new ArrayList<>();
-    private List<UniversalFilter> filters = new ArrayList<>();
+    private List<Predicate> predicates = new ArrayList<>();
+    private List<Filter> filters = new ArrayList<>();
     private RouteTarget target;
     private Map<String, Object> metadata = new HashMap<>();
     
@@ -42,22 +42,22 @@ public class UniversalRouteBuilder {
     private Duration circuitBreakerTimeout;
     private boolean timeoutEnabled = true;
     
-    private UniversalRouteBuilder() {
+    private RouteBuilder() {
         // 私有构造函数，通过静态方法创建
     }
     
     /**
      * 创建新的构建器
      */
-    public static UniversalRouteBuilder create() {
-        return new UniversalRouteBuilder();
+    public static RouteBuilder create() {
+        return new RouteBuilder();
     }
     
     /**
      * 从现有路由创建构建器（复制配置）
      */
-    public static UniversalRouteBuilder from(UniversalRoute route) {
-        return new UniversalRouteBuilder()
+    public static RouteBuilder from(Route route) {
+        return new RouteBuilder()
                 .id(route.getId())
                 .name(route.getName())
                 .description(route.getDescription())
@@ -79,153 +79,153 @@ public class UniversalRouteBuilder {
     
     // ========== 基础配置方法 ==========
     
-    public UniversalRouteBuilder id(String id) {
+    public RouteBuilder id(String id) {
         this.id = id;
         return this;
     }
     
-    public UniversalRouteBuilder name(String name) {
+    public RouteBuilder name(String name) {
         this.name = name;
         return this;
     }
     
-    public UniversalRouteBuilder description(String description) {
+    public RouteBuilder description(String description) {
         this.description = description;
         return this;
     }
     
-    public UniversalRouteBuilder order(int order) {
+    public RouteBuilder order(int order) {
         this.order = order;
         return this;
     }
     
-    public UniversalRouteBuilder enabled(boolean enabled) {
+    public RouteBuilder enabled(boolean enabled) {
         this.enabled = enabled;
         return this;
     }
     
-    public UniversalRouteBuilder supportedProtocols(List<Protocol> protocols) {
+    public RouteBuilder supportedProtocols(List<Protocol> protocols) {
         if (protocols != null) {
             this.supportedProtocols = new ArrayList<>(protocols);
         }
         return this;
     }
     
-    public UniversalRouteBuilder addProtocol(Protocol protocol) {
+    public RouteBuilder addProtocol(Protocol protocol) {
         if (protocol != null) {
             this.supportedProtocols.add(protocol);
         }
         return this;
     }
     
-    public UniversalRouteBuilder predicates(List<UniversalPredicate> predicates) {
+    public RouteBuilder predicates(List<Predicate> predicates) {
         if (predicates != null) {
             this.predicates = new ArrayList<>(predicates);
         }
         return this;
     }
     
-    public UniversalRouteBuilder addPredicate(UniversalPredicate predicate) {
+    public RouteBuilder addPredicate(Predicate predicate) {
         if (predicate != null) {
             this.predicates.add(predicate);
         }
         return this;
     }
     
-    public UniversalRouteBuilder filters(List<UniversalFilter> filters) {
+    public RouteBuilder filters(List<Filter> filters) {
         if (filters != null) {
             this.filters = new ArrayList<>(filters);
         }
         return this;
     }
     
-    public UniversalRouteBuilder addFilter(UniversalFilter filter) {
+    public RouteBuilder addFilter(Filter filter) {
         if (filter != null) {
             this.filters.add(filter);
         }
         return this;
     }
     
-    public UniversalRouteBuilder target(RouteTarget target) {
+    public RouteBuilder target(RouteTarget target) {
         this.target = target;
         return this;
     }
     
-    public UniversalRouteBuilder metadata(Map<String, Object> metadata) {
+    public RouteBuilder metadata(Map<String, Object> metadata) {
         if (metadata != null) {
             this.metadata = new HashMap<>(metadata);
         }
         return this;
     }
     
-    public UniversalRouteBuilder addMetadata(String key, Object value) {
+    public RouteBuilder addMetadata(String key, Object value) {
         this.metadata.put(key, value);
         return this;
     }
     
     // ========== 超时配置方法 ==========
     
-    public UniversalRouteBuilder connectionTimeout(Duration timeout) {
+    public RouteBuilder connectionTimeout(Duration timeout) {
         this.connectionTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder connectionTimeout(long seconds) {
+    public RouteBuilder connectionTimeout(long seconds) {
         this.connectionTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder requestTimeout(Duration timeout) {
+    public RouteBuilder requestTimeout(Duration timeout) {
         this.requestTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder requestTimeout(long seconds) {
+    public RouteBuilder requestTimeout(long seconds) {
         this.requestTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder totalTimeout(Duration timeout) {
+    public RouteBuilder totalTimeout(Duration timeout) {
         this.totalTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder totalTimeout(long seconds) {
+    public RouteBuilder totalTimeout(long seconds) {
         this.totalTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder readTimeout(Duration timeout) {
+    public RouteBuilder readTimeout(Duration timeout) {
         this.readTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder readTimeout(long seconds) {
+    public RouteBuilder readTimeout(long seconds) {
         this.readTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder writeTimeout(Duration timeout) {
+    public RouteBuilder writeTimeout(Duration timeout) {
         this.writeTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder writeTimeout(long seconds) {
+    public RouteBuilder writeTimeout(long seconds) {
         this.writeTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder circuitBreakerTimeout(Duration timeout) {
+    public RouteBuilder circuitBreakerTimeout(Duration timeout) {
         this.circuitBreakerTimeout = timeout;
         return this;
     }
     
-    public UniversalRouteBuilder circuitBreakerTimeout(long seconds) {
+    public RouteBuilder circuitBreakerTimeout(long seconds) {
         this.circuitBreakerTimeout = Duration.ofSeconds(seconds);
         return this;
     }
     
-    public UniversalRouteBuilder timeoutEnabled(boolean enabled) {
+    public RouteBuilder timeoutEnabled(boolean enabled) {
         this.timeoutEnabled = enabled;
         return this;
     }
@@ -235,7 +235,7 @@ public class UniversalRouteBuilder {
     /**
      * 快速API配置（低延迟）
      */
-    public UniversalRouteBuilder fastApi() {
+    public RouteBuilder fastApi() {
         return connectionTimeout(Duration.ofSeconds(2))
                .requestTimeout(Duration.ofSeconds(5))
                .totalTimeout(Duration.ofSeconds(10))
@@ -246,7 +246,7 @@ public class UniversalRouteBuilder {
     /**
      * 慢速API配置（高延迟）
      */
-    public UniversalRouteBuilder slowApi() {
+    public RouteBuilder slowApi() {
         return connectionTimeout(Duration.ofSeconds(10))
                .requestTimeout(Duration.ofSeconds(60))
                .totalTimeout(Duration.ofSeconds(120))
@@ -257,7 +257,7 @@ public class UniversalRouteBuilder {
     /**
      * 计算密集型API配置
      */
-    public UniversalRouteBuilder computeIntensiveApi() {
+    public RouteBuilder computeIntensiveApi() {
         return connectionTimeout(Duration.ofSeconds(5))
                .requestTimeout(Duration.ofMinutes(5))
                .totalTimeout(Duration.ofMinutes(10))
@@ -268,7 +268,7 @@ public class UniversalRouteBuilder {
     /**
      * 文件上传API配置
      */
-    public UniversalRouteBuilder fileUploadApi() {
+    public RouteBuilder fileUploadApi() {
         return connectionTimeout(Duration.ofSeconds(10))
                .requestTimeout(Duration.ofMinutes(10))
                .totalTimeout(Duration.ofMinutes(15))
@@ -279,7 +279,7 @@ public class UniversalRouteBuilder {
     /**
      * 外部API调用配置
      */
-    public UniversalRouteBuilder externalApi() {
+    public RouteBuilder externalApi() {
         return connectionTimeout(Duration.ofSeconds(15))
                .requestTimeout(Duration.ofSeconds(30))
                .totalTimeout(Duration.ofSeconds(60))
@@ -293,7 +293,7 @@ public class UniversalRouteBuilder {
     /**
      * 验证配置是否有效
      */
-    public UniversalRouteBuilder validate() {
+    public RouteBuilder validate() {
         if (id == null || id.trim().isEmpty()) {
             throw new IllegalArgumentException("路由ID不能为空");
         }
@@ -325,7 +325,7 @@ public class UniversalRouteBuilder {
     /**
      * 构建 UniversalRoute
      */
-    public UniversalRoute build() {
+    public Route build() {
         validate();
         
         // 从metadata中提取pathPattern和targetUris，如果没有则使用默认值

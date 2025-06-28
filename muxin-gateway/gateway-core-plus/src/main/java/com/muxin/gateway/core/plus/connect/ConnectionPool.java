@@ -48,12 +48,7 @@ public interface ConnectionPool extends LifeCycle {
      */
     void releaseConnection(Connection connection);
     
-    /**
-     * 获取连接池统计信息
-     * 
-     * @return 统计信息Map
-     */
-    Map<String, Object> getStatistics();
+    // getStatistics() 方法已移除 - 使用统一监控接口
     
     /**
      * 获取指定目标的连接池状态

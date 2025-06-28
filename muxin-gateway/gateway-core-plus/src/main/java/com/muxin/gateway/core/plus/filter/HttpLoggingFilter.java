@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.filter;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
@@ -15,7 +15,7 @@ import java.util.Set;
  * @author muxin
  */
 @Slf4j
-public class HttpLoggingFilter implements UniversalFilter {
+public class HttpLoggingFilter implements Filter {
     
     private final String name;
     private final FilterType type;
@@ -28,7 +28,7 @@ public class HttpLoggingFilter implements UniversalFilter {
     }
     
     @Override
-    public void filter(UniversalRequestContext context, UniversalFilterChain chain) {
+    public void filter(RequestContext context, FilterChain chain) {
         long startTime = System.currentTimeMillis();
         
         try {
@@ -72,7 +72,7 @@ public class HttpLoggingFilter implements UniversalFilter {
         return protocols;
     }
     
-    private void logRequest(UniversalRequestContext context) {
+    private void logRequest(RequestContext context) {
         Message inbound = context.getInboundMessage();
         if (inbound != null && inbound.getMetadata() instanceof HttpMetadata) {
             HttpMetadata metadata = (HttpMetadata) inbound.getMetadata();
@@ -81,13 +81,13 @@ public class HttpLoggingFilter implements UniversalFilter {
         }
     }
     
-    private void logResponse(UniversalRequestContext context, long startTime) {
+    private void logResponse(RequestContext context, long startTime) {
         long duration = System.currentTimeMillis() - startTime;
         log.info("[{}] 响应完成，耗时: {}ms", 
             type.name(), duration);
     }
     
-    private void logError(UniversalRequestContext context, Exception e, long startTime) {
+    private void logError(RequestContext context, Exception e, long startTime) {
         long duration = System.currentTimeMillis() - startTime;
         log.error("[{}] {}ms后发生错误: {}", 
             type.name(), duration, e.getMessage(), e);

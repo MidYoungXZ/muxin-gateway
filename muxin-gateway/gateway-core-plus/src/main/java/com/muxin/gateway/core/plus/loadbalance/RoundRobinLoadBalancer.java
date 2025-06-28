@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.loadbalance;
 
 import com.muxin.gateway.core.plus.node.EndpointAddress;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -22,7 +22,7 @@ public class RoundRobinLoadBalancer implements LoadBalanceStrategy {
     private final Map<String, Boolean> healthStatus = new ConcurrentHashMap<>();
     
     @Override
-    public EndpointAddress select(List<EndpointAddress> availableAddresses, UniversalRequestContext context) {
+    public EndpointAddress select(List<EndpointAddress> availableAddresses, RequestContext context) {
         if (availableAddresses == null || availableAddresses.isEmpty()) {
             return null;
         }

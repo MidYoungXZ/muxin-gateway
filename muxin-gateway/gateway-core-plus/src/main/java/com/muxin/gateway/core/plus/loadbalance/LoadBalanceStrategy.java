@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.loadbalance;
 
 import com.muxin.gateway.core.plus.node.EndpointAddress;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ public interface LoadBalanceStrategy {
      * @param context 请求上下文
      * @return 选中的地址
      */
-    EndpointAddress select(List<EndpointAddress> availableAddresses, UniversalRequestContext context);
+    EndpointAddress select(List<EndpointAddress> availableAddresses, RequestContext context);
     
     /**
      * 策略名称

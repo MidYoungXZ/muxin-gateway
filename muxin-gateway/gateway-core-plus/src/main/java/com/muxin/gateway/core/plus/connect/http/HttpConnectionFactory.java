@@ -230,16 +230,7 @@ public class HttpConnectionFactory implements ConnectionFactory {
         return ConnectionHealthStatus.HEALTHY;
     }
     
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new ConcurrentHashMap<>();
-        stats.put("protocol", httpProtocol.getName());
-        stats.put("running", running);
-        stats.put("connectionsCreated", connectionsCreated.get());
-        stats.put("connectionsFailed", connectionsFailed.get());
-        stats.put("averageConnectionTime", calculateAverageConnectionTime());
-        stats.put("successRate", calculateSuccessRate());
-        return stats;
-    }
+    // getStatistics() 方法已移除 - 使用统一监控接口
     
     @Override
     public boolean supports(Protocol protocol) {

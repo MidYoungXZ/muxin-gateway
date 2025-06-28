@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.loadbalance;
 
 import com.muxin.gateway.core.plus.node.EndpointAddress;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -62,7 +62,7 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
     // 业务特定方法
     @Override
     public EndpointAddress selectTarget(String serviceName, List<EndpointAddress> availableTargets,
-                                        UniversalRequestContext context) {
+                                        RequestContext context) {
         if (availableTargets == null || availableTargets.isEmpty()) {
             return null;
         }
@@ -121,6 +121,8 @@ public class DefaultLoadBalanceManager implements LoadBalanceManager {
     /**
      * 获取策略统计信息
      */
+    // getStatistics() 方法已移除 - 使用统一监控接口
+    @Deprecated
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new ConcurrentHashMap<>();
         stats.put("totalStrategies", strategies.size());

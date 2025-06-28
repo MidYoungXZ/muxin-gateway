@@ -3,6 +3,9 @@ package com.muxin.gateway.core.plus.node;
 import com.muxin.gateway.core.plus.ServiceDiscovery;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.message.ProtocolType;
+import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
+import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
+import com.muxin.gateway.core.plus.monitor.MonitorType;
 import com.muxin.gateway.core.plus.node.health.HealthCheckResult;
 import com.muxin.gateway.core.plus.node.health.HealthChecker;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +27,9 @@ import java.util.stream.Collectors;
 public class DefaultNodeManager implements NodeManager {
     
     // 直接按节点ID管理 - Repository 接口需要
-    private final Map<String, UniversalServiceNode> nodes;
+    private final Map<String, ServiceNode> nodes;
     // 按服务名分组管理 - 业务方法需要  
-    private final Map<String, Map<String, UniversalServiceNode>> serviceNodes;
+    private final Map<String, Map<String, ServiceNode>> serviceNodes;
     private final ServiceDiscovery serviceDiscovery;
     private final HealthChecker healthChecker;
     private final ScheduledExecutorService scheduler;
@@ -44,7 +47,7 @@ public class DefaultNodeManager implements NodeManager {
     
     // Repository 接口实现
     @Override
-    public UniversalServiceNode save(UniversalServiceNode entity) {
+    public ServiceNode save(ServiceNode entity) {
         if (entity == null || entity.getId() == null) {
             throw new IllegalArgumentException("Node and node ID cannot be null");
         }
@@ -71,12 +74,12 @@ public class DefaultNodeManager implements NodeManager {
             return;
         }
         
-        UniversalServiceNode removed = nodes.remove(nodeId);
+        ServiceNode removed = nodes.remove(nodeId);
         if (removed != null) {
             String serviceName = getServiceNameFromNode(removed);
             
             // 从服务映射中移除
-            Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+            Map<String, ServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
             if (serviceNodeMap != null) {
                 serviceNodeMap.remove(nodeId);
                 // 如果服务没有节点了，移除服务
@@ -93,38 +96,38 @@ public class DefaultNodeManager implements NodeManager {
     }
     
     @Override
-    public UniversalServiceNode findByUniqueCode(String nodeId) {
+    public ServiceNode findByUniqueCode(String nodeId) {
         return nodes.get(nodeId);
     }
     
     @Override
-    public Collection<UniversalServiceNode> findAll() {
+    public Collection<ServiceNode> findAll() {
         return new ArrayList<>(nodes.values());
     }
     
     // 业务特定方法
     @Override
-    public List<UniversalServiceNode> getNodes(String serviceName) {
-        Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+    public List<ServiceNode> getNodes(String serviceName) {
+        Map<String, ServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
         return serviceNodeMap != null ? new ArrayList<>(serviceNodeMap.values()) : new ArrayList<>();
     }
     
     @Override
-    public UniversalServiceNode getNode(String serviceName, String nodeId) {
-        Map<String, UniversalServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
+    public ServiceNode getNode(String serviceName, String nodeId) {
+        Map<String, ServiceNode> serviceNodeMap = serviceNodes.get(serviceName);
         return serviceNodeMap != null ? serviceNodeMap.get(nodeId) : null;
     }
     
     @Override
-    public List<UniversalServiceNode> getHealthyNodes(String serviceName) {
+    public List<ServiceNode> getHealthyNodes(String serviceName) {
         return getNodes(serviceName).stream()
-                .filter(UniversalServiceNode::isHealthy)
+                .filter(ServiceNode::isHealthy)
                 .collect(Collectors.toList());
     }
     
     @Override
     public void updateNodeStatus(String serviceName, String nodeId, NodeStatus status) {
-        UniversalServiceNode node = nodes.get(nodeId);
+        ServiceNode node = nodes.get(nodeId);
         if (node != null) {
             NodeStatus oldStatus = node.getStatus();
             node.updateStatus(status);
@@ -194,7 +197,7 @@ public class DefaultNodeManager implements NodeManager {
     /**
      * 从节点中获取服务名称
      */
-    private String getServiceNameFromNode(UniversalServiceNode node) {
+    private String getServiceNameFromNode(ServiceNode node) {
         if (node.getMetadata() != null && node.getMetadata().containsKey("serviceName")) {
             return (String) node.getMetadata().get("serviceName");
         }
@@ -205,7 +208,7 @@ public class DefaultNodeManager implements NodeManager {
     /**
      * 获取所有节点（用于兼容）
      */
-    public List<UniversalServiceNode> getAllNodes() {
+    public List<ServiceNode> getAllNodes() {
         return new ArrayList<>(nodes.values());
     }
     
@@ -244,7 +247,7 @@ public class DefaultNodeManager implements NodeManager {
      * 执行健康检查
      */
     private void performHealthCheck() {
-        for (UniversalServiceNode node : nodes.values()) {
+        for (ServiceNode node : nodes.values()) {
             try {
                 HealthCheckResult result = healthChecker.checkHealth(node);
                 
@@ -288,28 +291,27 @@ public class DefaultNodeManager implements NodeManager {
             }
         }
     }
-    
-    /**
-     * 获取节点统计信息
-     */
-    public Map<String, Object> getStatistics() {
-        List<UniversalServiceNode> allNodes = getAllNodes();
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalServices", serviceNodes.size());
-        stats.put("totalNodes", allNodes.size());
-        stats.put("healthyNodes", allNodes.stream().mapToInt(node -> node.isHealthy() ? 1 : 0).sum());
-        
-        // 按状态分组统计
-        Map<NodeStatus, Long> statusStats = allNodes.stream()
-                .collect(Collectors.groupingBy(
-                    UniversalServiceNode::getStatus,
-                    Collectors.counting()
-                ));
-        stats.put("statusDistribution", statusStats);
-        
-        return stats;
+
+    @Override
+    public String getMonitorId() {
+        return "";
     }
-    
+
+    @Override
+    public MonitorType getMonitorType() {
+        return null;
+    }
+
+    @Override
+    public void registerMetrics(MetricsRegistry registry) {
+
+    }
+
+    @Override
+    public MonitorMetadata getMonitorMetadata() {
+        return null;
+    }
+
     /**
      * 默认服务发现实现
      */
@@ -317,18 +319,18 @@ public class DefaultNodeManager implements NodeManager {
         private volatile boolean running = false;
         
         @Override
-        public List<UniversalServiceNode> discoverNodes(String serviceName) {
+        public List<ServiceNode> discoverNodes(String serviceName) {
             // 简单实现，返回空列表
             return new ArrayList<>();
         }
         
         @Override
-        public CompletableFuture<List<UniversalServiceNode>> discoverNodesAsync(String serviceName) {
+        public CompletableFuture<List<ServiceNode>> discoverNodesAsync(String serviceName) {
             return CompletableFuture.supplyAsync(() -> discoverNodes(serviceName));
         }
         
         @Override
-        public void registerNode(String serviceName, UniversalServiceNode node) {
+        public void registerNode(String serviceName, ServiceNode node) {
             log.debug("注册节点: {}/{}", serviceName, node.getId());
         }
         
@@ -387,7 +389,7 @@ public class DefaultNodeManager implements NodeManager {
         private volatile boolean running = false;
         
         @Override
-        public HealthCheckResult checkHealth(UniversalServiceNode node) {
+        public HealthCheckResult checkHealth(ServiceNode node) {
             try {
                 // 模拟健康检查，这里简单返回成功
                 // 实际实现中应该根据协议类型进行真实的健康检查
@@ -398,7 +400,7 @@ public class DefaultNodeManager implements NodeManager {
         }
         
         @Override
-        public CompletableFuture<HealthCheckResult> checkHealthAsync(UniversalServiceNode node) {
+        public CompletableFuture<HealthCheckResult> checkHealthAsync(ServiceNode node) {
             return CompletableFuture.supplyAsync(() -> checkHealth(node));
         }
         
@@ -415,7 +417,7 @@ public class DefaultNodeManager implements NodeManager {
         }
         
         @Override
-        public void addNode(UniversalServiceNode node) {
+        public void addNode(ServiceNode node) {
             log.debug("添加健康检查节点: {}", node.getId());
         }
         

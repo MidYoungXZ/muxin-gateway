@@ -2,7 +2,7 @@ package com.muxin.gateway.core.plus;
 
 import com.muxin.gateway.core.plus.node.NodeStatus;
 import com.muxin.gateway.core.plus.node.ServiceChangeListener;
-import com.muxin.gateway.core.plus.node.UniversalServiceNode;
+import com.muxin.gateway.core.plus.node.ServiceNode;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +18,7 @@ public interface ServiceDiscovery extends LifeCycle{
     /**
      * 发现服务节点
      */
-    List<UniversalServiceNode> discoverNodes(String serviceName);
+    List<ServiceNode> discoverNodes(String serviceName);
     
     /**
      * 异步发现服务节点
@@ -26,12 +26,12 @@ public interface ServiceDiscovery extends LifeCycle{
      * @param serviceName 服务名称
      * @return 服务节点列表的Future
      */
-    CompletableFuture<List<UniversalServiceNode>> discoverNodesAsync(String serviceName);
+    CompletableFuture<List<ServiceNode>> discoverNodesAsync(String serviceName);
     
     /**
      * 注册服务节点
      */
-    void registerNode(String serviceName, UniversalServiceNode node);
+    void registerNode(String serviceName, ServiceNode node);
     
     /**
      * 注销服务节点

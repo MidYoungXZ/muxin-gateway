@@ -3,12 +3,12 @@ package com.muxin.gateway.core.plus.route;
 import com.muxin.gateway.core.plus.filter.FilterType;
 import com.muxin.gateway.core.plus.filter.HttpAuthFilter;
 import com.muxin.gateway.core.plus.filter.HttpLoggingFilter;
-import com.muxin.gateway.core.plus.filter.UniversalFilter;
+import com.muxin.gateway.core.plus.filter.Filter;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.node.EnhancedRouteTarget;
 import com.muxin.gateway.core.plus.predicate.HttpMethodPredicate;
 import com.muxin.gateway.core.plus.predicate.HttpPathPredicate;
-import com.muxin.gateway.core.plus.predicate.UniversalPredicate;
+import com.muxin.gateway.core.plus.predicate.Predicate;
 import com.muxin.gateway.core.plus.loadbalance.LoadBalanceStrategy;
 
 import java.time.Duration;
@@ -19,7 +19,7 @@ import java.util.*;
  *
  * @author muxin
  */
-public class EnhancedHttpRoute implements UniversalRoute {
+public class EnhancedHttpRoute implements Route {
     
     private final String id;
     private final String name;
@@ -27,8 +27,8 @@ public class EnhancedHttpRoute implements UniversalRoute {
     private final int order;
     private final boolean enabled;
     private final List<Protocol> supportedProtocols;
-    private final List<UniversalPredicate> predicates;
-    private final List<UniversalFilter> filters;
+    private final List<Predicate> predicates;
+    private final List<Filter> filters;
     private final RouteTarget target;
     private final Map<String, Object> metadata;
     
@@ -91,12 +91,12 @@ public class EnhancedHttpRoute implements UniversalRoute {
     }
     
     @Override
-    public List<UniversalPredicate> getPredicates() {
+    public List<Predicate> getPredicates() {
         return new ArrayList<>(predicates);
     }
     
     @Override
-    public List<UniversalFilter> getFilters() {
+    public List<Filter> getFilters() {
         return new ArrayList<>(filters);
     }
     
@@ -111,7 +111,7 @@ public class EnhancedHttpRoute implements UniversalRoute {
     }
     
     @Override
-    public boolean matches(UniversalRequestContext context) {
+    public boolean matches(RequestContext context) {
         if (!enabled || context == null) {
             return false;
         }
@@ -123,7 +123,7 @@ public class EnhancedHttpRoute implements UniversalRoute {
         }
         
         // 执行所有断言（AND关系）
-        for (UniversalPredicate predicate : predicates) {
+        for (Predicate predicate : predicates) {
             if (!predicate.test(context)) {
                 return false;
             }
@@ -132,8 +132,8 @@ public class EnhancedHttpRoute implements UniversalRoute {
         return true;
     }
     
-    private List<UniversalPredicate> createPredicates(String pathPattern) {
-        List<UniversalPredicate> predicateList = new ArrayList<>();
+    private List<Predicate> createPredicates(String pathPattern) {
+        List<Predicate> predicateList = new ArrayList<>();
         
         // 添加路径断言
         predicateList.add(new HttpPathPredicate(pathPattern));
@@ -147,8 +147,8 @@ public class EnhancedHttpRoute implements UniversalRoute {
         return predicateList;
     }
     
-    private List<UniversalFilter> createFilters() {
-        List<UniversalFilter> filterList = new ArrayList<>();
+    private List<Filter> createFilters() {
+        List<Filter> filterList = new ArrayList<>();
         
         // 添加日志过滤器（前置）
         filterList.add(new HttpLoggingFilter(FilterType.PRE, 100));

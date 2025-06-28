@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.plus.route;
 
+import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
+import com.muxin.gateway.core.plus.monitor.MonitorType;
+import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 通用路由管理器实现
@@ -12,13 +14,13 @@ import java.util.stream.Collectors;
  * @author muxin
  */
 @Slf4j
-public class UniversalRouteManager implements RouteManager {
+public class DefaultRouteManager implements RouteManager {
     
-    private final Map<String, UniversalRoute> routes = new ConcurrentHashMap<>();
+    private final Map<String, Route> routes = new ConcurrentHashMap<>();
     
     // Repository 接口实现
     @Override
-    public UniversalRoute save(UniversalRoute entity) {
+    public Route save(Route entity) {
         if (entity == null || entity.getId() == null) {
             throw new IllegalArgumentException("Route and route ID cannot be null");
         }
@@ -34,37 +36,37 @@ public class UniversalRouteManager implements RouteManager {
             return;
         }
         
-        UniversalRoute removed = routes.remove(id);
+        Route removed = routes.remove(id);
         if (removed != null) {
             log.info("移除路由: {} - {}", id, removed.getName());
         }
     }
     
     @Override
-    public UniversalRoute findByUniqueCode(String id) {
+    public Route findByUniqueCode(String id) {
         return routes.get(id);
     }
     
     @Override
-    public Collection<UniversalRoute> findAll() {
+    public Collection<Route> findAll() {
         return new ArrayList<>(routes.values());
     }
     
     // 业务特定方法
     @Override
-    public UniversalRoute matchRoute(UniversalRequestContext context) {
+    public Route matchRoute(RequestContext context) {
         if (context == null) {
             return null;
         }
         
         // 按优先级排序（order值越小优先级越高）
-        List<UniversalRoute> sortedRoutes = routes.values().stream()
-                .filter(UniversalRoute::isEnabled)
-                .sorted(Comparator.comparingInt(UniversalRoute::getOrder))
+        List<Route> sortedRoutes = routes.values().stream()
+                .filter(Route::isEnabled)
+                .sorted(Comparator.comparingInt(Route::getOrder))
                 .toList();
         
         // 遍历路由进行匹配
-        for (UniversalRoute route : sortedRoutes) {
+        for (Route route : sortedRoutes) {
             try {
                 if (route.matches(context)) {
                     log.debug("匹配路由: {} 用于请求", route.getId());
@@ -84,27 +86,33 @@ public class UniversalRouteManager implements RouteManager {
      */
     public int getEnabledRouteCount() {
         return (int) routes.values().stream()
-                .filter(UniversalRoute::isEnabled)
+                .filter(Route::isEnabled)
                 .count();
     }
     
-    /**
-     * 获取路由统计信息
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalRoutes", routes.size());
-        stats.put("enabledRoutes", getEnabledRouteCount());
-        
-        // 按优先级分组统计
-        Map<Integer, Long> orderStats = routes.values().stream()
-                .collect(Collectors.groupingBy(
-                        UniversalRoute::getOrder,
-                        Collectors.counting()
-                ));
-        stats.put("orderDistribution", orderStats);
-        
-        return stats;
+    // getStatistics() 方法已移除 - 使用统一监控接口
+
+    // ========== Monitorable 接口实现 ==========
+
+    @Override
+    public String getMonitorId() {
+        return "route-manager";
+    }
+
+    @Override
+    public MonitorType getMonitorType() {
+        return MonitorType.ROUTE_MANAGER;
+    }
+
+    @Override
+    public void registerMetrics(MetricsRegistry registry) {
+        // 注册路由相关指标
+        log.info("[UniversalRouteManager] 监控指标注册完成: {}", getMonitorId());
+    }
+
+    @Override
+    public MonitorMetadata getMonitorMetadata() {
+        return null;
     }
 
     @Override

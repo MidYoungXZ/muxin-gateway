@@ -8,16 +8,16 @@ import com.muxin.gateway.core.plus.message.Protocol;
  * @author Administrator
  * @since 1.0
  */
-public interface FilterManager extends Repository<String, UniversalFilter>, LifeCycle {
+public interface FilterManager extends Repository<String, Filter>, LifeCycle {
 
     /**
      * 创建过滤器链
      */
-    UniversalFilterChain createFilterChain(Protocol protocol);
+    FilterChain createFilterChain(Protocol protocol);
 
     /**
      * 创建指定类型的过滤器链
      */
-    UniversalFilterChain createFilterChain(Protocol protocol, FilterType type);
+    FilterChain createFilterChain(Protocol protocol, FilterType type);
 
 }

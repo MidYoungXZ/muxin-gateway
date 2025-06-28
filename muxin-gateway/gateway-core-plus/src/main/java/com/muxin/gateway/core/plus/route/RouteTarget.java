@@ -42,5 +42,5 @@ public interface RouteTarget {
     /**
      * 选择目标地址
      */
-    EndpointAddress selectTarget(UniversalRequestContext context);
+    EndpointAddress selectTarget(RequestContext context);
 } 

@@ -1,0 +1,17 @@
+{
+  "groups": [
+    {
+      "name": "gateway",
+      "type": "com.muxin.gateway.spring.boot.starter.GatewaySpringProperties",
+      "description": "Gateway configuration properties."
+    }
+  ],
+  "properties": [
+    {
+      "name": "gateway.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable gateway.",
+      "defaultValue": true
+    }
+  ]
+} 

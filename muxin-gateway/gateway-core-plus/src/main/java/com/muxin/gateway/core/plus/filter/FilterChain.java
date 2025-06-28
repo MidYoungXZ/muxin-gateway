@@ -1,18 +1,18 @@
 package com.muxin.gateway.core.plus.filter;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 /**
  * 通用过滤器链接口
  *
  * @author muxin
  */
-public interface UniversalFilterChain {
+public interface FilterChain {
     
     /**
      * 执行下一个过滤器
      */
-    void filter(UniversalRequestContext context);
+    void filter(RequestContext context);
     
     /**
      * 是否有下一个过滤器
@@ -22,7 +22,7 @@ public interface UniversalFilterChain {
     /**
      * 添加过滤器
      */
-    void addFilter(UniversalFilter filter);
+    void addFilter(Filter filter);
     
     /**
      * 获取当前过滤器索引

@@ -84,7 +84,6 @@ public class NettyServerConnection implements ServerConnection {
         return attributes.get(key);
     }
     
-    @Override
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new ConcurrentHashMap<>();
         stats.put("connectionId", connectionId);

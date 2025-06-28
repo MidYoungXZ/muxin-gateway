@@ -235,29 +235,90 @@ public class DefaultProtocolConverterManager implements ProtocolConverterManager
     }
 
     /**
-     * 构建转换链（简化实现，支持一跳转换）
-     * 完整实现应该使用图论算法找到最短路径
+     * 构建转换链（使用BFS算法寻找最短转换路径）
+     * 支持多跳转换，找到从源协议到目标协议的最短路径
      */
     private List<ProtocolConverter> buildConversionChain(Protocol sourceProtocol, Protocol targetProtocol) {
-        // 直接转换
+        // 1. 直接转换
         ProtocolConverter directConverter = converters.get(buildConverterKey(sourceProtocol, targetProtocol));
         if (directConverter != null) {
             return Collections.singletonList(directConverter);
         }
         
-        // 通过Universal协议的两步转换
-        ProtocolConverter toUniversal = converters.get(buildConverterKey(sourceProtocol, Protocol.UNIVERSAL));
-        ProtocolConverter fromUniversal = converters.get(buildConverterKey(Protocol.UNIVERSAL, targetProtocol));
+        // 2. 使用BFS算法寻找最短转换路径
+        return findShortestConversionPath(sourceProtocol, targetProtocol);
+    }
+    
+    /**
+     * 使用广度优先搜索（BFS）算法寻找最短转换路径
+     * 
+     * @param sourceProtocol 源协议
+     * @param targetProtocol 目标协议
+     * @return 转换器链，如果找不到路径则返回空列表
+     */
+    private List<ProtocolConverter> findShortestConversionPath(Protocol sourceProtocol, Protocol targetProtocol) {
+        // BFS用的队列：存储当前协议和到达该协议的转换路径
+        Queue<ConversionPath> queue = new LinkedList<>();
+        // 已访问的协议，避免循环
+        Set<Protocol> visited = new HashSet<>();
         
-        if (toUniversal != null && fromUniversal != null) {
-            return Arrays.asList(toUniversal, fromUniversal);
+        // 初始化：从源协议开始
+        queue.offer(new ConversionPath(sourceProtocol, new ArrayList<>()));
+        visited.add(sourceProtocol);
+        
+        while (!queue.isEmpty()) {
+            ConversionPath currentPath = queue.poll();
+            Protocol currentProtocol = currentPath.protocol;
+            
+            // 找到所有从当前协议出发的转换器
+            for (ProtocolConverter converter : converters.values()) {
+                if (!converter.getSupportedSourceProtocol().equals(currentProtocol)) {
+                    continue; // 源协议不匹配，跳过
+                }
+                
+                Protocol nextProtocol = converter.getSupportedTargetProtocol();
+                
+                // 避免循环路径
+                if (visited.contains(nextProtocol)) {
+                    continue;
+                }
+                
+                // 构建新的路径
+                List<ProtocolConverter> newConverterChain = new ArrayList<>(currentPath.converterChain);
+                newConverterChain.add(converter);
+                
+                // 检查是否到达目标协议
+                if (nextProtocol.equals(targetProtocol)) {
+                    log.debug("[DefaultProtocolConverterManager] 找到转换链: {} -> {} (长度: {})", 
+                        sourceProtocol.getName(), targetProtocol.getName(), newConverterChain.size());
+                    return newConverterChain;
+                }
+                
+                // 添加到队列继续搜索（避免路径过长）
+                if (newConverterChain.size() < 5) { // 限制最大跳数，避免无限搜索
+                    queue.offer(new ConversionPath(nextProtocol, newConverterChain));
+                    visited.add(nextProtocol);
+                }
+            }
         }
         
-        // TODO: 实现多跳转换的图论算法
+        // 未找到转换路径
         log.debug("[DefaultProtocolConverterManager] 未找到转换链: {} -> {}", 
             sourceProtocol.getName(), targetProtocol.getName());
-        
         return Collections.emptyList();
+    }
+    
+    /**
+     * 内部类：表示转换路径
+     */
+    private static class ConversionPath {
+        final Protocol protocol;
+        final List<ProtocolConverter> converterChain;
+        
+        ConversionPath(Protocol protocol, List<ProtocolConverter> converterChain) {
+            this.protocol = protocol;
+            this.converterChain = converterChain;
+        }
     }
 
     /**

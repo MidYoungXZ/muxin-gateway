@@ -3,7 +3,7 @@ package com.muxin.gateway.core.plus.message;
 import com.muxin.gateway.core.plus.message.http.HttpBody;
 import com.muxin.gateway.core.plus.message.http.HttpMessage;
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ import java.util.UUID;
 /**
  * HTTP协议转换器实现
  * 负责HTTP协议与Universal协议之间的双向转换
- * 
+ *
  * @author muxin
  * @since 2.0
  */
@@ -35,50 +35,49 @@ public class HttpProtocolConverter implements ProtocolConverter {
     }
 
     @Override
-    public Message convertToUniversal(Object protocolSpecific, UniversalRequestContext context)
-            throws ProtocolConversionException {
-        
+    public Message convertToUniversal(Object protocolSpecific, RequestContext context) throws ProtocolConversionException {
+
         if (!(protocolSpecific instanceof FullHttpRequest)) {
             throw new ProtocolConversionException("协议特定对象必须是FullHttpRequest类型", HTTP_PROTOCOL, UNIVERSAL_PROTOCOL);
         }
-        
+
         FullHttpRequest httpRequest = (FullHttpRequest) protocolSpecific;
-        
+
         try {
             // 创建消息组件
             String messageId = UUID.randomUUID().toString();
             MessageType messageType = MessageType.REQUEST;
-            
+
             // 创建HTTP Headers
             com.muxin.gateway.core.plus.message.http.HttpHeaders headers = new com.muxin.gateway.core.plus.message.http.HttpHeaders();
             for (Map.Entry<String, String> entry : httpRequest.headers()) {
                 headers.set(entry.getKey(), entry.getValue());
             }
-            
+
             // 创建HTTP Body
             byte[] bodyBytes = extractBody(httpRequest);
             HttpBody body = new HttpBody(bodyBytes);
-            
+
             // 创建HTTP Metadata
             HttpMetadata metadata = new HttpMetadata();
             metadata.setMethod(httpRequest.method().name());
             metadata.setAttribute("uri", httpRequest.uri());
             metadata.setPath(extractPath(httpRequest));
             metadata.setAttribute("version", httpRequest.protocolVersion().text());
-            
+
             // 创建Universal消息
             Message universalMessage = new HttpMessage(
-                messageId,
-                messageType,
-                UNIVERSAL_PROTOCOL,
-                headers,
-                body,
-                metadata
+                    messageId,
+                    messageType,
+                    UNIVERSAL_PROTOCOL,
+                    headers,
+                    body,
+                    metadata
             );
-            
+
             log.debug("[HttpProtocolConverter] HTTP请求转换为Universal消息完成 - URI: {}", httpRequest.uri());
             return universalMessage;
-            
+
         } catch (Exception e) {
             log.error("[HttpProtocolConverter] HTTP到Universal转换失败", e);
             throw new ProtocolConversionException("HTTP到Universal转换失败", e, HTTP_PROTOCOL, UNIVERSAL_PROTOCOL);
@@ -86,13 +85,13 @@ public class HttpProtocolConverter implements ProtocolConverter {
     }
 
     @Override
-    public Object convertFromUniversal(Message universal, UniversalRequestContext context) 
+    public Object convertFromUniversal(Message universal, RequestContext context)
             throws ProtocolConversionException {
-        
+
         if (universal == null) {
             throw new ProtocolConversionException("Universal消息不能为空", UNIVERSAL_PROTOCOL, HTTP_PROTOCOL);
         }
-        
+
         try {
             // 根据消息类型创建不同的HTTP对象
             if (universal.getType() == MessageType.REQUEST) {
@@ -100,10 +99,10 @@ public class HttpProtocolConverter implements ProtocolConverter {
             } else if (universal.getType() == MessageType.RESPONSE) {
                 return convertToHttpResponse(universal);
             } else {
-                throw new ProtocolConversionException("不支持的消息类型: " + universal.getType(), 
-                    UNIVERSAL_PROTOCOL, HTTP_PROTOCOL);
+                throw new ProtocolConversionException("不支持的消息类型: " + universal.getType(),
+                        UNIVERSAL_PROTOCOL, HTTP_PROTOCOL);
             }
-            
+
         } catch (Exception e) {
             log.error("[HttpProtocolConverter] Universal到HTTP转换失败", e);
             throw new ProtocolConversionException("Universal到HTTP转换失败", e, UNIVERSAL_PROTOCOL, HTTP_PROTOCOL);
@@ -113,7 +112,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
     @Override
     public boolean supports(Protocol sourceProtocol, Protocol targetProtocol) {
         return (HTTP_PROTOCOL.equals(sourceProtocol) && UNIVERSAL_PROTOCOL.equals(targetProtocol)) ||
-               (UNIVERSAL_PROTOCOL.equals(sourceProtocol) && HTTP_PROTOCOL.equals(targetProtocol));
+                (UNIVERSAL_PROTOCOL.equals(sourceProtocol) && HTTP_PROTOCOL.equals(targetProtocol));
     }
 
     @Override
@@ -138,7 +137,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
         if (!content.isReadable()) {
             return new byte[0];
         }
-        
+
         byte[] bodyBytes = new byte[content.readableBytes()];
         content.getBytes(content.readerIndex(), bodyBytes);
         return bodyBytes;
@@ -150,21 +149,21 @@ public class HttpProtocolConverter implements ProtocolConverter {
     private FullHttpRequest convertToHttpRequest(Message universal) {
         // 从元数据获取HTTP信息
         HttpMetadata httpMetadata = (HttpMetadata) universal.getMetadata();
-        
+
         // 构建HTTP方法
         String methodName = httpMetadata != null ? httpMetadata.getMethod() : "GET";
         HttpMethod httpMethod = HttpMethod.valueOf(methodName);
-        
+
         // 构建URI
         String uri = httpMetadata != null ? httpMetadata.getAttribute("uri", String.class) : "/";
-        
+
         // 创建HTTP请求
         FullHttpRequest httpRequest = new DefaultFullHttpRequest(
-            HttpVersion.HTTP_1_1,
-            httpMethod,
-            uri
+                HttpVersion.HTTP_1_1,
+                httpMethod,
+                uri
         );
-        
+
         // 设置Header
         MessageHeaders headers = universal.getHeaders();
         if (headers != null) {
@@ -173,7 +172,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
                 httpRequest.headers().set(entry.getKey(), entry.getValue().toString());
             }
         }
-        
+
         // 设置Body
         MessageBody messageBody = universal.getBody();
         if (messageBody != null && !messageBody.isEmpty()) {
@@ -181,7 +180,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
             httpRequest.content().writeBytes(bodyBytes);
             httpRequest.headers().set(HttpHeaderNames.CONTENT_LENGTH, bodyBytes.length);
         }
-        
+
         return httpRequest;
     }
 
@@ -191,13 +190,13 @@ public class HttpProtocolConverter implements ProtocolConverter {
     private FullHttpResponse convertToHttpResponse(Message universal) {
         // 确定HTTP状态码
         HttpResponseStatus status = determineHttpStatus(universal);
-        
+
         // 创建HTTP响应
         FullHttpResponse httpResponse = new DefaultFullHttpResponse(
-            HttpVersion.HTTP_1_1,
-            status
+                HttpVersion.HTTP_1_1,
+                status
         );
-        
+
         // 设置Header
         MessageHeaders headers = universal.getHeaders();
         if (headers != null) {
@@ -206,7 +205,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
                 httpResponse.headers().set(entry.getKey(), entry.getValue().toString());
             }
         }
-        
+
         // 设置Body
         MessageBody messageBody = universal.getBody();
         if (messageBody != null && !messageBody.isEmpty()) {
@@ -214,12 +213,12 @@ public class HttpProtocolConverter implements ProtocolConverter {
             httpResponse.content().writeBytes(bodyBytes);
             httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, bodyBytes.length);
         }
-        
+
         // 设置默认Content-Type（如果没有指定）
         if (!httpResponse.headers().contains(HttpHeaderNames.CONTENT_TYPE)) {
             httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
         }
-        
+
         return httpResponse;
     }
 
@@ -242,7 +241,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
                 }
             }
         }
-        
+
         // 默认状态码
         return HttpResponseStatus.OK;
     }
@@ -251,22 +250,22 @@ public class HttpProtocolConverter implements ProtocolConverter {
      * 简单的转换指标实现
      */
     private static class SimpleConversionMetrics implements ConversionMetrics {
-        
+
         @Override
         public long getTotalConversions() {
             return 0; // 简化实现
         }
-        
+
         @Override
         public long getSuccessfulConversions() {
             return 0; // 简化实现
         }
-        
+
         @Override
         public long getFailedConversions() {
             return 0; // 简化实现
         }
-        
+
         @Override
         public double getAverageConversionTime() {
             return 0.0; // 简化实现

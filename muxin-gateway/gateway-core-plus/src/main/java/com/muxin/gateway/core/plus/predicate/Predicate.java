@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.predicate;
 
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 import java.util.Map;
 import java.util.Set;
@@ -11,12 +11,12 @@ import java.util.Set;
  *
  * @author muxin
  */
-public interface UniversalPredicate {
+public interface Predicate {
     
     /**
      * 测试请求是否匹配
      */
-    boolean test(UniversalRequestContext context);
+    boolean test(RequestContext context);
     
     /**
      * 断言类型
@@ -41,11 +41,11 @@ public interface UniversalPredicate {
     /**
      * AND组合
      */
-    default UniversalPredicate and(UniversalPredicate other) {
-        UniversalPredicate self = this;
-        return new UniversalPredicate() {
+    default Predicate and(Predicate other) {
+        Predicate self = this;
+        return new Predicate() {
             @Override
-            public boolean test(UniversalRequestContext context) {
+            public boolean test(RequestContext context) {
                 return self.test(context) && other.test(context);
             }
             
@@ -74,11 +74,11 @@ public interface UniversalPredicate {
     /**
      * OR组合
      */
-    default UniversalPredicate or(UniversalPredicate other) {
-        UniversalPredicate self = this;
-        return new UniversalPredicate() {
+    default Predicate or(Predicate other) {
+        Predicate self = this;
+        return new Predicate() {
             @Override
-            public boolean test(UniversalRequestContext context) {
+            public boolean test(RequestContext context) {
                 return self.test(context) || other.test(context);
             }
             
@@ -107,11 +107,11 @@ public interface UniversalPredicate {
     /**
      * NOT取反
      */
-    default UniversalPredicate negate() {
-        UniversalPredicate self = this;
-        return new UniversalPredicate() {
+    default Predicate negate() {
+        Predicate self = this;
+        return new Predicate() {
             @Override
-            public boolean test(UniversalRequestContext context) {
+            public boolean test(RequestContext context) {
                 return !self.test(context);
             }
             

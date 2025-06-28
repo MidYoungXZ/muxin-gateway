@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.node;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.node.health.HealthCheckConfig;
@@ -64,7 +64,7 @@ public class EnhancedRouteTarget implements RouteTarget {
     }
     
     @Override
-    public EndpointAddress selectTarget(UniversalRequestContext context) {
+    public EndpointAddress selectTarget(RequestContext context) {
         return loadBalanceStrategy.select(targetAddresses, context);
     }
     

@@ -6,13 +6,14 @@ import lombok.Data;
 import java.time.Duration;
 
 /**
- * 路由配置
+ * 路由系统配置
+ * 管理路由系统的全局配置参数，与route包下的RouteConfig（路由实例配置）区分
  * 
  * @author muxin
  */
 @Data
 @Builder
-public class RouteConfig {
+public class RouteSystemConfig {
     
     @Builder.Default
     private Duration defaultConnectionTimeout = Duration.ofSeconds(5);
@@ -59,8 +60,8 @@ public class RouteConfig {
     @Builder.Default
     private boolean enableCaseSensitiveMatching = false;
     
-    public static RouteConfig defaultConfig() {
-        return RouteConfig.builder().build();
+    public static RouteSystemConfig defaultConfig() {
+        return RouteSystemConfig.builder().build();
     }
     
     public void validate() {

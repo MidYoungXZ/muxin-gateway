@@ -1,9 +1,10 @@
 package com.muxin.gateway.core.plus.route;
 
 
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.connect.Connection;
+import com.muxin.gateway.core.plus.connect.ClientConnection;
+import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.Protocol;
 
 import java.util.Map;
 
@@ -12,7 +13,7 @@ import java.util.Map;
  *
  * @author muxin
  */
-public interface UniversalRequestContext {
+public interface RequestContext {
     
     /**
      * 入站消息
@@ -29,13 +30,13 @@ public interface UniversalRequestContext {
     /**
      * 入站连接
      */
-        Connection getInboundConnection();
+    ServerConnection getInboundConnection();
 
     /**
      * 出站连接
      */
-    Connection getOutboundConnection();
-    void setOutboundConnection(Connection connection);
+    ClientConnection getOutboundConnection();
+    void setOutboundConnection(ClientConnection connection);
     
     /**
      * 匹配的路由

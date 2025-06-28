@@ -1,8 +1,11 @@
 package com.muxin.gateway.core.plus;
 
+import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
+import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
 import com.muxin.gateway.core.plus.filter.FilterManager;
 import com.muxin.gateway.core.plus.loadbalance.LoadBalanceManager;
+import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.MessageType;
 import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
 import com.muxin.gateway.core.plus.message.http.HttpBody;
@@ -10,15 +13,12 @@ import com.muxin.gateway.core.plus.message.http.HttpHeaders;
 import com.muxin.gateway.core.plus.message.http.HttpMessage;
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
 import com.muxin.gateway.core.plus.node.NodeManager;
-import com.muxin.gateway.core.plus.node.UniversalServiceNode;
 import com.muxin.gateway.core.plus.route.RouteManager;
-import com.muxin.gateway.core.plus.route.UniversalRoute;
-import com.muxin.gateway.core.plus.config.GatewayConfig;
-import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -44,15 +44,16 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
     }
 
     @Override
-    protected CompletableFuture<Message> invokeBackendService(ClientConnection connection, Message request) {
+    protected CompletableFuture<Message> invokeBackendService(RequestContext context) {
         long startTime = System.currentTimeMillis();
+        ClientConnection connection = context.getOutboundConnection();
+        Message request = context.getInboundMessage();
         String requestId = request.getMessageId();
 
         log.debug("[EnhancedGatewayProcessor] 开始调用后端服务: {}", requestId);
 
         return connection.send(request)
-                .orTimeout(config.getCoreConfig().getDefaultTimeout().toMillis(),
-                        java.util.concurrent.TimeUnit.MILLISECONDS)
+                .orTimeout(config.getCoreConfig().getDefaultTimeout().toMillis(), TimeUnit.MILLISECONDS)
                 .handle((response, throwable) -> {
                     long duration = System.currentTimeMillis() - startTime;
 
@@ -60,7 +61,6 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
                         if (throwable != null) {
                             log.error("[EnhancedGatewayProcessor] 后端服务调用失败: {} - 耗时: {}ms",
                                     requestId, duration, throwable);
-
                             // 处理各种异常情况
                             if (throwable instanceof TimeoutException) {
                                 return createTimeoutResponse(request);
@@ -92,19 +92,6 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
                 });
     }
 
-    @Override
-    protected UniversalRoute createDefaultRoute() {
-        // 临时简化实现，返回null
-        log.debug("[EnhancedGatewayProcessor] 创建默认路由（简化实现）");
-        return null;
-    }
-
-    @Override
-    protected UniversalServiceNode createDefaultNode() {
-        // 临时简化实现，返回null
-        log.debug("[EnhancedGatewayProcessor] 创建默认节点（简化实现）");
-        return null;
-    }
 
     // ========== 私有辅助方法 ==========
 
@@ -211,4 +198,5 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
     private String generateResponseId(Message request) {
         return "resp-" + request.getMessageId() + "-" + System.nanoTime();
     }
-} 
+
+}

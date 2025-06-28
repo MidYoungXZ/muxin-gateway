@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.predicate;
 
-import com.muxin.gateway.core.plus.route.UniversalRequestContext;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  *
  * @author muxin
  */
-public class HttpPathPredicate implements UniversalPredicate {
+public class HttpPathPredicate implements Predicate {
     
     private final String pathPattern;
     private final boolean isRegex;
@@ -37,7 +37,7 @@ public class HttpPathPredicate implements UniversalPredicate {
     }
     
     @Override
-    public boolean test(UniversalRequestContext context) {
+    public boolean test(RequestContext context) {
         if (context == null || context.getInboundMessage() == null) {
             return false;
         }
@@ -79,7 +79,7 @@ public class HttpPathPredicate implements UniversalPredicate {
         return new HashMap<>(config);
     }
     
-    private String getRequestPath(UniversalRequestContext context) {
+    private String getRequestPath(RequestContext context) {
         Message message = context.getInboundMessage();
         if (message == null) {
             return null;

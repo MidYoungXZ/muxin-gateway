@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.predicate.UniversalPredicate;
+import com.muxin.gateway.core.plus.predicate.Predicate;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.filter.UniversalFilter;
+import com.muxin.gateway.core.plus.filter.Filter;
 
 import java.time.Duration;
 import java.util.List;
@@ -13,7 +13,7 @@ import java.util.Map;
  *
  * @author muxin
  */
-public interface UniversalRoute {
+public interface Route {
     
     /**
      * 路由ID
@@ -48,12 +48,12 @@ public interface UniversalRoute {
     /**
      * 断言列表（AND关系）
      */
-    List<UniversalPredicate> getPredicates();
+    List<Predicate> getPredicates();
     
     /**
      * 过滤器列表
      */
-    List<UniversalFilter> getFilters();
+    List<Filter> getFilters();
     
     /**
      * 目标服务配置
@@ -68,7 +68,7 @@ public interface UniversalRoute {
     /**
      * 匹配请求上下文
      */
-    boolean matches(UniversalRequestContext context);
+    boolean matches(RequestContext context);
     
     // ========== 超时配置方法 ==========
     

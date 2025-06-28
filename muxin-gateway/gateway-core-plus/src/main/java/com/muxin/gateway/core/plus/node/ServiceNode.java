@@ -12,7 +12,7 @@ import java.util.Map;
  *
  * @author muxin
  */
-public interface UniversalServiceNode {
+public interface ServiceNode {
     
     /**
      * 获取节点唯一标识

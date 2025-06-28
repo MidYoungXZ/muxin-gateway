@@ -3,6 +3,9 @@ package com.muxin.gateway.core.plus.connect;
 import com.muxin.gateway.core.plus.connect.http.HttpConnectionFactory;
 import com.muxin.gateway.core.plus.connect.http.HttpConnectionPool;
 import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
+import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
+import com.muxin.gateway.core.plus.monitor.MonitorType;
 import com.muxin.gateway.core.plus.node.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 
@@ -109,35 +112,7 @@ public class DefaultConnectionPoolManager implements ConnectionPoolManager {
         });
     }
     
-    @Override
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new ConcurrentHashMap<>();
-        
-        stats.put("running", running);
-        stats.put("poolCount", poolMap.size());
-        stats.put("config", config);
-        
-        // 聚合统计
-        int totalConnections = 0;
-        int activeConnections = 0;
-        int idleConnections = 0;
-        long totalRequests = 0;
-        
-        for (HttpConnectionPool pool : poolMap.values()) {
-            Map<String, Object> poolStats = pool.getStatistics();
-            totalConnections += (Integer) poolStats.getOrDefault("totalConnections", 0);
-            activeConnections += (Integer) poolStats.getOrDefault("activeConnections", 0);
-            idleConnections += (Integer) poolStats.getOrDefault("idleConnections", 0);
-            totalRequests += (Long) poolStats.getOrDefault("requestCount", 0L);
-        }
-        
-        stats.put("totalConnections", totalConnections);
-        stats.put("activeConnections", activeConnections);
-        stats.put("idleConnections", idleConnections);
-        stats.put("totalRequests", totalRequests);
-        
-        return stats;
-    }
+    // getStatistics() 方法已移除 - 使用统一监控接口
     
     @Override
     public Map<String, Object> getPoolStatistics(EndpointAddress target, Protocol protocol) {
@@ -283,5 +258,25 @@ public class DefaultConnectionPoolManager implements ConnectionPoolManager {
     
     private String buildPoolKey(EndpointAddress target, Protocol protocol) {
         return target.getHost() + ":" + target.getPort() + ":" + protocol.getName();
+    }
+
+    @Override
+    public String getMonitorId() {
+        return "";
+    }
+
+    @Override
+    public MonitorType getMonitorType() {
+        return null;
+    }
+
+    @Override
+    public void registerMetrics(MetricsRegistry registry) {
+
+    }
+
+    @Override
+    public MonitorMetadata getMonitorMetadata() {
+        return null;
     }
 }

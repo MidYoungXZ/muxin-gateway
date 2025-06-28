@@ -50,10 +50,7 @@ public interface Connection {
 
     // ========== 统计信息 ==========
 
-    /**
-     * 获取连接统计信息
-     */
-    Map<String, Object> getStatistics();
+    // getStatistics() 方法已移除 - 使用统一监控接口
 
     /**
      * 获取连接创建时间
