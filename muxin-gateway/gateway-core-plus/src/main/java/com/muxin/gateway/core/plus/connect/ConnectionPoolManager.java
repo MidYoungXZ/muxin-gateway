@@ -1,0 +1,134 @@
+package com.muxin.gateway.core.plus.connect;
+
+import com.muxin.gateway.core.plus.LifeCycle;
+import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.node.EndpointAddress;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+
+/**
+ * 连接池管理器接口
+ * 统一管理所有协议的连接池，简化网关的连接管理
+ * 
+ * @author muxin
+ */
+public interface ConnectionPoolManager extends LifeCycle {
+    
+    // ========== 客户端连接管理（用于后端调用）==========
+    
+    /**
+     * 获取客户端连接 - 异步
+     * 
+     * @param target 目标地址
+     * @param protocol 协议类型
+     * @return 客户端连接的Future
+     */
+    CompletableFuture<ClientConnection> getClientConnection(EndpointAddress target, Protocol protocol);
+    
+    /**
+     * 获取客户端连接 - 带超时
+     * 
+     * @param target 目标地址
+     * @param protocol 协议类型
+     * @param timeout 超时时间
+     * @return 客户端连接的Future
+     */
+    CompletableFuture<ClientConnection> getClientConnection(EndpointAddress target, 
+                                                           Protocol protocol, 
+                                                           Duration timeout);
+    
+    // ========== 连接生命周期管理 ==========
+    
+    /**
+     * 归还连接到池中（可复用）
+     * 
+     * @param connection 要归还的连接
+     */
+    void returnConnection(Connection connection);
+    
+    /**
+     * 释放连接（销毁，不可复用）
+     * 
+     * @param connection 要释放的连接
+     */
+    void releaseConnection(Connection connection);
+    
+    // ========== 连接池管理 ==========
+    
+    /**
+     * 预热指定目标的连接池
+     * 
+     * @param target 目标地址
+     * @param protocol 协议类型
+     * @param minConnections 最小连接数
+     * @return 预热操作的Future
+     */
+    CompletableFuture<Void> warmupPool(EndpointAddress target, Protocol protocol, int minConnections);
+    
+    /**
+     * 移除指定目标的连接池
+     * 
+     * @param target 目标地址
+     * @param protocol 协议类型
+     */
+    void removePool(EndpointAddress target, Protocol protocol);
+    
+    /**
+     * 清理空闲连接
+     */
+    void cleanupIdleConnections();
+    
+    /**
+     * 清理不健康的连接池
+     */
+    void cleanupUnhealthyPools();
+    
+    // ========== 监控和统计 ==========
+    
+    /**
+     * 获取整体统计信息
+     * 
+     * @return 统计信息Map
+     */
+    Map<String, Object> getStatistics();
+    
+    /**
+     * 获取指定连接池的统计信息
+     * 
+     * @param target 目标地址
+     * @param protocol 协议类型
+     * @return 连接池统计信息
+     */
+    Map<String, Object> getPoolStatistics(EndpointAddress target, Protocol protocol);
+    
+    /**
+     * 获取所有连接池的健康状态
+     * 
+     * @return 健康状态Map，key为连接池标识，value为是否健康
+     */
+    Map<String, Boolean> getPoolHealthStatus();
+    
+    /**
+     * 获取连接池数量
+     * 
+     * @return 连接池总数
+     */
+    int getPoolCount();
+    
+    /**
+     * 检查是否支持指定协议
+     * 
+     * @param protocol 协议类型
+     * @return 是否支持
+     */
+    boolean supportsProtocol(Protocol protocol);
+    
+    /**
+     * 获取所有支持的协议
+     * 
+     * @return 支持的协议集合
+     */
+    java.util.Set<Protocol> getSupportedProtocols();
+} 

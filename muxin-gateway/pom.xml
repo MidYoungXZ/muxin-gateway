@@ -20,7 +20,8 @@
         <module>gateway-registry</module>
         <module>gateway-admin</module>
         <module>gateway-config</module>
-        <module>gateway-spring</module>
+        <module>gateway-spring-boot-starter</module>
+        <module>gateway-core-plus</module>
     </modules>
     <properties>
         <java.version>17</java.version>

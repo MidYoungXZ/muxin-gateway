@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.common;
+package com.muxin.gateway.core.plus;
 
 import java.util.Collection;
 import java.util.function.Predicate;
