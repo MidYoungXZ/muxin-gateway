@@ -2,7 +2,6 @@ package com.muxin.gateway.core.plus.connect;
 
 import com.muxin.gateway.core.plus.LifeCycle;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.monitor.Monitorable;
 import com.muxin.gateway.core.plus.node.EndpointAddress;
 
 import java.time.Duration;
@@ -15,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
  * 
  * @author muxin
  */
-public interface ConnectionPoolManager extends Monitorable, LifeCycle {
+public interface ConnectionPoolManager extends LifeCycle {
     
     // ========== 客户端连接管理（用于后端调用）==========
     
@@ -88,7 +87,12 @@ public interface ConnectionPoolManager extends Monitorable, LifeCycle {
     
     // ========== 监控和统计 ==========
     
-    // getStatistics() 方法已移除 - 使用统一监控接口
+    /**
+     * 获取整体统计信息
+     * 
+     * @return 统计信息Map
+     */
+    Map<String, Object> getStatistics();
     
     /**
      * 获取指定连接池的统计信息

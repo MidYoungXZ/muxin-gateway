@@ -1,8 +1,5 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
-import com.muxin.gateway.core.plus.monitor.MonitorType;
-import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -88,31 +85,6 @@ public class DefaultRouteManager implements RouteManager {
         return (int) routes.values().stream()
                 .filter(Route::isEnabled)
                 .count();
-    }
-    
-    // getStatistics() 方法已移除 - 使用统一监控接口
-
-    // ========== Monitorable 接口实现 ==========
-
-    @Override
-    public String getMonitorId() {
-        return "route-manager";
-    }
-
-    @Override
-    public MonitorType getMonitorType() {
-        return MonitorType.ROUTE_MANAGER;
-    }
-
-    @Override
-    public void registerMetrics(MetricsRegistry registry) {
-        // 注册路由相关指标
-        log.info("[UniversalRouteManager] 监控指标注册完成: {}", getMonitorId());
-    }
-
-    @Override
-    public MonitorMetadata getMonitorMetadata() {
-        return null;
     }
 
     @Override

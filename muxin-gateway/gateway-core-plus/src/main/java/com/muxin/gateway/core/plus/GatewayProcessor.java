@@ -12,10 +12,6 @@ import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.message.ProtocolConverter;
 import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
-import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
-import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
-import com.muxin.gateway.core.plus.monitor.MonitorType;
-import com.muxin.gateway.core.plus.monitor.Monitorable;
 import com.muxin.gateway.core.plus.node.EndpointAddress;
 import com.muxin.gateway.core.plus.node.NodeManager;
 import com.muxin.gateway.core.plus.node.ServiceNode;
@@ -37,7 +33,7 @@ import java.util.concurrent.Executors;
  * @author muxin
  */
 @Slf4j
-public abstract class GatewayProcessor implements LifeCycle, Monitorable {
+public abstract class GatewayProcessor implements LifeCycle {
 
     // ========== 核心组件依赖 ==========
     protected final GatewayConfig config;
@@ -105,29 +101,29 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
             // ========== 同步执行阶段：CPU密集型操作 ==========
 
             // 第1步：请求接收与验证
-                    log.debug("[GatewayProcessor] 步骤1：请求接收与验证 - {}", requestId);
+            log.debug("[GatewayProcessor] 步骤1：请求接收与验证 - {}", requestId);
             validateRequest(context);
 
             // 第2步：协议转换（入站）
-                    log.debug("[GatewayProcessor] 步骤2：协议转换（入站）- {}", requestId);
+            log.debug("[GatewayProcessor] 步骤2：协议转换（入站）- {}", requestId);
             convertInboundProtocolSync(context);
 
             // 第3步：路由匹配
-                    log.debug("[GatewayProcessor] 步骤3：路由匹配 - {}", requestId);
+            log.debug("[GatewayProcessor] 步骤3：路由匹配 - {}", requestId);
             Route matchedRoute = matchRouteSync(context);
             context.setMatchedRoute(matchedRoute);
 
             // 第4步：过滤器处理（前置）
-                    log.debug("[GatewayProcessor] 步骤4：过滤器处理（前置）- {}", requestId);
+            log.debug("[GatewayProcessor] 步骤4：过滤器处理（前置）- {}", requestId);
             executePreFilters(context);
 
             // 第5步：负载均衡与节点选择
-                    log.debug("[GatewayProcessor] 步骤5：负载均衡与节点选择 - {}", requestId);
+            log.debug("[GatewayProcessor] 步骤5：负载均衡与节点选择 - {}", requestId);
             ServiceNode selectedNode = selectTargetNodeSync(context);
             context.setSelectedNode(selectedNode);
 
             // 第6步：连接管理
-                    log.debug("[GatewayProcessor] 步骤6：连接管理 - {}", requestId);
+            log.debug("[GatewayProcessor] 步骤6：连接管理 - {}", requestId);
             ClientConnection connection = acquireConnectionSync(context);
             context.setOutboundConnection(connection);
 
@@ -138,23 +134,23 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                             // ========== 异步执行阶段：I/O密集型操作 ==========
 
                             // 第7步：后端服务调用
-                    log.debug("[GatewayProcessor] 步骤7：后端服务调用 - {}", requestId);
+                            log.debug("[GatewayProcessor] 步骤7：后端服务调用 - {}", requestId);
                             Message response = invokeBackendServiceSync(context);
                             context.setOutboundMessage(response);
 
                             // 第8步：协议转换（出站）
-                    log.debug("[GatewayProcessor] 步骤8：协议转换（出站）- {}", requestId);
+                            log.debug("[GatewayProcessor] 步骤8：协议转换（出站）- {}", requestId);
                             convertOutboundProtocolSync(context);
 
                             // 第9步：过滤器处理（后置）
-                    log.debug("[GatewayProcessor] 步骤9：过滤器处理（后置）- {}", requestId);
+                            log.debug("[GatewayProcessor] 步骤9：过滤器处理（后置）- {}", requestId);
                             executePostFilters(context);
 
                             // 第10步：响应返回
-                    log.debug("[GatewayProcessor] 步骤10：响应返回 - {}", requestId);
+                            log.debug("[GatewayProcessor] 步骤10：响应返回 - {}", requestId);
                             Message result = sendResponseSync(context);
 
-                    long duration = System.currentTimeMillis() - startTime;
+                            long duration = System.currentTimeMillis() - startTime;
                             log.info("[GatewayProcessor] 请求处理完成: {} - 耗时: {}ms", requestId, duration);
 
                             return result;
@@ -173,13 +169,13 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                             return errorResponse;
                         }
                     }, businessExecutor)
-                .whenComplete((result, throwable) -> {
+                    .whenComplete((result, throwable) -> {
                         try {
                             // 【高优先级】资源清理 - 防止内存泄漏
                             cleanupResources(context);
 
                             if (throwable != null) {
-                    long duration = System.currentTimeMillis() - startTime;
+                                long duration = System.currentTimeMillis() - startTime;
                                 log.error("[GatewayProcessor] 异步完成阶段异常: {} - 耗时: {}ms", requestId, duration, throwable);
                             }
 
@@ -1341,34 +1337,34 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         if (route == null) {
             return "default-service";
         }
-        
+
         // 策略1：从路由元数据中获取明确的服务名
         String serviceName = extractServiceNameFromMetadata(route);
         if (serviceName != null && !serviceName.isEmpty()) {
             return serviceName;
         }
-        
+
         // 策略2：从路由ID中解析服务名（支持多种格式）
         serviceName = extractServiceNameFromRouteId(route.getId());
         if (serviceName != null && !serviceName.isEmpty()) {
             return serviceName;
         }
-        
+
         // 策略3：从路由目标中推断服务名
         serviceName = extractServiceNameFromTarget(route);
         if (serviceName != null && !serviceName.isEmpty()) {
             return serviceName;
         }
-        
+
         // 策略4：使用路由名称作为服务名
         if (route.getName() != null && !route.getName().isEmpty()) {
             return normalizeServiceName(route.getName());
         }
-        
+
         // 最后的兜底策略：使用路由ID或默认值
         return route.getId() != null ? normalizeServiceName(route.getId()) : "default-service";
     }
-    
+
     /**
      * 从路由元数据中提取服务名
      */
@@ -1376,23 +1372,23 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         if (route.getMetadata() == null) {
             return null;
         }
-        
+
         // 尝试多个可能的元数据键
         String[] possibleKeys = {
-            "serviceName", "service_name", "service", 
-            "targetService", "target_service", "destination"
+                "serviceName", "service_name", "service",
+                "targetService", "target_service", "destination"
         };
-        
+
         for (String key : possibleKeys) {
             Object value = route.getMetadata().get(key);
             if (value instanceof String && !((String) value).isEmpty()) {
                 return normalizeServiceName((String) value);
             }
         }
-        
+
         return null;
     }
-    
+
     /**
      * 从路由ID中解析服务名（支持多种命名格式）
      */
@@ -1400,7 +1396,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         if (routeId == null || routeId.isEmpty()) {
             return null;
         }
-        
+
         // 格式1：serviceName-xxx (例如: user-service-v1)
         if (routeId.contains("-")) {
             String[] parts = routeId.split("-");
@@ -1413,7 +1409,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                 return parts[0];
             }
         }
-        
+
         // 格式2：serviceName_xxx (例如: user_service_v1)
         if (routeId.contains("_")) {
             String[] parts = routeId.split("_");
@@ -1424,7 +1420,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                 return parts[0];
             }
         }
-        
+
         // 格式3：service.name.xxx (例如: user.service.v1)
         if (routeId.contains(".")) {
             String[] parts = routeId.split("\\.");
@@ -1435,16 +1431,16 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                 return parts[0];
             }
         }
-        
+
         // 格式4：驼峰命名转换 (例如: UserService -> user-service)
         if (Character.isUpperCase(routeId.charAt(0))) {
             return camelCaseToKebabCase(routeId);
         }
-        
+
         // 其他情况直接返回规范化后的路由ID
         return normalizeServiceName(routeId);
     }
-    
+
     /**
      * 从路由目标中推断服务名
      */
@@ -1455,7 +1451,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                 var addresses = route.getTarget().getTargetAddresses();
                 if (addresses != null && !addresses.isEmpty()) {
                     var firstAddress = addresses.get(0);
-                    
+
                     // 从主机名中提取服务名 (例如: user-service.default.svc.cluster.local -> user-service)
                     String host = firstAddress.getHost();
                     if (host != null && !host.isEmpty()) {
@@ -1466,12 +1462,12 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                                 return normalizeServiceName(serviceName);
                             }
                         }
-                        
+
                         // 其他情况
                         return normalizeServiceName(host);
                     }
                 }
-                
+
                 // 尝试从目标配置中获取
                 var targetConfig = route.getTarget().getTargetConfig();
                 if (targetConfig != null) {
@@ -1484,10 +1480,10 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         } catch (Exception e) {
             log.debug("[GatewayProcessor] 从路由目标中提取服务名失败: {}", e.getMessage());
         }
-        
+
         return null;
     }
-    
+
     /**
      * 规范化服务名（转换为小写，使用连字符分隔）
      */
@@ -1495,7 +1491,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         if (serviceName == null || serviceName.isEmpty()) {
             return null;
         }
-        
+
         return serviceName
                 .toLowerCase()
                 .replaceAll("[^a-zA-Z0-9\\-_]", "-") // 替换特殊字符为连字符
@@ -1503,7 +1499,7 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
                 .replaceAll("-+", "-")               // 多个连字符合并为一个
                 .replaceAll("^-+|-+$", "");          // 去除首尾连字符
     }
-    
+
     /**
      * 驼峰命名转换为kebab-case (例如: UserService -> user-service)
      */
@@ -1511,35 +1507,9 @@ public abstract class GatewayProcessor implements LifeCycle, Monitorable {
         if (input == null || input.isEmpty()) {
             return input;
         }
-        
+
         return input
                 .replaceAll("([a-z])([A-Z])", "$1-$2")  // 在小写字母后跟大写字母的地方插入连字符
                 .toLowerCase();
-    }
-
-    // ========== Monitorable 接口实现 ==========
-
-    @Override
-    public String getMonitorId() {
-        return "gateway-processor-" + this.getClass().getSimpleName();
-    }
-
-    @Override
-    public MonitorType getMonitorType() {
-        return MonitorType.GATEWAY_PROCESSOR;
-    }
-
-    @Override
-    public void registerMetrics(MetricsRegistry registry) {
-        // 注册请求相关指标
-        // requestCounter = registry.registerCounter("gateway.requests.total", "Total gateway requests");
-        // responseTimer = registry.registerTimer("gateway.response.time", "Gateway response time");
-        // errorCounter = registry.registerCounter("gateway.errors.total", "Total gateway errors");
-        log.info("[GatewayProcessor] 监控指标注册完成: {}", getMonitorId());
-    }
-
-    @Override
-    public MonitorMetadata getMonitorMetadata() {
-        return null;
     }
 } 

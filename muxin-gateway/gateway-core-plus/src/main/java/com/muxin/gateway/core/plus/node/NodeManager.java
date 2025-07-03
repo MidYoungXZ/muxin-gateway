@@ -2,7 +2,6 @@ package com.muxin.gateway.core.plus.node;
 
 import com.muxin.gateway.core.plus.LifeCycle;
 import com.muxin.gateway.core.plus.Repository;
-import com.muxin.gateway.core.plus.monitor.Monitorable;
 
 import java.util.List;
 
@@ -12,7 +11,7 @@ import java.util.List;
  *
  * @author muxin
  */
-public interface NodeManager extends Repository<String, ServiceNode>, Monitorable, LifeCycle {
+public interface NodeManager extends Repository<String, ServiceNode>, LifeCycle {
 
     /**
      * 获取服务的所有节点

@@ -8,7 +8,7 @@ import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
 import com.muxin.gateway.core.plus.connect.DefaultConnectionPoolManager;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
 import com.muxin.gateway.core.plus.filter.FilterManager;
-import com.muxin.gateway.core.plus.filter.UniversalFilterManager;
+import com.muxin.gateway.core.plus.filter.DefaultFilterManager;
 import com.muxin.gateway.core.plus.loadbalance.LoadBalanceManager;
 import com.muxin.gateway.core.plus.loadbalance.DefaultLoadBalanceManager;
 import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
@@ -172,7 +172,7 @@ public class GatewayBootstrap implements LifeCycle {
         routeManager.init();
         
         // 过滤器管理器
-        this.filterManager = new UniversalFilterManager();
+        this.filterManager = new DefaultFilterManager();
         filterManager.init();
         
         // 负载均衡管理器

@@ -1,0 +1,255 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: 专用于Muxin Gateway后端开发的编码规则和约束，基于SpringBoot3+Java17+Netty技术栈
+globs: 
+  - "gateway/**"
+  - "gateway-admin/**"
+  - "gateway-core/**"
+  - "gateway-core-plus/**"
+  - "gateway-registry/**"
+  - "**/*.java"
+  - "**/pom.xml"
+alwaysApply: false
+tags:
+  - "backend"
+  - "java"
+  - "spring-boot"
+  - "gateway"
+  - "netty"
+triggers:
+  # 文件操作触发
+  onFileCreate: true
+  onFileEdit: true
+  onFileDelete: false
+  # 代码编辑触发
+  onCodeGeneration: true
+  onCodeRefactoring: true
+  onCodeReview: true
+  # 项目操作触发
+  onBuild: true
+  onTest: true
+  onDebug: false
+  onDeploy: false
+  # 特定操作触发
+  onDependencyChange: true
+  onConfigChange: true
+  onDatabaseChange: true
+  onApiChange: true
+conditions:
+  # 文件类型条件
+  fileTypes:
+    - "java"
+    - "xml"
+    - "yml"
+    - "yaml"
+    - "properties"
+  # 文件路径条件（排除前端相关）
+  excludePaths:
+    - "gateway-admin-ui/**"
+    - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/target/**"
+    - "**/*.js"
+    - "**/*.ts"
+    - "**/*.vue"
+    - "**/*.css"
+    - "**/*.scss"
+  # 操作类型条件
+  operations:
+    - "create_class"
+    - "create_interface"
+    - "create_enum"
+    - "add_method"
+    - "modify_method"
+    - "add_annotation"
+    - "dependency_management"
+    - "database_operation"
+    - "api_development"
+    - "configuration_change"
+  # 关键词触发
+  keywords:
+    - "controller"
+    - "service"
+    - "repository"
+    - "mapper"
+    - "entity"
+    - "dto"
+    - "vo"
+    - "config"
+    - "filter"
+    - "gateway"
+    - "route"
+    - "loadbalance"
+    - "mybatis"
+    - "spring"
+    - "netty"
+priority: high
+scope: project
+---
+### 生效时机说明
+本规则文件在以下情况下自动生效：
+
+#### 🎯 文件操作时机
+- **创建文件时**：新建Java类、配置文件等
+- **编辑文件时**：修改现有后端代码
+- **依赖变更时**：修改pom.xml或其他依赖配置
+
+#### 🔧 开发操作时机  
+- **代码生成时**：使用AI生成新的代码逻辑
+- **代码重构时**：优化或重构现有代码结构
+- **代码审查时**：检查代码质量和规范性
+- **构建测试时**：Maven编译和单元测试过程
+
+#### 📁 适用文件范围
+- **Java源码**：所有.java文件
+- **Maven配置**：pom.xml文件
+- **Spring配置**：application.yml、application.properties等
+- **MyBatis配置**：mapper.xml等数据库相关配置
+
+#### ❌ 排除范围
+- **前端文件**：Vue、TypeScript、CSS等前端相关文件
+- **构建产物**：target、node_modules、dist等目录
+- **临时文件**：IDE生成的临时文件和缓存
+
+#### 🔑 关键词触发
+当涉及以下关键组件时规则会被特别强调：
+- Spring Boot相关：controller、service、config等
+- 网关核心：gateway、route、filter、loadbalance等  
+- 数据访问：mapper、entity、mybatis等
+- 网络通信：netty相关组件
+
+---
+
+### 通用开发规则
+1. 默认情况下，所有回复都必须是中文
+2. 复杂需求拆解成小任务，分步实现，每完成一个小任务后再继续  
+3. 代码实现前后要仔细检查，确保没有遗漏  
+4. 在已有功能基础上添加新功能时，必须确保：  
+   - 不影响原有功能  
+   - 不添加其他功能、代码、逻辑、文件、配置、依赖  
+5. 遵循 Spring Boot + Netty 网关架构设计，保持代码风格一致  
+6. 代码修改遵循单一职责原则，不混合多个变更  
+7. 在进行代码设计规划的时候，请符合"第一性原理"
+8. 在代码实现的时候，请符合"KISS原则"和"SOLID原则"
+9. 尽量复用已有代码和组件，避免重复实现  
+10. 不引入不必要的依赖，避免增加维护成本和安全风险  
+11. 确保代码可读性与可维护性，必要时加简要注释  
+12. 代码变更范围最小化，避免大范围修改
+13. 实现后进行基本逻辑自检，确保无错误  
+14. 如果有疑问，先询问再修改，不要擅自做决定  
+
+### Java技术栈约束
+15. 严格使用 Java 17 语法特性，禁用过时的API和写法
+16. 统一使用 Spring Boot 3.3.5 框架，遵循 Spring 最佳实践
+17. 数据库操作统一使用 MyBatis-Flex，禁用原生JDBC或其他ORM
+18. 网关核心功能基于 Netty 4.1+，不得引入其他HTTP服务器
+19. 认证授权统一使用 Sa-Token + JWT，保持无状态设计
+20. 日志框架统一使用 Log4j2（已排除Logback），支持异步日志
+21. 序列化统一使用 Jackson，版本与Spring Boot保持一致
+22. 缓存优先使用 Spring Cache + Redis，避免手动缓存管理
+23. 配置管理使用 @ConfigurationProperties，类型安全且可自动提示
+
+### 代码组织与架构规范
+24. 模块划分严格按照功能职责：gateway-core（核心）gateway-core-plus（核心重构模块）、gateway-admin（管理）、gateway-registry（注册中心）
+25. 包命名遵循 `com.muxin.gateway.{module}.{layer}` 规范
+26. Controller层只负责参数校验和结果封装，业务逻辑在Service层
+27. Service层事务边界清晰，避免跨多个数据源的分布式事务
+28. Entity类使用Lombok减少样板代码，字段命名遵循Java规范
+29. DTO和VO严格区分：DTO用于层间传输，VO用于视图展示
+30. 异常统一使用自定义业务异常类，配合@ControllerAdvice全局处理
+31. 常量定义在专门的Constants类中，使用public static final
+32. 枚举类必须实现描述方法，支持前端展示
+
+### 网关特定规范
+33. 路由定义使用RouteDefinition类，支持动态配置和热更新
+34. 过滤器开发继承AbstractFilter，实现责任链模式
+35. 负载均衡算法实现LoadBalancer接口，支持插件化扩展
+36. 协议转换器实现ProtocolConverter接口，支持HTTP/WebSocket等
+37. 节点管理统一使用Node抽象，支持多种服务发现机制
+38. 监控指标使用Micrometer规范，便于集成Prometheus等
+39. 网关配置变更必须支持配置中心推送和本地文件两种方式
+40. 关键组件必须实现优雅启停和故障降级机制
+
+### Spring Boot最佳实践
+41. 自动配置类使用@AutoConfiguration，条件注解确保按需加载
+42. 配置属性类使用@ConfigurationProperties，提供默认值和校验
+43. Bean定义优先使用@Component系列注解，避免XML配置
+44. 事务注解@Transactional合理使用，明确传播行为和隔离级别
+45. 异步处理使用@Async注解，配置合适的线程池
+46. 缓存注解@Cacheable等正确使用，注意缓存穿透和雪崩
+47. 定时任务使用@Scheduled，避免重复执行和资源竞争
+48. 健康检查实现HealthIndicator接口，提供组件状态信息
+
+### 数据库与持久层规范
+49. MyBatis-Flex实体类使用@Table注解，字段映射使用@Column
+50. Mapper接口继承BaseMapper，获得基础CRUD能力
+51. 复杂查询使用QueryWrapper，避免字符串拼接SQL
+52. 分页查询统一使用Page对象，前端传参标准化
+53. 数据库连接池使用HikariCP（Spring Boot默认），合理配置参数
+54. 逻辑删除统一使用deleted字段，避免物理删除重要数据
+55. 审计字段（创建时间、更新时间、操作人）统一处理
+56. 敏感信息（密码等）必须加密存储，使用BCrypt等安全算法
+
+### 安全与权限规范
+57. 所有API接口默认需要认证，公开接口明确使用@SaIgnore
+58. 权限控制使用RBAC模型，支持角色继承和权限组合
+59. 跨域配置在网关层统一处理，避免在各服务重复配置
+60. 输入参数必须校验，使用@Valid和自定义校验注解
+61. SQL注入防护依赖MyBatis-Flex参数绑定，禁用字符串拼接
+62. XSS防护在响应时转义，或使用安全的序列化方式
+63. 敏感操作记录操作日志，包括操作人、时间、内容、结果
+64. API限流在网关层实现，支持用户级和接口级配置
+
+### 性能优化规范
+65. 数据库查询避免N+1问题，合理使用关联查询或批量查询
+66. 大数据量查询必须分页，避免一次性加载过多数据
+67. 频繁访问的数据使用缓存，设置合理的过期时间
+68. 异步处理使用线程池，避免无限制创建线程
+69. 网关转发使用连接池，复用HTTP连接提升性能
+70. JVM参数针对网关场景优化，关注延迟而非吞吐量
+71. 监控关键性能指标：QPS、响应时间、错误率、连接数
+72. 定期进行性能测试，及时发现性能瓶颈
+
+### 自动化执行与安全策略
+73. 自动执行无需严格确认的操作，减少人为干预，提高执行效率：  
+   - 自动执行编译、测试、打包等构建流程  
+   - 删除、移动、重命名文件等常规操作无需额外确认  
+   - Maven命令（compile、test、package）可直接执行  
+   - 涉及影响较大的操作（修改数据库结构、删除重要文件）仍需确认  
+74. 重要操作（如数据库DDL、配置文件修改）应生成变更脚本供审核
+75. 涉及数据库变更的操作，优先生成 SQL 变更脚本，而非直接执行  
+76. 执行高风险操作前，AI 应自动检测影响范围，必要时提供提示  
+77. 依赖升级需要检查兼容性，特别是Spring Boot和Netty版本
+
+### 代码质量优化
+78. 代码生成后，自动进行基本优化（如去除未使用的import、合并重复代码）  
+79. 对于可能影响性能的代码（数据库查询、网络IO、循环嵌套），提供优化建议  
+80. 关键功能必须提供异常处理机制，避免程序崩溃和数据丢失
+81. 单元测试覆盖核心业务逻辑，集成测试验证端到端流程
+82. 代码审查关注安全性、性能、可维护性等多个维度
+83. 使用SonarQube等工具静态分析代码质量
+
+### 监控与运维规范
+84. 关键业务指标暴露为Prometheus监控指标
+85. 应用日志结构化输出，便于日志收集和分析
+86. 健康检查接口提供详细的组件状态信息
+87. 配置外部化，支持配置中心和环境变量
+88. 优雅停机处理，确保正在处理的请求完成
+89. 容器化部署时合理设置资源限制和健康检查
+
+### 架构感知与扩展性
+90. AI 代码编辑器应优先分析现有代码库，避免重复实现已有功能  
+91. 在添加新功能时，优先扩展现有模块，而非创建新模块  
+92. 如遇架构不清晰的情况，先整理模块依赖关系，再执行修改
+93. 新功能设计时考虑横向扩展，支持多实例部署
+94. 接口设计遵循RESTful规范，保持API的一致性和可预测性
+95. 插件化架构支持功能扩展，避免修改核心代码
+96. 版本兼容性考虑，API变更使用版本号区分
+97. 文档与代码同步更新，保持系统文档的准确性
+
+
+

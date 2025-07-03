@@ -3,9 +3,6 @@ package com.muxin.gateway.core.plus.node;
 import com.muxin.gateway.core.plus.ServiceDiscovery;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.message.ProtocolType;
-import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
-import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
-import com.muxin.gateway.core.plus.monitor.MonitorType;
 import com.muxin.gateway.core.plus.node.health.HealthCheckResult;
 import com.muxin.gateway.core.plus.node.health.HealthChecker;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +70,7 @@ public class DefaultNodeManager implements NodeManager {
         if (nodeId == null) {
             return;
         }
-        
+
         ServiceNode removed = nodes.remove(nodeId);
         if (removed != null) {
             String serviceName = getServiceNameFromNode(removed);
@@ -291,27 +288,28 @@ public class DefaultNodeManager implements NodeManager {
             }
         }
     }
-
-    @Override
-    public String getMonitorId() {
-        return "";
+    
+    /**
+     * 获取节点统计信息
+     */
+    public Map<String, Object> getStatistics() {
+        List<ServiceNode> allNodes = getAllNodes();
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalServices", serviceNodes.size());
+        stats.put("totalNodes", allNodes.size());
+        stats.put("healthyNodes", allNodes.stream().mapToInt(node -> node.isHealthy() ? 1 : 0).sum());
+        
+        // 按状态分组统计
+        Map<NodeStatus, Long> statusStats = allNodes.stream()
+                .collect(Collectors.groupingBy(
+                        ServiceNode::getStatus,
+                    Collectors.counting()
+                ));
+        stats.put("statusDistribution", statusStats);
+        
+        return stats;
     }
-
-    @Override
-    public MonitorType getMonitorType() {
-        return null;
-    }
-
-    @Override
-    public void registerMetrics(MetricsRegistry registry) {
-
-    }
-
-    @Override
-    public MonitorMetadata getMonitorMetadata() {
-        return null;
-    }
-
+    
     /**
      * 默认服务发现实现
      */

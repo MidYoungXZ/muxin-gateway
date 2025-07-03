@@ -1,13 +1,10 @@
 package com.muxin.gateway.core.plus.filter;
 
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.monitor.MonitorMetadata;
-import com.muxin.gateway.core.plus.monitor.Monitorable;
-import com.muxin.gateway.core.plus.monitor.MonitorType;
-import com.muxin.gateway.core.plus.monitor.MetricsRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 通用过滤器管理器实现
@@ -15,7 +12,7 @@ import java.util.*;
  * @author muxin
  */
 @Slf4j
-public class UniversalFilterManager implements FilterManager, Monitorable {
+public class DefaultFilterManager implements FilterManager {
 
     private final Map<String, Filter> filters = new HashMap<>();
 
@@ -64,34 +61,11 @@ public class UniversalFilterManager implements FilterManager, Monitorable {
                 .filter(filter -> filter.getSupportedProtocols().contains(protocol) || filter.getSupportedProtocols().isEmpty())
                 .filter(filter -> filter.getType() == type)
                 .sorted(Comparator.comparingInt(Filter::getOrder))
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
         
         log.debug("为协议 {} 和类型 {} 创建过滤器链，包含 {} 个过滤器", 
                 protocol.getName(), type, typeFilters.size());
         return new SimpleFilterChain(typeFilters);
-    }
-
-    // ========== Monitorable 接口实现 ==========
-
-    @Override
-    public String getMonitorId() {
-        return "filter-manager";
-    }
-
-    @Override
-    public MonitorType getMonitorType() {
-        return MonitorType.FILTER_MANAGER;
-    }
-
-    @Override
-    public void registerMetrics(MetricsRegistry registry) {
-        // 注册过滤器相关指标
-        log.info("[UniversalFilterManager] 监控指标注册完成: {}", getMonitorId());
-    }
-
-    @Override
-    public MonitorMetadata getMonitorMetadata() {
-        return null;
     }
 
     @Override

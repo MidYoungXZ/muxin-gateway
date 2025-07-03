@@ -270,6 +270,7 @@ public class HttpConnectionPool implements ConnectionPool {
         log.debug("[HttpConnectionPool] 移除连接: {}", connection.getConnectionId());
     }
     
+    @Override
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new ConcurrentHashMap<>();
         stats.put("target", target.toUri());
