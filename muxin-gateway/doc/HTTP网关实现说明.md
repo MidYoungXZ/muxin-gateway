@@ -4,11 +4,16 @@
 
 基于协议无关网关架构设计，我们已成功实现了支持HTTP协议转发的多协议网关核心组件。本文档详细说明已实现的功能、组件架构以及使用方法。
 
+> **实现状态说明**：
+> - ✅ 表示已实现
+> - 🚧 表示部分实现
+> - ❌ 表示未实现
+
 ## 🎯 已实现的核心组件
 
 ### 1. 基础组件层
 
-#### ✅ **DefaultRequestContext** - 通用请求上下文
+#### ✅ **DefaultRequestContext** - 通用请求上下文（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/DefaultRequestContext.java
 // 功能: 协议无关的请求上下文管理
@@ -20,7 +25,7 @@
 - 分布式链路追踪支持
 ```
 
-#### ✅ **HttpConnection** - HTTP连接实现
+#### ✅ **HttpConnection** - HTTP连接实现（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/HttpConnection.java
 // 功能: HTTP协议连接管理
@@ -32,7 +37,7 @@
 - 生命周期管理
 ```
 
-#### ✅ **DefaultServiceNode** - 服务节点实现
+#### ✅ **DefaultServiceNode** - 服务节点实现（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/DefaultServiceNode.java
 // 功能: 后端服务节点管理
@@ -46,7 +51,7 @@
 
 ### 2. 管理器组件层
 
-#### ✅ **DefaultLoadBalanceManager** - 负载均衡管理器
+#### ✅ **DefaultLoadBalanceManager** - 负载均衡管理器（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/DefaultLoadBalanceManager.java
 // 功能: 负载均衡策略管理
@@ -57,7 +62,7 @@
 - 统计信息收集
 ```
 
-#### ✅ **DefaultRoute** - 路由实现
+#### ✅ **DefaultRoute** - 路由实现（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/DefaultRoute.java
 // 功能: 灵活的路由配置
@@ -71,7 +76,7 @@
 
 ### 3. 网关核心层
 
-#### ✅ **SimpleMultiProtocolGateway** - 多协议网关核心
+#### ✅ **SimpleMultiProtocolGateway** - 多协议网关核心（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/SimpleMultiProtocolGateway.java
 // 功能: 网关核心调度
@@ -82,7 +87,7 @@
 - 统计信息收集
 ```
 
-#### ✅ **SimpleGatewayDemo** - 完整演示
+#### ✅ **SimpleGatewayDemo** - 完整演示（gateway-core）
 ```java
 // 位置: gateway-core/src/main/java/com/muxin/gateway/refactory/SimpleGatewayDemo.java
 // 功能: HTTP协议转发演示
@@ -93,12 +98,56 @@
 - 请求处理模拟
 ```
 
+### 4. 新架构组件（gateway-core-plus）
+
+#### ✅ **ProtocolConverter** - 协议转换器接口
+```java
+// 位置: gateway-core-plus/src/main/java/com/muxin/gateway/core/plus/message/ProtocolConverter.java
+// 功能: 协议转换基础接口
+// 特性:
+- 双向协议转换
+- 转换性能统计
+- 异常处理机制
+```
+
+#### ✅ **HttpProtocolConverter** - HTTP协议转换器
+```java
+// 位置: gateway-core-plus/src/main/java/com/muxin/gateway/core/plus/message/HttpProtocolConverter.java
+// 功能: HTTP与Universal协议转换
+// 特性:
+- HTTP到Universal消息转换
+- Universal到HTTP消息转换
+- 请求响应映射
+```
+
+#### ✅ **ConnectionFactory** - 连接工厂接口
+```java
+// 位置: gateway-core-plus/src/main/java/com/muxin/gateway/core/plus/connect/ConnectionFactory.java
+// 功能: 连接创建和管理
+// 特性:
+- 异步连接创建
+- 连接池支持
+- 连接预热
+- 统计信息
+```
+
+#### ✅ **HttpConnectionFactory** - HTTP连接工厂
+```java
+// 位置: gateway-core-plus/src/main/java/com/muxin/gateway/core/plus/connect/http/HttpConnectionFactory.java
+// 功能: HTTP连接创建和管理
+// 特性:
+- Netty客户端集成
+- 连接池管理
+- 异步连接创建
+- 性能统计
+```
+
 ## 🏗️ 架构特点
 
 ### 协议无关设计
-- 所有核心组件基于统一的`Message`和`Connection`抽象
-- 支持HTTP协议，架构上完全支持TCP、gRPC、WebSocket等协议扩展
-- 协议适配器模式，实现协议特定逻辑的封装
+- 所有核心组件基于统一的`Message`和`Connection`抽象 ✅
+- 支持HTTP协议，架构上完全支持TCP、gRPC、WebSocket等协议扩展 ✅
+- 协议适配器模式，实现协议特定逻辑的封装 ✅
 
 ### 异步非阻塞处理
 ```java
@@ -107,14 +156,14 @@ CompletableFuture<Message> handleInbound(Message inboundMessage, Connection inbo
 ```
 
 ### 责任链模式
-- 过滤器链：`UniversalFilterChain`
-- 断言链：多个`UniversalPredicate`的AND组合
-- 灵活的处理管道，支持动态组合
+- 过滤器链：`UniversalFilterChain` ❌（使用GatewayFilterChain）
+- 断言链：多个`UniversalPredicate`的AND组合 ❌（使用RoutePredicate）
+- 灵活的处理管道，支持动态组合 ✅
 
 ### 策略模式
-- 负载均衡策略：`LoadBalanceStrategy`
-- 支持轮询、加权轮询等多种策略
-- 可插拔的策略切换
+- 负载均衡策略：`LoadBalanceStrategy` ✅
+- 支持轮询、加权轮询等多种策略 🚧（仅实现轮询）
+- 可插拔的策略切换 ✅
 
 ## 🚀 快速开始
 
@@ -180,21 +229,21 @@ java -cp "src/main/java" com.muxin.gateway.refactory.SimpleGatewayDemo
 ### 3. 负载均衡
 - ✅ **轮询策略**: `RoundRobinLoadBalancer`
 - ✅ **健康检查**: 自动过滤不健康节点
-- ✅ **节点权重**: 支持加权负载均衡
+- ❌ **节点权重**: 支持加权负载均衡（未实现）
 - ✅ **故障转移**: 自动切换到健康节点
-- ✅ **统计信息**: 负载均衡效果统计
+- 🚧 **统计信息**: 负载均衡效果统计（部分实现）
 
 ### 4. 服务发现
 - ✅ **静态配置**: 支持手动配置服务节点
-- ✅ **健康监控**: 定期健康检查
+- ❌ **健康监控**: 定期健康检查（未实现）
 - ✅ **状态管理**: 节点状态实时更新
 - ✅ **元数据存储**: 节点自定义属性支持
 
 ### 5. 监控观测
 - ✅ **请求链路**: 分布式链路追踪ID
-- ✅ **性能指标**: 响应时间统计
+- 🚧 **性能指标**: 响应时间统计（部分实现）
 - ✅ **错误处理**: 统一错误响应格式
-- ✅ **日志记录**: 结构化日志输出
+- 🚧 **日志记录**: 结构化日志输出（部分实现）
 
 ## 📋 配置示例
 
@@ -301,25 +350,25 @@ public class WeightedRoundRobinStrategy implements LoadBalanceStrategy {
 ## 🎯 应用场景
 
 ### 1. 微服务API网关
-- **统一入口**: 所有外部请求通过网关路由到内部服务
-- **协议转换**: HTTP到gRPC的协议转换
-- **负载均衡**: 智能分发请求到多个服务实例
-- **安全认证**: 统一的认证和授权处理
+- **统一入口**: 所有外部请求通过网关路由到内部服务 ✅
+- **协议转换**: HTTP到gRPC的协议转换 ❌（gRPC未实现）
+- **负载均衡**: 智能分发请求到多个服务实例 ✅
+- **安全认证**: 统一的认证和授权处理 ❌（未实现）
 
 ### 2. 服务代理
-- **透明代理**: 对客户端透明的服务代理
-- **故障转移**: 自动切换到健康的服务实例
-- **请求重试**: 智能重试机制
-- **监控统计**: 服务调用统计和监控
+- **透明代理**: 对客户端透明的服务代理 ✅
+- **故障转移**: 自动切换到健康的服务实例 ✅
+- **请求重试**: 智能重试机制 ❌（未实现）
+- **监控统计**: 服务调用统计和监控 🚧（部分实现）
 
 ### 3. 协议网关
-- **多协议支持**: 同时支持HTTP、TCP、WebSocket等
-- **协议转换**: 不同协议间的消息转换
-- **统一管理**: 统一的配置和管理界面
+- **多协议支持**: 同时支持HTTP、TCP、WebSocket等 ❌（仅HTTP）
+- **协议转换**: 不同协议间的消息转换 ❌（未实现）
+- **统一管理**: 统一的配置和管理界面 ✅
 
 ## 📊 性能特点
 
-### 🚀 单次线程切换优化的异步处理
+### 🚀 单次线程切换优化的异步处理 ❌（未实现）
 ```java
 // 网关处理器采用单次线程切换优化的异步处理模型
 public final void processRequest(UniversalRequestContext context)
@@ -391,13 +440,13 @@ public final void processRequest(UniversalRequestContext context)
 ### 3. 高级功能
 - ❌ 配置热更新
 - ❌ 熔断器实现
-- ❌ 服务发现集成
+- ❌ 服务发现集成（Nacos已集成但未启用）
 - ❌ 分布式配置
 
 ### 4. 监控运维
 - ❌ Metrics指标收集
 - ❌ 健康检查端点
-- ❌ 管理界面
+- ✅ 管理界面（基础实现）
 - ❌ 告警机制
 
 ## 🎉 总结
