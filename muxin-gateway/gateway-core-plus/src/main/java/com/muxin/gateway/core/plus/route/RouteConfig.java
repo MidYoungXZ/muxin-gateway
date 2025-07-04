@@ -11,8 +11,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 路由配置类
- * 包含路由的所有配置信息，包括超时配置
+ * 路由配置类 - 协议特定化设计
+ * 每个路由专门处理一种协议，避免协议冲突
+ * 
+ * 设计原则：
+ * 1. 一个Route只处理一种协议类型
+ * 2. 路由的supportedProtocol与target的targetProtocol必须一致
+ * 3. 简化配置，提高性能，避免协议转换开销
  *
  * @author muxin
  */
@@ -48,9 +53,10 @@ public class RouteConfig {
     private boolean enabled = true;
     
     /**
-     * 支持的协议列表
+     * 支持的协议（单一协议）
+     * 每个路由专门处理一种协议，确保协议一致性
      */
-    private List<Protocol> supportedProtocols;
+    private Protocol supportedProtocol;
     
     /**
      * 断言列表（AND关系）
@@ -109,6 +115,26 @@ public class RouteConfig {
      */
     @Builder.Default
     private boolean timeoutEnabled = true;
+    
+    /**
+     * 验证路由配置的一致性
+     * 确保路由支持的协议与目标协议一致
+     */
+    public boolean isConfigurationValid() {
+        if (supportedProtocol == null || target == null || target.getTargetProtocol() == null) {
+            return false;
+        }
+        
+        // 协议类型必须一致
+        return supportedProtocol.getType().equals(target.getTargetProtocol().getType());
+    }
+    
+    /**
+     * 获取协议类型
+     */
+    public String getProtocolType() {
+        return supportedProtocol != null ? supportedProtocol.getType().name() : "UNKNOWN";
+    }
     
     /**
      * 获取指定类型的超时时间

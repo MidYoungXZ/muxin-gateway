@@ -32,10 +32,7 @@ public class GatewayBootstrap implements LifeCycle {
     
     // ========== 配置 ==========
     private GatewayConfig gatewayConfig;
-    private GatewayCoreConfig coreConfig;
-    private RouteSystemConfig routeSystemConfig;
-    private ServerConfig serverConfig;
-    
+
     // ========== 核心组件 ==========
     private ConnectionPoolManager connectionPoolManager;
     private RouteManager routeManager;
@@ -143,9 +140,9 @@ public class GatewayBootstrap implements LifeCycle {
         log.debug("Initializing configurations...");
         
         // 使用默认配置
-        this.coreConfig = GatewayCoreConfig.builder().build();
-        this.routeSystemConfig = RouteSystemConfig.defaultConfig();
-        this.serverConfig = ServerConfig.defaultConfig();
+        GatewayCoreConfig coreConfig = GatewayCoreConfig.builder().build();
+        RouteSystemConfig routeSystemConfig = RouteSystemConfig.defaultConfig();
+        ServerConfig serverConfig = ServerConfig.defaultConfig();
         
         // 创建主配置
         this.gatewayConfig = GatewayConfig.builder()

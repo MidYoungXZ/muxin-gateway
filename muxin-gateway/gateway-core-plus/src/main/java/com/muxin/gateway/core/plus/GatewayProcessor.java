@@ -252,7 +252,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected ServiceNode selectTargetNodeSync(RequestContext context) {
         try {
-            Route route = (Route) context.getMatchedRoute();
+            Route route = context.getMatchedRoute();
             if (route == null) {
                 throw new RuntimeException("没有匹配的路由信息");
             }

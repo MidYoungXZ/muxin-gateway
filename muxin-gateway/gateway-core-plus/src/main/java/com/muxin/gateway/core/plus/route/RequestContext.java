@@ -5,6 +5,7 @@ import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.node.ServiceNode;
 
 import java.util.Map;
 
@@ -41,14 +42,14 @@ public interface RequestContext {
     /**
      * 匹配的路由
      */
-    Object getMatchedRoute();
-    void setMatchedRoute(Object route);
+    Route getMatchedRoute();
+    void setMatchedRoute(Route route);
     
     /**
      * 选中的节点
      */
-    Object getSelectedNode();
-    void setSelectedNode(Object node);
+    ServiceNode getSelectedNode();
+    void setSelectedNode(ServiceNode node);
     
     /**
      * 入站协议

@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 通用路由接口 - 支持多协议
+ * 通用路由接口 - 协议特定化设计
+ * 每个路由专门处理一种协议，简化设计并避免协议冲突
  *
  * @author muxin
  */
@@ -41,9 +42,10 @@ public interface Route {
     boolean isEnabled();
     
     /**
-     * 支持的协议列表
+     * 支持的协议（单一协议）
+     * 每个路由专门处理一种协议，确保协议一致性
      */
-    List<Protocol> getSupportedProtocols();
+    Protocol getSupportedProtocol();
     
     /**
      * 断言列表（AND关系）
@@ -69,6 +71,31 @@ public interface Route {
      * 匹配请求上下文
      */
     boolean matches(RequestContext context);
+    
+    /**
+     * 验证路由配置的一致性
+     * 确保路由支持的协议与目标协议一致
+     */
+    default boolean isConfigurationValid() {
+        Protocol supportedProtocol = getSupportedProtocol();
+        Protocol targetProtocol = getTarget().getTargetProtocol();
+        
+        if (supportedProtocol == null || targetProtocol == null) {
+            return false;
+        }
+        
+        // 协议类型必须一致
+        return supportedProtocol.getType().equals(targetProtocol.getType());
+    }
+    
+    /**
+     * 获取协议类型
+     * 便于快速获取路由处理的协议类型
+     */
+    default String getProtocolType() {
+        Protocol protocol = getSupportedProtocol();
+        return protocol != null ? protocol.getType().name() : "UNKNOWN";
+    }
     
     // ========== 超时配置方法 ==========
     

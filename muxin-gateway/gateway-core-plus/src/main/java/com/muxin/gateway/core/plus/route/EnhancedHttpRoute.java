@@ -16,6 +16,7 @@ import java.util.*;
 
 /**
  * 增强的HTTP路由实现，支持过滤器和负载均衡
+ * 专门处理HTTP协议，确保协议一致性
  *
  * @author muxin
  */
@@ -26,7 +27,7 @@ public class EnhancedHttpRoute implements Route {
     private final String description;
     private final int order;
     private final boolean enabled;
-    private final List<Protocol> supportedProtocols;
+    private final Protocol supportedProtocol;
     private final List<Predicate> predicates;
     private final List<Filter> filters;
     private final RouteTarget target;
@@ -40,8 +41,8 @@ public class EnhancedHttpRoute implements Route {
         this.order = calculatePriority(pathPattern);
         this.enabled = true;
         
-        // 支持HTTP协议
-        this.supportedProtocols = Arrays.asList(new Protocol.HttpProtocol());
+        // 支持单一HTTP协议
+        this.supportedProtocol = new Protocol.HttpProtocol();
         
         // 创建断言
         this.predicates = createPredicates(pathPattern);
@@ -52,11 +53,19 @@ public class EnhancedHttpRoute implements Route {
         // 创建增强的路由目标
         this.target = new EnhancedRouteTarget(targetUris, loadBalanceStrategy);
         
+        // 验证协议一致性
+        if (!isConfigurationValid()) {
+            throw new IllegalArgumentException(
+                String.format("协议配置不一致: 路由协议=%s, 目标协议=%s", 
+                    supportedProtocol.getType(), target.getTargetProtocol().getType()));
+        }
+        
         // 元数据
         this.metadata = new HashMap<>();
         metadata.put("pathPattern", pathPattern);
         metadata.put("targetUris", targetUris);
         metadata.put("loadBalanceStrategy", loadBalanceStrategy.getName());
+        metadata.put("protocolType", getProtocolType());
         metadata.put("created", System.currentTimeMillis());
     }
     
@@ -86,8 +95,8 @@ public class EnhancedHttpRoute implements Route {
     }
     
     @Override
-    public List<Protocol> getSupportedProtocols() {
-        return new ArrayList<>(supportedProtocols);
+    public Protocol getSupportedProtocol() {
+        return supportedProtocol;
     }
     
     @Override
@@ -116,9 +125,9 @@ public class EnhancedHttpRoute implements Route {
             return false;
         }
         
-        // 检查协议是否支持
+        // 检查协议是否匹配（单一协议匹配）
         Protocol inboundProtocol = context.getInboundProtocol();
-        if (inboundProtocol == null || !supportedProtocols.contains(inboundProtocol)) {
+        if (inboundProtocol == null || !supportedProtocol.getType().equals(inboundProtocol.getType())) {
             return false;
         }
         

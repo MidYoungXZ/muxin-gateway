@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * UniversalRoute 构建器
- * 提供便捷的链式API来创建路由，包括超时配置
+ * UniversalRoute 构建器 - 协议特定化设计
+ * 提供便捷的链式API来创建路由，每个路由专门处理一种协议
  *
  * @author muxin
  */
@@ -27,7 +27,7 @@ public class RouteBuilder {
     private String description;
     private int order = 0;
     private boolean enabled = true;
-    private List<Protocol> supportedProtocols = new ArrayList<>();
+    private Protocol supportedProtocol; // 改为单一协议
     private List<Predicate> predicates = new ArrayList<>();
     private List<Filter> filters = new ArrayList<>();
     private RouteTarget target;
@@ -63,7 +63,7 @@ public class RouteBuilder {
                 .description(route.getDescription())
                 .order(route.getOrder())
                 .enabled(route.isEnabled())
-                .supportedProtocols(route.getSupportedProtocols())
+                .supportedProtocol(route.getSupportedProtocol()) // 改为单一协议
                 .predicates(route.getPredicates())
                 .filters(route.getFilters())
                 .target(route.getTarget())
@@ -104,17 +104,66 @@ public class RouteBuilder {
         return this;
     }
     
+    /**
+     * 设置支持的协议（单一协议）
+     */
+    public RouteBuilder supportedProtocol(Protocol protocol) {
+        this.supportedProtocol = protocol;
+        return this;
+    }
+    
+    /**
+     * 便捷方法：设置HTTP协议
+     */
+    public RouteBuilder httpProtocol() {
+        this.supportedProtocol = new Protocol.HttpProtocol();
+        return this;
+    }
+    
+    /**
+     * 便捷方法：设置WebSocket协议（如果将来实现）
+     */
+    public RouteBuilder webSocketProtocol() {
+        // 这里可以在将来实现WebSocket协议类
+        throw new UnsupportedOperationException("WebSocket协议尚未实现");
+    }
+    
+    /**
+     * 便捷方法：设置gRPC协议（如果将来实现）
+     */
+    public RouteBuilder grpcProtocol() {
+        // 这里可以在将来实现gRPC协议类
+        throw new UnsupportedOperationException("gRPC协议尚未实现");
+    }
+    
+    // ========== 保留向后兼容性的方法（标记为过时） ==========
+    
+    /**
+     * @deprecated 使用 supportedProtocol(Protocol) 替代
+     * 为了向后兼容保留，但只使用第一个协议
+     */
+    @Deprecated
     public RouteBuilder supportedProtocols(List<Protocol> protocols) {
-        if (protocols != null) {
-            this.supportedProtocols = new ArrayList<>(protocols);
+        if (protocols != null && !protocols.isEmpty()) {
+            this.supportedProtocol = protocols.get(0);
+            if (protocols.size() > 1) {
+                log.warn("检测到多协议配置，但协议特定化设计只支持单一协议，将使用第一个协议: {}", 
+                    protocols.get(0).getType());
+            }
         }
         return this;
     }
     
+    /**
+     * @deprecated 使用 supportedProtocol(Protocol) 替代
+     */
+    @Deprecated
     public RouteBuilder addProtocol(Protocol protocol) {
-        if (protocol != null) {
-            this.supportedProtocols.add(protocol);
+        if (this.supportedProtocol != null) {
+            log.warn("协议特定化设计只支持单一协议，将覆盖现有协议 {} 为 {}", 
+                this.supportedProtocol.getType(), protocol.getType());
         }
+        this.supportedProtocol = protocol;
         return this;
     }
     
@@ -298,8 +347,21 @@ public class RouteBuilder {
             throw new IllegalArgumentException("路由ID不能为空");
         }
         
+        if (supportedProtocol == null) {
+            throw new IllegalArgumentException("路由必须指定支持的协议");
+        }
+        
         if (target == null) {
             throw new IllegalArgumentException("路由目标不能为空");
+        }
+        
+        // 验证协议一致性
+        Protocol targetProtocol = target.getTargetProtocol();
+        if (targetProtocol != null && 
+            !supportedProtocol.getType().equals(targetProtocol.getType())) {
+            throw new IllegalArgumentException(
+                String.format("协议配置不一致: 路由协议=%s, 目标协议=%s", 
+                    supportedProtocol.getType(), targetProtocol.getType()));
         }
         
         // 验证超时配置的合理性
@@ -323,10 +385,16 @@ public class RouteBuilder {
     // ========== 构建方法 ==========
     
     /**
-     * 构建 UniversalRoute
+     * 构建 Route
      */
     public Route build() {
         validate();
+        
+        // 如果没有设置协议，默认使用HTTP
+        if (supportedProtocol == null) {
+            supportedProtocol = new Protocol.HttpProtocol();
+            log.debug("未指定协议，默认使用HTTP协议");
+        }
         
         // 从metadata中提取pathPattern和targetUris，如果没有则使用默认值
         String pathPattern = (String) metadata.getOrDefault("pathPattern", "/**");
@@ -349,10 +417,15 @@ public class RouteBuilder {
         LoadBalanceStrategy loadBalanceStrategy =
             new RoundRobinLoadBalancer();
         
-        // 创建 EnhancedHttpRoute
+        // 创建 EnhancedHttpRoute（暂时只支持HTTP）
+        if (!"HTTP".equals(supportedProtocol.getType().name())) {
+            throw new UnsupportedOperationException(
+                "当前只支持HTTP协议，协议类型: " + supportedProtocol.getType());
+        }
+        
         EnhancedHttpRoute route = new EnhancedHttpRoute(id, name, pathPattern, targetUris, loadBalanceStrategy);
         
-        log.debug("构建路由完成: {}", route);
+        log.debug("构建路由完成: {} (协议: {})", route.getId(), route.getProtocolType());
         
         return route;
     }
@@ -369,7 +442,7 @@ public class RouteBuilder {
                 .description(description)
                 .order(order)
                 .enabled(enabled)
-                .supportedProtocols(supportedProtocols)
+                .supportedProtocol(supportedProtocol) // 改为单一协议
                 .predicates(predicates)
                 .filters(filters)
                 .target(target)
