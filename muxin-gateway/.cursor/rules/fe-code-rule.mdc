@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: 专门适用于前端开发的编码规则和约束，基于Vue3+TypeScript+ElementPlus技术栈

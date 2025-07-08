@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: 专用于Muxin Gateway后端开发的编码规则和约束，基于SpringBoot3+Java17+Netty技术栈

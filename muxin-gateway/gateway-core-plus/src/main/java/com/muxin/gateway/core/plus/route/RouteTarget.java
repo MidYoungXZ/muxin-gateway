@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
+import com.muxin.gateway.core.plus.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.node.EndpointAddress;
 import com.muxin.gateway.core.plus.node.health.HealthCheckConfig;
@@ -27,7 +28,7 @@ public interface RouteTarget {
     /**
      * 负载均衡策略
      */
-    String getLoadBalanceStrategy();
+    LoadBalanceStrategy loadBalanceStrategy();
     
     /**
      * 目标配置

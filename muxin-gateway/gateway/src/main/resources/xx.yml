@@ -1,0 +1,126 @@
+# ========== 静态地址路由示例 ==========
+- id: user-service-static
+  name: "用户服务-静态配置"
+  description: "用户管理相关API，使用静态地址配置"
+  order: 100
+  enabled: true
+
+  # 入站协议（单协议）
+  inbound-protocol:
+    type: HTTP
+    version: "1.1"
+  # 断言配置
+  predicates:
+    - type: PATH
+      config:
+        pattern: "/api/users/**"
+        strip-prefix: 1  # 去掉 /api 前缀
+    - type: METHOD
+      config:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+  # 过滤器配置
+  filters:
+    - type: REQUEST_LOG
+      order: 100
+      enabled: true
+    - type: AUTH
+      order: 200
+      enabled: true
+      config:
+        auth-type: "JWT"
+        secret-key: "${JWT_SECRET}"
+  # 目标配置 - 静态地址类型
+  target:
+    #出站协议（支持自动转换）
+    outbound-protocol:
+      type: HTTP
+      version: "1.1"
+    type: STATIC
+    # 静态地址列表
+    addresses:
+      - uri: "http://user-service-1:8080"
+        weight: 100
+        metadata:
+          zone: "zone-a"
+          version: "v1.0"
+      - uri: "http://user-service-2:8080"
+        weight: 100
+        metadata:
+          zone: "zone-b"
+          version: "v1.0"
+    # 负载均衡策略
+    load-balance:
+      strategy: "ROUND_ROBIN"
+
+  # 超时配置
+  timeouts:
+    connection: 5s
+    request: 30s
+    total: 60s
+
+  # 元数据
+  metadata:
+    service-name: "user-service"
+    service-version: "1.0.0"
+
+# ========== 服务发现路由示例 ==========
+- id: order-service-discovery
+  name: "订单服务-服务发现"
+  description: "订单管理API，使用服务发现，HTTP转gRPC"
+  order: 200
+  enabled: true
+
+  # 入站协议
+  inbound-protocol:
+    type: HTTP
+    version: "1.1"
+
+  predicates:
+    - type: PATH
+      config:
+        pattern: "/api/orders/**"
+        strip-prefix: 1
+    - type: METHOD
+      config:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+
+  filters:
+    - type: REQUEST_LOG
+      order: 100
+      enabled: true
+    - type: AUTH
+      order: 200
+      enabled: true
+    - type: PROTOCOL_CONVERSION_LOG
+      order: 300
+      enabled: true
+      config:
+        log-conversion-details: true
+  target:
+    type: DISCOVERY
+    outbound-protocol:
+      type: HTTP
+      version: "1.1"
+    # 静态地址列表
+    addresses:
+      - uri: "lb://user-service"
+        weight: 100
+        metadata:
+          zone: "zone-a"
+          version: "v1.0"
+    # 负载均衡策略
+    load-balance:
+      strategy: "WEIGHTED_ROUND_ROBIN"
+      config:
+        # 权重来源：注册中心实例的metadata.weight字段
+        weight-metadata-key: "weight"
+
+  timeouts:
+    connection: 3s
+    request: 20s
+    total: 40s
+
+  metadata:
+    service-name: "order-service"
+    protocol-conversion: "HTTP_TO_GRPC"
+

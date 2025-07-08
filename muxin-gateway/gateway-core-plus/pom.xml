@@ -7,6 +7,7 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
+    <groupId>com.muxin.gateway</groupId>
     <artifactId>gateway-core-plus</artifactId>
     <packaging>jar</packaging>
 
@@ -33,6 +34,35 @@
             <version>3.1.8</version>
         </dependency>
 
+        <!-- SnakeYAML for YAML parsing -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
+        </dependency>
+
+        <!-- Lombok for code generation -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- SLF4J API -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
+        <!-- Logback implementation -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -40,4 +70,17 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.muxin.gateway.core.plus.demo.ConfigSystemIntegrationDemo</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

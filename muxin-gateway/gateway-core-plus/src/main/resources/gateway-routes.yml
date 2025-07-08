@@ -1,0 +1,538 @@
+# ========================================
+# Muxin Gateway 路由配置文件
+# 基于 gateway-core-plus 架构设计
+# ========================================
+
+# 全局网关配置
+gateway:
+  core:
+    # 全局超时配置
+    default-timeout: 30s
+    max-request-size: 10MB
+    max-response-size: 50MB
+    # 业务线程池配置
+    business-thread-pool:
+      core-size: 16
+      max-size: 32
+      queue-capacity: 1000
+      keep-alive: 60s
+    # 连接池配置
+    connection-pool:
+      max-connections-per-host: 100
+      max-idle-connections: 50
+      connection-timeout: 5s
+      idle-timeout: 60s
+      
+  # 服务器配置
+  server:
+    # HTTP服务器配置
+    http:
+      port: 8080
+      max-content-length: 10MB
+      keep-alive: true
+      compression: true
+    # 管理端口
+    management:
+      port: 8081
+      enabled: true
+
+# 路由配置列表
+routes:
+  # ========== 用户服务路由（静态地址）==========
+  - id: user-service-static
+    name: "用户服务-静态配置"
+    description: "用户管理相关API，使用静态地址配置"
+    order: 100
+    enabled: true
+
+    # 入站协议（单协议）
+    inbound-protocol:
+      type: HTTP
+      version: "1.1"
+      
+    # 断言配置
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/api/users/**"
+          strip-prefix: 1  # 去掉 /api 前缀
+      - type: METHOD
+        config:
+          methods: ["GET", "POST", "PUT", "DELETE"]
+          
+    # 过滤器配置
+    filters:
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+      - type: AUTH
+        order: 200
+        enabled: true
+        config:
+          auth-type: "JWT"
+          secret-key: "${JWT_SECRET:muxin-gateway-secret}"
+          
+    # 目标配置 - 静态地址类型
+    target:
+      type: STATIC
+      # 出站协议（支持自动转换）
+      outbound-protocol:
+        type: HTTP
+        version: "1.1"
+      # 静态地址列表（支持多个）
+      addresses:
+        - uri: "http://user-service-1:8080"
+          weight: 100
+          metadata:
+            zone: "zone-a"
+            version: "v1.0"
+        - uri: "http://user-service-2:8080"
+          weight: 100
+          metadata:
+            zone: "zone-b"
+            version: "v1.0"
+      # 负载均衡策略
+      load-balance:
+        strategy: "ROUND_ROBIN"
+
+    # 超时配置
+    timeouts:
+      connection: 5s
+      request: 30s
+      total: 60s
+
+    # 元数据
+    metadata:
+      service-name: "user-service"
+      service-version: "1.0.0"
+
+  # ========== 订单服务路由（服务发现）==========
+  - id: order-service-discovery
+    name: "订单服务-服务发现"
+    description: "订单管理API，使用服务发现"
+    order: 200
+    enabled: true
+
+    # 入站协议
+    inbound-protocol:
+      type: HTTP
+      version: "1.1"
+
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/api/orders/**"
+          strip-prefix: 1
+      - type: METHOD
+        config:
+          methods: ["GET", "POST", "PUT", "DELETE"]
+
+    filters:
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+      - type: AUTH
+        order: 200
+        enabled: true
+          
+    target:
+      type: DISCOVERY
+      outbound-protocol:
+        type: HTTP
+        version: "1.1"
+      # 服务发现地址（只允许配置一个）
+      addresses:
+        - uri: "lb://order-service"
+      # 负载均衡策略
+      load-balance:
+        strategy: "WEIGHTED_ROUND_ROBIN"
+        config:
+          weight-source: "REGISTRY"  # 权重来源：注册中心
+          weight-metadata-key: "weight"
+
+    timeouts:
+      connection: 3s
+      request: 20s
+      total: 40s
+
+    metadata:
+      service-name: "order-service"
+
+  # ========== 支付服务路由（HTTP转gRPC）==========
+  - id: payment-service-grpc
+    name: "支付服务-HTTP转gRPC"
+    description: "HTTP请求自动转换为gRPC调用"
+    order: 300
+    enabled: true
+
+    inbound-protocol:
+      type: HTTP
+      version: "1.1"
+
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/api/payments/**"
+          strip-prefix: 1
+
+    filters:
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+      - type: AUTH
+        order: 200
+        enabled: true
+
+    target:
+      type: DISCOVERY
+      # 自动转换：HTTP → gRPC
+      outbound-protocol:
+        type: GRPC
+        version: "1.0"
+      addresses:
+        - uri: "lb://payment-grpc-service"
+      load-balance:
+        strategy: "CONSISTENT_HASH"
+        config:
+          weight-source: "REGISTRY"
+          weight-metadata-key: "instance_weight"
+          hash-key: "user-id"
+
+    timeouts:
+      connection: 5s
+      request: 10s
+      total: 20s
+
+    metadata:
+      service-name: "payment-service"
+      protocol-conversion: "HTTP_TO_GRPC"
+
+  # ========== WebSocket聊天服务（WebSocket转TCP）==========
+  - id: chat-websocket-tcp
+    name: "聊天服务-WebSocket转TCP"
+    description: "WebSocket消息转换为TCP数据包"
+    order: 400
+    enabled: true
+
+    inbound-protocol:
+      type: WEBSOCKET
+      version: "13"
+
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/ws/chat/**"
+      - type: HEADER
+        config:
+          name: "Upgrade"
+          value: "websocket"
+
+    filters:
+      - type: CONNECTION_LOG
+        order: 100
+        enabled: true
+      - type: AUTH
+        order: 200
+        enabled: true
+        config:
+          auth-type: "TOKEN"
+          token-param: "token"
+
+    target:
+      type: DISCOVERY
+      # 自动转换：WebSocket → TCP
+      outbound-protocol:
+        type: TCP
+        version: "1.0"
+      addresses:
+        - uri: "lb://chat-tcp-service"
+      load-balance:
+        strategy: "CONSISTENT_HASH"
+        config:
+          weight-source: "REGISTRY"
+          weight-metadata-key: "weight"
+          hash-key: "user-id"
+
+    timeouts:
+      connection: 10s
+      total: 300s  # WebSocket长连接
+
+    metadata:
+      service-name: "chat-service"
+      connection-type: "persistent"
+      protocol-conversion: "WEBSOCKET_TO_TCP"
+
+  # ========== 文件服务路由（静态地址）==========
+  - id: file-service-static
+    name: "文件服务-静态配置"
+    description: "文件上传下载，使用静态地址"
+    order: 500
+    enabled: true
+
+    inbound-protocol:
+      type: HTTP
+      version: "1.1"
+
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/api/files/**"
+      - type: METHOD
+        config:
+          methods: ["GET", "POST", "PUT", "DELETE"]
+
+    filters:
+      - type: REQUEST_SIZE_LIMIT
+        order: 50
+        enabled: true
+        config:
+          max-size: "100MB"
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+        config:
+          include-body: false  # 文件不记录body
+      - type: AUTH
+        order: 200
+        enabled: true
+
+    target:
+      type: STATIC
+      outbound-protocol:
+        type: HTTP
+        version: "1.1"
+      addresses:
+        - uri: "http://file-service-1:8080"
+          weight: 100
+          metadata:
+            storage-type: "local"
+        - uri: "http://file-service-2:8080"
+          weight: 100
+          metadata:
+            storage-type: "oss"
+      load-balance:
+        strategy: "LEAST_CONNECTIONS"
+
+    timeouts:
+      connection: 10s
+      request: 300s  # 文件上传允许5分钟
+      total: 600s
+
+    metadata:
+      service-name: "file-service"
+      max-file-size: "100MB"
+
+  # ========== 默认兜底路由 ==========
+  - id: default-fallback-route
+    name: "默认兜底路由"
+    description: "处理未匹配到其他路由的请求"
+    order: 9999
+    enabled: true
+
+    inbound-protocol:
+      type: HTTP
+      version: "1.1"
+
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/**"  # 匹配所有路径
+
+    filters:
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+      - type: DEFAULT_RESPONSE
+        order: 500
+        enabled: true
+        config:
+          status-code: 404
+          response-body: |
+            {
+              "error": "NOT_FOUND",
+              "message": "请求的资源不存在",
+              "timestamp": "${timestamp}",
+              "path": "${request.path}"
+            }
+          content-type: "application/json"
+
+    target:
+      type: STATIC
+      outbound-protocol:
+        type: HTTP
+        version: "1.1"
+      addresses:
+        - uri: "http://default-service:8080"
+          weight: 100
+      load-balance:
+        strategy: "ROUND_ROBIN"
+
+    metadata:
+      service-name: "default-service"
+      route-type: "fallback"
+
+# ========== 全局过滤器配置 ==========
+global-filters:
+  # 全局请求ID过滤器
+  - type: REQUEST_ID
+    order: 10
+    enabled: true
+    config:
+      header-name: "X-Request-ID"
+      generate-if-missing: true
+  
+  # 全局CORS过滤器
+  - type: CORS
+    order: 20
+    enabled: true
+    config:
+      allowed-origins: ["*"]
+      allowed-methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allowed-headers: ["*"]
+      allow-credentials: true
+      max-age: 3600
+  
+  # 全局监控过滤器
+  - type: METRICS
+    order: 30
+    enabled: true
+    config:
+      collect-request-metrics: true
+      collect-response-metrics: true
+      histogram-buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+
+# ========== 负载均衡策略配置 ==========
+load-balance-strategies:
+  # 轮询策略
+  round-robin:
+    class: "com.muxin.gateway.core.plus.loadbalance.RoundRobinLoadBalancer"
+    config:
+      reset-period: 3600s
+  
+  # 加权轮询策略
+  weighted-round-robin:
+    class: "com.muxin.gateway.core.plus.loadbalance.WeightedRoundRobinLoadBalancer"
+    config:
+      weight-attribute: "weight"
+      smooth-weighted: true
+  
+  # 最少连接策略
+  least-connections:
+    class: "com.muxin.gateway.core.plus.loadbalance.LeastConnectionsLoadBalancer"
+    config:
+      connection-count-header: "X-Connection-Count"
+  
+  # 一致性哈希策略
+  consistent-hash:
+    class: "com.muxin.gateway.core.plus.loadbalance.ConsistentHashLoadBalancer"
+    config:
+      hash-key: "client-ip"
+      virtual-nodes: 160
+
+# ========== 协议配置 ==========
+protocols:
+  http:
+    versions: ["1.1", "2.0"]
+    default-version: "1.1"
+    keep-alive: true
+    compression: true
+    max-header-size: 8192
+    max-chunk-size: 8192
+    
+  websocket:
+    versions: ["13"]
+    max-frame-size: 65536
+    compression: true
+    heartbeat-interval: 30s
+    
+  tcp:
+    keep-alive: true
+    tcp-no-delay: true
+    so-timeout: 30s
+    
+  grpc:
+    versions: ["1.0"]
+    keep-alive: true
+    max-message-size: 4MB
+
+# ========== 注册中心配置 ==========
+registries:
+  # 默认注册中心
+  default: "nacos"
+  
+  # 支持的注册中心列表
+  nacos:
+    server-addr: "${NACOS_ADDR:127.0.0.1:8848}"
+    namespace: "${NACOS_NAMESPACE:public}"
+    group: "${NACOS_GROUP:DEFAULT_GROUP}"
+    username: "${NACOS_USERNAME:nacos}"
+    password: "${NACOS_PASSWORD:nacos}"
+    
+  eureka:
+    service-url: "${EUREKA_URL:http://127.0.0.1:8761/eureka}"
+    prefer-ip-address: true
+    
+  consul:
+    host: "${CONSUL_HOST:127.0.0.1}"
+    port: "${CONSUL_PORT:8500}"
+    
+# ========== 监控配置 ==========
+monitoring:
+  metrics:
+    enabled: true
+    export-interval: 60s
+    tags:
+      application: "muxin-gateway"
+      environment: "${ENVIRONMENT:development}"
+  
+  tracing:
+    enabled: true
+    sampling-rate: 0.1
+    trace-header: "X-Trace-ID"
+    span-header: "X-Span-ID"
+  
+  logging:
+    level:
+      root: INFO
+      "com.muxin.gateway": DEBUG
+    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId},%X{spanId}] %logger{36} - %msg%n"
+
+# ========== 安全配置 ==========
+security:
+  # JWT配置
+  jwt:
+    secret: "${JWT_SECRET:muxin-gateway-secret-key-2024}"
+    expiration: 3600s
+    refresh-expiration: 86400s
+    issuer: "muxin-gateway"
+  
+  # 限流配置
+  rate-limit:
+    default:
+      requests-per-second: 1000
+      burst-capacity: 2000
+    by-ip:
+      requests-per-second: 100
+      burst-capacity: 200
+    by-user:
+      requests-per-second: 50
+      burst-capacity: 100
+
+# ========== 缓存配置 ==========
+cache:
+  enabled: true
+  provider: "caffeine"  # caffeine, redis
+  default-ttl: 300s
+  max-size: 10000
+  
+  # 路由缓存
+  route-cache:
+    enabled: true
+    ttl: 600s
+    max-size: 1000
+  
+  # 认证缓存
+  auth-cache:
+    enabled: true
+    ttl: 1800s
+    max-size: 5000 
