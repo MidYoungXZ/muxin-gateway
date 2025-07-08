@@ -2,9 +2,11 @@ package com.muxin.gateway.core.plus;
 
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
+import com.muxin.gateway.core.plus.node.ServiceNode;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.route.Route;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,8 +25,8 @@ public class DefaultRequestContext implements RequestContext {
     private Message outboundMessage;
     private final ServerConnection inboundConnection;
     private ClientConnection outboundConnection;
-    private Object matchedRoute;
-    private Object selectedNode;
+    private Route matchedRoute;
+    private ServiceNode selectedNode;
     private boolean completed;
     private Throwable error;
 
@@ -72,22 +74,22 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public Object getMatchedRoute() {
+    public Route getMatchedRoute() {
         return matchedRoute;
     }
 
     @Override
-    public void setMatchedRoute(Object route) {
+    public void setMatchedRoute(Route route) {
         this.matchedRoute = route;
     }
 
     @Override
-    public Object getSelectedNode() {
+    public ServiceNode getSelectedNode() {
         return selectedNode;
     }
 
     @Override
-    public void setSelectedNode(Object node) {
+    public void setSelectedNode(ServiceNode node) {
         this.selectedNode = node;
     }
 
