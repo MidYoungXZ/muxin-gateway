@@ -3,8 +3,7 @@ package com.muxin.gateway.core.plus;
 import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.route.filter.FilterManager;
-import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceManager;
+
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.MessageType;
 import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
@@ -33,12 +32,9 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
     public EnhancedGatewayProcessor(GatewayConfig config,
                                     ConnectionPoolManager connectionPoolManager,
                                     RouteManager routeManager,
-                                    FilterManager filterManager,
-                                    LoadBalanceManager loadBalanceManager,
                                     NodeManager nodeManager,
                                     ProtocolConverterManager protocolConverterManager) {
-        super(config, connectionPoolManager, routeManager, filterManager,
-                loadBalanceManager, nodeManager, protocolConverterManager);
+        super(config, connectionPoolManager, routeManager, nodeManager, protocolConverterManager);
 
         log.info("[EnhancedGatewayProcessor] 增强网关处理器创建完成");
     }

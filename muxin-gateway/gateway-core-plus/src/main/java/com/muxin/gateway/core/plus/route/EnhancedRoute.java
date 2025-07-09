@@ -32,7 +32,7 @@ public class EnhancedRoute implements Route {
     private final Protocol inboundProtocol;
     private final List<Predicate> predicates;
     private final List<Filter> filters;
-    private final EnhancedRouteTarget target;
+    private final RouteTarget target;
     private final TimeoutConfig timeouts;
     private final Map<String, Object> metadata;
     
@@ -200,11 +200,9 @@ public class EnhancedRoute implements Route {
      */
     public String getServiceName() {
         // 优先从目标配置获取
-        if (target instanceof EnhancedRouteTarget) {
-            EnhancedRouteTarget enhancedTarget = (EnhancedRouteTarget) target;
-            if (enhancedTarget.isDiscovery()) {
-                return enhancedTarget.getServiceName();
-            }
+        if (target instanceof DiscoveryRouteTarget) {
+            DiscoveryRouteTarget discoveryTarget = (DiscoveryRouteTarget) target;
+            return discoveryTarget.getServiceName();
         }
         
         // 从元数据获取
@@ -223,9 +221,12 @@ public class EnhancedRoute implements Route {
      * 获取负载均衡策略名称
      */
     public String getLoadBalanceStrategy() {
-        if (target instanceof EnhancedRouteTarget) {
-            EnhancedRouteTarget enhancedTarget = (EnhancedRouteTarget) target;
-            return enhancedTarget.getLoadBalanceStrategy();
+        if (target instanceof StaticRouteTarget) {
+            StaticRouteTarget staticTarget = (StaticRouteTarget) target;
+            return staticTarget.getLoadBalanceStrategy();
+        } else if (target instanceof DiscoveryRouteTarget) {
+            DiscoveryRouteTarget discoveryTarget = (DiscoveryRouteTarget) target;
+            return discoveryTarget.getLoadBalanceStrategy();
         }
         return "ROUND_ROBIN";
     }
@@ -234,22 +235,14 @@ public class EnhancedRoute implements Route {
      * 检查是否为静态目标
      */
     public boolean isStaticTarget() {
-        if (target instanceof EnhancedRouteTarget) {
-            EnhancedRouteTarget enhancedTarget = (EnhancedRouteTarget) target;
-            return enhancedTarget.isStatic();
-        }
-        return false;
+        return target instanceof StaticRouteTarget;
     }
     
     /**
      * 检查是否为服务发现目标
      */
     public boolean isDiscoveryTarget() {
-        if (target instanceof EnhancedRouteTarget) {
-            EnhancedRouteTarget enhancedTarget = (EnhancedRouteTarget) target;
-            return enhancedTarget.isDiscovery();
-        }
-        return false;
+        return target instanceof DiscoveryRouteTarget;
     }
     
     @Override

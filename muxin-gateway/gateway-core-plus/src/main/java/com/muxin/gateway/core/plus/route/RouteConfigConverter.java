@@ -1,25 +1,13 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.route.filter.Filter;
-import com.muxin.gateway.core.plus.route.filter.FilterFactory;
-import com.muxin.gateway.core.plus.route.filter.HttpLoggingFilterFactory;
-import com.muxin.gateway.core.plus.route.filter.HttpAuthFilterFactory;
-import com.muxin.gateway.core.plus.route.predicate.PredicateFactory;
-import com.muxin.gateway.core.plus.route.predicate.HttpPathPredicateFactory;
-import com.muxin.gateway.core.plus.route.predicate.HttpMethodPredicateFactory;
-import com.muxin.gateway.core.plus.route.predicate.HttpHeaderPredicateFactory;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
-import com.muxin.gateway.core.plus.route.predicate.Predicate;
-import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
+import com.muxin.gateway.core.plus.route.filter.*;
+import com.muxin.gateway.core.plus.route.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.predicate.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Comparator;
+import java.util.*;
 
 /**
  * 路由配置转换器
@@ -37,9 +25,13 @@ public class RouteConfigConverter {
     // 在转换器内部维护PredicateFactory映射
     private final Map<String, PredicateFactory> predicateFactories;
     
+    // 在转换器内部维护RouteTargetFactory映射
+    private final Map<TargetType, RouteTargetFactory> routeTargetFactories;
+    
     public RouteConfigConverter() {
         this.filterFactories = initFilterFactories();
         this.predicateFactories = initPredicateFactories();
+        this.routeTargetFactories = initRouteTargetFactories();
     }
     
     /**
@@ -78,6 +70,20 @@ public class RouteConfigConverter {
     }
     
     /**
+     * 初始化RouteTargetFactory映射
+     */
+    private Map<TargetType, RouteTargetFactory> initRouteTargetFactories() {
+        Map<TargetType, RouteTargetFactory> factories = new HashMap<>();
+        
+        // 注册内置RouteTargetFactory
+        registerRouteTargetFactory(factories, new StaticRouteTargetFactory());
+        registerRouteTargetFactory(factories, new DiscoveryRouteTargetFactory());
+        
+        log.info("初始化RouteTargetFactory完成，支持的目标类型: {}", factories.keySet());
+        return factories;
+    }
+    
+    /**
      * 注册FilterFactory
      */
     private void registerFilterFactory(Map<String, FilterFactory> factories, FilterFactory factory) {
@@ -112,7 +118,24 @@ public class RouteConfigConverter {
     }
     
     /**
-     * 将EnhancedRouteConfig转换为EnhancedRoute
+     * 注册RouteTargetFactory
+     */
+    private void registerRouteTargetFactory(Map<TargetType, RouteTargetFactory> factories, RouteTargetFactory factory) {
+        TargetType targetType = factory.getSupportedType();
+        factories.put(targetType, factory);
+        log.debug("注册RouteTargetFactory: {}", targetType);
+    }
+    
+    /**
+     * 注册自定义RouteTargetFactory（支持运行时扩展）
+     */
+    public void registerRouteTargetFactory(RouteTargetFactory factory) {
+        routeTargetFactories.put(factory.getSupportedType(), factory);
+        log.info("注册自定义RouteTargetFactory: {}", factory.getSupportedType());
+    }
+    
+    /**
+     * 将RouteDefinition转换为EnhancedRoute
      */
     public EnhancedRoute convertToRoute(RouteDefinition config) {
         try {
@@ -128,6 +151,9 @@ public class RouteConfigConverter {
             // 转换过滤器（传入routeId，确保每个路由的Filter独立）
             List<Filter> filters = convertFilters(config.getId(), config.getFilters());
             
+            // 转换路由目标
+            RouteTarget target = convertRouteTarget(config.getTarget());
+            
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
             
@@ -140,7 +166,7 @@ public class RouteConfigConverter {
                     .inboundProtocol(inboundProtocol)
                     .predicates(predicates)  // 每个路由独立的Predicate实例
                     .filters(filters)  // 每个路由独立的Filter实例
-                    .target(config.getTarget())
+                    .target(target)
                     .timeouts(timeouts)
                     .metadata(config.getMetadata())
                     .build();
@@ -261,6 +287,129 @@ public class RouteConfigConverter {
         return filters;
     }
     
+    /**
+     * 转换路由目标配置为RouteTarget实例
+     */
+    private RouteTarget convertRouteTarget(RouteTargetDefinition definition) {
+        if (definition == null) {
+            throw new IllegalArgumentException("路由目标配置不能为空");
+        }
+        
+        TargetType type = definition.getType();
+        if (type == null) {
+            throw new IllegalArgumentException("路由目标类型不能为空");
+        }
+        
+        RouteTargetFactory factory = routeTargetFactories.get(type);
+        if (factory == null) {
+            throw new IllegalArgumentException("不支持的路由目标类型: " + type);
+        }
+        
+        try {
+            // 验证配置
+            factory.validateConfig(definition);
+            
+            // 创建路由目标（每次都创建新实例，确保隔离）
+            return factory.createRouteTarget(definition);
+        } catch (Exception e) {
+            log.error("创建路由目标失败, 类型: {}, 配置: {}", type, definition, e);
+            throw new RuntimeException("创建路由目标失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 添加负载均衡目标选择功能
+     * 替代原LoadBalanceManager的selectTarget功能
+     */
+    public EndpointAddress selectTarget(
+            RouteTarget routeTarget, 
+            java.util.List<EndpointAddress> availableTargets,
+            RequestContext context) {
+        
+        if (availableTargets == null || availableTargets.isEmpty()) {
+            return null;
+        }
+        
+        if (availableTargets.size() == 1) {
+            return availableTargets.get(0);
+        }
+        
+        // 根据不同的RouteTarget类型进行负载均衡
+        String strategy = getLoadBalanceStrategy(routeTarget);
+        
+        switch (strategy.toUpperCase()) {
+            case "ROUND_ROBIN":
+                return roundRobinSelect(availableTargets, context);
+            case "RANDOM":
+                return randomSelect(availableTargets);
+            case "WEIGHTED_ROUND_ROBIN":
+                return weightedRoundRobinSelect(availableTargets, context);
+            case "CONSISTENT_HASH":
+                return consistentHashSelect(availableTargets, context, routeTarget);
+            default:
+                log.warn("未知的负载均衡策略: {}, 使用轮询策略", strategy);
+                return roundRobinSelect(availableTargets, context);
+        }
+    }
+    
+    /**
+     * 获取负载均衡策略
+     */
+    private String getLoadBalanceStrategy(RouteTarget routeTarget) {
+        if (routeTarget instanceof StaticRouteTarget) {
+            return ((StaticRouteTarget) routeTarget).getLoadBalanceStrategy();
+        } else if (routeTarget instanceof DiscoveryRouteTarget) {
+            return ((DiscoveryRouteTarget) routeTarget).getLoadBalanceStrategy();
+        }
+        return "ROUND_ROBIN";
+    }
+    
+    /**
+     * 轮询选择
+     */
+    private com.muxin.gateway.core.plus.route.node.EndpointAddress roundRobinSelect(
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> targets,
+            RequestContext context) {
+        // 简单的轮询实现
+        long requestId = System.nanoTime();
+        int index = (int) (requestId % targets.size());
+        return targets.get(index);
+    }
+    
+    /**
+     * 随机选择
+     */
+    private com.muxin.gateway.core.plus.route.node.EndpointAddress randomSelect(
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> targets) {
+        int index = new java.util.Random().nextInt(targets.size());
+        return targets.get(index);
+    }
+    
+    /**
+     * 加权轮询选择
+     */
+    private com.muxin.gateway.core.plus.route.node.EndpointAddress weightedRoundRobinSelect(
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> targets,
+            RequestContext context) {
+        // 简单实现：目前返回第一个，实际应该根据权重选择
+        // TODO: 实现真正的加权轮询算法
+        return targets.get(0);
+    }
+    
+    /**
+     * 一致性哈希选择
+     */
+    private com.muxin.gateway.core.plus.route.node.EndpointAddress consistentHashSelect(
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> targets,
+            RequestContext context,
+            RouteTarget routeTarget) {
+        // 简单实现：根据请求的某个属性进行哈希
+        String hashKey = context != null ? context.toString() : String.valueOf(System.nanoTime());
+        int hash = hashKey.hashCode();
+        int index = Math.abs(hash) % targets.size();
+        return targets.get(index);
+    }
+
     /**
      * 转换超时配置
      */

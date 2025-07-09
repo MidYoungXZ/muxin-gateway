@@ -1,22 +1,15 @@
 package com.muxin.gateway.core.plus.route.node;
 
 import com.muxin.gateway.core.plus.ServiceDiscovery;
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.message.ProtocolType;
-import com.muxin.gateway.core.plus.route.node.health.HealthCheckResult;
-import com.muxin.gateway.core.plus.route.node.health.HealthChecker;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * 默认节点管理器实现
+ * 默认节点管理器实现（已移除健康检查功能）
  * 
  * @author muxin
  */
@@ -28,8 +21,6 @@ public class DefaultNodeManager implements NodeManager {
     // 按服务名分组管理 - 业务方法需要  
     private final Map<String, Map<String, ServiceNode>> serviceNodes;
     private final ServiceDiscovery serviceDiscovery;
-    private final HealthChecker healthChecker;
-    private final ScheduledExecutorService scheduler;
     private final List<ServiceChangeListener> listeners;
     private volatile boolean running = false;
     
@@ -37,8 +28,6 @@ public class DefaultNodeManager implements NodeManager {
         this.nodes = new ConcurrentHashMap<>();
         this.serviceNodes = new ConcurrentHashMap<>();
         this.serviceDiscovery = new DefaultServiceDiscovery();
-        this.healthChecker = new DefaultHealthChecker();
-        this.scheduler = Executors.newScheduledThreadPool(2);
         this.listeners = new ArrayList<>();
     }
     
@@ -141,7 +130,7 @@ public class DefaultNodeManager implements NodeManager {
 
     @Override
     public void init() {
-
+        log.info("节点管理器初始化完成");
     }
 
     @Override
@@ -152,9 +141,6 @@ public class DefaultNodeManager implements NodeManager {
         
         running = true;
         
-        // 启动健康检查
-        startHealthCheck();
-        
         // 启动服务发现
         serviceDiscovery.start();
         
@@ -163,7 +149,7 @@ public class DefaultNodeManager implements NodeManager {
 
     @Override
     public void shutdown() {
-
+        stop();
     }
 
     @Override
@@ -173,17 +159,6 @@ public class DefaultNodeManager implements NodeManager {
         }
         
         running = false;
-        
-        // 停止健康检查
-        scheduler.shutdown();
-        try {
-            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                scheduler.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            scheduler.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
         
         // 停止服务发现
         serviceDiscovery.shutdown();
@@ -224,55 +199,6 @@ public class DefaultNodeManager implements NodeManager {
     public void removeServiceChangeListener(ServiceChangeListener listener) {
         if (listener != null) {
             listeners.remove(listener);
-        }
-    }
-    
-    /**
-     * 启动健康检查
-     */
-    private void startHealthCheck() {
-        scheduler.scheduleWithFixedDelay(() -> {
-            try {
-                performHealthCheck();
-            } catch (Exception e) {
-                log.error("健康检查失败: {}", e.getMessage());
-            }
-        }, 10, 30, TimeUnit.SECONDS);
-    }
-    
-    /**
-     * 执行健康检查
-     */
-    private void performHealthCheck() {
-        for (ServiceNode node : nodes.values()) {
-            try {
-                HealthCheckResult result = healthChecker.checkHealth(node);
-                
-                NodeStatus oldStatus = node.getStatus();
-                NodeStatus newStatus = result.isHealthy() ? NodeStatus.HEALTHY : NodeStatus.UNHEALTHY;
-                
-                if (oldStatus != newStatus) {
-                    node.updateStatus(newStatus);
-                    
-                    // 更新失败计数
-                    if (result.isHealthy()) {
-                        node.resetFailureCount();
-                    } else {
-                        node.incrementFailureCount();
-                    }
-                    
-                    // 通知监听器
-                    String serviceName = getServiceNameFromNode(node);
-                    notifyListeners(listener -> listener.onNodeStatusChanged(
-                        serviceName, node.getId(), oldStatus, newStatus));
-                }
-                
-                node.updateLastHealthCheckTime(System.currentTimeMillis());
-                
-            } catch (Exception e) {
-                log.error("节点健康检查失败: {}, 错误: {}", node.getId(), e.getMessage());
-                node.incrementFailureCount();
-            }
         }
     }
     
@@ -359,7 +285,7 @@ public class DefaultNodeManager implements NodeManager {
 
         @Override
         public void init() {
-
+            log.debug("服务发现初始化");
         }
 
         @Override
@@ -379,107 +305,4 @@ public class DefaultNodeManager implements NodeManager {
             return running;
         }
     }
-    
-    /**
-     * 默认健康检查器实现
-     */
-    private static class DefaultHealthChecker implements HealthChecker {
-        private volatile boolean running = false;
-        
-        @Override
-        public HealthCheckResult checkHealth(ServiceNode node) {
-            try {
-                // 模拟健康检查，这里简单返回成功
-                // 实际实现中应该根据协议类型进行真实的健康检查
-                return createHealthCheckResult(true, "节点健康");
-            } catch (Exception e) {
-                return createHealthCheckResult(false, "健康检查失败: " + e.getMessage());
-            }
-        }
-        
-        @Override
-        public CompletableFuture<HealthCheckResult> checkHealthAsync(ServiceNode node) {
-            return CompletableFuture.supplyAsync(() -> checkHealth(node));
-        }
-        
-        @Override
-        public void startScheduler() {
-            running = true;
-            log.info("健康检查调度器启动");
-        }
-        
-        @Override
-        public void stopScheduler() {
-            running = false;
-            log.info("健康检查调度器停止");
-        }
-        
-        @Override
-        public void addNode(ServiceNode node) {
-            log.debug("添加健康检查节点: {}", node.getId());
-        }
-        
-        @Override
-        public void removeNode(String nodeId) {
-            log.debug("移除健康检查节点: {}", nodeId);
-        }
-        
-        @Override
-        public Protocol getSupportedProtocol() {
-            // 返回通用协议
-            return new DefaultProtocol();
-        }
-    }
-    
-    /**
-     * 默认协议实现
-     */
-    private static class DefaultProtocol implements Protocol {
-        @Override
-        public String getName() {
-            return "DEFAULT";
-        }
-        
-        @Override
-        public String getVersion() {
-            return "1.0";
-        }
-        
-        @Override
-        public ProtocolType getType() {
-            return ProtocolType.CUSTOM;
-        }
-        
-        @Override
-        public boolean isConnectionOriented() {
-            return true;
-        }
-        
-        @Override
-        public boolean isRequestResponseBased() {
-            return true;
-        }
-        
-        @Override
-        public boolean isStreamingSupported() {
-            return false;
-        }
-        
-        @Override
-        public int getDefaultPort() {
-            return 8080;
-        }
-        
-        @Override
-        public java.util.Map<String, Object> getProtocolConfig() {
-            return new HashMap<>();
-        }
-    }
-    
-    /**
-     * 创建默认健康检查结果
-     */
-    private static HealthCheckResult createHealthCheckResult(boolean healthy, String message) {
-        return new HealthCheckResult(healthy, message, healthy ? 10 : 1000);
-    }
-} 
+}

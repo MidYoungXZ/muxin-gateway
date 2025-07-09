@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.plus.route.node;
 
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.route.node.health.HealthCheckConfig;
 
 import java.time.Duration;
 import java.util.Map;
@@ -53,21 +52,6 @@ public interface ServiceNode {
      * 获取节点元数据
      */
     Map<String, Object> getMetadata();
-    
-    /**
-     * 获取健康检查配置
-     */
-    HealthCheckConfig getHealthCheckConfig();
-    
-    /**
-     * 获取最后健康检查时间
-     */
-    long getLastHealthCheckTime();
-    
-    /**
-     * 更新最后健康检查时间
-     */
-    void updateLastHealthCheckTime(long timestamp);
     
     /**
      * 获取连续失败次数

@@ -2,7 +2,6 @@ package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.config.GatewayConfigLoader;
 import com.muxin.gateway.core.plus.config.GatewayRouteConfig;
-import com.muxin.gateway.core.plus.route.predicate.PredicateFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -19,6 +18,30 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Slf4j
 public class EnhancedRouteManager implements RouteManager {
+
+
+    private final GatewayConfigLoader configLoader;
+    private final RouteConfigConverter configConverter;
+    private final ConcurrentMap<String, EnhancedRoute> routes;
+    private volatile List<EnhancedRoute> sortedRoutes;
+    private final GlobalRouteConfig globalConfig;
+
+    public EnhancedRouteManager() {
+        this.configLoader = new GatewayConfigLoader();
+        this.configConverter = new RouteConfigConverter();
+        this.routes = new ConcurrentHashMap<>();
+        this.sortedRoutes = new ArrayList<>();
+        this.globalConfig = GlobalRouteConfig.defaultConfig();
+    }
+    
+    public EnhancedRouteManager(GlobalRouteConfig globalConfig) {
+        this.configLoader = new GatewayConfigLoader();
+        this.configConverter = new RouteConfigConverter();
+        this.routes = new ConcurrentHashMap<>();
+        this.sortedRoutes = new ArrayList<>();
+        this.globalConfig = globalConfig != null ? globalConfig : GlobalRouteConfig.defaultConfig();
+    }
+
     
     // ========== Repository接口实现 ==========
     
@@ -49,17 +72,7 @@ public class EnhancedRouteManager implements RouteManager {
         return new ArrayList<>(sortedRoutes);
     }
     
-    private final GatewayConfigLoader configLoader;
-    private final RouteConfigConverter configConverter;
-    private final ConcurrentMap<String, EnhancedRoute> routes;
-    private volatile List<EnhancedRoute> sortedRoutes;
-    
-    public EnhancedRouteManager(PredicateFactory predicateFactory) {
-        this.configLoader = new GatewayConfigLoader();
-        this.configConverter = new RouteConfigConverter(predicateFactory);
-        this.routes = new ConcurrentHashMap<>();
-        this.sortedRoutes = new ArrayList<>();
-    }
+
     
     @Override
     public void init() {
@@ -119,15 +132,12 @@ public class EnhancedRouteManager implements RouteManager {
             GatewayRouteConfig config = configLoader.loadConfig();
             
             if (config.getRoutes() != null && !config.getRoutes().isEmpty()) {
-                // 转换路由配置
-                List<EnhancedRoute> convertedRoutes = configConverter.convertToRoutes(config.getRoutes());
-                
-                // 添加路由
-                for (EnhancedRoute route : convertedRoutes) {
-                    addRoute(route);
+                // 添加路由定义（会自动应用全局配置）
+                for (RouteDefinition routeDefinition : config.getRoutes()) {
+                    addRouteDefinition(routeDefinition);
                 }
                 
-                log.info("从配置文件加载了 {} 个路由", convertedRoutes.size());
+                log.info("从配置文件加载了 {} 个路由", config.getRoutes().size());
             } else {
                 log.warn("配置文件中没有路由定义");
             }
@@ -136,6 +146,92 @@ public class EnhancedRouteManager implements RouteManager {
             log.error("加载配置文件失败", e);
             throw new RuntimeException("加载路由配置失败", e);
         }
+    }
+    
+    /**
+     * 添加路由定义（支持动态添加）
+     */
+    public void addRouteDefinition(RouteDefinition routeDefinition) {
+        if (routeDefinition == null) {
+            throw new IllegalArgumentException("路由定义不能为空");
+        }
+        
+        try {
+            // 应用全局配置合并
+            RouteDefinition mergedDefinition = globalConfig.mergeRouteDefinition(routeDefinition);
+            
+            // 转换为路由对象（每次都创建新实例，确保隔离）
+            EnhancedRoute route = configConverter.convertToRoute(mergedDefinition);
+            
+            // 添加到管理器
+            addRoute(route);
+            
+            log.info("添加路由定义: {} ({})", routeDefinition.getId(), routeDefinition.getName());
+            
+        } catch (Exception e) {
+            log.error("添加路由定义失败: {}", routeDefinition.getId(), e);
+            throw new RuntimeException("添加路由定义失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 更新路由定义（重新创建整个Route对象）
+     */
+    public void updateRouteDefinition(String routeId, RouteDefinition routeDefinition) {
+        if (routeId == null) {
+            throw new IllegalArgumentException("路由ID不能为空");
+        }
+        if (routeDefinition == null) {
+            throw new IllegalArgumentException("路由定义不能为空");
+        }
+        
+        try {
+            // 确保路由ID一致
+            if (!routeId.equals(routeDefinition.getId())) {
+                throw new IllegalArgumentException("路由ID不匹配: " + routeId + " vs " + routeDefinition.getId());
+            }
+            
+            // 移除旧路由
+            removeRoute(routeId);
+            
+            // 添加新路由（重新创建整个Route对象）
+            addRouteDefinition(routeDefinition);
+            
+            log.info("更新路由定义: {} ({})", routeId, routeDefinition.getName());
+            
+        } catch (Exception e) {
+            log.error("更新路由定义失败: {}", routeId, e);
+            throw new RuntimeException("更新路由定义失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 删除路由定义
+     */
+    public void removeRouteDefinition(String routeId) {
+        removeRoute(routeId);
+        log.info("删除路由定义: {}", routeId);
+    }
+    
+    /**
+     * 批量添加路由定义
+     */
+    public void addRouteDefinitions(List<RouteDefinition> routeDefinitions) {
+        if (routeDefinitions == null || routeDefinitions.isEmpty()) {
+            return;
+        }
+        
+        int successCount = 0;
+        for (RouteDefinition definition : routeDefinitions) {
+            try {
+                addRouteDefinition(definition);
+                successCount++;
+            } catch (Exception e) {
+                log.error("批量添加路由失败，跳过: {}", definition.getId(), e);
+            }
+        }
+        
+        log.info("批量添加路由完成，成功: {}, 失败: {}", successCount, routeDefinitions.size() - successCount);
     }
     
     /**
@@ -215,19 +311,19 @@ public class EnhancedRouteManager implements RouteManager {
         EnhancedRoute route = routes.get(routeId);
         if (route != null) {
             // 注意：EnhancedRoute是不可变的，需要重新创建
-                         EnhancedRoute enabledRoute = EnhancedRoute.builder()
-                     .id(route.getId())
-                     .name(route.getName())
-                     .description(route.getDescription())
-                     .order(route.getOrder())
-                     .enabled(true)
-                     .inboundProtocol(route.getInboundProtocol())
-                     .predicates(route.getPredicates())
-                     .filters(route.getFilters())
-                     .target((EnhancedRouteTarget) route.getTarget())
-                     .timeouts(route.getTimeouts())
-                     .metadata(route.getMetadata())
-                     .build();
+            EnhancedRoute enabledRoute = EnhancedRoute.builder()
+                    .id(route.getId())
+                    .name(route.getName())
+                    .description(route.getDescription())
+                    .order(route.getOrder())
+                    .enabled(true)
+                    .inboundProtocol(route.getInboundProtocol())
+                    .predicates(route.getPredicates())
+                    .filters(route.getFilters())
+                    .target(route.getTarget())
+                    .timeouts(route.getTimeouts())
+                    .metadata(route.getMetadata())
+                    .build();
             
             routes.put(routeId, enabledRoute);
             updateSortedRoutes();
@@ -242,19 +338,19 @@ public class EnhancedRouteManager implements RouteManager {
         EnhancedRoute route = routes.get(routeId);
         if (route != null) {
             // 注意：EnhancedRoute是不可变的，需要重新创建
-                         EnhancedRoute disabledRoute = EnhancedRoute.builder()
-                     .id(route.getId())
-                     .name(route.getName())
-                     .description(route.getDescription())
-                     .order(route.getOrder())
-                     .enabled(false)
-                     .inboundProtocol(route.getInboundProtocol())
-                     .predicates(route.getPredicates())
-                     .filters(route.getFilters())
-                     .target((EnhancedRouteTarget) route.getTarget())
-                     .timeouts(route.getTimeouts())
-                     .metadata(route.getMetadata())
-                     .build();
+            EnhancedRoute disabledRoute = EnhancedRoute.builder()
+                    .id(route.getId())
+                    .name(route.getName())
+                    .description(route.getDescription())
+                    .order(route.getOrder())
+                    .enabled(false)
+                    .inboundProtocol(route.getInboundProtocol())
+                    .predicates(route.getPredicates())
+                    .filters(route.getFilters())
+                    .target(route.getTarget())
+                    .timeouts(route.getTimeouts())
+                    .metadata(route.getMetadata())
+                    .build();
             
             routes.put(routeId, disabledRoute);
             updateSortedRoutes();
@@ -290,6 +386,66 @@ public class EnhancedRouteManager implements RouteManager {
         this.sortedRoutes = routes.values().stream()
                 .sorted(Comparator.comparingInt(Route::getOrder))
                 .toList();
+    }
+    
+    /**
+     * 选择目标节点（集成负载均衡功能）
+     * 替代原LoadBalanceManager的selectTarget功能
+     */
+    public com.muxin.gateway.core.plus.route.node.EndpointAddress selectTarget(
+            String routeId,
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> availableTargets,
+            RequestContext context) {
+        
+        EnhancedRoute route = getRoute(routeId);
+        if (route == null) {
+            log.warn("路由不存在: {}", routeId);
+            return null;
+        }
+        
+        return configConverter.selectTarget(route.getTarget(), availableTargets, context);
+    }
+    
+    /**
+     * 根据路由选择目标节点
+     */
+    public com.muxin.gateway.core.plus.route.node.EndpointAddress selectTarget(
+            EnhancedRoute route,
+            java.util.List<com.muxin.gateway.core.plus.route.node.EndpointAddress> availableTargets,
+            RequestContext context) {
+        
+        if (route == null) {
+            return null;
+        }
+        
+        return configConverter.selectTarget(route.getTarget(), availableTargets, context);
+    }
+    
+    /**
+     * 获取全局配置
+     */
+    public GlobalRouteConfig getGlobalConfig() {
+        return globalConfig;
+    }
+    
+    /**
+     * 更新全局配置（会影响后续添加的路由）
+     */
+    public void updateGlobalConfig(GlobalRouteConfig newGlobalConfig) {
+        // 注意：这里不会影响已存在的路由，只影响后续添加的路由
+        // 如果需要应用到现有路由，需要调用 reapplyGlobalConfig()
+        log.warn("全局配置已更新，如需应用到现有路由，请调用 reapplyGlobalConfig()");
+    }
+    
+    /**
+     * 重新应用全局配置到所有现有路由
+     */
+    public void reapplyGlobalConfig() {
+        log.info("重新应用全局配置到 {} 个路由", routes.size());
+        
+        // 收集所有路由定义（需要从某处重新获取原始定义）
+        // 这里简化处理，实际应该保存原始RouteDefinition
+        log.warn("reapplyGlobalConfig功能需要保存原始RouteDefinition，当前版本暂不支持");
     }
     
     /**

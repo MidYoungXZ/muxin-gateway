@@ -17,7 +17,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddressConfig {
+public class AddressDefinition {
     
     /**
      * 地址URI

@@ -68,7 +68,7 @@ public class RouteDefinition {
     /**
      * 目标服务配置
      */
-    private EnhancedRouteTarget target;
+    private RouteTargetDefinition target;
     
     /**
      * 超时配置
@@ -104,8 +104,18 @@ public class RouteDefinition {
             throw new IllegalArgumentException("目标配置不能为空");
         }
         
-        // 验证目标配置
-        target.validate();
+        // 验证目标配置的基本信息
+        if (target.getType() == null) {
+            throw new IllegalArgumentException("目标类型不能为空");
+        }
+        
+        if (target.getOutboundProtocol() == null) {
+            throw new IllegalArgumentException("出站协议不能为空");
+        }
+        
+        if (target.getAddresses() == null || target.getAddresses().isEmpty()) {
+            throw new IllegalArgumentException("目标地址不能为空");
+        }
         
         // 验证协议转换
         if (inboundProtocol.needsConversion(target.getOutboundProtocol())) {

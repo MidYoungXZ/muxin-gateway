@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.plus.route.node;
 
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.route.node.health.HealthCheckConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
@@ -24,11 +23,9 @@ public class DefaultServiceNode implements ServiceNode {
     private final Protocol protocol;
     private final int weight;
     private final Map<String, Object> metadata;
-    private final HealthCheckConfig healthCheckConfig;
     private final long createdTime;
     
     private volatile NodeStatus status;
-    private final AtomicLong lastHealthCheckTime;
     private final AtomicLong lastActiveTime;
     private final AtomicInteger failureCount;
     private final Duration connectionTimeout;
@@ -46,13 +43,9 @@ public class DefaultServiceNode implements ServiceNode {
         this.weight = weight;
         this.metadata = new ConcurrentHashMap<>();
         this.status = NodeStatus.STARTING;
-        this.lastHealthCheckTime = new AtomicLong(0);
         this.lastActiveTime = new AtomicLong(System.currentTimeMillis());
         this.failureCount = new AtomicInteger(0);
         this.createdTime = System.currentTimeMillis();
-        
-        // 默认健康检查配置
-        this.healthCheckConfig = new DefaultHealthCheckConfig();
         
         // 默认超时配置
         this.connectionTimeout = Duration.ofSeconds(5);
@@ -106,21 +99,6 @@ public class DefaultServiceNode implements ServiceNode {
     @Override
     public Map<String, Object> getMetadata() {
         return new ConcurrentHashMap<>(metadata);
-    }
-    
-    @Override
-    public HealthCheckConfig getHealthCheckConfig() {
-        return healthCheckConfig;
-    }
-    
-    @Override
-    public long getLastHealthCheckTime() {
-        return lastHealthCheckTime.get();
-    }
-    
-    @Override
-    public void updateLastHealthCheckTime(long timestamp) {
-        lastHealthCheckTime.set(timestamp);
     }
     
     @Override
@@ -222,43 +200,5 @@ public class DefaultServiceNode implements ServiceNode {
                 '}';
     }
     
-    /**
-     * 默认健康检查配置实现
-     */
-    private static class DefaultHealthCheckConfig implements HealthCheckConfig {
-        @Override
-        public boolean isEnabled() {
-            return true;
-        }
-        
-        @Override
-        public Duration getInterval() {
-            return Duration.ofSeconds(30); // 30秒
-        }
-        
-        @Override
-        public Duration getTimeout() {
-            return Duration.ofSeconds(5); // 5秒
-        }
-        
-        @Override
-        public String getPath() {
-            return "/health";
-        }
-        
-        @Override
-        public java.util.List<Integer> getExpectedStatusCodes() {
-            return java.util.Arrays.asList(200, 201, 202, 204);
-        }
-        
-        @Override
-        public int getFailureThreshold() {
-            return 3;
-        }
-        
-        @Override
-        public int getSuccessThreshold() {
-            return 2;
-        }
-    }
+
 } 

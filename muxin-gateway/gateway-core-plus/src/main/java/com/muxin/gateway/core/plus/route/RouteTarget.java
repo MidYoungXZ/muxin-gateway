@@ -3,7 +3,6 @@ package com.muxin.gateway.core.plus.route;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
-import com.muxin.gateway.core.plus.route.node.health.HealthCheckConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -34,11 +33,6 @@ public interface RouteTarget {
      * 目标配置
      */
     Map<String, Object> getTargetConfig();
-    
-    /**
-     * 健康检查配置
-     */
-    HealthCheckConfig getHealthCheckConfig();
     
     /**
      * 选择目标地址
