@@ -26,21 +26,12 @@
             <version>4.1.115.Final</version>
         </dependency>
 
-
         <!-- Caffeine 高性能缓存 -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>3.1.8</version>
         </dependency>
-
-        <!-- SnakeYAML for YAML parsing -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>2.2</version>
-        </dependency>
-
         <!-- Lombok for code generation -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -54,13 +45,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.9</version>
-        </dependency>
-
-        <!-- Logback implementation -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.4.14</version>
         </dependency>
 
         <dependency>

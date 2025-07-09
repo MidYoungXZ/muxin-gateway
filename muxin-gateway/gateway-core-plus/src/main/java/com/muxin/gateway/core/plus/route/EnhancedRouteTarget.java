@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.core.plus.message.ProtocolDefinition;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.node.EndpointAddress;
-import com.muxin.gateway.core.plus.node.HttpEndpointAddress;
-import com.muxin.gateway.core.plus.node.health.HealthCheckConfig;
+import com.muxin.gateway.core.plus.route.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.node.HttpEndpointAddress;
+import com.muxin.gateway.core.plus.route.node.health.HealthCheckConfig;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +34,7 @@ public class EnhancedRouteTarget implements RouteTarget {
     /**
      * 出站协议配置
      */
-    private ProtocolConfig outboundProtocol;
+    private ProtocolDefinition outboundProtocol;
     
     /**
      * 地址配置列表
@@ -42,7 +44,7 @@ public class EnhancedRouteTarget implements RouteTarget {
     /**
      * 负载均衡配置
      */
-    private LoadBalanceConfig loadBalance;
+    private LoadBalanceDefinition loadBalance;
     
     /**
      * 健康检查配置
@@ -210,7 +212,7 @@ public class EnhancedRouteTarget implements RouteTarget {
     /**
      * 获取负载均衡配置
      */
-    public LoadBalanceConfig getLoadBalanceConfig() {
+    public LoadBalanceDefinition getLoadBalanceConfig() {
         return loadBalance;
     }
 } 

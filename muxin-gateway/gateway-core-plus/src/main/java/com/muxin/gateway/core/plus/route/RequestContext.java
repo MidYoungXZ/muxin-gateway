@@ -5,7 +5,7 @@ import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.node.ServiceNode;
+import com.muxin.gateway.core.plus.route.node.ServiceNode;
 
 import java.util.Map;
 

@@ -10,7 +10,7 @@ import com.muxin.gateway.core.plus.message.http.HttpHeaders;
 import com.muxin.gateway.core.plus.message.http.HttpBody;
 import com.muxin.gateway.core.plus.message.http.HttpMetadata;
 import com.muxin.gateway.core.plus.message.MessageType;
-import com.muxin.gateway.core.plus.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;

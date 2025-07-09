@@ -1,9 +1,8 @@
 package com.muxin.gateway.core.plus.config;
 
-import com.muxin.gateway.core.plus.route.EnhancedRouteConfig;
+import com.muxin.gateway.core.plus.route.RouteDefinition;
 import lombok.extern.slf4j.Slf4j;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.InputStream;
 import java.util.List;
@@ -79,7 +78,7 @@ public class GatewayConfigLoader {
         
         // 验证路由配置
         if (config.getRoutes() != null) {
-            for (EnhancedRouteConfig routeConfig : config.getRoutes()) {
+            for (RouteDefinition routeConfig : config.getRoutes()) {
                 try {
                     routeConfig.validate();
                 } catch (Exception e) {

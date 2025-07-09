@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.message;
 
 
-import com.muxin.gateway.core.plus.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 
 import java.util.Map;
 

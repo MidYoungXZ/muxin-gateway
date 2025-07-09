@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.config;
 
-import com.muxin.gateway.core.plus.route.EnhancedRouteConfig;
+import com.muxin.gateway.core.plus.route.RouteDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,7 +29,7 @@ public class GatewayRouteConfig {
     /**
      * 路由配置列表
      */
-    private List<EnhancedRouteConfig> routes;
+    private List<RouteDefinition> routes;
     
     /**
      * 全局过滤器配置

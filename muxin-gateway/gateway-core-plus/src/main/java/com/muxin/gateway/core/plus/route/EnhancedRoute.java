@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.filter.Filter;
+import com.muxin.gateway.core.plus.route.filter.Filter;
 import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.predicate.Predicate;
+import com.muxin.gateway.core.plus.route.predicate.Predicate;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -62,9 +62,9 @@ public class EnhancedRoute implements Route {
     }
     
     @Override
-    public List<Protocol> getSupportedProtocols() {
+    public Protocol getSupportedProtocol() {
         // 单协议支持
-        return List.of(inboundProtocol);
+        return inboundProtocol;
     }
     
     @Override

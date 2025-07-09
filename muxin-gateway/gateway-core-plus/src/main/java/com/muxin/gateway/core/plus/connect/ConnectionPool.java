@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.connect;
 
 import com.muxin.gateway.core.plus.LifeCycle;
-import com.muxin.gateway.core.plus.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 import com.muxin.gateway.core.plus.message.Protocol;
 
 import java.util.Map;

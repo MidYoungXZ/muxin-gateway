@@ -2,7 +2,7 @@ package com.muxin.gateway.core.plus;
 
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.node.ServiceNode;
+import com.muxin.gateway.core.plus.route.node.ServiceNode;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.message.Message;
 import com.muxin.gateway.core.plus.message.Protocol;
