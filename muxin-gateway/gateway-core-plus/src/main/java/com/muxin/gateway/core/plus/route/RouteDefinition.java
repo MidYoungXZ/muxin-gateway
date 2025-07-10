@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.message.ProtocolDefinition;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolDefinition;
 import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
 import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
 import lombok.AllArgsConstructor;

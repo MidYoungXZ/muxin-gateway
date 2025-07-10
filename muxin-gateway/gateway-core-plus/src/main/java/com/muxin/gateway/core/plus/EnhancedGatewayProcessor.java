@@ -4,13 +4,13 @@ import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
 
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.MessageType;
-import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
-import com.muxin.gateway.core.plus.message.http.HttpBody;
-import com.muxin.gateway.core.plus.message.http.HttpHeaders;
-import com.muxin.gateway.core.plus.message.http.HttpMessage;
-import com.muxin.gateway.core.plus.message.http.HttpMetadata;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.MessageType;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolConverterManager;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpBody;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpHeaders;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMetadata;
 import com.muxin.gateway.core.plus.route.node.NodeManager;
 import com.muxin.gateway.core.plus.route.RouteManager;
 import com.muxin.gateway.core.plus.route.RequestContext;
@@ -42,7 +42,7 @@ public class EnhancedGatewayProcessor extends GatewayProcessor {
     @Override
     protected CompletableFuture<Message> invokeBackendService(RequestContext context) {
         long startTime = System.currentTimeMillis();
-        ClientConnection connection = context.getOutboundConnection();
+        ClientConnection connection = context.clientConnection();
         Message request = context.getInboundMessage();
         String requestId = request.getMessageId();
 

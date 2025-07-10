@@ -1,7 +1,7 @@
-package com.muxin.gateway.core.plus.message.http;
+package com.muxin.gateway.core.plus.protocol.message.http;
 
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
-import com.muxin.gateway.core.plus.message.MessageMetadata;
+import com.muxin.gateway.core.plus.protocol.message.MessageMetadata;
 
 import java.util.HashMap;
 import java.util.Map;

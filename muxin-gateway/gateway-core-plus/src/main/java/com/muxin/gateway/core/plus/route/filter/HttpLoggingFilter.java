@@ -1,9 +1,9 @@
 package com.muxin.gateway.core.plus.route.filter;
 
 import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.message.http.HttpMetadata;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMetadata;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 

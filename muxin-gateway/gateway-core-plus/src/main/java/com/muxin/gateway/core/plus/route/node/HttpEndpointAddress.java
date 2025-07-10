@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.node;
 
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 
 import java.net.URI;
 import java.util.HashMap;

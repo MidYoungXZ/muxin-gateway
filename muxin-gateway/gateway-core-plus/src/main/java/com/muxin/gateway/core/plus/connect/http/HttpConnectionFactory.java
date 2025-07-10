@@ -4,7 +4,7 @@ import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.Connection;
 import com.muxin.gateway.core.plus.connect.ConnectionFactory;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 import com.muxin.gateway.core.plus.route.node.HttpEndpointAddress;
 import io.netty.bootstrap.Bootstrap;

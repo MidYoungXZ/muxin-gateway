@@ -3,7 +3,7 @@ package com.muxin.gateway.core.plus.connect.http;
 import com.muxin.gateway.core.plus.connect.Connection;
 import com.muxin.gateway.core.plus.connect.ConnectionPool;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 

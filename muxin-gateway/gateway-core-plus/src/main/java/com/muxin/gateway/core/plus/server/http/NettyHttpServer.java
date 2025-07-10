@@ -1,13 +1,14 @@
 package com.muxin.gateway.core.plus.server.http;
 
-import com.muxin.gateway.core.plus.connect.NettyServerConnection;
-import com.muxin.gateway.core.plus.message.MessageType;
-import com.muxin.gateway.core.plus.message.http.HttpMessage;
-import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.GatewayProcessor;
 import com.muxin.gateway.core.plus.DefaultRequestContext;
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.GatewayProcessor;
+import com.muxin.gateway.core.plus.connect.NettyServerConnection;
+import com.muxin.gateway.core.plus.constant.Constant;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.MessageType;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
+import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -24,6 +25,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * 简化的 HTTP 服务器实现
@@ -223,7 +225,7 @@ public class NettyHttpServer {
             }
 
             // 简化的HTTP处理器
-            pipeline.addLast(new SimpleHttpServerHandler(gatewayProcessor));
+            pipeline.addLast(new DefaultHttpServerHandler(gatewayProcessor));
 
             log.debug("[NettyHttpServer] HTTP Channel管道初始化完成 - 远程地址: {}", ch.remoteAddress());
         }
@@ -233,11 +235,11 @@ public class NettyHttpServer {
      * 简化的HTTP服务器处理器
      * 直接与GatewayProcessor对接，处理HTTP请求到网关处理的完整流程
      */
-    private static class SimpleHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+    private static class DefaultHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
         private final GatewayProcessor gatewayProcessor;
 
-        public SimpleHttpServerHandler(GatewayProcessor gatewayProcessor) {
+        public DefaultHttpServerHandler(GatewayProcessor gatewayProcessor) {
             this.gatewayProcessor = gatewayProcessor;
         }
 
@@ -245,19 +247,13 @@ public class NettyHttpServer {
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
             // 存储请求到Channel属性中，用于后续判断Keep-Alive
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
-
             try {
-                // 直接创建上下文并处理
-                RequestContext context = createRequestContext(request, ctx);
-
-                // 从上下文中获取ServerConnection和Message
-                NettyServerConnection connection = (NettyServerConnection) context.getInboundConnection();
-                Message message = context.getInboundMessage();
-
-                // 委托给GatewayProcessor处理（业务逻辑）
-                // 新的无返回值设计，处理逻辑内部完成响应发送
+                Protocol.HttpProtocol httpProtocol = new Protocol.HttpProtocol();
+                NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);
+                DefaultRequestContext context = new DefaultRequestContext(request, httpProtocol);
+                context.setServerConnection(connection);
+                context.setAttribute(Constant.CTX, ctx);
                 gatewayProcessor.processRequest(context);
-
             } catch (Exception e) {
                 log.error("[SimpleHttpServerHandler] 处理请求异常", e);
                 writeErrorResponse(e, ctx);
@@ -269,7 +265,7 @@ public class NettyHttpServer {
          */
         private Message createHttpMessage(FullHttpRequest request) {
             // 使用HttpMessage实现
-            String messageId = java.util.UUID.randomUUID().toString();
+            String messageId = UUID.randomUUID().toString();
             MessageType type = MessageType.REQUEST;
             Protocol protocol = new Protocol.HttpProtocol();
 

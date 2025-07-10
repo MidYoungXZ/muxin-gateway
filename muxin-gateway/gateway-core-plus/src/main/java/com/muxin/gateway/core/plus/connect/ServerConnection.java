@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.Message;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -36,16 +36,5 @@ public interface ServerConnection extends Connection {
      * 获取客户端地址
      */
     String getClientAddress();
-    
-    // ========== 服务端统计信息 ==========
-    
-    /**
-     * 获取总响应数
-     */
-    long getTotalResponses();
-    
-    /**
-     * 获取错误响应数
-     */
-    long getErrorResponses();
+
 } 

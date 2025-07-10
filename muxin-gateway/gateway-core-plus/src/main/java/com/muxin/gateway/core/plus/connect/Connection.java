@@ -1,8 +1,7 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -47,10 +46,6 @@ public interface Connection {
      * @return 属性值
      */
     Object getAttribute(String key);
-
-    // ========== 统计信息 ==========
-
-    // getStatistics() 方法已移除 - 使用统一监控接口
 
     /**
      * 获取连接创建时间

@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.RequestContext;
 
 import java.util.Map;

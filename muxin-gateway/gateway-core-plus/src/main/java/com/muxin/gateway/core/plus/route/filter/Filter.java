@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.route.filter;
 
 import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 
 import java.util.Set;
 

@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.route.filter.Filter;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.predicate.Predicate;
 import lombok.Builder;
 import lombok.Data;
@@ -94,8 +94,8 @@ public class EnhancedRoute implements Route {
         }
         
         // 检查入站协议是否匹配
-        Protocol contextProtocol = context.getInboundProtocol();
-        if (contextProtocol == null || !inboundProtocol.equals(contextProtocol)) {
+        Protocol contextProtocol = context.getOrigialInboundProtocol();
+        if (!inboundProtocol.equals(contextProtocol)) {
             return false;
         }
         

@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
 import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 
 import java.util.HashMap;
 import java.util.HashSet;

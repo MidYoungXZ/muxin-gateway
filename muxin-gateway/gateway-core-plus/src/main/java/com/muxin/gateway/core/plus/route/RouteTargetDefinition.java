@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.message.ProtocolDefinition;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolDefinition;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

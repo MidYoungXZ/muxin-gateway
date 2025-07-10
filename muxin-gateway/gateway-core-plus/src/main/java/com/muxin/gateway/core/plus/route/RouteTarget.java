@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
-import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 
 import java.util.List;

@@ -1,8 +1,9 @@
-package com.muxin.gateway.core.plus.message;
+package com.muxin.gateway.core.plus.protocol.message;
 
-import com.muxin.gateway.core.plus.message.http.HttpBody;
-import com.muxin.gateway.core.plus.message.http.HttpMessage;
-import com.muxin.gateway.core.plus.message.http.HttpMetadata;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpBody;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpMetadata;
+import com.muxin.gateway.core.plus.protocol.message.http.HttpHeaders;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.*;
@@ -49,7 +50,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
             MessageType messageType = MessageType.REQUEST;
 
             // 创建HTTP Headers
-            com.muxin.gateway.core.plus.message.http.HttpHeaders headers = new com.muxin.gateway.core.plus.message.http.HttpHeaders();
+            HttpHeaders headers = new HttpHeaders();
             for (Map.Entry<String, String> entry : httpRequest.headers()) {
                 headers.set(entry.getKey(), entry.getValue());
             }

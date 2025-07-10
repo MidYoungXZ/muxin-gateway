@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.plus.message;
+package com.muxin.gateway.core.plus.protocol.message;
 
 import com.muxin.gateway.core.plus.route.RequestContext;
 

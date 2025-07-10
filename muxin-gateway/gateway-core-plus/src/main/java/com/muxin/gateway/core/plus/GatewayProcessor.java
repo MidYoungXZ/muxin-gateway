@@ -4,17 +4,16 @@ import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.message.ProtocolConverter;
-import com.muxin.gateway.core.plus.message.ProtocolConverterManager;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolConverter;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolConverterManager;
+import com.muxin.gateway.core.plus.route.RequestContext;
+import com.muxin.gateway.core.plus.route.Route;
+import com.muxin.gateway.core.plus.route.RouteManager;
 import com.muxin.gateway.core.plus.route.node.EndpointAddress;
 import com.muxin.gateway.core.plus.route.node.NodeManager;
 import com.muxin.gateway.core.plus.route.node.ServiceNode;
-import com.muxin.gateway.core.plus.route.RouteManager;
-import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.route.Route;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -84,7 +83,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     public final void processRequest(RequestContext context) {
         long startTime = System.currentTimeMillis();
-        String requestId = context.getInboundMessage().getMessageId();
+        String requestId = context.requestId();
 
         log.debug("[GatewayProcessor] 开始处理请求: {}", requestId);
 
@@ -97,7 +96,7 @@ public abstract class GatewayProcessor implements LifeCycle {
 
             // 第2步：协议转换（入站）
             log.debug("[GatewayProcessor] 步骤2：协议转换（入站）- {}", requestId);
-            convertInboundProtocolSync(context);
+            convertInboundProtocol(context);
 
             // 第3步：路由匹配
             log.debug("[GatewayProcessor] 步骤3：路由匹配 - {}", requestId);
@@ -116,7 +115,7 @@ public abstract class GatewayProcessor implements LifeCycle {
             // 第6步：连接管理
             log.debug("[GatewayProcessor] 步骤6：连接管理 - {}", requestId);
             ClientConnection connection = acquireConnectionSync(context);
-            context.setOutboundConnection(connection);
+            context.setClientConnection(connection);
 
             // ========== 唯一的线程切换点：从同步切换到异步 ==========
 
@@ -203,12 +202,12 @@ public abstract class GatewayProcessor implements LifeCycle {
     /**
      * 同步版本：协议转换（入站）
      */
-    protected void convertInboundProtocolSync(RequestContext context) {
+    protected void convertInboundProtocol(RequestContext context) {
         try {
             if (needsInboundProtocolConversion(context)) {
                 performInboundProtocolConversion(context);
                 log.debug("[GatewayProcessor] 入站协议转换完成: {} -> {}",
-                        context.getInboundProtocol().getName(), "UNIVERSAL");
+                        context.getOrigialInboundProtocol().getName(), "UNIVERSAL");
             }
         } catch (Exception e) {
             log.error("[GatewayProcessor] 入站协议转换失败", e);
@@ -264,7 +263,7 @@ public abstract class GatewayProcessor implements LifeCycle {
             // 使用EnhancedRouteManager进行负载均衡（集成后的功能）
             EndpointAddress selectedAddress = null;
             if (routeManager instanceof com.muxin.gateway.core.plus.route.EnhancedRouteManager) {
-                com.muxin.gateway.core.plus.route.EnhancedRouteManager enhancedManager = 
+                com.muxin.gateway.core.plus.route.EnhancedRouteManager enhancedManager =
                         (com.muxin.gateway.core.plus.route.EnhancedRouteManager) routeManager;
                 selectedAddress = enhancedManager.selectTarget(route.getId(), availableTargets, context);
             } else {
@@ -306,7 +305,7 @@ public abstract class GatewayProcessor implements LifeCycle {
         try {
             // 使用正确的方法名和协议参数
             ClientConnection connection = connectionPoolManager
-                    .getClientConnection(node.getAddress(), context.getInboundProtocol())
+                    .getClientConnection(node.getAddress(), context.getOrigialInboundProtocol())
                     .get(); // 同步获取
 
             if (connection == null) {
@@ -369,189 +368,16 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected void validateRequest(RequestContext context) {
         // 基本验证
-        Message request = context.getInboundMessage();
-        if (request == null) {
-            throw new IllegalArgumentException("入站消息不能为空");
+        if (context.getOriginalInboundData() == null) {
+            throw new IllegalArgumentException("入站原始数据不能为空");
         }
-        if (context.getInboundConnection() == null) {
-            throw new IllegalArgumentException("入站连接不能为空");
-        }
-
-        // 【高优先级】请求信息提取 - 路由匹配的基础
-        extractProtocolSpecificInfo(context);
-
-        log.debug("[GatewayProcessor] 请求验证与信息提取完成: {}", request.getMessageId());
+        log.debug("[GatewayProcessor] 请求验证与信息提取完成: {}", context.requestId());
     }
-
-    /**
-     * 提取协议特定信息到上下文
-     */
-    protected void extractProtocolSpecificInfo(RequestContext context) {
-        Message request = context.getInboundMessage();
-        Protocol protocol = request.getProtocol();
-
-        // 设置基本信息
-        context.setAttribute("protocol", protocol.getName());
-        context.setAttribute("messageId", request.getMessageId());
-        context.setAttribute("messageType", request.getType().name());
-        context.setAttribute("startTime", System.currentTimeMillis());
-
-        // 根据协议类型提取特定信息
-        if (protocol instanceof Protocol.HttpProtocol) {
-            extractHttpInfo(context, request);
-        } else {
-            extractGenericInfo(context, request);
-        }
-
-        log.debug("[GatewayProcessor] 协议信息提取完成 - 协议: {}, 路径: {}",
-                protocol.getName(), context.getAttribute("path", String.class));
-    }
-
-    /**
-     * 提取HTTP协议信息
-     */
-    protected void extractHttpInfo(RequestContext context, Message request) {
-        // 从HTTP消息中提取路径信息
-        String path = extractPathFromMessage(request);
-        context.setAttribute("path", path != null ? path : "/");
-
-        // 提取HTTP方法（如果有）
-        if (request.getMetadata() != null) {
-            String method = request.getMetadata().getAttribute("method", String.class);
-            if (method != null) {
-                context.setAttribute("method", method);
-            }
-
-            // 提取URI信息
-            String uri = request.getMetadata().getAttribute("uri", String.class);
-            if (uri != null) {
-                context.setAttribute("uri", uri);
-                context.setAttribute("queryString", extractQueryString(uri));
-            }
-        }
-
-        // 提取HTTP头部信息
-        if (request.getHeaders() != null) {
-            context.setAttribute("contentType", request.getHeaders().get("Content-Type", String.class));
-            context.setAttribute("userAgent", request.getHeaders().get("User-Agent", String.class));
-            context.setAttribute("host", request.getHeaders().get("Host", String.class));
-        }
-    }
-
-    /**
-     * 提取非HTTP协议信息
-     */
-    protected void extractNonHttpInfo(RequestContext context, Message request) {
-        // 非HTTP协议的路径概念可能是服务标识
-        String servicePath = extractServicePath(request);
-        context.setAttribute("path", servicePath != null ? servicePath : "/generic");
-        context.setAttribute("protocol_type", "generic");
-
-        // 提取连接信息 - 使用ServerConnection提供的方法
-        if (context.getInboundConnection() instanceof com.muxin.gateway.core.plus.connect.ServerConnection) {
-            com.muxin.gateway.core.plus.connect.ServerConnection serverConn =
-                    (com.muxin.gateway.core.plus.connect.ServerConnection) context.getInboundConnection();
-            context.setAttribute("clientAddress", serverConn.getClientAddress());
-        }
-    }
-
-    /**
-     * 提取通用协议信息
-     */
-    protected void extractGenericInfo(RequestContext context, Message request) {
-        // 对于未知协议，提供默认的路径
-        context.setAttribute("path", "/");
-        context.setAttribute("protocol_type", "generic");
-
-        // 尝试从元数据中提取服务标识
-        if (request.getMetadata() != null) {
-            String serviceId = request.getMetadata().getAttribute("serviceId", String.class);
-            if (serviceId != null) {
-                context.setAttribute("serviceId", serviceId);
-            }
-        }
-    }
-
-    /**
-     * 从消息中提取路径信息
-     */
-    protected String extractPathFromMessage(Message request) {
-        // 优先从Headers中获取
-        if (request.getHeaders() != null) {
-            String path = request.getHeaders().get("path", String.class);
-            if (path != null) {
-                return path;
-            }
-        }
-
-        // 其次从Metadata中获取
-        if (request.getMetadata() != null) {
-            String uri = request.getMetadata().getAttribute("uri", String.class);
-            if (uri != null) {
-                int queryIndex = uri.indexOf('?');
-                return queryIndex > 0 ? uri.substring(0, queryIndex) : uri;
-            }
-
-            String path = request.getMetadata().getAttribute("path", String.class);
-            if (path != null) {
-                return path;
-            }
-        }
-
-        return "/"; // 默认路径
-    }
-
-    /**
-     * 提取查询字符串
-     */
-    protected String extractQueryString(String uri) {
-        if (uri != null) {
-            int queryIndex = uri.indexOf('?');
-            if (queryIndex > 0 && queryIndex < uri.length() - 1) {
-                return uri.substring(queryIndex + 1);
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 从非HTTP消息中提取服务路径
-     */
-    protected String extractServicePath(Message request) {
-        // 非HTTP协议可能通过自定义协议头或约定来标识服务
-        if (request.getMetadata() != null) {
-            String servicePath = request.getMetadata().getAttribute("servicePath", String.class);
-            if (servicePath != null) {
-                return servicePath;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * 第2步：协议转换（入站）
-     */
-    protected CompletableFuture<RequestContext> convertInboundProtocol(RequestContext context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // 【低优先级】协议转换增强 - 多协议支持时需要
-                if (needsInboundProtocolConversion(context)) {
-                    performInboundProtocolConversion(context);
-                    log.debug("[GatewayProcessor] 入站协议转换完成: {} -> {}", context.getInboundProtocol().getName(), "UNIVERSAL");
-                }
-                return context;
-            } catch (Exception e) {
-                log.error("[GatewayProcessor] 入站协议转换失败", e);
-                throw new RuntimeException("入站协议转换失败: " + e.getMessage(), e);
-            }
-        });
-    }
-
     /**
      * 检查是否需要入站协议转换
      */
     protected boolean needsInboundProtocolConversion(RequestContext context) {
-        Protocol inboundProtocol = context.getInboundProtocol();
+        Protocol inboundProtocol = context.getOrigialInboundProtocol();
 
         // 如果已经是Universal协议，无需转换
         if (inboundProtocol instanceof Protocol.UniversalProtocol) {
@@ -566,7 +392,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      * 执行入站协议转换
      */
     protected void performInboundProtocolConversion(RequestContext context) {
-        Protocol sourceProtocol = context.getInboundProtocol();
+        Protocol sourceProtocol = context.getOrigialInboundProtocol();
         Protocol targetProtocol = Protocol.UNIVERSAL;
 
         // 获取协议转换器并进行转换
@@ -575,34 +401,11 @@ public abstract class GatewayProcessor implements LifeCycle {
             throw new RuntimeException("找不到协议转换器: " + sourceProtocol.getName() + " -> " + targetProtocol.getName());
         }
 
-        Message convertedMessage = converter.convertToUniversal(context.getInboundMessage(), context);
-
+        Message convertedMessage = converter.convertToUniversal(context.getOriginalInboundData(), context);
         // 更新上下文中的消息
         context.setInboundMessage(convertedMessage);
     }
 
-    /**
-     * 第3步：路由匹配
-     */
-    protected CompletableFuture<Route> matchRoute(RequestContext context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // 使用路由管理器进行匹配
-                Route matchedRoute = routeManager.matchRoute(context);
-
-                if (matchedRoute != null) {
-                    log.debug("[GatewayProcessor] 路由匹配成功: {} -> {}", context.getAttribute("path", String.class), matchedRoute.getId());
-                    return matchedRoute;
-                } else {
-                    log.warn("[GatewayProcessor] 未找到匹配的路由，路径: {}", context.getAttribute("path", String.class));
-                    throw new RuntimeException("未找到匹配的路由");
-                }
-            } catch (Exception e) {
-                log.error("[GatewayProcessor] 路由匹配失败", e);
-                throw new RuntimeException("路由匹配失败: " + e.getMessage(), e);
-            }
-        });
-    }
 
     /**
      * 第4步：过滤器处理（前置）
@@ -618,79 +421,6 @@ public abstract class GatewayProcessor implements LifeCycle {
         }
     }
 
-    /**
-     * 第5步：负载均衡与节点选择
-     */
-    protected CompletableFuture<ServiceNode> selectTargetNode(RequestContext context) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                Route route = (Route) context.getMatchedRoute();
-                if (route == null) {
-                    throw new RuntimeException("没有匹配的路由信息");
-                }
-
-                // 获取路由对应的服务名
-                String serviceName = extractServiceName(route);
-
-                // 获取健康的服务节点
-                List<ServiceNode> healthyNodes = nodeManager.getHealthyNodes(serviceName);
-
-                if (healthyNodes.isEmpty()) {
-                    log.error("[GatewayProcessor] 服务 {} 没有可用的健康节点", serviceName);
-                    throw new RuntimeException("服务不可用: " + serviceName);
-                }
-
-                // 转换节点为地址列表
-                List<EndpointAddress> availableTargets =
-                        healthyNodes.stream()
-                                .map(ServiceNode::getAddress)
-                                .collect(java.util.stream.Collectors.toList());
-
-                // 使用负载均衡策略选择地址
-                            // 使用EnhancedRouteManager进行负载均衡（集成后的功能）
-            EndpointAddress selectedAddress = null;
-            if (routeManager instanceof com.muxin.gateway.core.plus.route.EnhancedRouteManager) {
-                com.muxin.gateway.core.plus.route.EnhancedRouteManager enhancedManager = 
-                        (com.muxin.gateway.core.plus.route.EnhancedRouteManager) routeManager;
-                selectedAddress = enhancedManager.selectTarget(route.getId(), availableTargets, context);
-            } else {
-                // 简单轮询负载均衡作为fallback
-                selectedAddress = availableTargets.get((int) (System.nanoTime() % availableTargets.size()));
-            }
-
-                // 根据选中的地址找到对应的节点
-                EndpointAddress finalSelectedAddress = selectedAddress;
-                ServiceNode selectedNode = healthyNodes.stream()
-                        .filter(node -> node.getAddress().equals(finalSelectedAddress))
-                        .findFirst()
-                        .orElse(null);
-
-                if (selectedNode == null) {
-                    log.error("[GatewayProcessor] 负载均衡器未能选择节点，服务: {}", serviceName);
-                    throw new RuntimeException("负载均衡失败");
-                }
-
-                log.debug("[GatewayProcessor] 负载均衡选择节点: {} -> {}",
-                        serviceName, selectedNode.getAddress().toUri());
-
-                return selectedNode;
-
-            } catch (Exception e) {
-                log.error("[GatewayProcessor] 负载均衡失败", e);
-                throw new RuntimeException("负载均衡失败: " + e.getMessage(), e);
-            }
-        });
-    }
-
-    /**
-     * 第6步：连接管理
-     */
-    protected CompletableFuture<ClientConnection> acquireConnection(RequestContext context) {
-        ServiceNode node = (ServiceNode) context.getSelectedNode();
-        Message request = context.getInboundMessage();
-
-        return connectionPoolManager.getClientConnection(node.getAddress(), request.getProtocol());
-    }
 
     /**
      * 第7步：后端服务调用（抽象方法，子类必须实现）
@@ -707,7 +437,7 @@ public abstract class GatewayProcessor implements LifeCycle {
                 if (needsOutboundProtocolConversion(context)) {
                     performOutboundProtocolConversion(context);
                     log.debug("[GatewayProcessor] 出站协议转换完成: {} -> {}",
-                            "UNIVERSAL", context.getInboundProtocol().getName());
+                            "UNIVERSAL", context.getOrigialInboundProtocol().getName());
                 }
                 return context;
             } catch (Exception e) {
@@ -722,7 +452,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected boolean needsOutboundProtocolConversion(RequestContext context) {
         Protocol outboundProtocol = context.getOutboundMessage().getProtocol();
-        Protocol targetProtocol = context.getInboundProtocol();
+        Protocol targetProtocol = context.getOrigialInboundProtocol();
 
         // 如果出站消息协议与入站协议相同，无需转换
         if (outboundProtocol.equals(targetProtocol)) {
@@ -738,7 +468,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected void performOutboundProtocolConversion(RequestContext context) {
         Protocol sourceProtocol = context.getOutboundMessage().getProtocol();
-        Protocol targetProtocol = context.getInboundProtocol();
+        Protocol targetProtocol = context.getOrigialInboundProtocol();
 
         // 获取协议转换器并进行转换
         ProtocolConverter converter = protocolConverterManager.getConverter(sourceProtocol, targetProtocol);
@@ -771,7 +501,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      * 第10步：响应返回
      */
     protected CompletableFuture<Message> sendResponse(RequestContext context) {
-        ServerConnection serverConnection = (ServerConnection) context.getInboundConnection();
+        ServerConnection serverConnection = context.serverConnection();
         Message response = context.getOutboundMessage();
 
         return serverConnection.sendResponse(response).thenApply(v -> response);
@@ -783,7 +513,7 @@ public abstract class GatewayProcessor implements LifeCycle {
     protected Message handleError(RequestContext context, Throwable throwable) {
         log.error("[GatewayProcessor] 处理错误", throwable);
 
-        ServerConnection serverConnection = (ServerConnection) context.getInboundConnection();
+        ServerConnection serverConnection = (ServerConnection) context.serverConnection();
         Message request = context.getInboundMessage();
 
         // 【中优先级】错误处理分类 - 提高用户体验
@@ -1179,8 +909,8 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected void cleanupOutboundConnection(RequestContext context) {
         try {
-            if (context.getOutboundConnection() != null) {
-                ClientConnection outboundConnection = context.getOutboundConnection();
+            if (context.clientConnection() != null) {
+                ClientConnection outboundConnection = context.clientConnection();
 
                 // 归还连接到池中（如果可复用）
                 if (outboundConnection.isActive() && !context.hasError()) {
@@ -1316,7 +1046,7 @@ public abstract class GatewayProcessor implements LifeCycle {
             // 注意：不要清理还需要的引用，如inboundMessage等
 
             // 清理出站连接引用（已经处理过了）
-            context.setOutboundConnection(null);
+            context.setClientConnection(null);
 
             log.debug("[GatewayProcessor] 对象引用清理完成");
         } catch (Exception e) {

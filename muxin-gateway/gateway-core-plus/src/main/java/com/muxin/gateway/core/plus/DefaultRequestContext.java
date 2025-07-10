@@ -2,13 +2,14 @@ package com.muxin.gateway.core.plus;
 
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.route.node.ServiceNode;
+import com.muxin.gateway.core.plus.protocol.message.Message;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.RequestContext;
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.Route;
+import com.muxin.gateway.core.plus.route.node.ServiceNode;
 
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,23 +20,47 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DefaultRequestContext implements RequestContext {
 
     private final long startTime;
+    private final String requestId;
     private final Map<String, Object> attributes;
 
     private Message inboundMessage;
     private Message outboundMessage;
-    private final ServerConnection inboundConnection;
-    private ClientConnection outboundConnection;
+
+    private Object originalOutboundData;
+    private Protocol originalOutboundProtocol;
+
+    private Object originalInboundData;
+    private Protocol originalInboundProtocol;
+
+    private ServerConnection serverConnection;
+    private ClientConnection clientConnection;
     private Route matchedRoute;
     private ServiceNode selectedNode;
     private boolean completed;
     private Throwable error;
 
-    public DefaultRequestContext(Message inboundMessage, ServerConnection inboundConnection) {
+
+    public DefaultRequestContext(Object data, Protocol protocol) {
+        this.originalInboundProtocol = protocol;
+        this.originalOutboundData = data;
+        this.startTime = System.currentTimeMillis();
+        this.attributes = new ConcurrentHashMap<>();
+        this.completed = false;
+        this.requestId = UUID.randomUUID().toString();
+    }
+
+    public DefaultRequestContext(Message inboundMessage, ServerConnection serverConnection) {
         this.startTime = System.currentTimeMillis();
         this.attributes = new ConcurrentHashMap<>();
         this.inboundMessage = inboundMessage;
-        this.inboundConnection = inboundConnection;
+        this.serverConnection = serverConnection;
         this.completed = false;
+        this.requestId = UUID.randomUUID().toString();
+    }
+
+    @Override
+    public String requestId() {
+        return requestId;
     }
 
     @Override
@@ -59,18 +84,33 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public ServerConnection getInboundConnection() {
-        return inboundConnection;
+    public Object getOriginalOutboundData() {
+        return originalOutboundData;
     }
 
     @Override
-    public ClientConnection getOutboundConnection() {
-        return outboundConnection;
+    public void setOriginalOutboundData(Object inboundData) {
+        this.originalOutboundData = inboundData;
     }
 
     @Override
-    public void setOutboundConnection(ClientConnection connection) {
-        this.outboundConnection = connection;
+    public ServerConnection serverConnection() {
+        return serverConnection;
+    }
+
+    @Override
+    public void setServerConnection(ServerConnection connection) {
+        this.serverConnection = connection;
+    }
+
+    @Override
+    public ClientConnection clientConnection() {
+        return clientConnection;
+    }
+
+    @Override
+    public void setClientConnection(ClientConnection connection) {
+        this.clientConnection = connection;
     }
 
     @Override
@@ -94,19 +134,29 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public Protocol getInboundProtocol() {
-        return inboundMessage != null ? inboundMessage.getProtocol() : null;
+    public Protocol getOrigialInboundProtocol() {
+        return originalInboundProtocol;
     }
 
     @Override
-    public Protocol getOutboundProtocol() {
-        return outboundMessage != null ? outboundMessage.getProtocol() : null;
+    public Object getOriginalInboundData() {
+        return this.originalInboundData;
+    }
+
+    @Override
+    public void setOriginalInboundData(Object inboundData) {
+        this.originalInboundData = inboundData;
+    }
+
+    @Override
+    public Protocol getOrigalOutboundProtocol() {
+        return originalOutboundProtocol;
     }
 
     @Override
     public boolean needsProtocolConversion() {
-        Protocol inboundProto = getInboundProtocol();
-        Protocol outboundProto = getOutboundProtocol();
+        Protocol inboundProto = getOrigialInboundProtocol();
+        Protocol outboundProto = getOrigalOutboundProtocol();
 
         if (inboundProto == null || outboundProto == null) {
             return false;
@@ -197,12 +247,20 @@ public class DefaultRequestContext implements RequestContext {
     public String toString() {
         return "DefaultRequestContext{" +
                 "startTime=" + startTime +
-                ", duration=" + getDuration() +
-                ", traceId='" + getTraceId() + '\'' +
-                ", inboundProtocol=" + getInboundProtocol() +
-                ", outboundProtocol=" + getOutboundProtocol() +
+                ", requestId='" + requestId + '\'' +
+                ", attributes=" + attributes +
+                ", inboundMessage=" + inboundMessage +
+                ", outboundMessage=" + outboundMessage +
+                ", originalOutboundData=" + originalOutboundData +
+                ", originalOutboundProtocol=" + originalOutboundProtocol +
+                ", originalInboundData=" + originalInboundData +
+                ", originalInboundProtocol=" + originalInboundProtocol +
+                ", serverConnection=" + serverConnection +
+                ", clientConnection=" + clientConnection +
+                ", matchedRoute=" + matchedRoute +
+                ", selectedNode=" + selectedNode +
                 ", completed=" + completed +
-                ", hasError=" + hasError() +
+                ", error=" + error +
                 '}';
     }
-} 
+}

@@ -1,6 +1,6 @@
-package com.muxin.gateway.core.plus.message.http;
+package com.muxin.gateway.core.plus.protocol.message.http;
 
-import com.muxin.gateway.core.plus.message.*;
+import com.muxin.gateway.core.plus.protocol.message.*;
 
 /**
  * HTTP消息实现
