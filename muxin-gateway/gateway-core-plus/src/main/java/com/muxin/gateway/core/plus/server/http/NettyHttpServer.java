@@ -7,6 +7,7 @@ import com.muxin.gateway.core.plus.constant.Constant;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.MessageType;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
 import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.bootstrap.ServerBootstrap;
@@ -249,8 +250,8 @@ public class NettyHttpServer {
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             try {
                 Protocol.HttpProtocol httpProtocol = new Protocol.HttpProtocol();
+                DefaultRequestContext context = new DefaultRequestContext(new ProtocolData(httpProtocol, request));
                 NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);
-                DefaultRequestContext context = new DefaultRequestContext(request, httpProtocol);
                 context.setServerConnection(connection);
                 context.setAttribute(Constant.CTX, ctx);
                 gatewayProcessor.processRequest(context);

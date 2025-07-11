@@ -33,7 +33,7 @@ public interface ProtocolConverter {
      * @return 统一消息对象
      * @throws ProtocolConversionException 转换失败时抛出
      */
-    Message convertToUniversal(Object protocolSpecific, RequestContext context)
+    Message convertToMessage(Object protocolSpecific, RequestContext context)
             throws ProtocolConversionException;
     
     /**
@@ -44,7 +44,7 @@ public interface ProtocolConverter {
      * @return 协议特定的数据对象
      * @throws ProtocolConversionException 转换失败时抛出
      */
-    Object convertFromUniversal(Message universal, RequestContext context)
+    Object convertFromMessage(Message universal, RequestContext context)
             throws ProtocolConversionException;
     
     /**

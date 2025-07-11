@@ -4,6 +4,7 @@ import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.Route;
 import com.muxin.gateway.core.plus.route.node.ServiceNode;
@@ -23,14 +24,14 @@ public class DefaultRequestContext implements RequestContext {
     private final String requestId;
     private final Map<String, Object> attributes;
 
+    private ProtocolData inboundData;
+    private ProtocolData outboundData;
+
     private Message inboundMessage;
     private Message outboundMessage;
 
-    private Object originalOutboundData;
-    private Protocol originalOutboundProtocol;
-
-    private Object originalInboundData;
-    private Protocol originalInboundProtocol;
+    private ProtocolData backendServiceRequest;
+    private ProtocolData backendServiceResponse;
 
     private ServerConnection serverConnection;
     private ClientConnection clientConnection;
@@ -40,9 +41,8 @@ public class DefaultRequestContext implements RequestContext {
     private Throwable error;
 
 
-    public DefaultRequestContext(Object data, Protocol protocol) {
-        this.originalInboundProtocol = protocol;
-        this.originalOutboundData = data;
+    public DefaultRequestContext(ProtocolData inboundData) {
+        this.inboundData = inboundData;
         this.startTime = System.currentTimeMillis();
         this.attributes = new ConcurrentHashMap<>();
         this.completed = false;
@@ -64,6 +64,16 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
+    public ProtocolData getInboundData() {
+        return inboundData;
+    }
+
+    @Override
+    public void setInboundData(ProtocolData inboundData) {
+        this.inboundData = inboundData;
+    }
+
+    @Override
     public Message getInboundMessage() {
         return inboundMessage;
     }
@@ -71,6 +81,16 @@ public class DefaultRequestContext implements RequestContext {
     @Override
     public void setInboundMessage(Message message) {
         this.inboundMessage = message;
+    }
+
+    @Override
+    public ProtocolData getOutboundData() {
+        return outboundData;
+    }
+
+    @Override
+    public void setOutboundData(ProtocolData data) {
+        this.outboundData = data;
     }
 
     @Override
@@ -84,13 +104,23 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public Object getOriginalOutboundData() {
-        return originalOutboundData;
+    public ProtocolData getBackendServiceRequest() {
+        return  backendServiceRequest;
     }
 
     @Override
-    public void setOriginalOutboundData(Object inboundData) {
-        this.originalOutboundData = inboundData;
+    public void setBackendServiceRequest(ProtocolData data) {
+        this.backendServiceRequest = data;
+    }
+
+    @Override
+    public ProtocolData getBackendServiceResponse() {
+        return backendServiceResponse;
+    }
+
+    @Override
+    public void setBackendServiceResponse(ProtocolData data) {
+        this.backendServiceResponse = data;
     }
 
     @Override
@@ -133,30 +163,11 @@ public class DefaultRequestContext implements RequestContext {
         this.selectedNode = node;
     }
 
-    @Override
-    public Protocol getOrigialInboundProtocol() {
-        return originalInboundProtocol;
-    }
-
-    @Override
-    public Object getOriginalInboundData() {
-        return this.originalInboundData;
-    }
-
-    @Override
-    public void setOriginalInboundData(Object inboundData) {
-        this.originalInboundData = inboundData;
-    }
-
-    @Override
-    public Protocol getOrigalOutboundProtocol() {
-        return originalOutboundProtocol;
-    }
 
     @Override
     public boolean needsProtocolConversion() {
-        Protocol inboundProto = getOrigialInboundProtocol();
-        Protocol outboundProto = getOrigalOutboundProtocol();
+        Protocol inboundProto = getInboundData().getProtocol();
+        Protocol outboundProto = getBackendServiceResponse().getProtocol();
 
         if (inboundProto == null || outboundProto == null) {
             return false;
@@ -245,22 +256,23 @@ public class DefaultRequestContext implements RequestContext {
 
     @Override
     public String toString() {
-        return "DefaultRequestContext{" +
-                "startTime=" + startTime +
-                ", requestId='" + requestId + '\'' +
-                ", attributes=" + attributes +
-                ", inboundMessage=" + inboundMessage +
-                ", outboundMessage=" + outboundMessage +
-                ", originalOutboundData=" + originalOutboundData +
-                ", originalOutboundProtocol=" + originalOutboundProtocol +
-                ", originalInboundData=" + originalInboundData +
-                ", originalInboundProtocol=" + originalInboundProtocol +
-                ", serverConnection=" + serverConnection +
-                ", clientConnection=" + clientConnection +
-                ", matchedRoute=" + matchedRoute +
-                ", selectedNode=" + selectedNode +
-                ", completed=" + completed +
-                ", error=" + error +
-                '}';
+        final StringBuilder sb = new StringBuilder("DefaultRequestContext{");
+        sb.append("startTime=").append(startTime);
+        sb.append(", requestId='").append(requestId).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append(", inboundData=").append(inboundData);
+        sb.append(", outboundData=").append(outboundData);
+        sb.append(", inboundMessage=").append(inboundMessage);
+        sb.append(", outboundMessage=").append(outboundMessage);
+        sb.append(", backendServiceRequest=").append(backendServiceRequest);
+        sb.append(", backendServiceResponse=").append(backendServiceResponse);
+        sb.append(", serverConnection=").append(serverConnection);
+        sb.append(", clientConnection=").append(clientConnection);
+        sb.append(", matchedRoute=").append(matchedRoute);
+        sb.append(", selectedNode=").append(selectedNode);
+        sb.append(", completed=").append(completed);
+        sb.append(", error=").append(error);
+        sb.append('}');
+        return sb.toString();
     }
 }

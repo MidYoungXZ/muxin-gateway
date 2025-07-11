@@ -36,7 +36,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
     }
 
     @Override
-    public Message convertToUniversal(Object protocolSpecific, RequestContext context) throws ProtocolConversionException {
+    public Message convertToMessage(Object protocolSpecific, RequestContext context) throws ProtocolConversionException {
 
         if (!(protocolSpecific instanceof FullHttpRequest)) {
             throw new ProtocolConversionException("协议特定对象必须是FullHttpRequest类型", HTTP_PROTOCOL, UNIVERSAL_PROTOCOL);
@@ -86,7 +86,7 @@ public class HttpProtocolConverter implements ProtocolConverter {
     }
 
     @Override
-    public Object convertFromUniversal(Message universal, RequestContext context)
+    public Object convertFromMessage(Message universal, RequestContext context)
             throws ProtocolConversionException {
 
         if (universal == null) {

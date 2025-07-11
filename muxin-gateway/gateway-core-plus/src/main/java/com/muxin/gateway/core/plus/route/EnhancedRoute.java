@@ -94,7 +94,7 @@ public class EnhancedRoute implements Route {
         }
         
         // 检查入站协议是否匹配
-        Protocol contextProtocol = context.getOrigialInboundProtocol();
+        Protocol contextProtocol = context.getInboundData().getProtocol();
         if (!inboundProtocol.equals(contextProtocol)) {
             return false;
         }

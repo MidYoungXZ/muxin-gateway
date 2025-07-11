@@ -109,7 +109,7 @@ public abstract class GatewayProcessor implements LifeCycle {
 
             // 第5步：负载均衡与节点选择
             log.debug("[GatewayProcessor] 步骤5：负载均衡与节点选择 - {}", requestId);
-            ServiceNode selectedNode = selectTargetNodeSync(context);
+            ServiceNode selectedNode = selectTargetNode(context);
             context.setSelectedNode(selectedNode);
 
             // 第6步：连接管理
@@ -206,8 +206,6 @@ public abstract class GatewayProcessor implements LifeCycle {
         try {
             if (needsInboundProtocolConversion(context)) {
                 performInboundProtocolConversion(context);
-                log.debug("[GatewayProcessor] 入站协议转换完成: {} -> {}",
-                        context.getOrigialInboundProtocol().getName(), "UNIVERSAL");
             }
         } catch (Exception e) {
             log.error("[GatewayProcessor] 入站协议转换失败", e);
@@ -240,7 +238,7 @@ public abstract class GatewayProcessor implements LifeCycle {
     /**
      * 同步版本：负载均衡与节点选择
      */
-    protected ServiceNode selectTargetNodeSync(RequestContext context) {
+    protected ServiceNode selectTargetNode(RequestContext context) {
         try {
             Route route = context.getMatchedRoute();
             if (route == null) {
@@ -305,7 +303,7 @@ public abstract class GatewayProcessor implements LifeCycle {
         try {
             // 使用正确的方法名和协议参数
             ClientConnection connection = connectionPoolManager
-                    .getClientConnection(node.getAddress(), context.getOrigialInboundProtocol())
+                    .getClientConnection(node.getAddress(), node.getProtocol())
                     .get(); // 同步获取
 
             if (connection == null) {
@@ -368,7 +366,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      */
     protected void validateRequest(RequestContext context) {
         // 基本验证
-        if (context.getOriginalInboundData() == null) {
+        if (context.getInboundData() == null) {
             throw new IllegalArgumentException("入站原始数据不能为空");
         }
         log.debug("[GatewayProcessor] 请求验证与信息提取完成: {}", context.requestId());
@@ -377,7 +375,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      * 检查是否需要入站协议转换
      */
     protected boolean needsInboundProtocolConversion(RequestContext context) {
-        Protocol inboundProtocol = context.getOrigialInboundProtocol();
+        Protocol inboundProtocol = context.getInboundData().getProtocol();
 
         // 如果已经是Universal协议，无需转换
         if (inboundProtocol instanceof Protocol.UniversalProtocol) {
@@ -392,7 +390,7 @@ public abstract class GatewayProcessor implements LifeCycle {
      * 执行入站协议转换
      */
     protected void performInboundProtocolConversion(RequestContext context) {
-        Protocol sourceProtocol = context.getOrigialInboundProtocol();
+        Protocol sourceProtocol = context.getInboundData().getProtocol();
         Protocol targetProtocol = Protocol.UNIVERSAL;
 
         // 获取协议转换器并进行转换
@@ -401,7 +399,7 @@ public abstract class GatewayProcessor implements LifeCycle {
             throw new RuntimeException("找不到协议转换器: " + sourceProtocol.getName() + " -> " + targetProtocol.getName());
         }
 
-        Message convertedMessage = converter.convertToUniversal(context.getOriginalInboundData(), context);
+        Message convertedMessage = converter.convertToMessage(context.getInboundData(), context);
         // 更新上下文中的消息
         context.setInboundMessage(convertedMessage);
     }
@@ -436,8 +434,6 @@ public abstract class GatewayProcessor implements LifeCycle {
                 // 【低优先级】协议转换增强 - 多协议支持时需要
                 if (needsOutboundProtocolConversion(context)) {
                     performOutboundProtocolConversion(context);
-                    log.debug("[GatewayProcessor] 出站协议转换完成: {} -> {}",
-                            "UNIVERSAL", context.getOrigialInboundProtocol().getName());
                 }
                 return context;
             } catch (Exception e) {
@@ -451,35 +447,35 @@ public abstract class GatewayProcessor implements LifeCycle {
      * 检查是否需要出站协议转换
      */
     protected boolean needsOutboundProtocolConversion(RequestContext context) {
+        // 出站消息协议
         Protocol outboundProtocol = context.getOutboundMessage().getProtocol();
-        Protocol targetProtocol = context.getOrigialInboundProtocol();
-
+        // 原始入站消息协议
+        Protocol origialInboundProtocol = context.getInboundData().getProtocol();
         // 如果出站消息协议与入站协议相同，无需转换
-        if (outboundProtocol.equals(targetProtocol)) {
+        if (outboundProtocol.equals(origialInboundProtocol)) {
             return false;
         }
 
         // 检查是否有协议转换器支持
-        return protocolConverterManager.canConvert(outboundProtocol, targetProtocol);
+        return protocolConverterManager.canConvert(outboundProtocol, origialInboundProtocol);
     }
 
     /**
      * 执行出站协议转换
      */
     protected void performOutboundProtocolConversion(RequestContext context) {
+        // 出站消息协议
         Protocol sourceProtocol = context.getOutboundMessage().getProtocol();
-        Protocol targetProtocol = context.getOrigialInboundProtocol();
-
+        // 原始入站消息协议
+        Protocol targetProtocol = context.getInboundData().getProtocol();
         // 获取协议转换器并进行转换
         ProtocolConverter converter = protocolConverterManager.getConverter(sourceProtocol, targetProtocol);
         if (converter == null) {
             throw new RuntimeException("找不到协议转换器: " + sourceProtocol.getName() + " -> " + targetProtocol.getName());
         }
 
-        Object convertedResponse = converter.convertFromUniversal(context.getOutboundMessage(), context);
+        Object convertedResponse = converter.convertFromMessage(context.getOutboundMessage(), context);
 
-        // 这里需要将转换后的对象重新包装为Message（简化实现）
-        // 实际项目中需要更复杂的逻辑来处理不同协议的响应
         log.debug("[GatewayProcessor] 出站协议转换完成，转换为: {}", convertedResponse.getClass().getSimpleName());
     }
 

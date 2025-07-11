@@ -4,7 +4,7 @@ package com.muxin.gateway.core.plus.route;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.protocol.message.Message;
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
 import com.muxin.gateway.core.plus.route.node.ServiceNode;
 
 import java.util.Map;
@@ -16,51 +16,63 @@ import java.util.Map;
  */
 public interface RequestContext {
 
+    /**
+     * 请求ID
+     */
     String requestId();
+
+    /**
+     * 入站协议数据
+     */
+    ProtocolData getInboundData();
+
+    void setInboundData(ProtocolData data);
 
     /**
      * 入站消息
      */
     Message getInboundMessage();
 
+    /**
+     * 设置入站消息
+     */
     void setInboundMessage(Message message);
 
     /**
-     * 入站协议
+     * 出站协议数据
      */
-    Protocol getOrigialInboundProtocol();
+    ProtocolData getOutboundData();
 
-
-    /**
-     * 原始入站数据
-     */
-    Object getOriginalInboundData();
-
-    void setOriginalInboundData(Object inboundData);
+    void setOutboundData(ProtocolData data);
 
     /**
      * 出站消息
      */
     Message getOutboundMessage();
 
+    /**
+     * 设置出站消息
+     */
     void setOutboundMessage(Message message);
 
     /**
-     * 原始出站数据
+     * 原始后端请求
      */
-    Object getOriginalOutboundData();
+    ProtocolData getBackendServiceRequest();
 
-    void setOriginalOutboundData(Object inboundData);
+    void setBackendServiceRequest(ProtocolData data);
 
 
     /**
-     * 出站协议
+     * 原始后端返回
      */
-    Protocol getOrigalOutboundProtocol();
+    ProtocolData getBackendServiceResponse();
+
+    void setBackendServiceResponse(ProtocolData data);
 
 
     /**
-     * 入站连接
+     * server接收连接
      */
     ServerConnection serverConnection();
 
@@ -68,7 +80,7 @@ public interface RequestContext {
 
 
     /**
-     * 出站连接
+     * 请求后端服务连接
      */
     ClientConnection clientConnection();
 
