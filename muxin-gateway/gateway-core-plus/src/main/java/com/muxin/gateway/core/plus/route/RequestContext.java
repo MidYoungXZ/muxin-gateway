@@ -1,20 +1,19 @@
 package com.muxin.gateway.core.plus.route;
 
 
+import com.muxin.gateway.core.plus.common.Attributes;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
-import com.muxin.gateway.core.plus.route.node.ServiceNode;
-
-import java.util.Map;
+import com.muxin.gateway.core.plus.route.service.ServiceInstance;
 
 /**
  * 通用请求上下文 - 协议无关
  *
  * @author muxin
  */
-public interface RequestContext {
+public interface RequestContext extends Attributes {
 
     /**
      * 请求ID
@@ -26,6 +25,9 @@ public interface RequestContext {
      */
     ProtocolData getInboundData();
 
+    /**
+     * 设置入站数据
+     */
     void setInboundData(ProtocolData data);
 
     /**
@@ -43,6 +45,9 @@ public interface RequestContext {
      */
     ProtocolData getOutboundData();
 
+    /**
+     * 设置出站数据
+     */
     void setOutboundData(ProtocolData data);
 
     /**
@@ -60,6 +65,9 @@ public interface RequestContext {
      */
     ProtocolData getBackendServiceRequest();
 
+    /**
+     * 设置原始后端请求
+     */
     void setBackendServiceRequest(ProtocolData data);
 
 
@@ -68,6 +76,9 @@ public interface RequestContext {
      */
     ProtocolData getBackendServiceResponse();
 
+    /**
+     * 设置后端返回
+     */
     void setBackendServiceResponse(ProtocolData data);
 
 
@@ -76,14 +87,19 @@ public interface RequestContext {
      */
     ServerConnection serverConnection();
 
+    /**
+     * 设置server接收连接
+     */
     void setServerConnection(ServerConnection connection);
-
 
     /**
      * 请求后端服务连接
      */
     ClientConnection clientConnection();
 
+    /**
+     * 设置后端服务连接
+     */
     void setClientConnection(ClientConnection connection);
 
     /**
@@ -91,15 +107,20 @@ public interface RequestContext {
      */
     Route getMatchedRoute();
 
+    /**
+     * 设置匹配的路由
+     */
     void setMatchedRoute(Route route);
 
     /**
      * 选中的节点
      */
-    ServiceNode getSelectedNode();
+    ServiceInstance getSelectedNode();
 
-    void setSelectedNode(ServiceNode node);
-
+    /**
+     * 设置选中的节点
+     */
+    void setSelectedNode(ServiceInstance node);
 
     /**
      * 是否需要协议转换
@@ -107,21 +128,18 @@ public interface RequestContext {
     boolean needsProtocolConversion();
 
     /**
-     * 属性管理
-     */
-    <T> T getAttribute(String key, Class<T> type);
-
-    void setAttribute(String key, Object value);
-
-    Map<String, Object> getAttributes();
-
-    /**
      * 生命周期
      */
     long getStartTime();
 
+    /**
+     * 标记完成
+     */
     void markComplete();
 
+    /**
+     * 判断是否完成
+     */
     boolean isCompleted();
 
     /**
@@ -129,7 +147,13 @@ public interface RequestContext {
      */
     Throwable getError();
 
+    /**
+     * 设置异常
+     */
     void setError(Throwable error);
 
+    /**
+     * 是否有异常
+     */
     boolean hasError();
 } 

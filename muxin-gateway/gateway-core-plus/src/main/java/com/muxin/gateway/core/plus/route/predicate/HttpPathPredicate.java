@@ -1,9 +1,9 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
-import com.muxin.gateway.core.plus.protocol.message.http.HttpMetadata;
+import com.muxin.gateway.core.plus.protocol.message.ProtocolEnum;
+import com.muxin.gateway.core.plus.route.RequestContext;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,7 +70,7 @@ public class HttpPathPredicate implements Predicate {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new Protocol.HttpProtocol());
+        protocols.add(ProtocolEnum.HTTP);
         return protocols;
     }
     
@@ -84,24 +84,6 @@ public class HttpPathPredicate implements Predicate {
         if (message == null) {
             return null;
         }
-        
-        // 尝试从元数据中获取路径
-        if (message.getMetadata() instanceof HttpMetadata) {
-            HttpMetadata metadata = (HttpMetadata) message.getMetadata();
-            return metadata.getPath();
-        }
-        
-        // 尝试从头部获取路径
-        String requestLine = message.getHeaders().get("RequestLine", String.class);
-        if (requestLine != null) {
-            String[] parts = requestLine.split(" ");
-            if (parts.length >= 2) {
-                String fullPath = parts[1];
-                int queryIndex = fullPath.indexOf('?');
-                return queryIndex > 0 ? fullPath.substring(0, queryIndex) : fullPath;
-            }
-        }
-        
-        return null;
+        return message.url().getPath();
     }
 } 

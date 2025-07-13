@@ -1,11 +1,10 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.LifeCycle;
-import com.muxin.gateway.core.plus.route.node.EndpointAddress;
+import com.muxin.gateway.core.plus.common.LifeCycle;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * 连接池接口
@@ -20,19 +19,21 @@ public interface ConnectionPool extends LifeCycle {
      * 
      * @param target 目标地址
      * @param protocol 协议类型
-     * @return 连接的Future
+     * @return 连接
+     * @throws RuntimeException 如果获取连接失败
      */
-    CompletableFuture<Connection> getConnection(EndpointAddress target, Protocol protocol);
+    Connection getConnection(EndpointAddress target, Protocol protocol);
     
     /**
-     * 异步获取连接
+     * 获取连接 - 带超时
      * 
      * @param target 目标地址
      * @param protocol 协议类型
      * @param timeoutMs 超时时间(毫秒)
-     * @return 连接的Future
+     * @return 连接
+     * @throws RuntimeException 如果获取连接失败或超时
      */
-    CompletableFuture<Connection> getConnection(EndpointAddress target, Protocol protocol, long timeoutMs);
+    Connection getConnection(EndpointAddress target, Protocol protocol, long timeoutMs);
     
     /**
      * 归还连接到池中
@@ -69,9 +70,8 @@ public interface ConnectionPool extends LifeCycle {
      * @param target 目标地址
      * @param protocol 协议类型
      * @param minConnections 最小连接数
-     * @return 预热结果的Future
      */
-    CompletableFuture<Void> warmup(EndpointAddress target, Protocol protocol, int minConnections);
+    void warmup(EndpointAddress target, Protocol protocol, int minConnections);
     
     /**
      * 清理空闲连接
@@ -80,10 +80,8 @@ public interface ConnectionPool extends LifeCycle {
     
     /**
      * 关闭连接池
-     * 
-     * @return 关闭操作的Future
      */
-    CompletableFuture<Void> close();
+    void close();
     
     /**
      * 检查连接池是否已关闭

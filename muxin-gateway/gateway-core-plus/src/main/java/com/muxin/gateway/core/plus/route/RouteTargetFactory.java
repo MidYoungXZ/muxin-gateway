@@ -19,7 +19,7 @@ public interface RouteTargetFactory {
      * 获取支持的目标类型
      * @return 目标类型
      */
-    TargetType getSupportedType();
+    ServiceType getSupportedType();
     
     /**
      * 验证配置参数

@@ -7,7 +7,7 @@ import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.Route;
-import com.muxin.gateway.core.plus.route.node.ServiceNode;
+import com.muxin.gateway.core.plus.route.service.ServiceInstance;
 
 import java.util.Map;
 import java.util.UUID;
@@ -36,7 +36,7 @@ public class DefaultRequestContext implements RequestContext {
     private ServerConnection serverConnection;
     private ClientConnection clientConnection;
     private Route matchedRoute;
-    private ServiceNode selectedNode;
+    private ServiceInstance selectedNode;
     private boolean completed;
     private Throwable error;
 
@@ -105,7 +105,7 @@ public class DefaultRequestContext implements RequestContext {
 
     @Override
     public ProtocolData getBackendServiceRequest() {
-        return  backendServiceRequest;
+        return backendServiceRequest;
     }
 
     @Override
@@ -154,12 +154,12 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public ServiceNode getSelectedNode() {
+    public ServiceInstance getSelectedNode() {
         return selectedNode;
     }
 
     @Override
-    public void setSelectedNode(ServiceNode node) {
+    public void setSelectedNode(ServiceInstance node) {
         this.selectedNode = node;
     }
 
@@ -174,32 +174,6 @@ public class DefaultRequestContext implements RequestContext {
         }
 
         return !inboundProto.equals(outboundProto);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getAttribute(String key, Class<T> type) {
-        Object value = attributes.get(key);
-        if (value == null) {
-            return null;
-        }
-
-        if (type.isInstance(value)) {
-            return (T) value;
-        }
-
-        throw new ClassCastException("无法将属性 " + key + " 转换为类型 " + type.getName());
-    }
-
-    @Override
-    public void setAttribute(String key, Object value) {
-        if (key != null) {
-            if (value != null) {
-                attributes.put(key, value);
-            } else {
-                attributes.remove(key);
-            }
-        }
     }
 
     @Override

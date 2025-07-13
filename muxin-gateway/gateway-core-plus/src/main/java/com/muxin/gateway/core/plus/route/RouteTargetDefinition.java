@@ -7,12 +7,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 路由目标配置定义
- * 纯配置数据对象，不包含业务逻辑
+ * 基于服务抽象的配置数据对象
  *
  * @author muxin
  */
@@ -22,30 +23,96 @@ import java.util.Map;
 @AllArgsConstructor
 public class RouteTargetDefinition {
     
-    /**
-     * 目标类型
-     */
-    private TargetType type;
+    // ========== 服务标识信息 ==========
     
     /**
-     * 出站协议配置
+     * 服务唯一标识
      */
-    private ProtocolDefinition outboundProtocol;
+    private String serviceId;
     
     /**
-     * 地址配置列表
+     * 服务显示名称
+     */
+    private String serviceName;
+    
+    /**
+     * 服务类型: CONFIG/DISCOVERY
+     */
+    private ServiceType serviceType;
+    
+    // ========== 协议配置 ==========
+    
+    /**
+     * 支持的协议配置
+     */
+    private ProtocolDefinition supportProtocol;
+    
+    // ========== 地址配置（仅CONFIG类型需要）==========
+    
+    /**
+     * 静态地址列表（仅CONFIG类型）
      */
     private List<AddressDefinition> addresses;
+    
+    // ========== 负载均衡配置 ==========
     
     /**
      * 负载均衡配置
      */
     private LoadBalanceDefinition loadBalance;
     
+    // ========== 扩展配置 ==========
+    
     /**
-     * 扩展配置
+     * 扩展配置参数
      */
     private Map<String, Object> config;
+    
+    // ========== 服务类型判断 ==========
+    
+    /**
+     * 是否为CONFIG类型服务
+     */
+    public boolean isConfigType() {
+        return serviceType == ServiceType.CONFIG;
+    }
+    
+    /**
+     * 是否为DISCOVERY类型服务
+     */
+    public boolean isDiscoveryType() {
+        return serviceType == ServiceType.DISCOVERY;
+    }
+    
+    // ========== 地址管理（仅CONFIG类型）==========
+    
+    /**
+     * 获取地址列表（仅CONFIG类型）
+     */
+    public List<AddressDefinition> getAddresses() {
+        if (!isConfigType()) {
+            throw new IllegalStateException("只有CONFIG类型服务才有addresses配置");
+        }
+        return addresses;
+    }
+    
+    /**
+     * 是否配置了地址
+     */
+    public boolean hasAddresses() {
+        return addresses != null && !addresses.isEmpty();
+    }
+    
+    // ========== 负载均衡配置 ==========
+    
+    /**
+     * 获取负载均衡策略名称
+     */
+    public String getLoadBalanceStrategy() {
+        return loadBalance != null ? loadBalance.getStrategy() : "ROUND_ROBIN";
+    }
+    
+    // ========== 配置参数管理 ==========
     
     /**
      * 获取配置参数
@@ -55,16 +122,26 @@ public class RouteTargetDefinition {
     }
     
     /**
-     * 获取配置参数（带默认值）
+     * 获取配置参数（带默认值和类型检查）
      */
-    public <T> T getConfigValue(String key, T defaultValue) {
+    public <T> T getConfigValue(String key, T defaultValue, Class<T> type) {
         if (config == null) {
             return defaultValue;
         }
         
-        @SuppressWarnings("unchecked")
-        T value = (T) config.get(key);
-        return value != null ? value : defaultValue;
+        Object value = config.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        
+        if (type.isInstance(value)) {
+            return type.cast(value);
+        }
+        
+        throw new IllegalArgumentException(String.format(
+            "配置参数 %s 的类型不匹配，期望: %s, 实际: %s", 
+            key, type.getSimpleName(), value.getClass().getSimpleName()
+        ));
     }
     
     /**
@@ -72,49 +149,166 @@ public class RouteTargetDefinition {
      */
     public void setConfigValue(String key, Object value) {
         if (config == null) {
-            config = new java.util.HashMap<>();
+            config = new HashMap<>();
         }
         config.put(key, value);
     }
     
+    // ========== 配置验证 ==========
+    
     /**
-     * 获取服务名称（仅适用于DISCOVERY类型）
+     * 验证配置的完整性和正确性
      */
-    public String getServiceName() {
-        if (type != TargetType.DISCOVERY) {
-            throw new IllegalStateException("只有DISCOVERY类型才能获取服务名称");
+    public void validate() {
+        // 基础字段验证
+        validateBasicFields();
+        
+        // 服务类型特定验证
+        switch (serviceType) {
+            case CONFIG -> validateConfigTypeService();
+            case DISCOVERY -> validateDiscoveryTypeService();
+            default -> throw new IllegalArgumentException("不支持的服务类型: " + serviceType);
         }
         
+        // 协议配置验证
+        validateProtocolConfig();
+    }
+    
+    /**
+     * 验证基础字段
+     */
+    private void validateBasicFields() {
+        if (serviceId == null || serviceId.trim().isEmpty()) {
+            throw new IllegalArgumentException("service-id不能为空");
+        }
+        
+        if (serviceName == null || serviceName.trim().isEmpty()) {
+            throw new IllegalArgumentException("service-name不能为空");
+        }
+        
+        if (serviceType == null) {
+            throw new IllegalArgumentException("service-type不能为空");
+        }
+    }
+    
+    /**
+     * 验证CONFIG类型服务配置
+     */
+    private void validateConfigTypeService() {
         if (addresses == null || addresses.isEmpty()) {
-            throw new IllegalStateException("DISCOVERY类型必须配置地址");
+            throw new IllegalArgumentException("CONFIG类型服务必须配置addresses");
         }
         
-        AddressDefinition address = addresses.get(0);
-        if (!address.isDiscoveryAddress()) {
-            throw new IllegalStateException("DISCOVERY类型必须使用lb://协议");
+        // 验证每个地址的有效性
+        for (int i = 0; i < addresses.size(); i++) {
+            AddressDefinition address = addresses.get(i);
+            if (address == null) {
+                throw new IllegalArgumentException("addresses[" + i + "]不能为空");
+            }
+            try {
+                address.validate();
+            } catch (Exception e) {
+                throw new IllegalArgumentException("addresses[" + i + "]配置无效: " + e.getMessage(), e);
+            }
+        }
+    }
+    
+    /**
+     * 验证DISCOVERY类型服务配置
+     */
+    private void validateDiscoveryTypeService() {
+        if (addresses != null && !addresses.isEmpty()) {
+            throw new IllegalArgumentException("DISCOVERY类型服务不应该配置addresses");
         }
         
-        return address.getServiceName();
+        // DISCOVERY类型通过service-name从注册中心获取实例
+        // 不需要验证addresses
     }
     
     /**
-     * 检查是否为静态类型
+     * 验证协议配置
      */
-    public boolean isStatic() {
-        return type == TargetType.STATIC;
+    private void validateProtocolConfig() {
+        if (supportProtocol == null) {
+            throw new IllegalArgumentException("support-protocol不能为空");
+        }
+        
+        // 验证协议类型
+        if (supportProtocol.getType() == null || supportProtocol.getType().trim().isEmpty()) {
+            throw new IllegalArgumentException("协议类型不能为空");
+        }
+        
+        // 验证协议版本
+        if (supportProtocol.getVersion() == null || supportProtocol.getVersion().trim().isEmpty()) {
+            throw new IllegalArgumentException("协议版本不能为空");
+        }
+        
+        // 验证协议类型是否支持
+        try {
+            supportProtocol.toProtocol();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("不支持的协议类型: " + supportProtocol.getType(), e);
+        }
+    }
+    
+    // ========== 辅助方法 ==========
+    
+    /**
+     * 转换为显示字符串
+     */
+    public String toDisplayString() {
+        return String.format("Service[id=%s, name=%s, type=%s, protocol=%s]",
+            serviceId, serviceName, serviceType != null ? serviceType.getCode() : "unknown", 
+            supportProtocol != null ? supportProtocol.getType() : "unknown");
     }
     
     /**
-     * 检查是否为服务发现类型
+     * 获取服务的完整描述
      */
-    public boolean isDiscovery() {
-        return type == TargetType.DISCOVERY;
+    public String getFullDescription() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("服务[").append(serviceName).append("](").append(serviceId).append(")");
+        sb.append(" - 类型: ").append(serviceType != null ? serviceType.getDescription() : "未知");
+        sb.append(" - 协议: ").append(supportProtocol != null ? supportProtocol.getType() : "未知");
+        
+        if (isConfigType() && hasAddresses()) {
+            sb.append(" - 地址数量: ").append(addresses.size());
+        }
+        
+        return sb.toString();
     }
     
-    /**
-     * 获取负载均衡策略名称
-     */
-    public String getLoadBalanceStrategy() {
-        return loadBalance != null ? loadBalance.getStrategy() : "ROUND_ROBIN";
+    // ========== 构建器增强 ==========
+    
+    public static class RouteTargetDefinitionBuilder {
+        
+        /**
+         * 创建CONFIG类型服务的构建器
+         */
+        public static RouteTargetDefinitionBuilder configService(String serviceId, String serviceName) {
+            return RouteTargetDefinition.builder()
+                .serviceId(serviceId)
+                .serviceName(serviceName)
+                .serviceType(ServiceType.CONFIG);
+        }
+        
+        /**
+         * 创建DISCOVERY类型服务的构建器
+         */
+        public static RouteTargetDefinitionBuilder discoveryService(String serviceId, String serviceName) {
+            return RouteTargetDefinition.builder()
+                .serviceId(serviceId)
+                .serviceName(serviceName)
+                .serviceType(ServiceType.DISCOVERY);
+        }
+        
+        /**
+         * 构建并验证配置
+         */
+        public RouteTargetDefinition buildAndValidate() {
+            RouteTargetDefinition definition = build();
+            definition.validate();
+            return definition;
+        }
     }
 } 

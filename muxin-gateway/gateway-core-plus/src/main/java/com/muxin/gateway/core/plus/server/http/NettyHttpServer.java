@@ -3,11 +3,8 @@ package com.muxin.gateway.core.plus.server.http;
 import com.muxin.gateway.core.plus.DefaultRequestContext;
 import com.muxin.gateway.core.plus.GatewayProcessor;
 import com.muxin.gateway.core.plus.connect.NettyServerConnection;
-import com.muxin.gateway.core.plus.constant.Constant;
-import com.muxin.gateway.core.plus.protocol.message.Message;
-import com.muxin.gateway.core.plus.protocol.message.MessageType;
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
-import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
+import com.muxin.gateway.core.plus.common.Constant;
+import com.muxin.gateway.core.plus.protocol.message.*;
 import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.bootstrap.ServerBootstrap;
@@ -249,9 +246,8 @@ public class NettyHttpServer {
             // 存储请求到Channel属性中，用于后续判断Keep-Alive
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             try {
-                Protocol.HttpProtocol httpProtocol = new Protocol.HttpProtocol();
-                DefaultRequestContext context = new DefaultRequestContext(new ProtocolData(httpProtocol, request));
-                NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);
+                DefaultRequestContext context = new DefaultRequestContext(new ProtocolData(ProtocolEnum.HTTP, request));
+                NettyServerConnection connection = new NettyServerConnection(ctx, ProtocolEnum.HTTP);
                 context.setServerConnection(connection);
                 context.setAttribute(Constant.CTX, ctx);
                 gatewayProcessor.processRequest(context);
@@ -268,13 +264,15 @@ public class NettyHttpServer {
             // 使用HttpMessage实现
             String messageId = UUID.randomUUID().toString();
             MessageType type = MessageType.REQUEST;
-            Protocol protocol = new Protocol.HttpProtocol();
+            Protocol protocol = ProtocolEnum.LB;
 
             return new HttpMessage(
                     messageId,
                     type,
                     protocol,
                     null, // headers
+                    null,
+                    null,
                     null, // body
                     null  // metadata
             );
@@ -285,7 +283,7 @@ public class NettyHttpServer {
          */
         private RequestContext createRequestContext(FullHttpRequest request, ChannelHandlerContext ctx) {
             // 创建HTTP协议
-            Protocol httpProtocol = new Protocol.HttpProtocol();
+            Protocol httpProtocol = ProtocolEnum.LB;
 
             // 创建服务器连接
             NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);

@@ -82,7 +82,7 @@ public class GlobalRouteConfig {
                 .description(routeDefinition.getDescription())
                 .order(routeDefinition.getOrder())
                 .enabled(routeDefinition.isEnabled())
-                .inboundProtocol(routeDefinition.getInboundProtocol())
+                .supportProtocol(routeDefinition.getSupportProtocol())
                 .target(routeDefinition.getTarget());
         
         // 合并过滤器：全局过滤器 + 路由过滤器
@@ -115,8 +115,8 @@ public class GlobalRouteConfig {
         if (target != null && target.getLoadBalance() == null) {
             // 如果路由目标没有配置负载均衡，使用默认配置
             RouteTargetDefinition.RouteTargetDefinitionBuilder targetBuilder = RouteTargetDefinition.builder()
-                    .type(target.getType())
-                    .outboundProtocol(target.getOutboundProtocol())
+                    .serviceType(target.getServiceType())
+                    .supportProtocol(target.getSupportProtocol())
                     .addresses(target.getAddresses())
                     .loadBalance(defaultLoadBalance)
                     .config(target.getConfig());

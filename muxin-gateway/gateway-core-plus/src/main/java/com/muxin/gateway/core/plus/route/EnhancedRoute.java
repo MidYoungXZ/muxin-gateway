@@ -172,7 +172,7 @@ public class EnhancedRoute implements Route {
      * 获取出站协议
      */
     public Protocol getOutboundProtocol() {
-        return target.getTargetProtocol();
+        return target.supportProtocol();
     }
     
     /**
@@ -191,67 +191,17 @@ public class EnhancedRoute implements Route {
             return "NONE";
         }
         
-        return inboundProtocol.getType().name() + "_TO_" + 
-               getOutboundProtocol().getType().name();
+        return inboundProtocol.type() + "_TO_" +
+               getOutboundProtocol().type() ;
     }
-    
-    /**
-     * 获取服务名称
-     */
-    public String getServiceName() {
-        // 优先从目标配置获取
-        if (target instanceof DiscoveryRouteTarget) {
-            DiscoveryRouteTarget discoveryTarget = (DiscoveryRouteTarget) target;
-            return discoveryTarget.getServiceName();
-        }
-        
-        // 从元数据获取
-        if (metadata != null) {
-            Object serviceName = metadata.get("service-name");
-            if (serviceName != null) {
-                return serviceName.toString();
-            }
-        }
-        
-        // 默认使用路由ID
-        return id;
-    }
-    
-    /**
-     * 获取负载均衡策略名称
-     */
-    public String getLoadBalanceStrategy() {
-        if (target instanceof StaticRouteTarget) {
-            StaticRouteTarget staticTarget = (StaticRouteTarget) target;
-            return staticTarget.getLoadBalanceStrategy();
-        } else if (target instanceof DiscoveryRouteTarget) {
-            DiscoveryRouteTarget discoveryTarget = (DiscoveryRouteTarget) target;
-            return discoveryTarget.getLoadBalanceStrategy();
-        }
-        return "ROUND_ROBIN";
-    }
-    
-    /**
-     * 检查是否为静态目标
-     */
-    public boolean isStaticTarget() {
-        return target instanceof StaticRouteTarget;
-    }
-    
-    /**
-     * 检查是否为服务发现目标
-     */
-    public boolean isDiscoveryTarget() {
-        return target instanceof DiscoveryRouteTarget;
-    }
-    
+
     @Override
     public String toString() {
         return String.format("EnhancedRoute{id='%s', name='%s', order=%d, enabled=%s, " +
                            "inbound=%s, outbound=%s, predicates=%d, filters=%d}", 
                            id, name, order, enabled, 
-                           inboundProtocol.getType(), 
-                           getOutboundProtocol() != null ? getOutboundProtocol().getType() : "null",
+                           inboundProtocol.type(),
+                           getOutboundProtocol() != null ? getOutboundProtocol().type() : "null",
                            predicates != null ? predicates.size() : 0,
                            filters != null ? filters.size() : 0);
     }

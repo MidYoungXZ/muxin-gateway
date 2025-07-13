@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.connect;
 
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
-import com.muxin.gateway.core.plus.route.node.EndpointAddress;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

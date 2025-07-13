@@ -1,114 +1,329 @@
 package com.muxin.gateway.core.plus.route;
 
+import com.muxin.gateway.core.plus.common.ServiceRegistry;
+import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.RandomLoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.RoundRobinLoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.WeightedRoundRobinLoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.LeastConnectionsLoadBalanceStrategy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.Objects;
 
 /**
- * 服务发现路由目标工厂
- * 负责创建服务发现类型的路由目标
+ * DISCOVERY类型路由目标工厂
+ * 负责创建和验证基于服务发现的路由目标
  *
  * @author muxin
  */
 @Slf4j
-@Component
 public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
     
-    @Override
-    public RouteTarget createRouteTarget(RouteTargetDefinition definition) {
-        validateConfig(definition);
-        
-        // 获取服务名称
-        String serviceName = definition.getServiceName();
-        
-        return DiscoveryRouteTarget.builder()
-                .protocol(definition.getOutboundProtocol().toProtocol())
-                .serviceName(serviceName)
-                .loadBalanceDefinition(definition.getLoadBalance())
-                .config(definition.getConfig())
-                .build();
+    private final ServiceRegistry serviceRegistry;
+    
+    public DiscoveryRouteTargetFactory(ServiceRegistry serviceRegistry) {
+        this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceDiscovery不能为空");
     }
     
     @Override
-    public TargetType getSupportedType() {
-        return TargetType.DISCOVERY;
+    public ServiceType getSupportedType() {
+        return ServiceType.DISCOVERY;
+    }
+    
+    @Override
+    public RouteTarget createRouteTarget(RouteTargetDefinition definition) {
+        log.debug("开始创建DISCOVERY路由目标: {}", definition.getServiceId());
+        
+        // 验证定义
+        validateConfig(definition);
+        
+        try {
+            // 获取协议
+            Protocol protocol = definition.getSupportProtocol().toProtocol();
+            
+            // 创建负载均衡策略
+            LoadBalanceStrategy loadBalanceStrategy = createLoadBalanceStrategy(definition);
+            
+            // 创建DISCOVERY路由目标
+            DiscoveryRouteTarget routeTarget = new DiscoveryRouteTarget(
+                    definition.getServiceId(),
+                    definition.getServiceName(),
+                    protocol,
+                    serviceRegistry,
+                    loadBalanceStrategy,
+                    definition.getConfig()
+            );
+            
+            log.info("成功创建DISCOVERY路由目标: {} ({}), 负载均衡: {}", 
+                    definition.getServiceName(), definition.getServiceId(), 
+                    loadBalanceStrategy.getStrategyName());
+            
+            return routeTarget;
+            
+        } catch (Exception e) {
+            log.error("创建DISCOVERY路由目标失败: {}", definition.getServiceId(), e);
+            throw new IllegalArgumentException("创建DISCOVERY路由目标失败: " + e.getMessage(), e);
+        }
     }
     
     @Override
     public void validateConfig(RouteTargetDefinition definition) {
-        if (definition == null) {
-            throw new IllegalArgumentException("路由目标配置不能为空");
+        log.debug("开始验证DISCOVERY路由目标定义: {}", definition.getServiceId());
+        
+        // 基础字段验证
+        if (definition.getServiceType() != ServiceType.DISCOVERY) {
+            throw new IllegalArgumentException("服务类型必须是DISCOVERY");
         }
         
-        if (definition.getType() != TargetType.DISCOVERY) {
-            throw new IllegalArgumentException("工厂类型不匹配，期望: DISCOVERY，实际: " + definition.getType());
+        if (definition.getServiceId() == null || definition.getServiceId().trim().isEmpty()) {
+            throw new IllegalArgumentException("DISCOVERY类型必须指定serviceId");
         }
         
-        if (definition.getOutboundProtocol() == null) {
-            throw new IllegalArgumentException("出站协议配置不能为空");
+        if (definition.getServiceName() == null || definition.getServiceName().trim().isEmpty()) {
+            throw new IllegalArgumentException("DISCOVERY类型必须指定serviceName");
         }
         
-        if (definition.getAddresses() == null || definition.getAddresses().isEmpty()) {
-            throw new IllegalArgumentException("服务发现目标必须配置服务地址");
+        if (definition.getSupportProtocol() == null || definition.getSupportProtocol().getType() == null || definition.getSupportProtocol().getType().trim().isEmpty()) {
+            throw new IllegalArgumentException("DISCOVERY类型必须指定supportProtocol");
         }
         
-        if (definition.getAddresses().size() != 1) {
-            throw new IllegalArgumentException("服务发现目标只允许配置一个服务地址");
-        }
-        
-        // 验证地址格式
-        AddressDefinition address = definition.getAddresses().get(0);
-        address.validate();
-        
-        if (!address.isDiscoveryAddress()) {
-            throw new IllegalArgumentException("服务发现目标必须使用 lb:// 协议，无效地址: " + address.getUri());
-        }
-        
-        if (address.getWeight() != null && address.getWeight() != 100) {
-            throw new IllegalArgumentException("服务发现地址不支持设置权重");
-        }
-        
-        // 验证服务名称
+        // 协议验证
         try {
-            String serviceName = address.getServiceName();
-            if (serviceName == null || serviceName.trim().isEmpty()) {
-                throw new IllegalArgumentException("服务名称不能为空");
-            }
-        } catch (Exception e) {
-            throw new IllegalArgumentException("无效的服务名称: " + address.getUri(), e);
+            definition.getSupportProtocol().toProtocol();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("不支持的协议类型: " + definition.getSupportProtocol().getType(), e);
         }
         
-        // 验证负载均衡配置
-        if (definition.getLoadBalance() != null) {
-            validateLoadBalanceConfig(definition);
+        // 负载均衡策略验证
+        validateLoadBalanceStrategy(definition);
+        
+        // 服务发现配置验证
+        validateDiscoveryConfig(definition);
+        
+        log.debug("DISCOVERY路由目标定义验证通过: {}", definition.getServiceId());
+    }
+    
+    /**
+     * 验证负载均衡策略配置
+     */
+    private void validateLoadBalanceStrategy(RouteTargetDefinition definition) {
+        Map<String, Object> config = definition.getConfig();
+        if (config == null) {
+            return; // 使用默认配置
+        }
+        
+        Object strategy = config.get("load-balance-strategy");
+        if (strategy != null) {
+            String strategyName = strategy.toString();
+            if (!isSupportedStrategy(strategyName)) {
+                throw new IllegalArgumentException("不支持的负载均衡策略: " + strategyName);
+            }
+        }
+        
+        // 验证权重配置（如果是加权策略）
+        if ("WEIGHTED_ROUND_ROBIN".equals(strategy)) {
+            validateWeightedConfig(definition);
         }
     }
     
     /**
-     * 验证负载均衡配置
+     * 验证加权配置
      */
-    private void validateLoadBalanceConfig(RouteTargetDefinition definition) {
-        var loadBalance = definition.getLoadBalance();
-        String strategy = loadBalance.getStrategy();
+    private void validateWeightedConfig(RouteTargetDefinition definition) {
+        Map<String, Object> config = definition.getConfig();
+        Object weights = config.get("weights");
         
-        // 验证一致性哈希策略的配置
-        if ("CONSISTENT_HASH".equalsIgnoreCase(strategy)) {
-            if (loadBalance.getHashKey() == null || loadBalance.getHashKey().trim().isEmpty()) {
-                throw new IllegalArgumentException("一致性哈希策略必须配置 hashKey");
-            }
-        }
-        
-        // 验证权重配置
-        if (loadBalance.isWeightedStrategy()) {
-            String weightSource = loadBalance.getWeightSource();
-            if (weightSource == null) {
-                throw new IllegalArgumentException("加权策略必须配置权重来源 (REGISTRY/EQUAL)");
-            }
-            
-            if ("REGISTRY".equalsIgnoreCase(weightSource)) {
-                if (loadBalance.getWeightMetadataKey() == null || loadBalance.getWeightMetadataKey().trim().isEmpty()) {
-                    throw new IllegalArgumentException("权重来源为 REGISTRY 时必须配置 weightMetadataKey");
+        if (weights instanceof Map<?, ?> weightMap) {
+            for (Object weight : weightMap.values()) {
+                if (weight instanceof Number) {
+                    int w = ((Number) weight).intValue();
+                    if (w <= 0) {
+                        throw new IllegalArgumentException("权重值必须大于0");
+                    }
+                } else {
+                    throw new IllegalArgumentException("权重值必须是数字类型");
                 }
             }
         }
+    }
+    
+    /**
+     * 验证服务发现配置
+     */
+    private void validateDiscoveryConfig(RouteTargetDefinition definition) {
+        Map<String, Object> config = definition.getConfig();
+        if (config == null) {
+            return;
+        }
+        
+        // 验证缓存过期时间
+        Object cacheExpireTime = config.get("cache-expire-time");
+        if (cacheExpireTime != null) {
+            try {
+                int seconds = Integer.parseInt(cacheExpireTime.toString());
+                if (seconds < 5) {
+                    throw new IllegalArgumentException("缓存过期时间不能少于5秒");
+                }
+                if (seconds > 3600) {
+                    throw new IllegalArgumentException("缓存过期时间不能超过3600秒");
+                }
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("缓存过期时间必须是数字: " + cacheExpireTime);
+            }
+        }
+        
+        // 验证健康检查配置
+        validateHealthCheckConfig(config);
+        
+        // 验证服务发现特定配置
+        validateServiceDiscoveryConfig(config);
+    }
+    
+    /**
+     * 验证健康检查配置
+     */
+    private void validateHealthCheckConfig(Map<String, Object> config) {
+        Object healthCheck = config.get("health-check");
+        if (healthCheck instanceof Map<?, ?> healthConfig) {
+            // 验证健康检查间隔
+            Object interval = healthConfig.get("interval");
+            if (interval != null) {
+                try {
+                    int seconds = Integer.parseInt(interval.toString());
+                    if (seconds < 5 || seconds > 300) {
+                        throw new IllegalArgumentException("健康检查间隔必须在5-300秒之间");
+                    }
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("健康检查间隔必须是数字: " + interval);
+                }
+            }
+            
+            // 验证超时时间
+            Object timeout = healthConfig.get("timeout");
+            if (timeout != null) {
+                try {
+                    int seconds = Integer.parseInt(timeout.toString());
+                    if (seconds < 1 || seconds > 60) {
+                        throw new IllegalArgumentException("健康检查超时时间必须在1-60秒之间");
+                    }
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("健康检查超时时间必须是数字: " + timeout);
+                }
+            }
+        }
+    }
+    
+    /**
+     * 验证服务发现特定配置
+     */
+    private void validateServiceDiscoveryConfig(Map<String, Object> config) {
+        // 验证服务发现标签过滤
+        Object tags = config.get("tags");
+        if (tags instanceof Map) {
+            Map<?, ?> tagMap = (Map<?, ?>) tags;
+            for (Object key : tagMap.keySet()) {
+                if (!(key instanceof String)) {
+                    throw new IllegalArgumentException("服务标签的key必须是字符串类型");
+                }
+            }
+        }
+        
+        // 验证服务版本过滤
+        Object version = config.get("version");
+        if (version != null && !(version instanceof String)) {
+            throw new IllegalArgumentException("服务版本必须是字符串类型");
+        }
+        
+        // 验证命名空间
+        Object namespace = config.get("namespace");
+        if (namespace != null && !(namespace instanceof String)) {
+            throw new IllegalArgumentException("命名空间必须是字符串类型");
+        }
+    }
+    
+    /**
+     * 创建负载均衡策略
+     */
+    private LoadBalanceStrategy createLoadBalanceStrategy(RouteTargetDefinition definition) {
+        Map<String, Object> config = definition.getConfig();
+        
+        // 获取策略名称，默认为轮询
+        String strategyName = "ROUND_ROBIN";
+        if (config != null && config.get("load-balance-strategy") != null) {
+            strategyName = config.get("load-balance-strategy").toString();
+        }
+        
+        try {
+            LoadBalanceStrategy strategy = createStrategyByName(strategyName, config);
+            log.debug("为DISCOVERY路由目标 {} 创建负载均衡策略: {}", definition.getServiceId(), strategyName);
+            return strategy;
+            
+        } catch (Exception e) {
+            log.error("创建负载均衡策略失败: {}", strategyName, e);
+            throw new IllegalArgumentException("创建负载均衡策略失败: " + strategyName, e);
+        }
+    }
+    
+    /**
+     * 根据策略名称创建策略实例
+     */
+    private LoadBalanceStrategy createStrategyByName(String strategyName, Map<String, Object> config) {
+        return switch (strategyName.toUpperCase()) {
+            case "ROUND_ROBIN" -> new RoundRobinLoadBalanceStrategy();
+            case "RANDOM" -> new RandomLoadBalanceStrategy();
+            case "WEIGHTED_ROUND_ROBIN" -> new WeightedRoundRobinLoadBalanceStrategy();
+            case "LEAST_CONNECTIONS" -> new LeastConnectionsLoadBalanceStrategy();
+            default -> {
+                log.warn("未知的负载均衡策略: {}, 使用默认策略: ROUND_ROBIN", strategyName);
+                yield new RoundRobinLoadBalanceStrategy();
+            }
+        };
+    }
+    
+    /**
+     * 检查是否支持指定的负载均衡策略
+     */
+    private boolean isSupportedStrategy(String strategyName) {
+        String[] supportedStrategies = {"ROUND_ROBIN", "RANDOM", "WEIGHTED_ROUND_ROBIN", "LEAST_CONNECTIONS"};
+        for (String supported : supportedStrategies) {
+            if (supported.equalsIgnoreCase(strategyName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    
+    /**
+     * 获取支持的协议列表
+     */
+    public String[] getSupportedProtocols() {
+        return new String[]{"HTTP", "HTTPS", "WS", "WSS", "TCP", "UDP"};
+    }
+    
+    /**
+     * 获取支持的负载均衡策略
+     */
+    public String[] getSupportedLoadBalanceStrategies() {
+        return new String[]{"ROUND_ROBIN", "RANDOM", "WEIGHTED_ROUND_ROBIN", "LEAST_CONNECTIONS"};
+    }
+    
+    /**
+     * 获取工厂状态信息
+     */
+    public String getFactoryInfo() {
+        return String.format(
+            "DiscoveryRouteTargetFactory{serviceDiscovery=%s, supportedProtocols=[%s], supportedStrategies=[%s]}",
+            serviceRegistry.getClass().getSimpleName(),
+            String.join(",", getSupportedProtocols()),
+            String.join(",", getSupportedLoadBalanceStrategies())
+        );
+    }
+    
+    @Override
+    public String toString() {
+        return getFactoryInfo();
     }
 } 

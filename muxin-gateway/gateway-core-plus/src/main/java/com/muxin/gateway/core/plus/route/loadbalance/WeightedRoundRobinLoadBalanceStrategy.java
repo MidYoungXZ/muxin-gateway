@@ -1,0 +1,216 @@
+package com.muxin.gateway.core.plus.route.loadbalance;
+
+import com.muxin.gateway.core.plus.route.RequestContext;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
+import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * 加权轮询负载均衡策略
+ * 根据地址权重进行轮询选择
+ *
+ * @author muxin
+ */
+@Slf4j
+public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
+    
+    private static final String STRATEGY_NAME = "WEIGHTED_ROUND_ROBIN";
+    private static final String DESCRIPTION = "加权轮询负载均衡，根据权重选择地址";
+    
+    private final LoadBalanceStats stats;
+    private final ConcurrentHashMap<String, WeightedNode> weightedNodes = new ConcurrentHashMap<>();
+    
+    public WeightedRoundRobinLoadBalanceStrategy() {
+        this.stats = LoadBalanceStats.builder()
+                .totalSelections(new AtomicLong(0))
+                .addressSelections(new ConcurrentHashMap<>())
+                .startTime(System.currentTimeMillis())
+                .totalSelectionTime(new AtomicLong(0))
+                .strategyName(STRATEGY_NAME)
+                .build();
+    }
+    
+    @Override
+    public EndpointAddress select(List<EndpointAddress> addresses, RequestContext context) {
+        if (addresses == null || addresses.isEmpty()) {
+            throw new IllegalArgumentException("地址列表不能为空");
+        }
+        
+        long startTime = System.nanoTime();
+        
+        try {
+            // 更新权重节点
+            updateWeightedNodes(addresses);
+            
+            // 平滑加权轮询算法
+            EndpointAddress selected = selectByWeight(addresses);
+            
+            log.debug("加权轮询选择地址: {} (权重: {})", 
+                    selected.toUri(), getWeight(selected));
+            return selected;
+            
+        } finally {
+            // 记录统计信息
+            long selectionTime = System.nanoTime() - startTime;
+            EndpointAddress selected = selectByWeight(addresses);
+            stats.recordSelection(selected.toUri(), selectionTime);
+        }
+    }
+    
+    /**
+     * 更新权重节点信息
+     */
+    private void updateWeightedNodes(List<EndpointAddress> addresses) {
+        for (EndpointAddress address : addresses) {
+            String key = address.toUri();
+            weightedNodes.computeIfAbsent(key, k -> {
+                int weight = getWeight(address);
+                return new WeightedNode(address, weight, weight);
+            });
+        }
+        
+        // 移除不再存在的节点
+        weightedNodes.entrySet().removeIf(entry -> 
+            addresses.stream().noneMatch(addr -> addr.toUri().equals(entry.getKey())));
+    }
+    
+    /**
+     * 平滑加权轮询选择
+     */
+    private EndpointAddress selectByWeight(List<EndpointAddress> addresses) {
+        synchronized (this) {
+            WeightedNode selected = null;
+            int totalWeight = 0;
+            
+            // 计算总权重并选择当前权重最高的节点
+            for (EndpointAddress address : addresses) {
+                String key = address.toUri();
+                WeightedNode node = weightedNodes.get(key);
+                if (node != null) {
+                    totalWeight += node.getWeight();
+                    node.increaseCurrent();
+                    
+                    if (selected == null || node.getCurrentWeight() > selected.getCurrentWeight()) {
+                        selected = node;
+                    }
+                }
+            }
+            
+            if (selected != null) {
+                // 减少选中节点的当前权重
+                selected.decreaseCurrent(totalWeight);
+                return selected.getAddress();
+            }
+            
+            // 如果没有找到，使用简单轮询
+            return addresses.get(0);
+        }
+    }
+    
+    /**
+     * 获取地址权重
+     */
+    private int getWeight(EndpointAddress address) {
+        // 从地址协议特定信息中获取权重，默认为100
+        Map<String, Object> protocolInfo = address.getProtocolSpecificInfo();
+        if (protocolInfo != null) {
+            Object weight = protocolInfo.get("weight");
+            if (weight instanceof Number) {
+                return ((Number) weight).intValue();
+            }
+            if (weight instanceof String) {
+                try {
+                    return Integer.parseInt((String) weight);
+                } catch (NumberFormatException e) {
+                    log.warn("无法解析权重值: {}, 使用默认值100", weight);
+                }
+            }
+        }
+        return 100; // 默认权重
+    }
+    
+    @Override
+    public String getStrategyName() {
+        return STRATEGY_NAME;
+    }
+    
+    @Override
+    public String getDescription() {
+        return DESCRIPTION;
+    }
+    
+    @Override
+    public boolean requiresWeight() {
+        return true;
+    }
+    
+    @Override
+    public boolean isStateful() {
+        return true; // 有权重状态
+    }
+    
+    @Override
+    public void reset() {
+        synchronized (this) {
+            weightedNodes.clear();
+            stats.reset();
+            log.info("加权轮询策略状态已重置");
+        }
+    }
+    
+    @Override
+    public LoadBalanceStats getStats() {
+        return stats;
+    }
+    
+    /**
+     * 权重节点内部类
+     */
+    private static class WeightedNode {
+        private final EndpointAddress address;
+        private final int weight;
+        private int currentWeight;
+        
+        public WeightedNode(EndpointAddress address, int weight, int currentWeight) {
+            this.address = address;
+            this.weight = weight;
+            this.currentWeight = currentWeight;
+        }
+        
+        public EndpointAddress getAddress() {
+            return address;
+        }
+        
+        public int getWeight() {
+            return weight;
+        }
+        
+        public int getCurrentWeight() {
+            return currentWeight;
+        }
+        
+        public void increaseCurrent() {
+            this.currentWeight += weight;
+        }
+        
+        public void decreaseCurrent(int totalWeight) {
+            this.currentWeight -= totalWeight;
+        }
+        
+        @Override
+        public String toString() {
+            return String.format("WeightedNode{address=%s, weight=%d, currentWeight=%d}", 
+                    address.toUri(), weight, currentWeight);
+        }
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("WeightedRoundRobinLoadBalanceStrategy{nodes=%d, stats=%s}", 
+                weightedNodes.size(), stats);
+    }
+} 

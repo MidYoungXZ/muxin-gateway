@@ -1,16 +1,15 @@
 package com.muxin.gateway.core.plus.protocol.message;
 
 
-import com.muxin.gateway.core.plus.route.node.EndpointAddress;
-
-import java.util.Map;
+import com.muxin.gateway.core.plus.common.Attributes;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 
 /**
  * 消息元数据接口
  *
  * @author muxin
  */
-public interface MessageMetadata {
+public interface MessageMetadata extends Attributes {
     
     /**
      * 消息时间戳
@@ -61,19 +60,4 @@ public interface MessageMetadata {
      * Span ID
      */
     String getSpanId();
-    
-    /**
-     * 扩展属性
-     */
-    Map<String, Object> getAttributes();
-    
-    /**
-     * 获取属性
-     */
-    <T> T getAttribute(String key, Class<T> type);
-    
-    /**
-     * 设置属性
-     */
-    void setAttribute(String key, Object value);
 } 

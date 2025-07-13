@@ -78,14 +78,14 @@ public interface Route {
      */
     default boolean isConfigurationValid() {
         Protocol supportedProtocol = getSupportedProtocol();
-        Protocol targetProtocol = getTarget().getTargetProtocol();
+        Protocol targetProtocol = getTarget().supportProtocol();
         
         if (supportedProtocol == null || targetProtocol == null) {
             return false;
         }
         
         // 协议类型必须一致
-        return supportedProtocol.getType().equals(targetProtocol.getType());
+        return supportedProtocol.type().equals(targetProtocol.type());
     }
     
     /**
@@ -94,7 +94,7 @@ public interface Route {
      */
     default String getProtocolType() {
         Protocol protocol = getSupportedProtocol();
-        return protocol != null ? protocol.getType().name() : "UNKNOWN";
+        return protocol != null ? protocol.type() : "UNKNOWN";
     }
     
     // ========== 超时配置方法 ==========

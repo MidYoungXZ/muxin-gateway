@@ -1,63 +1,93 @@
 package com.muxin.gateway.core.plus.route;
 
+import com.muxin.gateway.core.plus.common.ServiceRegistry;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
-import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
-import com.muxin.gateway.core.plus.route.node.EndpointAddress;
-import lombok.Builder;
-import lombok.Data;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
+import com.muxin.gateway.core.plus.route.service.ServiceInstance;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
- * 服务发现路由目标实现
- * 专注于服务发现类型的业务逻辑
+ * DISCOVERY类型路由目标实现
+ * 通过服务发现中心动态获取服务实例
  *
  * @author muxin
  */
-@Data
-@Builder
 @Slf4j
 public class DiscoveryRouteTarget implements RouteTarget {
     
-    /**
-     * 目标协议
-     */
-    private final Protocol protocol;
-    
-    /**
-     * 服务名称
-     */
+    // ========== 服务标识信息 ==========
+    private final String serviceId;
     private final String serviceName;
+    private final ServiceType serviceType = ServiceType.DISCOVERY;
     
-    /**
-     * 负载均衡定义
-     */
-    private final LoadBalanceDefinition loadBalanceDefinition;
+    // ========== 协议配置 ==========
+    private final Protocol supportProtocol;
     
-    /**
-     * 扩展配置
-     */
+    // ========== 服务发现相关 ==========
+    private final ServiceRegistry serviceRegistry;
+    private final LoadBalanceStrategy loadBalanceStrategy;
     private final Map<String, Object> config;
     
+    // ========== 缓存和性能优化 ==========
+    private volatile List<EndpointAddress> cachedAddresses;
+    private volatile long lastRefreshTime;
+    private final Duration cacheExpireTime;
+    private final Object refreshLock = new Object();
+    
+    public DiscoveryRouteTarget(String serviceId,
+                              String serviceName,
+                              Protocol supportProtocol,
+                              ServiceRegistry serviceRegistry,
+                              LoadBalanceStrategy loadBalanceStrategy,
+                              Map<String, Object> config) {
+        this.serviceId = Objects.requireNonNull(serviceId, "serviceId不能为空");
+        this.serviceName = Objects.requireNonNull(serviceName, "serviceName不能为空");
+        this.supportProtocol = Objects.requireNonNull(supportProtocol, "supportProtocol不能为空");
+        this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceDiscovery不能为空");
+        this.loadBalanceStrategy = Objects.requireNonNull(loadBalanceStrategy, "loadBalanceStrategy不能为空");
+        this.config = config;
+        
+        // 缓存过期时间，默认30秒
+        this.cacheExpireTime = getCacheExpireTime(config);
+        this.cachedAddresses = new ArrayList<>();
+        this.lastRefreshTime = 0;
+        
+        log.info("创建DISCOVERY路由目标: {} ({}), 负载均衡: {}, 缓存过期时间: {}秒", 
+                serviceName, serviceId, loadBalanceStrategy.getStrategyName(), cacheExpireTime.getSeconds());
+    }
+
     @Override
-    public Protocol getTargetProtocol() {
-        return protocol;
+    public RouteTargetDefinition routeTargetDefinition() {
+        return null;
+    }
+
+    @Override
+    public Protocol supportProtocol() {
+        return supportProtocol;
     }
     
     @Override
     public List<EndpointAddress> getTargetAddresses() {
-        // 服务发现类型的地址由服务注册中心动态提供
-        // 这里返回空列表，实际地址通过服务发现获取
-        return List.of();
+        // 检查缓存是否需要刷新
+        if (needsRefresh()) {
+            refreshAddresses();
+        }
+        
+        return new ArrayList<>(cachedAddresses);
     }
     
     @Override
     public LoadBalanceStrategy loadBalanceStrategy() {
-        // 服务发现目标由RouteConfigConverter根据loadBalanceDefinition进行负载均衡
-        return null;
+        return loadBalanceStrategy;
     }
     
     @Override
@@ -67,49 +97,213 @@ public class DiscoveryRouteTarget implements RouteTarget {
     
     @Override
     public EndpointAddress selectTarget(RequestContext context) {
-        // 目标选择逻辑由RouteConfigConverter和服务发现组件处理
-        throw new UnsupportedOperationException("目标选择由RouteConfigConverter和服务发现组件处理");
+        try {
+            // 获取最新的地址列表
+            List<EndpointAddress> addresses = getTargetAddresses();
+            
+            if (addresses.isEmpty()) {
+                throw new IllegalStateException("服务 " + serviceName + " 没有可用的实例");
+            }
+            
+            // 使用负载均衡策略选择地址
+            EndpointAddress selected = loadBalanceStrategy.select(addresses, context);
+            
+            log.debug("DISCOVERY路由目标选择地址: {} -> {} (策略: {}, 可用实例: {})", 
+                    serviceName, selected.toUri(), loadBalanceStrategy.getStrategyName(), addresses.size());
+            
+            return selected;
+            
+        } catch (Exception e) {
+            log.error("DISCOVERY路由目标选择地址失败: {}", serviceName, e);
+            throw new RuntimeException("服务发现选择地址失败: " + serviceName, e);
+        }
     }
     
     /**
-     * 获取服务名称
+     * 检查缓存是否需要刷新
      */
+    private boolean needsRefresh() {
+        long currentTime = System.currentTimeMillis();
+        return (currentTime - lastRefreshTime) > cacheExpireTime.toMillis() || cachedAddresses.isEmpty();
+    }
+    
+    /**
+     * 刷新地址缓存
+     */
+    private void refreshAddresses() {
+        synchronized (refreshLock) {
+            // 双重检查锁定
+            if (!needsRefresh()) {
+                return;
+            }
+            
+            try {
+                log.debug("刷新DISCOVERY服务地址缓存: {}", serviceName);
+                
+                // 从服务发现中心获取实例
+                List<ServiceInstance> instances = serviceRegistry.selectInstances(serviceName);
+                List<EndpointAddress> newAddresses = convertInstancesToAddresses(instances);
+                
+                // 更新缓存
+                this.cachedAddresses = newAddresses;
+                this.lastRefreshTime = System.currentTimeMillis();
+                
+                log.info("DISCOVERY服务 {} 地址缓存已更新，实例数量: {}", serviceName, newAddresses.size());
+                
+            } catch (Exception e) {
+                log.error("刷新DISCOVERY服务地址缓存失败: {}", serviceName, e);
+                // 刷新失败时保持原有缓存，避免服务中断
+            }
+        }
+    }
+    
+    /**
+     * 异步刷新地址缓存
+     */
+    public CompletableFuture<Void> refreshAddressesAsync() {
+        return CompletableFuture.runAsync(() -> refreshAddresses())
+                .orTimeout(5, TimeUnit.SECONDS)
+                .exceptionally(throwable -> {
+                    log.warn("异步刷新地址缓存失败: {}", serviceName, throwable);
+                    return null;
+                });
+    }
+    
+    /**
+     * 将服务实例转换为端点地址
+     */
+    private List<EndpointAddress> convertInstancesToAddresses(List<ServiceInstance> instances) {
+        List<EndpointAddress> addresses = new ArrayList<>();
+        
+        for (ServiceInstance instance : instances) {
+            try {
+                // 只转换健康的实例
+                if (isHealthyInstance(instance)) {
+                    EndpointAddress address = instance.getAddress();
+                    addresses.add(address);
+                    
+                    log.debug("转换服务实例: {} -> {}", instance.instanceId(), address.toUri());
+                }
+            } catch (Exception e) {
+                log.warn("转换服务实例失败: {}", instance.instanceId(), e);
+            }
+        }
+        
+        return addresses;
+    }
+    
+    /**
+     * 检查实例是否健康
+     */
+    private boolean isHealthyInstance(ServiceInstance instance) {
+        // 可以根据实例状态、健康检查结果等判断
+        return instance.getStatus().isHealthy();
+    }
+    
+    /**
+     * 获取缓存过期时间
+     */
+    private Duration getCacheExpireTime(Map<String, Object> config) {
+        if (config != null) {
+            Object cacheTime = config.get("cache-expire-time");
+            if (cacheTime instanceof Number) {
+                return Duration.ofSeconds(((Number) cacheTime).longValue());
+            }
+            if (cacheTime instanceof String) {
+                try {
+                    return Duration.ofSeconds(Long.parseLong((String) cacheTime));
+                } catch (NumberFormatException e) {
+                    log.warn("无法解析缓存过期时间: {}, 使用默认值30秒", cacheTime);
+                }
+            }
+        }
+        return Duration.ofSeconds(30); // 默认30秒
+    }
+    
+    // ========== Getter方法 ==========
+    
+    public String getServiceId() {
+        return serviceId;
+    }
+    
     public String getServiceName() {
         return serviceName;
     }
     
-    /**
-     * 获取负载均衡定义
-     */
-    public LoadBalanceDefinition getLoadBalanceDefinition() {
-        return loadBalanceDefinition;
+    public ServiceType getServiceType() {
+        return serviceType;
+    }
+    
+    public ServiceRegistry getServiceDiscovery() {
+        return serviceRegistry;
     }
     
     /**
-     * 获取负载均衡策略名称
+     * 获取缓存统计信息
      */
-    public String getLoadBalanceStrategy() {
-        return loadBalanceDefinition != null ? loadBalanceDefinition.getStrategy() : "ROUND_ROBIN";
+    public String getCacheStats() {
+        long cacheAge = System.currentTimeMillis() - lastRefreshTime;
+        return String.format("缓存年龄: %dms, 地址数量: %d, 过期时间: %dms", 
+                cacheAge, cachedAddresses.size(), cacheExpireTime.toMillis());
     }
     
     /**
-     * 检查是否为服务发现类型
+     * 强制刷新缓存
      */
-    public boolean isDiscoveryType() {
-        return true;
+    public void forceRefresh() {
+        synchronized (refreshLock) {
+            this.lastRefreshTime = 0; // 强制过期
+            refreshAddresses();
+        }
+        log.info("强制刷新DISCOVERY服务缓存: {}", serviceName);
     }
     
     /**
-     * 获取权重来源
+     * 清空缓存
      */
-    public String getWeightSource() {
-        return loadBalanceDefinition != null ? loadBalanceDefinition.getWeightSource() : "EQUAL";
+    public void clearCache() {
+        synchronized (refreshLock) {
+            this.cachedAddresses.clear();
+            this.lastRefreshTime = 0;
+        }
+        log.info("清空DISCOVERY服务缓存: {}", serviceName);
     }
     
     /**
-     * 获取权重元数据键名
+     * 获取负载均衡统计信息
      */
-    public String getWeightMetadataKey() {
-        return loadBalanceDefinition != null ? loadBalanceDefinition.getWeightMetadataKey() : null;
+    public String getLoadBalanceStats() {
+        return loadBalanceStrategy.getStats() != null ? 
+                loadBalanceStrategy.getStats().toString() : "无统计信息";
+    }
+    
+    /**
+     * 重置负载均衡状态
+     */
+    public void resetLoadBalanceState() {
+        loadBalanceStrategy.reset();
+        log.info("重置DISCOVERY路由目标负载均衡状态: {}", serviceName);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DiscoveryRouteTarget that = (DiscoveryRouteTarget) o;
+        return Objects.equals(serviceId, that.serviceId);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(serviceId);
+    }
+    
+    @Override
+    public String toString() {
+        return String.format(
+            "DiscoveryRouteTarget{serviceId='%s', serviceName='%s', protocol=%s, instances=%d, strategy='%s', cache='%s'}",
+            serviceId, serviceName, supportProtocol.type(), cachedAddresses.size(),
+            loadBalanceStrategy.getStrategyName(), getCacheStats()
+        );
     }
 } 

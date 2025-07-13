@@ -1,21 +1,18 @@
 package com.muxin.gateway.core.plus;
 
+import com.muxin.gateway.core.plus.common.LifeCycle;
 import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.config.GatewayCoreConfig;
 import com.muxin.gateway.core.plus.config.RouteSystemConfig;
 import com.muxin.gateway.core.plus.config.ServerConfig;
-import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.connect.DefaultConnectionPoolManager;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
-import com.muxin.gateway.core.plus.protocol.message.ProtocolConverterManager;
-import com.muxin.gateway.core.plus.protocol.message.DefaultProtocolConverterManager;
-import com.muxin.gateway.core.plus.route.node.NodeManager;
-import com.muxin.gateway.core.plus.route.node.DefaultNodeManager;
-import com.muxin.gateway.core.plus.route.RouteManager;
-import com.muxin.gateway.core.plus.route.EnhancedRouteManager;
+import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
+import com.muxin.gateway.core.plus.protocol.message.MessageCodecManager;
 import com.muxin.gateway.core.plus.route.GlobalRouteConfig;
-import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
+import com.muxin.gateway.core.plus.route.RouteManager;
+import com.muxin.gateway.core.plus.route.service.InstanceManager;
 import com.muxin.gateway.core.plus.server.http.HttpServerConfig;
+import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -26,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
  * - 移除了FilterManager、LoadBalanceManager、PredicateManager
  * - 功能集成到RouteConfigConverter和EnhancedRouteManager中
  * - 支持全局配置和每路由独立实例
+ * - 使用带缓存的协议转换管理器
  * 
  * @author muxin
  */
@@ -39,8 +37,8 @@ public class GatewayBootstrap implements LifeCycle {
     // ========== 核心组件 ==========
     private ConnectionPoolManager connectionPoolManager;
     private RouteManager routeManager;
-    private NodeManager nodeManager;
-    private ProtocolConverterManager protocolConverterManager;
+    private InstanceManager instanceManager;
+    private MessageCodecManager messageCodecManager;
     private GatewayProcessor gatewayProcessor;
     
     // ========== 服务器 ==========
@@ -159,22 +157,22 @@ public class GatewayBootstrap implements LifeCycle {
     private void initCoreComponents() {
         log.debug("Initializing core components...");
         
-        // 连接池管理器
+        // 连接池管理器//todo 实现类
         ConnectionPoolConfig poolConfig = ConnectionPoolConfig.defaultConfig();
-        this.connectionPoolManager = new DefaultConnectionPoolManager(poolConfig);
+        this.connectionPoolManager = null;
         connectionPoolManager.init();
         
-        // 协议转换管理器
-        this.protocolConverterManager = new DefaultProtocolConverterManager();
-        protocolConverterManager.init();
-        
-        // 路由管理器（使用增强版本，支持全局配置）
-        this.routeManager = new EnhancedRouteManager(globalRouteConfig);
+        // 协议转换管理器（使用带缓存的版本） //todo 实现类
+        this.messageCodecManager = null;
+        messageCodecManager.init();
+
+        // 路由管理器（使用增强版本，支持全局配置） //todo 实现类
+        this.routeManager = null;
         routeManager.init();
         
         // 节点管理器
-        this.nodeManager = new DefaultNodeManager();
-        nodeManager.init();
+        this.instanceManager = null;//todo 实现类
+        instanceManager.init();
         
         log.debug("Core components initialized");
     }
@@ -182,12 +180,12 @@ public class GatewayBootstrap implements LifeCycle {
     private void initGatewayProcessor() {
         log.debug("Initializing gateway processor...");
         
-        this.gatewayProcessor = new EnhancedGatewayProcessor(
+        this.gatewayProcessor = new GatewayProcessor(
                 gatewayConfig,
                 connectionPoolManager,
                 routeManager,
-                nodeManager,
-                protocolConverterManager
+                instanceManager,
+                messageCodecManager
         );
         
         gatewayProcessor.init();
@@ -213,9 +211,9 @@ public class GatewayBootstrap implements LifeCycle {
         log.debug("Starting core components...");
         
         connectionPoolManager.start();
-        protocolConverterManager.start();
+        messageCodecManager.start();
         routeManager.start();
-        nodeManager.start();
+        instanceManager.start();
         
         log.debug("Core components started");
     }
@@ -261,14 +259,14 @@ public class GatewayBootstrap implements LifeCycle {
     private void shutdownCoreComponents() {
         log.debug("Shutting down core components...");
         
-        if (nodeManager != null) {
-            nodeManager.shutdown();
+        if (instanceManager != null) {
+            instanceManager.shutdown();
         }
         if (routeManager != null) {
             routeManager.shutdown();
         }
-        if (protocolConverterManager != null) {
-            protocolConverterManager.shutdown();
+        if (messageCodecManager != null) {
+            messageCodecManager.shutdown();
         }
         if (connectionPoolManager != null) {
             connectionPoolManager.shutdown();
@@ -303,7 +301,8 @@ public class GatewayBootstrap implements LifeCycle {
     /**
      * 获取节点管理器
      */
-    public NodeManager getNodeManager() {
-        return nodeManager;
+    public InstanceManager getNodeManager() {
+        return instanceManager;
     }
+
 } 

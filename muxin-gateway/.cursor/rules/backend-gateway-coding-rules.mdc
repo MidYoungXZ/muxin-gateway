@@ -164,25 +164,13 @@ scope: project
 31. 常量定义在专门的Constants类中，使用public static final
 32. 枚举类必须实现描述方法，支持前端展示
 
-### 网关特定规范
-33. 路由定义使用RouteDefinition类，支持动态配置和热更新
-34. 过滤器开发继承AbstractFilter，实现责任链模式
-35. 负载均衡算法实现LoadBalancer接口，支持插件化扩展
-36. 协议转换器实现ProtocolConverter接口，支持HTTP/WebSocket等
-37. 节点管理统一使用Node抽象，支持多种服务发现机制
-38. 监控指标使用Micrometer规范，便于集成Prometheus等
-39. 网关配置变更必须支持配置中心推送和本地文件两种方式
-40. 关键组件必须实现优雅启停和故障降级机制
 
 ### Spring Boot最佳实践
 41. 自动配置类使用@AutoConfiguration，条件注解确保按需加载
 42. 配置属性类使用@ConfigurationProperties，提供默认值和校验
 43. Bean定义优先使用@Component系列注解，避免XML配置
 44. 事务注解@Transactional合理使用，明确传播行为和隔离级别
-45. 异步处理使用@Async注解，配置合适的线程池
-46. 缓存注解@Cacheable等正确使用，注意缓存穿透和雪崩
 47. 定时任务使用@Scheduled，避免重复执行和资源竞争
-48. 健康检查实现HealthIndicator接口，提供组件状态信息
 
 ### 数据库与持久层规范
 49. MyBatis-Flex实体类使用@Table注解，字段映射使用@Column

@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
+import com.muxin.gateway.core.plus.protocol.message.ProtocolEnum;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
@@ -76,7 +77,7 @@ public class HttpHeaderPredicate implements Predicate {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new Protocol.HttpProtocol());
+        protocols.add(ProtocolEnum.HTTP);
         return protocols;
     }
     

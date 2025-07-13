@@ -53,7 +53,7 @@ public class RouteDefinition {
     /**
      * 入站协议配置（单协议）
      */
-    private ProtocolDefinition inboundProtocol;
+    private ProtocolDefinition supportProtocol;
     
     /**
      * 断言配置列表（AND关系）
@@ -92,7 +92,7 @@ public class RouteDefinition {
             throw new IllegalArgumentException("路由名称不能为空");
         }
         
-        if (inboundProtocol == null) {
+        if (supportProtocol == null) {
             throw new IllegalArgumentException("入站协议不能为空");
         }
         
@@ -105,20 +105,16 @@ public class RouteDefinition {
         }
         
         // 验证目标配置的基本信息
-        if (target.getType() == null) {
+        if (target.getServiceType() == null) {
             throw new IllegalArgumentException("目标类型不能为空");
         }
-        
-        if (target.getOutboundProtocol() == null) {
-            throw new IllegalArgumentException("出站协议不能为空");
-        }
-        
+
         if (target.getAddresses() == null || target.getAddresses().isEmpty()) {
             throw new IllegalArgumentException("目标地址不能为空");
         }
         
         // 验证协议转换
-        if (inboundProtocol.needsConversion(target.getOutboundProtocol())) {
+        if (supportProtocol.needsConversion(target.getSupportProtocol())) {
             validateProtocolConversion();
         }
     }
@@ -127,8 +123,8 @@ public class RouteDefinition {
      * 验证协议转换
      */
     private void validateProtocolConversion() {
-        String inboundType = inboundProtocol.getType();
-        String outboundType = target.getOutboundProtocol().getType();
+        String inboundType = supportProtocol.getType();
+        String outboundType = target.getSupportProtocol().getType();
         
         // 检查是否支持协议转换
         if (!isSupportedProtocolConversion(inboundType, outboundType)) {
@@ -165,7 +161,7 @@ public class RouteDefinition {
      * 检查是否需要协议转换
      */
     public boolean needsProtocolConversion() {
-        return inboundProtocol.needsConversion(target.getOutboundProtocol());
+        return supportProtocol.needsConversion(target.getSupportProtocol());
     }
     
     /**
@@ -176,15 +172,15 @@ public class RouteDefinition {
             return "NONE";
         }
         
-        return inboundProtocol.getType().toUpperCase() + "_TO_" + 
-               target.getOutboundProtocol().getType().toUpperCase();
+        return supportProtocol.getType().toUpperCase() + "_TO_" +
+               target.getSupportProtocol().getType().toUpperCase();
     }
     
     /**
      * 获取服务名称
      */
     public String getServiceName() {
-        if (target.isDiscovery()) {
+        if (target.isDiscoveryType()) {
             return target.getServiceName();
         }
         

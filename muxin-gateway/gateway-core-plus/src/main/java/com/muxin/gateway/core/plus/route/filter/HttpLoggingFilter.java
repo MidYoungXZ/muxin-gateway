@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.route.filter;
 
+import com.muxin.gateway.core.plus.protocol.message.ProtocolEnum;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
@@ -76,18 +77,17 @@ public class HttpLoggingFilter implements Filter {
     @Override
     public Set<Protocol> getSupportedProtocols() {
         Set<Protocol> protocols = new HashSet<>();
-        protocols.add(new Protocol.HttpProtocol());
+        protocols.add(ProtocolEnum.HTTP);
         return protocols;
     }
     
     private void logRequest(RequestContext context) {
         Message inbound = context.getInboundMessage();
-        if (inbound != null && inbound.getMetadata() instanceof HttpMetadata) {
-            HttpMetadata metadata = (HttpMetadata) inbound.getMetadata();
-            
+        if (inbound != null && inbound.getMetadata() instanceof HttpMetadata metadata) {
+
             StringBuilder logBuilder = new StringBuilder();
             logBuilder.append(String.format("[%s] 请求: %s %s", 
-                type.name(), metadata.getMethod(), metadata.getPath()));
+                type.name(), inbound.method(), inbound.url().getPath()));
             
             // 记录请求头 - 从attributes中获取headers
             if (includeHeaders) {
