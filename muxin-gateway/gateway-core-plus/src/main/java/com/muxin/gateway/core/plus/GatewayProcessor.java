@@ -110,7 +110,7 @@ public class GatewayProcessor implements LifeCycle {
             // 第5步：负载均衡与节点选择
             log.debug("[GatewayProcessor] 步骤5：负载均衡与节点选择 - {}", requestId);
             ServiceInstance selectedNode = selectTargetNode(context);
-            context.setSelectedNode(selectedNode);
+            context.setSelectedInstance(selectedNode);
 
             // 第6步：连接管理
             log.debug("[GatewayProcessor] 步骤6：连接管理 - {}", requestId);
@@ -394,22 +394,22 @@ public class GatewayProcessor implements LifeCycle {
      * 同步版本：连接管理
      */
     protected ClientConnection acquireConnection(RequestContext context) {
-        ServiceInstance node = context.getSelectedNode();
-        if (node == null) {
+        ServiceInstance instance = context.getSelectedInstance();
+        if (instance == null) {
             throw new RuntimeException("没有选定的服务节点");
         }
         try {
             // 使用正确的方法名和协议参数
             ClientConnection connection = connectionPoolManager
-                    .getClientConnection(node.getAddress(), node.service().getProtocol());
+                    .getClientConnection(instance.getAddress(), instance.service().getProtocol());
             if (connection == null) {
-                throw new RuntimeException("无法获取连接到: " + node.getAddress().toUri());
+                throw new RuntimeException("无法获取连接到: " + instance.getAddress().toUri());
             }
 
-            log.debug("[GatewayProcessor] 连接获取成功: {}", node.getAddress().toUri());
+            log.debug("[GatewayProcessor] 连接获取成功: {}", instance.getAddress().toUri());
             return connection;
         } catch (Exception e) {
-            log.error("[GatewayProcessor] 连接获取失败: {}", node.getAddress().toUri(), e);
+            log.error("[GatewayProcessor] 连接获取失败: {}", instance.getAddress().toUri(), e);
             throw new RuntimeException("连接获取失败: " + e.getMessage(), e);
         }
     }

@@ -154,13 +154,13 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public ServiceInstance getSelectedNode() {
+    public ServiceInstance getSelectedInstance() {
         return selectedNode;
     }
 
     @Override
-    public void setSelectedNode(ServiceInstance node) {
-        this.selectedNode = node;
+    public void setSelectedInstance(ServiceInstance instance) {
+        this.selectedNode = instance;
     }
 
 

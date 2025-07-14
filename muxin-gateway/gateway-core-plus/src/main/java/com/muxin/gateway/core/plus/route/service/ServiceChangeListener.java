@@ -6,19 +6,19 @@ package com.muxin.gateway.core.plus.route.service;
  * @author muxin
  */
 public interface ServiceChangeListener {
-    
+
     /**
      * 服务节点添加事件
      */
-    void onNodeAdded(String serviceName, ServiceInstance node);
-    
+    void onNodeAdded(String serviceId, ServiceInstance node);
+
     /**
      * 服务节点移除事件
      */
-    void onNodeRemoved(String serviceName, String nodeId);
-    
+    void onNodeRemoved(String serviceId, String nodeId);
+
     /**
      * 服务节点状态变化事件
      */
-    void onNodeStatusChanged(String serviceName, String nodeId, NodeStatus oldStatus, NodeStatus newStatus);
+    void onNodeStatusChanged(String serviceId, String nodeId, NodeStatus oldStatus, NodeStatus newStatus);
 } 

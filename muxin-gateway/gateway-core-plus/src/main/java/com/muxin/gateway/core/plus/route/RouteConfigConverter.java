@@ -3,11 +3,11 @@ package com.muxin.gateway.core.plus.route;
 import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.route.filter.*;
 import com.muxin.gateway.core.plus.route.predicate.*;
-import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 路由配置转换器
@@ -19,112 +19,188 @@ import java.util.*;
 @Slf4j
 public class RouteConfigConverter {
 
-    // 在转换器内部维护FilterFactory映射
+    // ========== Factory注册表 ==========
+    /**
+     * 过滤器工厂映射
+     */
     private final Map<String, FilterFactory> filterFactories;
 
-    // 在转换器内部维护PredicateFactory映射
+    /**
+     * 断言工厂映射
+     */
     private final Map<String, PredicateFactory> predicateFactories;
 
-    // 在转换器内部维护RouteTargetFactory映射
-    private final RouteTargetFactory routeTargetFactory;
+    /**
+     * 路由服务工厂映射
+     */
+    private final Map<ServiceType, RouteServiceFactory> routeServiceFactories;
+
+
+
+    // ========== 状态管理 ==========
+    private volatile boolean initialized = false;
 
     public RouteConfigConverter() {
-        this.filterFactories = initFilterFactories();
-        this.predicateFactories = initPredicateFactories();
-        this.routeTargetFactory = initRouteTargetFactories();
+        this.filterFactories = new ConcurrentHashMap<>();
+        this.predicateFactories = new ConcurrentHashMap<>();
+        this.routeServiceFactories = new ConcurrentHashMap<>();
+        
+        // 初始化工厂
+        initializeFactories();
+        
+        log.info("[RouteConfigConverter] 路由配置转换器创建完成");
+    }
+
+    // ========== 初始化方法 ==========
+
+    /**
+     * 初始化所有工厂
+     */
+    private void initializeFactories() {
+        try {
+            initFilterFactories();
+            initPredicateFactories();
+            initRouteServiceFactories();
+            
+            initialized = true;
+            log.info("[RouteConfigConverter] 所有工厂初始化完成 - Filter: {}, Predicate: {}, RouteService: {}", 
+                    filterFactories.size(), predicateFactories.size(), routeServiceFactories.size());
+                    
+        } catch (Exception e) {
+            log.error("[RouteConfigConverter] 工厂初始化失败", e);
+            throw new RuntimeException("工厂初始化失败", e);
+        }
     }
 
     /**
      * 初始化FilterFactory映射
      */
-    private Map<String, FilterFactory> initFilterFactories() {
-        Map<String, FilterFactory> factories = new HashMap<>();
-
+    private void initFilterFactories() {
         // 注册内置FilterFactory
-        registerFilterFactory(factories, new HttpLoggingFilterFactory());
-        registerFilterFactory(factories, new HttpAuthFilterFactory());
-        // TODO: 添加更多内置FilterFactory
-        // registerFilterFactory(factories, new CorsFilterFactory());
-        // registerFilterFactory(factories, new RateLimitFilterFactory());
+        registerFilterFactory(new HttpLoggingFilterFactory());
+        registerFilterFactory(new HttpAuthFilterFactory());
+        
+        // TODO: 后续可以注册更多内置FilterFactory
+        // registerFilterFactory(new CorsFilterFactory());
+        // registerFilterFactory(new RateLimitFilterFactory());
+        // registerFilterFactory(new CircuitBreakerFilterFactory());
 
-        log.info("初始化FilterFactory完成，支持的Filter类型: {}", factories.keySet());
-        return factories;
+        log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 
     /**
      * 初始化PredicateFactory映射
      */
-    private Map<String, PredicateFactory> initPredicateFactories() {
-        Map<String, PredicateFactory> factories = new HashMap<>();
-
+    private void initPredicateFactories() {
         // 注册内置PredicateFactory
-        registerPredicateFactory(factories, new HttpPathPredicateFactory());
-        registerPredicateFactory(factories, new HttpMethodPredicateFactory());
-        registerPredicateFactory(factories, new HttpHeaderPredicateFactory());
-        // TODO: 添加更多内置PredicateFactory
-        // registerPredicateFactory(factories, new HttpQueryPredicateFactory());
-        // registerPredicateFactory(factories, new HttpHostPredicateFactory());
+        registerPredicateFactory(new HttpPathPredicateFactory());
+        registerPredicateFactory(new HttpMethodPredicateFactory());
+        registerPredicateFactory(new HttpHeaderPredicateFactory());
+        
+        // TODO: 后续可以注册更多内置PredicateFactory
+        // registerPredicateFactory(new HttpQueryPredicateFactory());
+        // registerPredicateFactory(new HttpHostPredicateFactory());
+        // registerPredicateFactory(new HttpCookiePredicateFactory());
 
-        log.info("初始化PredicateFactory完成，支持的Predicate类型: {}", factories.keySet());
-        return factories;
+        log.info("[RouteConfigConverter] PredicateFactory初始化完成，支持的Predicate类型: {}", predicateFactories.keySet());
     }
 
     /**
-     * 初始化RouteTargetFactory映射
+     * 初始化RouteServiceFactory映射
      */
-    private RouteTargetFactory initRouteTargetFactories() {
-        //todo  注册内置RouteTargetFactory
-        return null;
+    private void initRouteServiceFactories() {
+        // 注册内置RouteServiceFactory
+        registerRouteServiceFactory(new ConfigRouteServiceFactory());
+        
+        // TODO: 后续可以注册服务发现工厂（需要ServiceRegistry依赖）
+        // registerRouteServiceFactory(new DiscoveryRouteServiceFactory(serviceRegistry));
+
+        log.info("[RouteConfigConverter] RouteServiceFactory初始化完成，支持的服务类型: {}", routeServiceFactories.keySet());
     }
+
+    // ========== 工厂注册方法 ==========
 
     /**
      * 注册FilterFactory
      */
-    private void registerFilterFactory(Map<String, FilterFactory> factories, FilterFactory factory) {
+    private void registerFilterFactory(FilterFactory factory) {
         String filterName = factory.getSupportedFilterName();
-        factories.put(filterName, factory);
-        log.debug("注册FilterFactory: {}", filterName);
+        filterFactories.put(filterName, factory);
+        log.debug("[RouteConfigConverter] 注册FilterFactory: {}", filterName);
     }
 
     /**
      * 注册PredicateFactory
      */
-    private void registerPredicateFactory(Map<String, PredicateFactory> factories, PredicateFactory factory) {
+    private void registerPredicateFactory(PredicateFactory factory) {
         String predicateName = factory.getSupportedPredicateName();
-        factories.put(predicateName, factory);
-        log.debug("注册PredicateFactory: {}", predicateName);
+        predicateFactories.put(predicateName, factory);
+        log.debug("[RouteConfigConverter] 注册PredicateFactory: {}", predicateName);
     }
+
+    /**
+     * 注册RouteServiceFactory
+     */
+    private void registerRouteServiceFactory(RouteServiceFactory factory) {
+        ServiceType serviceType = factory.getSupportedType();
+        routeServiceFactories.put(serviceType, factory);
+        log.debug("[RouteConfigConverter] 注册RouteServiceFactory: {}", serviceType);
+    }
+
+    // ========== 运行时扩展方法 ==========
 
     /**
      * 注册自定义FilterFactory（支持运行时扩展）
      */
-    public void registerFilterFactory(FilterFactory factory) {
-        filterFactories.put(factory.getSupportedFilterName(), factory);
-        log.info("注册自定义FilterFactory: {}", factory.getSupportedFilterName());
+    public void registerCustomFilterFactory(FilterFactory factory) {
+        if (factory == null) {
+            throw new IllegalArgumentException("FilterFactory不能为空");
+        }
+        
+        String filterName = factory.getSupportedFilterName();
+        filterFactories.put(filterName, factory);
+        
+        log.info("[RouteConfigConverter] 注册自定义FilterFactory: {}", filterName);
     }
 
     /**
      * 注册自定义PredicateFactory（支持运行时扩展）
      */
-    public void registerPredicateFactory(PredicateFactory factory) {
-        predicateFactories.put(factory.getSupportedPredicateName(), factory);
-        log.info("注册自定义PredicateFactory: {}", factory.getSupportedPredicateName());
+    public void registerCustomPredicateFactory(PredicateFactory factory) {
+        if (factory == null) {
+            throw new IllegalArgumentException("PredicateFactory不能为空");
+        }
+        
+        String predicateName = factory.getSupportedPredicateName();
+        predicateFactories.put(predicateName, factory);
+        
+        log.info("[RouteConfigConverter] 注册自定义PredicateFactory: {}", predicateName);
     }
 
     /**
-     * 注册RouteTargetFactory
+     * 注册自定义RouteServiceFactory（支持运行时扩展）
      */
-    private void registerRouteTargetFactory(Map<ServiceType, RouteTargetFactory> factories, RouteTargetFactory factory) {
-        ServiceType targetType = factory.getSupportedType();
-        factories.put(targetType, factory);
-        log.debug("注册RouteTargetFactory: {}", targetType);
+    public void registerCustomRouteServiceFactory(RouteServiceFactory factory) {
+        if (factory == null) {
+            throw new IllegalArgumentException("RouteServiceFactory不能为空");
+        }
+        
+        ServiceType serviceType = factory.getSupportedType();
+        routeServiceFactories.put(serviceType, factory);
+        
+        log.info("[RouteConfigConverter] 注册自定义RouteServiceFactory: {}", serviceType);
     }
 
+    // ========== 核心转换方法 ==========
 
     /**
      * 将RouteDefinition转换为EnhancedRoute
      */
     public EnhancedRoute convertToRoute(RouteDefinition config) {
+        if (config == null) {
+            throw new IllegalArgumentException("路由配置不能为空");
+        }
+        
         try {
             // 验证配置
             config.validate();
@@ -144,7 +220,8 @@ public class RouteConfigConverter {
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
 
-            return EnhancedRoute.builder()
+            // 构建路由对象
+            EnhancedRoute route = EnhancedRoute.builder()
                     .id(config.getId())
                     .name(config.getName())
                     .description(config.getDescription())
@@ -157,9 +234,13 @@ public class RouteConfigConverter {
                     .timeouts(timeouts)
                     .metadata(config.getMetadata())
                     .build();
+            
+            log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
+            
+            return route;
 
         } catch (Exception e) {
-            log.error("转换路由配置失败: {}", config.getId(), e);
+            log.error("[RouteConfigConverter] 转换路由配置失败: {}", config.getId(), e);
             throw new IllegalArgumentException("转换路由配置失败: " + config.getId(), e);
         }
     }
@@ -168,22 +249,33 @@ public class RouteConfigConverter {
      * 批量转换路由配置
      */
     public List<EnhancedRoute> convertToRoutes(List<RouteDefinition> configs) {
+        if (configs == null || configs.isEmpty()) {
+            log.warn("[RouteConfigConverter] 路由配置列表为空");
+            return new ArrayList<>();
+        }
+
         List<EnhancedRoute> routes = new ArrayList<>();
+        long startTime = System.currentTimeMillis();
 
         for (RouteDefinition config : configs) {
             try {
                 EnhancedRoute route = convertToRoute(config);
                 routes.add(route);
-                log.debug("成功转换路由: {}", config.getId());
+                log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
             } catch (Exception e) {
-                log.error("转换路由失败，跳过: {}", config.getId(), e);
+                log.error("[RouteConfigConverter] 转换路由失败，跳过: {}", config.getId(), e);
                 // 继续处理其他路由，不中断整个转换过程
             }
         }
 
-        log.info("路由转换完成，成功: {}, 失败: {}", routes.size(), configs.size() - routes.size());
+        long totalTime = System.currentTimeMillis() - startTime;
+        log.info("[RouteConfigConverter] 批量路由转换完成，成功: {}, 失败: {}, 总耗时: {}ms", 
+                routes.size(), configs.size() - routes.size(), totalTime);
+        
         return routes;
     }
+
+    // ========== 子组件转换方法 ==========
 
     /**
      * 转换断言配置为Predicate实例
@@ -191,7 +283,8 @@ public class RouteConfigConverter {
      */
     private List<Predicate> convertPredicates(String routeId, List<PredicateDefinition> predicateConfigs) {
         if (predicateConfigs == null || predicateConfigs.isEmpty()) {
-            return List.of();
+            log.debug("[RouteConfigConverter] 路由 {} 没有配置断言", routeId);
+            return new ArrayList<>();
         }
 
         List<Predicate> predicates = new ArrayList<>();
@@ -201,8 +294,7 @@ public class RouteConfigConverter {
                 // 获取对应的Factory
                 PredicateFactory factory = predicateFactories.get(config.getType());
                 if (factory == null) {
-                    log.error("不支持的断言类型: {} (路由: {})", config.getType(), routeId);
-                    // 跳过不支持的断言，继续处理其他断言
+                    log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getType(), routeId);
                     continue;
                 }
 
@@ -213,15 +305,14 @@ public class RouteConfigConverter {
                 Predicate predicate = factory.createPredicate(config);
                 predicates.add(predicate);
 
-                log.debug("为路由 {} 创建断言: {}", routeId, config.getType());
+                log.debug("[RouteConfigConverter] 为路由 {} 创建断言: {}", routeId, config.getType());
 
             } catch (Exception e) {
-                log.error("创建断言失败，跳过: {} (路由: {})", config.getType(), routeId, e);
-                // 按照要求：跳过创建失败的Predicate，但打印异常，继续处理其他断言
+                log.error("[RouteConfigConverter] 创建断言失败，跳过: {} (路由: {})", config.getType(), routeId, e);
             }
         }
 
-        log.debug("路由 {} 断言链创建完成，包含 {} 个断言", routeId, predicates.size());
+        log.debug("[RouteConfigConverter] 路由 {} 断言链创建完成，包含 {} 个断言", routeId, predicates.size());
         return predicates;
     }
 
@@ -231,14 +322,15 @@ public class RouteConfigConverter {
      */
     private List<Filter> convertFilters(String routeId, List<FilterDefinition> filterConfigs) {
         if (filterConfigs == null || filterConfigs.isEmpty()) {
-            return List.of();
+            log.debug("[RouteConfigConverter] 路由 {} 没有配置过滤器", routeId);
+            return new ArrayList<>();
         }
 
         List<Filter> filters = new ArrayList<>();
 
         for (FilterDefinition config : filterConfigs) {
             if (!config.isEnabled()) {
-                log.debug("跳过已禁用的过滤器: {} (路由: {})", config.getType(), routeId);
+                log.debug("[RouteConfigConverter] 跳过已禁用的过滤器: {} (路由: {})", config.getType(), routeId);
                 continue;
             }
 
@@ -246,8 +338,7 @@ public class RouteConfigConverter {
                 // 获取对应的Factory
                 FilterFactory factory = filterFactories.get(config.getType());
                 if (factory == null) {
-                    log.error("不支持的过滤器类型: {} (路由: {})", config.getType(), routeId);
-                    // 跳过不支持的过滤器，继续处理其他过滤器
+                    log.error("[RouteConfigConverter] 不支持的过滤器类型: {} (路由: {})", config.getType(), routeId);
                     continue;
                 }
 
@@ -258,24 +349,23 @@ public class RouteConfigConverter {
                 Filter filter = factory.createFilter(config);
                 filters.add(filter);
 
-                log.debug("为路由 {} 创建过滤器: {} (order: {})",
+                log.debug("[RouteConfigConverter] 为路由 {} 创建过滤器: {} (order: {})",
                         routeId, config.getType(), config.getOrder());
 
             } catch (Exception e) {
-                log.error("创建过滤器失败，跳过: {} (路由: {})", config.getType(), routeId, e);
-                // 按照要求：跳过创建失败的Filter，但打印异常，继续处理其他过滤器
+                log.error("[RouteConfigConverter] 创建过滤器失败，跳过: {} (路由: {})", config.getType(), routeId, e);
             }
         }
 
         // 按order排序
         filters.sort(Comparator.comparingInt(Filter::getOrder));
 
-        log.debug("路由 {} 过滤器链创建完成，包含 {} 个过滤器", routeId, filters.size());
+        log.debug("[RouteConfigConverter] 路由 {} 过滤器链创建完成，包含 {} 个过滤器", routeId, filters.size());
         return filters;
     }
 
     /**
-     * 转换路由目标配置为RouteTarget实例
+     * 转换路由目标配置为RouteService实例
      */
     private RouteService convertRouteTarget(ServiceDefinition definition) {
         if (definition == null) {
@@ -286,57 +376,29 @@ public class RouteConfigConverter {
         if (type == null) {
             throw new IllegalArgumentException("路由目标类型不能为空");
         }
-        return routeTargetFactory.createRouteTarget(definition);
+
+        // 获取对应的工厂
+        RouteServiceFactory factory = routeServiceFactories.get(type);
+        if (factory == null) {
+            throw new IllegalArgumentException("不支持的服务类型: " + type);
+        }
+
+        try {
+            return factory.createRouteTarget(definition);
+        } catch (Exception e) {
+            log.error("[RouteConfigConverter] 创建路由目标失败: {}", definition.getId(), e);
+            throw new RuntimeException("创建路由目标失败: " + e.getMessage(), e);
+        }
     }
 
-    /**
-     * 轮询选择
-     */
-    private EndpointAddress roundRobinSelect(List<EndpointAddress> targets, RequestContext context) {
-        // 简单的轮询实现
-        long requestId = System.nanoTime();
-        int index = (int) (requestId % targets.size());
-        return targets.get(index);
-    }
 
-    /**
-     * 随机选择
-     */
-    private EndpointAddress randomSelect(List<EndpointAddress> targets) {
-        int index = new Random().nextInt(targets.size());
-        return targets.get(index);
-    }
-
-    /**
-     * 加权轮询选择
-     */
-    private EndpointAddress weightedRoundRobinSelect(
-            List<EndpointAddress> targets,
-            RequestContext context) {
-        // 简单实现：目前返回第一个，实际应该根据权重选择
-        // TODO: 实现真正的加权轮询算法
-        return targets.get(0);
-    }
-
-    /**
-     * 一致性哈希选择
-     */
-    private EndpointAddress consistentHashSelect(
-            List<EndpointAddress> targets,
-            RequestContext context,
-            RouteService routeService) {
-        // 简单实现：根据请求的某个属性进行哈希
-        String hashKey = context != null ? context.toString() : String.valueOf(System.nanoTime());
-        int hash = hashKey.hashCode();
-        int index = Math.abs(hash) % targets.size();
-        return targets.get(index);
-    }
 
     /**
      * 转换超时配置
      */
     private TimeoutConfig convertTimeouts(TimeoutConfig config) {
         if (config == null) {
+            log.debug("[RouteConfigConverter] 使用默认超时配置");
             return TimeoutConfig.defaultConfig();
         }
         return config;
@@ -372,8 +434,36 @@ public class RouteConfigConverter {
                 return Duration.ofSeconds(seconds);
             }
         } catch (NumberFormatException e) {
-            log.warn("无法解析时间格式: {}, 使用默认值", durationStr);
+            log.warn("[RouteConfigConverter] 无法解析时间格式: {}, 使用默认值", durationStr);
             return null;
         }
+    }
+
+
+
+    // ========== 状态查询方法 ==========
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public Set<String> getSupportedFilterTypes() {
+        return new HashSet<>(filterFactories.keySet());
+    }
+
+    public Set<String> getSupportedPredicateTypes() {
+        return new HashSet<>(predicateFactories.keySet());
+    }
+
+    public Set<ServiceType> getSupportedServiceTypes() {
+        return new HashSet<>(routeServiceFactories.keySet());
+    }
+
+
+
+    @Override
+    public String toString() {
+        return String.format("RouteConfigConverter{initialized=%s, filters=%d, predicates=%d, services=%d}", 
+                initialized, filterFactories.size(), predicateFactories.size(), routeServiceFactories.size());
     }
 } 

@@ -62,12 +62,5 @@ public interface LoadBalanceStrategy {
         // 默认实现：无操作
     }
     
-    /**
-     * 获取策略统计信息
-     *
-     * @return 统计信息，可以为null
-     */
-    default LoadBalanceStats getStats() {
-        return null;
-    }
+
 } 

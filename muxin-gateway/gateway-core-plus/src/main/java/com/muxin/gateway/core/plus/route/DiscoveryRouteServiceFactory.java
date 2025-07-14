@@ -19,11 +19,11 @@ import java.util.Objects;
  * @author muxin
  */
 @Slf4j
-public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
+public class DiscoveryRouteServiceFactory implements RouteServiceFactory {
     
     private final ServiceRegistry serviceRegistry;
     
-    public DiscoveryRouteTargetFactory(ServiceRegistry serviceRegistry) {
+    public DiscoveryRouteServiceFactory(ServiceRegistry serviceRegistry) {
         this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceDiscovery不能为空");
     }
     

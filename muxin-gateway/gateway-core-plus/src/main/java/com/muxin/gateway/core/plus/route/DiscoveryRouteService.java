@@ -273,9 +273,8 @@ public class DiscoveryRouteService implements RouteService {
     /**
      * 获取负载均衡统计信息
      */
-    public String getLoadBalanceStats() {
-        return loadBalanceStrategy.getStats() != null ? 
-                loadBalanceStrategy.getStats().toString() : "无统计信息";
+        public String getLoadBalanceStats() {
+        return "统计功能暂未实现";
     }
     
     /**

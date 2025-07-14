@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+
 
 /**
  * 加权轮询负载均衡策略
@@ -21,17 +21,9 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     private static final String STRATEGY_NAME = "WEIGHTED_ROUND_ROBIN";
     private static final String DESCRIPTION = "加权轮询负载均衡，根据权重选择地址";
     
-    private final LoadBalanceStats stats;
     private final ConcurrentHashMap<String, WeightedNode> weightedNodes = new ConcurrentHashMap<>();
     
     public WeightedRoundRobinLoadBalanceStrategy() {
-        this.stats = LoadBalanceStats.builder()
-                .totalSelections(new AtomicLong(0))
-                .addressSelections(new ConcurrentHashMap<>())
-                .startTime(System.currentTimeMillis())
-                .totalSelectionTime(new AtomicLong(0))
-                .strategyName(STRATEGY_NAME)
-                .build();
     }
     
     @Override
@@ -40,25 +32,15 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
             throw new IllegalArgumentException("地址列表不能为空");
         }
         
-        long startTime = System.nanoTime();
+        // 更新权重节点
+        updateWeightedNodes(addresses);
         
-        try {
-            // 更新权重节点
-            updateWeightedNodes(addresses);
-            
-            // 平滑加权轮询算法
-            EndpointAddress selected = selectByWeight(addresses);
-            
-            log.debug("加权轮询选择地址: {} (权重: {})", 
-                    selected.toUri(), getWeight(selected));
-            return selected;
-            
-        } finally {
-            // 记录统计信息
-            long selectionTime = System.nanoTime() - startTime;
-            EndpointAddress selected = selectByWeight(addresses);
-            stats.recordSelection(selected.toUri(), selectionTime);
-        }
+        // 平滑加权轮询算法
+        EndpointAddress selected = selectByWeight(addresses);
+        
+        log.debug("加权轮询选择地址: {} (权重: {})", 
+                selected.toUri(), getWeight(selected));
+        return selected;
     }
     
     /**
@@ -157,14 +139,8 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     public void reset() {
         synchronized (this) {
             weightedNodes.clear();
-            stats.reset();
             log.info("加权轮询策略状态已重置");
         }
-    }
-    
-    @Override
-    public LoadBalanceStats getStats() {
-        return stats;
     }
     
     /**
@@ -210,7 +186,7 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     
     @Override
     public String toString() {
-        return String.format("WeightedRoundRobinLoadBalanceStrategy{nodes=%d, stats=%s}", 
-                weightedNodes.size(), stats);
+        return String.format("WeightedRoundRobinLoadBalanceStrategy{nodes=%d}", 
+                weightedNodes.size());
     }
 } 

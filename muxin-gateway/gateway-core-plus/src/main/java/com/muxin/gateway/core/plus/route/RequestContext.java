@@ -115,12 +115,12 @@ public interface RequestContext extends Attributes {
     /**
      * 选中的节点
      */
-    ServiceInstance getSelectedNode();
+    ServiceInstance getSelectedInstance();
 
     /**
      * 设置选中的节点
      */
-    void setSelectedNode(ServiceInstance node);
+    void setSelectedInstance(ServiceInstance instance);
 
     /**
      * 是否需要协议转换

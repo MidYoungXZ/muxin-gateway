@@ -20,7 +20,7 @@ import java.util.List;
  * @author muxin
  */
 @Slf4j
-public class ConfigRouteTargetFactory implements RouteTargetFactory {
+public class ConfigRouteServiceFactory implements RouteServiceFactory {
     
     @Override
     public ServiceType getSupportedType() {

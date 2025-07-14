@@ -6,7 +6,7 @@ package com.muxin.gateway.core.plus.route;
  *
  * @author muxin
  */
-public interface RouteTargetFactory {
+public interface RouteServiceFactory {
     
     /**
      * 创建路由目标实例

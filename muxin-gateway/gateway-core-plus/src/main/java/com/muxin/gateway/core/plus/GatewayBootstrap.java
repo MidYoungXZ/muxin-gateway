@@ -157,21 +157,21 @@ public class GatewayBootstrap implements LifeCycle {
     private void initCoreComponents() {
         log.debug("Initializing core components...");
         
-        // 连接池管理器//todo 实现类
+        // 连接池管理器
         ConnectionPoolConfig poolConfig = ConnectionPoolConfig.defaultConfig();
-        this.connectionPoolManager = null;
+        this.connectionPoolManager = new com.muxin.gateway.core.plus.connect.DefaultConnectionPoolManager(poolConfig);
         connectionPoolManager.init();
         
-        // 协议转换管理器（使用带缓存的版本） //todo 实现类
-        this.messageCodecManager = null;
+        // 协议转换管理器（使用带缓存的版本）
+        this.messageCodecManager = new com.muxin.gateway.core.plus.protocol.message.DefaultMessageCodecManager();
         messageCodecManager.init();
 
-        // 路由管理器（使用增强版本，支持全局配置） //todo 实现类
-        this.routeManager = null;
+        // 路由管理器（使用增强版本，支持全局配置）
+        this.routeManager = new com.muxin.gateway.core.plus.route.DefaultRouteManager();
         routeManager.init();
         
         // 节点管理器
-        this.instanceManager = null;//todo 实现类
+        this.instanceManager = new com.muxin.gateway.core.plus.route.service.DefaultInstanceManager();
         instanceManager.init();
         
         log.debug("Core components initialized");

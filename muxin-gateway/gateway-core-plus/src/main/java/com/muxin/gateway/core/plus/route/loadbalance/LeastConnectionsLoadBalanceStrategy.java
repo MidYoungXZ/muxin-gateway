@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 最少连接负载均衡策略
@@ -22,17 +21,9 @@ public class LeastConnectionsLoadBalanceStrategy implements LoadBalanceStrategy 
     private static final String STRATEGY_NAME = "LEAST_CONNECTIONS";
     private static final String DESCRIPTION = "最少连接负载均衡，选择连接数最少的地址";
     
-    private final LoadBalanceStats stats;
     private final ConcurrentHashMap<String, AtomicInteger> connectionCounts = new ConcurrentHashMap<>();
     
     public LeastConnectionsLoadBalanceStrategy() {
-        this.stats = LoadBalanceStats.builder()
-                .totalSelections(new AtomicLong(0))
-                .addressSelections(new ConcurrentHashMap<>())
-                .startTime(System.currentTimeMillis())
-                .totalSelectionTime(new AtomicLong(0))
-                .strategyName(STRATEGY_NAME)
-                .build();
     }
     
     @Override
@@ -41,25 +32,15 @@ public class LeastConnectionsLoadBalanceStrategy implements LoadBalanceStrategy 
             throw new IllegalArgumentException("地址列表不能为空");
         }
         
-        long startTime = System.nanoTime();
+        // 选择连接数最少的地址
+        EndpointAddress selected = selectLeastConnections(addresses);
         
-        try {
-            // 选择连接数最少的地址
-            EndpointAddress selected = selectLeastConnections(addresses);
-            
-            // 增加连接计数
-            incrementConnectionCount(selected);
-            
-            log.debug("最少连接选择地址: {} (当前连接数: {})", 
-                    selected.toUri(), getConnectionCount(selected));
-            return selected;
-            
-        } finally {
-            // 记录统计信息
-            long selectionTime = System.nanoTime() - startTime;
-            EndpointAddress selected = selectLeastConnections(addresses);
-            stats.recordSelection(selected.toUri(), selectionTime);
-        }
+        // 增加连接计数
+        incrementConnectionCount(selected);
+        
+        log.debug("最少连接选择地址: {} (当前连接数: {})", 
+                selected.toUri(), getConnectionCount(selected));
+        return selected;
     }
     
     /**
@@ -150,20 +131,13 @@ public class LeastConnectionsLoadBalanceStrategy implements LoadBalanceStrategy 
     @Override
     public void reset() {
         connectionCounts.clear();
-        stats.reset();
         log.info("最少连接策略状态已重置");
     }
     
     @Override
-    public LoadBalanceStats getStats() {
-        return stats;
-    }
-    
-    @Override
     public String toString() {
-        return String.format("LeastConnectionsLoadBalanceStrategy{addresses=%d, totalConnections=%d, stats=%s}", 
+        return String.format("LeastConnectionsLoadBalanceStrategy{addresses=%d, totalConnections=%d}", 
                 connectionCounts.size(),
-                connectionCounts.values().stream().mapToInt(AtomicInteger::get).sum(),
-                stats);
+                connectionCounts.values().stream().mapToInt(AtomicInteger::get).sum());
     }
 } 
