@@ -9,13 +9,16 @@ import java.util.Map;
 
 /**
  * 路由目标接口
+ * 路由的后端服务目标抽象
  *
  * @author muxin
  */
-public interface RouteTarget {
+public interface RouteService {
 
-
-    RouteTargetDefinition routeTargetDefinition();
+    /**
+     * 获取服务定义配置
+     */
+    ServiceDefinition serviceDefinition();
     /**
      * 目标协议
      */

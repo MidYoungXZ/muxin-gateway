@@ -32,7 +32,7 @@ public class EnhancedRoute implements Route {
     private final Protocol inboundProtocol;
     private final List<Predicate> predicates;
     private final List<Filter> filters;
-    private final RouteTarget target;
+    private final RouteService target;
     private final TimeoutConfig timeouts;
     private final Map<String, Object> metadata;
     
@@ -78,7 +78,7 @@ public class EnhancedRoute implements Route {
     }
     
     @Override
-    public RouteTarget getTarget() {
+    public RouteService getService() {
         return target;
     }
     

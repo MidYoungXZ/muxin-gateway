@@ -12,8 +12,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 路由目标配置定义
- * 基于服务抽象的配置数据对象
+ * 服务定义配置类
+ * 对应YAML配置中的service节点，统一服务相关配置
+ * 
+ * 支持两种服务类型：
+ * - CONFIG: 静态地址配置，需要配置addresses列表
+ * - DISCOVERY: 服务发现，从注册中心获取服务实例
  *
  * @author muxin
  */
@@ -21,24 +25,24 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RouteTargetDefinition {
+public class ServiceDefinition {
     
     // ========== 服务标识信息 ==========
     
     /**
      * 服务唯一标识
      */
-    private String serviceId;
-    
+    private String id;
+
     /**
      * 服务显示名称
      */
-    private String serviceName;
+    private String name;
     
     /**
      * 服务类型: CONFIG/DISCOVERY
      */
-    private ServiceType serviceType;
+    private ServiceType type;
     
     // ========== 协议配置 ==========
     
@@ -74,14 +78,14 @@ public class RouteTargetDefinition {
      * 是否为CONFIG类型服务
      */
     public boolean isConfigType() {
-        return serviceType == ServiceType.CONFIG;
+        return type == ServiceType.CONFIG;
     }
     
     /**
      * 是否为DISCOVERY类型服务
      */
     public boolean isDiscoveryType() {
-        return serviceType == ServiceType.DISCOVERY;
+        return type == ServiceType.DISCOVERY;
     }
     
     // ========== 地址管理（仅CONFIG类型）==========
@@ -164,10 +168,15 @@ public class RouteTargetDefinition {
         validateBasicFields();
         
         // 服务类型特定验证
-        switch (serviceType) {
-            case CONFIG -> validateConfigTypeService();
-            case DISCOVERY -> validateDiscoveryTypeService();
-            default -> throw new IllegalArgumentException("不支持的服务类型: " + serviceType);
+        switch (type) {
+            case CONFIG:
+                validateConfigTypeService();
+                break;
+            case DISCOVERY:
+                validateDiscoveryTypeService();
+                break;
+            default:
+                throw new IllegalArgumentException("不支持的服务类型: " + type);
         }
         
         // 协议配置验证
@@ -178,16 +187,16 @@ public class RouteTargetDefinition {
      * 验证基础字段
      */
     private void validateBasicFields() {
-        if (serviceId == null || serviceId.trim().isEmpty()) {
-            throw new IllegalArgumentException("service-id不能为空");
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("service.id不能为空");
         }
         
-        if (serviceName == null || serviceName.trim().isEmpty()) {
-            throw new IllegalArgumentException("service-name不能为空");
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("service.name不能为空");
         }
         
-        if (serviceType == null) {
-            throw new IllegalArgumentException("service-type不能为空");
+        if (type == null) {
+            throw new IllegalArgumentException("service.type不能为空");
         }
     }
     
@@ -221,7 +230,7 @@ public class RouteTargetDefinition {
             throw new IllegalArgumentException("DISCOVERY类型服务不应该配置addresses");
         }
         
-        // DISCOVERY类型通过service-name从注册中心获取实例
+        // DISCOVERY类型通过service.name从注册中心获取实例
         // 不需要验证addresses
     }
     
@@ -230,7 +239,7 @@ public class RouteTargetDefinition {
      */
     private void validateProtocolConfig() {
         if (supportProtocol == null) {
-            throw new IllegalArgumentException("support-protocol不能为空");
+            throw new IllegalArgumentException("service.support-protocol不能为空");
         }
         
         // 验证协议类型
@@ -258,7 +267,7 @@ public class RouteTargetDefinition {
      */
     public String toDisplayString() {
         return String.format("Service[id=%s, name=%s, type=%s, protocol=%s]",
-            serviceId, serviceName, serviceType != null ? serviceType.getCode() : "unknown", 
+            id, name, type != null ? type.getCode() : "unknown", 
             supportProtocol != null ? supportProtocol.getType() : "unknown");
     }
     
@@ -267,8 +276,8 @@ public class RouteTargetDefinition {
      */
     public String getFullDescription() {
         StringBuilder sb = new StringBuilder();
-        sb.append("服务[").append(serviceName).append("](").append(serviceId).append(")");
-        sb.append(" - 类型: ").append(serviceType != null ? serviceType.getDescription() : "未知");
+        sb.append("服务[").append(name).append("](").append(id).append(")");
+        sb.append(" - 类型: ").append(type != null ? type.getDescription() : "未知");
         sb.append(" - 协议: ").append(supportProtocol != null ? supportProtocol.getType() : "未知");
         
         if (isConfigType() && hasAddresses()) {
@@ -280,35 +289,35 @@ public class RouteTargetDefinition {
     
     // ========== 构建器增强 ==========
     
-    public static class RouteTargetDefinitionBuilder {
+    public static class ServiceDefinitionBuilder {
         
         /**
          * 创建CONFIG类型服务的构建器
          */
-        public static RouteTargetDefinitionBuilder configService(String serviceId, String serviceName) {
-            return RouteTargetDefinition.builder()
-                .serviceId(serviceId)
-                .serviceName(serviceName)
-                .serviceType(ServiceType.CONFIG);
+        public static ServiceDefinitionBuilder configService(String serviceId, String serviceName) {
+            return ServiceDefinition.builder()
+                .id(serviceId)
+                .name(serviceName)
+                .type(ServiceType.CONFIG);
         }
         
         /**
          * 创建DISCOVERY类型服务的构建器
          */
-        public static RouteTargetDefinitionBuilder discoveryService(String serviceId, String serviceName) {
-            return RouteTargetDefinition.builder()
-                .serviceId(serviceId)
-                .serviceName(serviceName)
-                .serviceType(ServiceType.DISCOVERY);
+        public static ServiceDefinitionBuilder discoveryService(String serviceId, String serviceName) {
+            return ServiceDefinition.builder()
+                .id(serviceId)
+                .name(serviceName)
+                .type(ServiceType.DISCOVERY);
         }
         
         /**
          * 构建并验证配置
          */
-        public RouteTargetDefinition buildAndValidate() {
-            RouteTargetDefinition definition = build();
+        public ServiceDefinition buildAndValidate() {
+            ServiceDefinition definition = build();
             definition.validate();
             return definition;
         }
     }
-} 
+}

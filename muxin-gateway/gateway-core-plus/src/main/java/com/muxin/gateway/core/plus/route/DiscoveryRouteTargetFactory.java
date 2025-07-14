@@ -14,7 +14,7 @@ import java.util.Objects;
 
 /**
  * DISCOVERY类型路由目标工厂
- * 负责创建和验证基于服务发现的路由目标
+ * 负责根据服务定义创建和验证基于服务发现的路由目标
  *
  * @author muxin
  */
@@ -33,83 +33,82 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
     }
     
     @Override
-    public RouteTarget createRouteTarget(RouteTargetDefinition definition) {
-        log.debug("开始创建DISCOVERY路由目标: {}", definition.getServiceId());
+    public RouteService createRouteTarget(ServiceDefinition serviceDefinition) {
+        log.debug("开始创建DISCOVERY路由目标: {}", serviceDefinition.getId());
         
         // 验证定义
-        validateConfig(definition);
+        validateConfig(serviceDefinition);
         
         try {
             // 获取协议
-            Protocol protocol = definition.getSupportProtocol().toProtocol();
+            Protocol protocol = serviceDefinition.getSupportProtocol().toProtocol();
             
             // 创建负载均衡策略
-            LoadBalanceStrategy loadBalanceStrategy = createLoadBalanceStrategy(definition);
+            LoadBalanceStrategy loadBalanceStrategy = createLoadBalanceStrategy(serviceDefinition);
             
             // 创建DISCOVERY路由目标
-            DiscoveryRouteTarget routeTarget = new DiscoveryRouteTarget(
-                    definition.getServiceId(),
-                    definition.getServiceName(),
+            DiscoveryRouteService routeTarget = new DiscoveryRouteService(
+                    serviceDefinition,
                     protocol,
                     serviceRegistry,
                     loadBalanceStrategy,
-                    definition.getConfig()
+                    serviceDefinition.getConfig()
             );
             
             log.info("成功创建DISCOVERY路由目标: {} ({}), 负载均衡: {}", 
-                    definition.getServiceName(), definition.getServiceId(), 
+                    serviceDefinition.getName(), serviceDefinition.getId(), 
                     loadBalanceStrategy.getStrategyName());
             
             return routeTarget;
             
         } catch (Exception e) {
-            log.error("创建DISCOVERY路由目标失败: {}", definition.getServiceId(), e);
+            log.error("创建DISCOVERY路由目标失败: {}", serviceDefinition.getId(), e);
             throw new IllegalArgumentException("创建DISCOVERY路由目标失败: " + e.getMessage(), e);
         }
     }
     
     @Override
-    public void validateConfig(RouteTargetDefinition definition) {
-        log.debug("开始验证DISCOVERY路由目标定义: {}", definition.getServiceId());
+    public void validateConfig(ServiceDefinition serviceDefinition) {
+        log.debug("开始验证DISCOVERY路由目标定义: {}", serviceDefinition.getId());
         
         // 基础字段验证
-        if (definition.getServiceType() != ServiceType.DISCOVERY) {
+        if (serviceDefinition.getType() != ServiceType.DISCOVERY) {
             throw new IllegalArgumentException("服务类型必须是DISCOVERY");
         }
         
-        if (definition.getServiceId() == null || definition.getServiceId().trim().isEmpty()) {
+        if (serviceDefinition.getId() == null || serviceDefinition.getId().trim().isEmpty()) {
             throw new IllegalArgumentException("DISCOVERY类型必须指定serviceId");
         }
         
-        if (definition.getServiceName() == null || definition.getServiceName().trim().isEmpty()) {
+        if (serviceDefinition.getName() == null || serviceDefinition.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("DISCOVERY类型必须指定serviceName");
         }
         
-        if (definition.getSupportProtocol() == null || definition.getSupportProtocol().getType() == null || definition.getSupportProtocol().getType().trim().isEmpty()) {
+        if (serviceDefinition.getSupportProtocol() == null || serviceDefinition.getSupportProtocol().getType() == null || serviceDefinition.getSupportProtocol().getType().trim().isEmpty()) {
             throw new IllegalArgumentException("DISCOVERY类型必须指定supportProtocol");
         }
         
         // 协议验证
         try {
-            definition.getSupportProtocol().toProtocol();
+            serviceDefinition.getSupportProtocol().toProtocol();
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("不支持的协议类型: " + definition.getSupportProtocol().getType(), e);
+            throw new IllegalArgumentException("不支持的协议类型: " + serviceDefinition.getSupportProtocol().getType(), e);
         }
         
         // 负载均衡策略验证
-        validateLoadBalanceStrategy(definition);
+        validateLoadBalanceStrategy(serviceDefinition);
         
         // 服务发现配置验证
-        validateDiscoveryConfig(definition);
+        validateDiscoveryConfig(serviceDefinition);
         
-        log.debug("DISCOVERY路由目标定义验证通过: {}", definition.getServiceId());
+        log.debug("DISCOVERY路由目标定义验证通过: {}", serviceDefinition.getId());
     }
     
     /**
      * 验证负载均衡策略配置
      */
-    private void validateLoadBalanceStrategy(RouteTargetDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
+    private void validateLoadBalanceStrategy(ServiceDefinition serviceDefinition) {
+        Map<String, Object> config = serviceDefinition.getConfig();
         if (config == null) {
             return; // 使用默认配置
         }
@@ -124,18 +123,19 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
         
         // 验证权重配置（如果是加权策略）
         if ("WEIGHTED_ROUND_ROBIN".equals(strategy)) {
-            validateWeightedConfig(definition);
+            validateWeightedConfig(serviceDefinition);
         }
     }
     
     /**
      * 验证加权配置
      */
-    private void validateWeightedConfig(RouteTargetDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
+    private void validateWeightedConfig(ServiceDefinition serviceDefinition) {
+        Map<String, Object> config = serviceDefinition.getConfig();
         Object weights = config.get("weights");
         
-        if (weights instanceof Map<?, ?> weightMap) {
+        if (weights instanceof Map<?, ?>) {
+            Map<?, ?> weightMap = (Map<?, ?>) weights;
             for (Object weight : weightMap.values()) {
                 if (weight instanceof Number) {
                     int w = ((Number) weight).intValue();
@@ -152,8 +152,8 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
     /**
      * 验证服务发现配置
      */
-    private void validateDiscoveryConfig(RouteTargetDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
+    private void validateDiscoveryConfig(ServiceDefinition serviceDefinition) {
+        Map<String, Object> config = serviceDefinition.getConfig();
         if (config == null) {
             return;
         }
@@ -186,7 +186,8 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
      */
     private void validateHealthCheckConfig(Map<String, Object> config) {
         Object healthCheck = config.get("health-check");
-        if (healthCheck instanceof Map<?, ?> healthConfig) {
+        if (healthCheck instanceof Map<?, ?>) {
+            Map<?, ?> healthConfig = (Map<?, ?>) healthCheck;
             // 验证健康检查间隔
             Object interval = healthConfig.get("interval");
             if (interval != null) {
@@ -246,8 +247,8 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
     /**
      * 创建负载均衡策略
      */
-    private LoadBalanceStrategy createLoadBalanceStrategy(RouteTargetDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
+    private LoadBalanceStrategy createLoadBalanceStrategy(ServiceDefinition serviceDefinition) {
+        Map<String, Object> config = serviceDefinition.getConfig();
         
         // 获取策略名称，默认为轮询
         String strategyName = "ROUND_ROBIN";
@@ -257,7 +258,7 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
         
         try {
             LoadBalanceStrategy strategy = createStrategyByName(strategyName, config);
-            log.debug("为DISCOVERY路由目标 {} 创建负载均衡策略: {}", definition.getServiceId(), strategyName);
+            log.debug("为DISCOVERY路由目标 {} 创建负载均衡策略: {}", serviceDefinition.getId(), strategyName);
             return strategy;
             
         } catch (Exception e) {
@@ -270,16 +271,19 @@ public class DiscoveryRouteTargetFactory implements RouteTargetFactory {
      * 根据策略名称创建策略实例
      */
     private LoadBalanceStrategy createStrategyByName(String strategyName, Map<String, Object> config) {
-        return switch (strategyName.toUpperCase()) {
-            case "ROUND_ROBIN" -> new RoundRobinLoadBalanceStrategy();
-            case "RANDOM" -> new RandomLoadBalanceStrategy();
-            case "WEIGHTED_ROUND_ROBIN" -> new WeightedRoundRobinLoadBalanceStrategy();
-            case "LEAST_CONNECTIONS" -> new LeastConnectionsLoadBalanceStrategy();
-            default -> {
+        switch (strategyName.toUpperCase()) {
+            case "ROUND_ROBIN":
+                return new RoundRobinLoadBalanceStrategy();
+            case "RANDOM":
+                return new RandomLoadBalanceStrategy();
+            case "WEIGHTED_ROUND_ROBIN":
+                return new WeightedRoundRobinLoadBalanceStrategy();
+            case "LEAST_CONNECTIONS":
+                return new LeastConnectionsLoadBalanceStrategy();
+            default:
                 log.warn("未知的负载均衡策略: {}, 使用默认策略: ROUND_ROBIN", strategyName);
-                yield new RoundRobinLoadBalanceStrategy();
-            }
-        };
+                return new RoundRobinLoadBalanceStrategy();
+        }
     }
     
     /**

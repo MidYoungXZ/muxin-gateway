@@ -248,7 +248,7 @@ public class GatewayProcessor implements LifeCycle {
             }
 
             // 第一步：通过RouteTarget的负载均衡策略选择目标地址
-            EndpointAddress selectedAddress = route.getTarget().selectTarget(context);
+            EndpointAddress selectedAddress = route.getService().selectTarget(context);
             if (selectedAddress == null) {
                 throw new RuntimeException("负载均衡选择结果为空");
             }
@@ -256,7 +256,7 @@ public class GatewayProcessor implements LifeCycle {
             log.debug("[GatewayProcessor] 负载均衡选择地址: {}", selectedAddress.toUri());
 
             // 第二步：从NodeManager查找对应的ServiceInstance
-            String serviceId = route.getTarget().routeTargetDefinition().getServiceId();
+            String serviceId = route.getService().serviceDefinition().getId();
             ServiceInstance serviceInstance = findServiceInstanceByAddress(serviceId, selectedAddress);
 
             // 第三步：如果找不到现有实例，创建临时实例
@@ -518,14 +518,14 @@ public class GatewayProcessor implements LifeCycle {
         headers.set("Content-Type", "application/json");
         headers.set("X-Error-Type", "TIMEOUT");
 
-        String errorBody = """
-                {
-                    "error": "TIMEOUT",
-                    "message": "后端服务调用超时",
-                    "timestamp": %d,
-                    "requestId": "%s"
-                }
-                """.formatted(System.currentTimeMillis(), request.getMessageId());
+        String errorBody = String.format(
+                "{"
+                + "    \"error\": \"TIMEOUT\","
+                + "    \"message\": \"后端服务调用超时\","
+                + "    \"timestamp\": %d,"
+                + "    \"requestId\": \"%s\""
+                + "}",
+                System.currentTimeMillis(), request.getMessageId());
 
         HttpBody body = new HttpBody(errorBody);
         return new HttpMessage(
@@ -548,14 +548,13 @@ public class GatewayProcessor implements LifeCycle {
         headers.set("Content-Type", "application/json");
         headers.set("X-Error-Type", "BACKEND_ERROR");
 
-        String errorBody = """
-                {
-                    "error": "BACKEND_ERROR",
-                    "message": "%s",
-                    "timestamp": %d,
-                    "requestId": "%s"
-                }
-                """.formatted(
+        String errorBody = String.format(
+                "{"
+                + "    \"error\": \"BACKEND_ERROR\","
+                + "    \"message\": \"%s\","
+                + "    \"timestamp\": %d,"
+                + "    \"requestId\": \"%s\""
+                + "}",
                 throwable.getMessage() != null ? throwable.getMessage() : "未知错误",
                 System.currentTimeMillis(),
                 request.getMessageId()
@@ -583,14 +582,14 @@ public class GatewayProcessor implements LifeCycle {
         headers.set("Content-Type", "application/json");
         headers.set("X-Error-Type", "EMPTY_RESPONSE");
 
-        String errorBody = """
-                {
-                    "error": "EMPTY_RESPONSE",
-                    "message": "后端服务返回空响应",
-                    "timestamp": %d,
-                    "requestId": "%s"
-                }
-                """.formatted(System.currentTimeMillis(), request.getMessageId());
+        String errorBody = String.format(
+                "{"
+                + "    \"error\": \"EMPTY_RESPONSE\","
+                + "    \"message\": \"后端服务返回空响应\","
+                + "    \"timestamp\": %d,"
+                + "    \"requestId\": \"%s\""
+                + "}",
+                System.currentTimeMillis(), request.getMessageId());
 
         HttpBody body = new HttpBody(errorBody);
         return new HttpMessage(
@@ -866,17 +865,16 @@ public class GatewayProcessor implements LifeCycle {
         }
 
         // 设置错误响应体（JSON格式）
-        String errorBody = String.format("""
-                        {
-                            "error": {
-                                "type": "%s",
-                                "code": "%s",
-                                "message": "%s",
-                                "timestamp": %d,
-                                "requestId": "%s"
-                            }
-                        }
-                        """,
+        String errorBody = String.format(
+                "{"
+                + "    \"error\": {"
+                + "        \"type\": \"%s\","
+                + "        \"code\": \"%s\","
+                + "        \"message\": \"%s\","
+                + "        \"timestamp\": %d,"
+                + "        \"requestId\": \"%s\""
+                + "    }"
+                + "}",
                 errorInfo.getErrorType().name(),
                 errorInfo.getErrorCode(),
                 errorInfo.getErrorMessage(),

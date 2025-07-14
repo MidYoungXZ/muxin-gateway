@@ -139,7 +139,7 @@ public class RouteConfigConverter {
             List<Filter> filters = convertFilters(config.getId(), config.getFilters());
 
             // 转换路由目标
-            RouteTarget target = convertRouteTarget(config.getTarget());
+            RouteService target = convertRouteTarget(config.getService());
 
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
@@ -277,12 +277,12 @@ public class RouteConfigConverter {
     /**
      * 转换路由目标配置为RouteTarget实例
      */
-    private RouteTarget convertRouteTarget(RouteTargetDefinition definition) {
+    private RouteService convertRouteTarget(ServiceDefinition definition) {
         if (definition == null) {
             throw new IllegalArgumentException("路由目标配置不能为空");
         }
 
-        ServiceType type = definition.getServiceType();
+        ServiceType type = definition.getType();
         if (type == null) {
             throw new IllegalArgumentException("路由目标类型不能为空");
         }
@@ -324,7 +324,7 @@ public class RouteConfigConverter {
     private EndpointAddress consistentHashSelect(
             List<EndpointAddress> targets,
             RequestContext context,
-            RouteTarget routeTarget) {
+            RouteService routeService) {
         // 简单实现：根据请求的某个属性进行哈希
         String hashKey = context != null ? context.toString() : String.valueOf(System.nanoTime());
         int hash = hashKey.hashCode();

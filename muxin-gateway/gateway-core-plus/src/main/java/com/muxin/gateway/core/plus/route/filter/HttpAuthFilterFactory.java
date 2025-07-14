@@ -34,16 +34,16 @@ public class HttpAuthFilterFactory implements FilterFactory {
         
         // 根据认证类型验证特定参数
         switch (authType.toUpperCase()) {
-            case "JWT" -> {
+            case "JWT":
                 if (definition.getStringConfig("secretKey") == null) {
                     throw new IllegalArgumentException("JWT认证必须提供secretKey");
                 }
-            }
-            case "TOKEN" -> {
+                break;
+            case "TOKEN":
                 if (definition.getStringConfig("tokenParam") == null) {
                     throw new IllegalArgumentException("TOKEN认证必须提供tokenParam");
                 }
-            }
+                break;
             // BASIC认证通常不需要额外配置
         }
     }

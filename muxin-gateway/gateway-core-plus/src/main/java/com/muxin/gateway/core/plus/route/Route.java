@@ -60,7 +60,7 @@ public interface Route {
     /**
      * 目标服务配置
      */
-    RouteTarget getTarget();
+    RouteService getService();
     
     /**
      * 路由元数据
@@ -78,7 +78,7 @@ public interface Route {
      */
     default boolean isConfigurationValid() {
         Protocol supportedProtocol = getSupportedProtocol();
-        Protocol targetProtocol = getTarget().supportProtocol();
+        Protocol targetProtocol = getService().supportProtocol();
         
         if (supportedProtocol == null || targetProtocol == null) {
             return false;
@@ -140,13 +140,21 @@ public interface Route {
      * 获取指定类型的超时时间
      */
     default Duration getTimeout(TimeoutType type) {
-        return switch (type) {
-            case CONNECTION -> getConnectionTimeout();
-            case REQUEST -> getRequestTimeout();
-            case TOTAL -> getTotalTimeout();
-            case READ -> getReadTimeout();
-            case WRITE -> getWriteTimeout();
-            case CIRCUIT_BREAKER -> getCircuitBreakerTimeout();
-        };
+        switch (type) {
+            case CONNECTION:
+                return getConnectionTimeout();
+            case REQUEST:
+                return getRequestTimeout();
+            case TOTAL:
+                return getTotalTimeout();
+            case READ:
+                return getReadTimeout();
+            case WRITE:
+                return getWriteTimeout();
+            case CIRCUIT_BREAKER:
+                return getCircuitBreakerTimeout();
+            default:
+                return null;
+        }
     }
 } 

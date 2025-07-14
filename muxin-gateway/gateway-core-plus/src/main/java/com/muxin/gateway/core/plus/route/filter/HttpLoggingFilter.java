@@ -83,7 +83,8 @@ public class HttpLoggingFilter implements Filter {
     
     private void logRequest(RequestContext context) {
         Message inbound = context.getInboundMessage();
-        if (inbound != null && inbound.getMetadata() instanceof HttpMetadata metadata) {
+        if (inbound != null && inbound.getMetadata() instanceof HttpMetadata) {
+            HttpMetadata metadata = (HttpMetadata) inbound.getMetadata();
 
             StringBuilder logBuilder = new StringBuilder();
             logBuilder.append(String.format("[%s] 请求: %s %s", 

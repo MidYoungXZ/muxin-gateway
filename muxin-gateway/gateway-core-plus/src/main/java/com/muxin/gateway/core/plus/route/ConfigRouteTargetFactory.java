@@ -12,11 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * CONFIG类型路由目标工厂
- * 负责创建CONFIG类型的RouteTarget实例
+ * 负责根据服务定义创建CONFIG类型的RouteTarget实例
  *
  * @author muxin
  */
@@ -29,57 +28,56 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
     }
     
     @Override
-    public RouteTarget createRouteTarget(RouteTargetDefinition definition) {
-        log.debug("创建CONFIG类型路由目标: {}", definition.getServiceId());
+    public RouteService createRouteTarget(ServiceDefinition serviceDefinition) {
+        log.debug("创建CONFIG类型路由目标: {}", serviceDefinition.getId());
         
         // 验证配置（内部验证）
-        validateConfig(definition);
+        validateConfig(serviceDefinition);
         
         // 转换协议
-        Protocol protocol = convertProtocol(definition);
+        Protocol protocol = convertProtocol(serviceDefinition);
         
         // 转换地址列表
-        List<EndpointAddress> addresses = convertAddresses(definition, protocol);
+        List<EndpointAddress> addresses = convertAddresses(serviceDefinition, protocol);
         
         // 创建负载均衡策略
-        LoadBalanceStrategy strategy = createLoadBalanceStrategy(definition);
+        LoadBalanceStrategy strategy = createLoadBalanceStrategy(serviceDefinition);
         
         // 创建并返回RouteTarget
-        return new ConfigRouteTarget(
-            definition.getServiceId(),
-            definition.getServiceName(),
+        return new ConfigRouteService(
+            serviceDefinition,
             protocol,
             addresses,
             strategy,
-            definition.getConfig()
+            serviceDefinition.getConfig()
         );
     }
     
     @Override
-    public void validateConfig(RouteTargetDefinition definition) {
-        log.debug("验证CONFIG类型配置: {}", definition.getServiceId());
+    public void validateConfig(ServiceDefinition serviceDefinition) {
+        log.debug("验证CONFIG类型配置: {}", serviceDefinition.getId());
         
         // 基础验证
-        if (definition.getServiceType() != ServiceType.CONFIG) {
+        if (serviceDefinition.getType() != ServiceType.CONFIG) {
             throw new IllegalArgumentException("服务类型必须是CONFIG");
         }
         
         // CONFIG类型特定验证
-        validateConfigTypeDefinition(definition);
+        validateConfigTypeDefinition(serviceDefinition);
     }
     
     /**
      * 验证CONFIG类型的特定要求
      */
-    private void validateConfigTypeDefinition(RouteTargetDefinition definition) {
+    private void validateConfigTypeDefinition(ServiceDefinition serviceDefinition) {
         // 1. 必须有addresses
-        if (definition.getAddresses() == null || definition.getAddresses().isEmpty()) {
+        if (serviceDefinition.getAddresses() == null || serviceDefinition.getAddresses().isEmpty()) {
             throw new IllegalArgumentException("CONFIG类型服务必须配置addresses");
         }
         
         // 2. 验证每个地址
-        for (int i = 0; i < definition.getAddresses().size(); i++) {
-            AddressDefinition addressDef = definition.getAddresses().get(i);
+        for (int i = 0; i < serviceDefinition.getAddresses().size(); i++) {
+            AddressDefinition addressDef = serviceDefinition.getAddresses().get(i);
             if (addressDef == null) {
                 throw new IllegalArgumentException("addresses[" + i + "]不能为空");
             }
@@ -100,15 +98,15 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
         }
         
         // 3. 验证负载均衡配置
-        validateLoadBalanceConfig(definition);
+        validateLoadBalanceConfig(serviceDefinition);
     }
     
     /**
      * 验证负载均衡配置
      */
-    private void validateLoadBalanceConfig(RouteTargetDefinition definition) {
-        if (definition.getLoadBalance() != null) {
-            String strategy = definition.getLoadBalance().getStrategy();
+    private void validateLoadBalanceConfig(ServiceDefinition serviceDefinition) {
+        if (serviceDefinition.getLoadBalance() != null) {
+            String strategy = serviceDefinition.getLoadBalance().getStrategy();
             if (strategy != null && !isSupportedStrategy(strategy)) {
                 throw new IllegalArgumentException("不支持的负载均衡策略: " + strategy);
             }
@@ -128,9 +126,9 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
     /**
      * 转换协议配置
      */
-    private Protocol convertProtocol(RouteTargetDefinition definition) {
+    private Protocol convertProtocol(ServiceDefinition serviceDefinition) {
         try {
-            return definition.getSupportProtocol().toProtocol();
+            return serviceDefinition.getSupportProtocol().toProtocol();
         } catch (Exception e) {
             throw new IllegalArgumentException("协议转换失败: " + e.getMessage(), e);
         }
@@ -139,10 +137,10 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
     /**
      * 转换地址列表
      */
-    private List<EndpointAddress> convertAddresses(RouteTargetDefinition definition, Protocol protocol) {
+    private List<EndpointAddress> convertAddresses(ServiceDefinition serviceDefinition, Protocol protocol) {
         List<EndpointAddress> addresses = new ArrayList<>();
         
-        for (AddressDefinition addressDef : definition.getAddresses()) {
+        for (AddressDefinition addressDef : serviceDefinition.getAddresses()) {
             try {
                 EndpointAddress address = convertAddress(addressDef, protocol);
                 addresses.add(address);
@@ -160,7 +158,7 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
         }
         
         log.info("CONFIG服务 {} 转换地址完成，共 {} 个地址", 
-                definition.getServiceName(), addresses.size());
+                serviceDefinition.getName(), addresses.size());
         
         return addresses;
     }
@@ -180,18 +178,18 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
     /**
      * 创建负载均衡策略
      */
-    private LoadBalanceStrategy createLoadBalanceStrategy(RouteTargetDefinition definition) {
+    private LoadBalanceStrategy createLoadBalanceStrategy(ServiceDefinition serviceDefinition) {
         String strategyName = "ROUND_ROBIN"; // 默认策略
         
-        if (definition.getLoadBalance() != null && 
-            definition.getLoadBalance().getStrategy() != null) {
-            strategyName = definition.getLoadBalance().getStrategy().toUpperCase();
+        if (serviceDefinition.getLoadBalance() != null && 
+            serviceDefinition.getLoadBalance().getStrategy() != null) {
+            strategyName = serviceDefinition.getLoadBalance().getStrategy().toUpperCase();
         }
         
         LoadBalanceStrategy strategy = createStrategyByName(strategyName);
         
         log.debug("为CONFIG服务 {} 创建负载均衡策略: {}", 
-                definition.getServiceName(), strategy.getStrategyName());
+                serviceDefinition.getName(), strategy.getStrategyName());
         
         return strategy;
     }
@@ -200,16 +198,19 @@ public class ConfigRouteTargetFactory implements RouteTargetFactory {
      * 根据策略名称创建策略实例
      */
     private LoadBalanceStrategy createStrategyByName(String strategyName) {
-        return switch (strategyName.toUpperCase()) {
-            case "ROUND_ROBIN" -> new RoundRobinLoadBalanceStrategy();
-            case "RANDOM" -> new RandomLoadBalanceStrategy();
-            case "WEIGHTED_ROUND_ROBIN" -> new WeightedRoundRobinLoadBalanceStrategy();
-            case "LEAST_CONNECTIONS" -> new LeastConnectionsLoadBalanceStrategy();
-            default -> {
+        switch (strategyName.toUpperCase()) {
+            case "ROUND_ROBIN":
+                return new RoundRobinLoadBalanceStrategy();
+            case "RANDOM":
+                return new RandomLoadBalanceStrategy();
+            case "WEIGHTED_ROUND_ROBIN":
+                return new WeightedRoundRobinLoadBalanceStrategy();
+            case "LEAST_CONNECTIONS":
+                return new LeastConnectionsLoadBalanceStrategy();
+            default:
                 log.warn("未知的负载均衡策略: {}, 使用默认策略: ROUND_ROBIN", strategyName);
-                yield new RoundRobinLoadBalanceStrategy();
-            }
-        };
+                return new RoundRobinLoadBalanceStrategy();
+        }
     }
     
     @Override

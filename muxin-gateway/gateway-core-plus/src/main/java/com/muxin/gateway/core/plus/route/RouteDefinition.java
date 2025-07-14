@@ -68,7 +68,7 @@ public class RouteDefinition {
     /**
      * 目标服务配置
      */
-    private RouteTargetDefinition target;
+    private ServiceDefinition service;
     
     /**
      * 超时配置
@@ -100,21 +100,22 @@ public class RouteDefinition {
             throw new IllegalArgumentException("断言配置不能为空");
         }
         
-        if (target == null) {
-            throw new IllegalArgumentException("目标配置不能为空");
+        if (service == null) {
+            throw new IllegalArgumentException("服务配置不能为空");
         }
         
-        // 验证目标配置的基本信息
-        if (target.getServiceType() == null) {
-            throw new IllegalArgumentException("目标类型不能为空");
+        // 验证服务配置的基本信息
+        if (service.getType() == null) {
+            throw new IllegalArgumentException("服务类型不能为空");
         }
 
-        if (target.getAddresses() == null || target.getAddresses().isEmpty()) {
-            throw new IllegalArgumentException("目标地址不能为空");
+        // CONFIG类型需要验证addresses
+        if (service.isConfigType() && (service.getAddresses() == null || service.getAddresses().isEmpty())) {
+            throw new IllegalArgumentException("CONFIG类型服务必须配置addresses");
         }
         
         // 验证协议转换
-        if (supportProtocol.needsConversion(target.getSupportProtocol())) {
+        if (supportProtocol.needsConversion(service.getSupportProtocol())) {
             validateProtocolConversion();
         }
     }
@@ -124,7 +125,7 @@ public class RouteDefinition {
      */
     private void validateProtocolConversion() {
         String inboundType = supportProtocol.getType();
-        String outboundType = target.getSupportProtocol().getType();
+        String outboundType = service.getSupportProtocol().getType();
         
         // 检查是否支持协议转换
         if (!isSupportedProtocolConversion(inboundType, outboundType)) {
@@ -161,7 +162,7 @@ public class RouteDefinition {
      * 检查是否需要协议转换
      */
     public boolean needsProtocolConversion() {
-        return supportProtocol.needsConversion(target.getSupportProtocol());
+        return supportProtocol.needsConversion(service.getSupportProtocol());
     }
     
     /**
@@ -173,15 +174,15 @@ public class RouteDefinition {
         }
         
         return supportProtocol.getType().toUpperCase() + "_TO_" +
-               target.getSupportProtocol().getType().toUpperCase();
+               service.getSupportProtocol().getType().toUpperCase();
     }
     
     /**
      * 获取服务名称
      */
     public String getServiceName() {
-        if (target.isDiscoveryType()) {
-            return target.getServiceName();
+        if (service.isDiscoveryType()) {
+            return service.getName();
         }
         
         // 从元数据获取服务名称
@@ -192,7 +193,7 @@ public class RouteDefinition {
             }
         }
         
-        // 默认使用路由ID作为服务名称
-        return id;
+        // 默认使用服务名称
+        return service.getName();
     }
 } 

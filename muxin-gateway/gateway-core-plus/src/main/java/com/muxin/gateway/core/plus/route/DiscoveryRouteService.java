@@ -22,12 +22,10 @@ import java.util.concurrent.TimeUnit;
  * @author muxin
  */
 @Slf4j
-public class DiscoveryRouteTarget implements RouteTarget {
+public class DiscoveryRouteService implements RouteService {
     
-    // ========== 服务标识信息 ==========
-    private final String serviceId;
-    private final String serviceName;
-    private final ServiceType serviceType = ServiceType.DISCOVERY;
+    // ========== 服务定义 ==========
+    private final ServiceDefinition serviceDefinition;
     
     // ========== 协议配置 ==========
     private final Protocol supportProtocol;
@@ -43,18 +41,21 @@ public class DiscoveryRouteTarget implements RouteTarget {
     private final Duration cacheExpireTime;
     private final Object refreshLock = new Object();
     
-    public DiscoveryRouteTarget(String serviceId,
-                              String serviceName,
-                              Protocol supportProtocol,
-                              ServiceRegistry serviceRegistry,
-                              LoadBalanceStrategy loadBalanceStrategy,
-                              Map<String, Object> config) {
-        this.serviceId = Objects.requireNonNull(serviceId, "serviceId不能为空");
-        this.serviceName = Objects.requireNonNull(serviceName, "serviceName不能为空");
+    public DiscoveryRouteService(ServiceDefinition serviceDefinition,
+                                 Protocol supportProtocol,
+                                 ServiceRegistry serviceRegistry,
+                                 LoadBalanceStrategy loadBalanceStrategy,
+                                 Map<String, Object> config) {
+        this.serviceDefinition = Objects.requireNonNull(serviceDefinition, "serviceDefinition不能为空");
         this.supportProtocol = Objects.requireNonNull(supportProtocol, "supportProtocol不能为空");
         this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceDiscovery不能为空");
         this.loadBalanceStrategy = Objects.requireNonNull(loadBalanceStrategy, "loadBalanceStrategy不能为空");
         this.config = config;
+        
+        // 验证服务类型
+        if (!serviceDefinition.isDiscoveryType()) {
+            throw new IllegalArgumentException("DiscoveryRouteTarget只支持DISCOVERY类型服务");
+        }
         
         // 缓存过期时间，默认30秒
         this.cacheExpireTime = getCacheExpireTime(config);
@@ -62,12 +63,12 @@ public class DiscoveryRouteTarget implements RouteTarget {
         this.lastRefreshTime = 0;
         
         log.info("创建DISCOVERY路由目标: {} ({}), 负载均衡: {}, 缓存过期时间: {}秒", 
-                serviceName, serviceId, loadBalanceStrategy.getStrategyName(), cacheExpireTime.getSeconds());
+                serviceDefinition.getName(), serviceDefinition.getId(), loadBalanceStrategy.getStrategyName(), cacheExpireTime.getSeconds());
     }
 
     @Override
-    public RouteTargetDefinition routeTargetDefinition() {
-        return null;
+    public ServiceDefinition serviceDefinition() {
+        return serviceDefinition;
     }
 
     @Override
@@ -102,20 +103,20 @@ public class DiscoveryRouteTarget implements RouteTarget {
             List<EndpointAddress> addresses = getTargetAddresses();
             
             if (addresses.isEmpty()) {
-                throw new IllegalStateException("服务 " + serviceName + " 没有可用的实例");
+                throw new IllegalStateException("服务 " + serviceDefinition.getName() + " 没有可用的实例");
             }
             
             // 使用负载均衡策略选择地址
             EndpointAddress selected = loadBalanceStrategy.select(addresses, context);
             
             log.debug("DISCOVERY路由目标选择地址: {} -> {} (策略: {}, 可用实例: {})", 
-                    serviceName, selected.toUri(), loadBalanceStrategy.getStrategyName(), addresses.size());
+                    serviceDefinition.getName(), selected.toUri(), loadBalanceStrategy.getStrategyName(), addresses.size());
             
             return selected;
             
         } catch (Exception e) {
-            log.error("DISCOVERY路由目标选择地址失败: {}", serviceName, e);
-            throw new RuntimeException("服务发现选择地址失败: " + serviceName, e);
+            log.error("DISCOVERY路由目标选择地址失败: {}", serviceDefinition.getName(), e);
+            throw new RuntimeException("服务发现选择地址失败: " + serviceDefinition.getName(), e);
         }
     }
     
@@ -138,20 +139,20 @@ public class DiscoveryRouteTarget implements RouteTarget {
             }
             
             try {
-                log.debug("刷新DISCOVERY服务地址缓存: {}", serviceName);
+                log.debug("刷新DISCOVERY服务地址缓存: {}", serviceDefinition.getName());
                 
                 // 从服务发现中心获取实例
-                List<ServiceInstance> instances = serviceRegistry.selectInstances(serviceName);
+                List<ServiceInstance> instances = serviceRegistry.selectInstances(serviceDefinition.getName());
                 List<EndpointAddress> newAddresses = convertInstancesToAddresses(instances);
                 
                 // 更新缓存
                 this.cachedAddresses = newAddresses;
                 this.lastRefreshTime = System.currentTimeMillis();
                 
-                log.info("DISCOVERY服务 {} 地址缓存已更新，实例数量: {}", serviceName, newAddresses.size());
+                log.info("DISCOVERY服务 {} 地址缓存已更新，实例数量: {}", serviceDefinition.getName(), newAddresses.size());
                 
             } catch (Exception e) {
-                log.error("刷新DISCOVERY服务地址缓存失败: {}", serviceName, e);
+                log.error("刷新DISCOVERY服务地址缓存失败: {}", serviceDefinition.getName(), e);
                 // 刷新失败时保持原有缓存，避免服务中断
             }
         }
@@ -164,7 +165,7 @@ public class DiscoveryRouteTarget implements RouteTarget {
         return CompletableFuture.runAsync(() -> refreshAddresses())
                 .orTimeout(5, TimeUnit.SECONDS)
                 .exceptionally(throwable -> {
-                    log.warn("异步刷新地址缓存失败: {}", serviceName, throwable);
+                    log.warn("异步刷新地址缓存失败: {}", serviceDefinition.getName(), throwable);
                     return null;
                 });
     }
@@ -223,15 +224,15 @@ public class DiscoveryRouteTarget implements RouteTarget {
     // ========== Getter方法 ==========
     
     public String getServiceId() {
-        return serviceId;
+        return serviceDefinition.getId();
     }
     
     public String getServiceName() {
-        return serviceName;
+        return serviceDefinition.getName();
     }
     
     public ServiceType getServiceType() {
-        return serviceType;
+        return serviceDefinition.getType();
     }
     
     public ServiceRegistry getServiceDiscovery() {
@@ -255,7 +256,7 @@ public class DiscoveryRouteTarget implements RouteTarget {
             this.lastRefreshTime = 0; // 强制过期
             refreshAddresses();
         }
-        log.info("强制刷新DISCOVERY服务缓存: {}", serviceName);
+        log.info("强制刷新DISCOVERY服务缓存: {}", serviceDefinition.getName());
     }
     
     /**
@@ -266,7 +267,7 @@ public class DiscoveryRouteTarget implements RouteTarget {
             this.cachedAddresses.clear();
             this.lastRefreshTime = 0;
         }
-        log.info("清空DISCOVERY服务缓存: {}", serviceName);
+        log.info("清空DISCOVERY服务缓存: {}", serviceDefinition.getName());
     }
     
     /**
@@ -282,27 +283,27 @@ public class DiscoveryRouteTarget implements RouteTarget {
      */
     public void resetLoadBalanceState() {
         loadBalanceStrategy.reset();
-        log.info("重置DISCOVERY路由目标负载均衡状态: {}", serviceName);
+        log.info("重置DISCOVERY路由目标负载均衡状态: {}", serviceDefinition.getName());
     }
     
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        DiscoveryRouteTarget that = (DiscoveryRouteTarget) o;
-        return Objects.equals(serviceId, that.serviceId);
+        DiscoveryRouteService that = (DiscoveryRouteService) o;
+        return Objects.equals(serviceDefinition.getId(), that.serviceDefinition.getId());
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(serviceId);
+        return Objects.hash(serviceDefinition.getId());
     }
     
     @Override
     public String toString() {
         return String.format(
             "DiscoveryRouteTarget{serviceId='%s', serviceName='%s', protocol=%s, instances=%d, strategy='%s', cache='%s'}",
-            serviceId, serviceName, supportProtocol.type(), cachedAddresses.size(),
+            serviceDefinition.getId(), serviceDefinition.getName(), supportProtocol.type(), cachedAddresses.size(),
             loadBalanceStrategy.getStrategyName(), getCacheStats()
         );
     }

@@ -52,14 +52,22 @@ public class TimeoutConfig {
      * 获取指定类型的超时时间
      */
     public Duration getTimeout(TimeoutType type) {
-        return switch (type) {
-            case CONNECTION -> connection;
-            case REQUEST -> request;
-            case TOTAL -> total;
-            case READ -> read;
-            case WRITE -> write;
-            case CIRCUIT_BREAKER -> circuitBreaker;
-        };
+        switch (type) {
+            case CONNECTION:
+                return connection;
+            case REQUEST:
+                return request;
+            case TOTAL:
+                return total;
+            case READ:
+                return read;
+            case WRITE:
+                return write;
+            case CIRCUIT_BREAKER:
+                return circuitBreaker;
+            default:
+                return null;
+        }
     }
     
     /**
@@ -67,12 +75,24 @@ public class TimeoutConfig {
      */
     public void setTimeout(TimeoutType type, Duration timeout) {
         switch (type) {
-            case CONNECTION -> this.connection = timeout;
-            case REQUEST -> this.request = timeout;
-            case TOTAL -> this.total = timeout;
-            case READ -> this.read = timeout;
-            case WRITE -> this.write = timeout;
-            case CIRCUIT_BREAKER -> this.circuitBreaker = timeout;
+            case CONNECTION:
+                this.connection = timeout;
+                break;
+            case REQUEST:
+                this.request = timeout;
+                break;
+            case TOTAL:
+                this.total = timeout;
+                break;
+            case READ:
+                this.read = timeout;
+                break;
+            case WRITE:
+                this.write = timeout;
+                break;
+            case CIRCUIT_BREAKER:
+                this.circuitBreaker = timeout;
+                break;
         }
     }
     
