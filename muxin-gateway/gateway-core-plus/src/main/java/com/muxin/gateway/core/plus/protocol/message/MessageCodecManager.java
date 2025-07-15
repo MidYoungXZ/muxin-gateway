@@ -7,7 +7,7 @@ import com.muxin.gateway.core.plus.common.Repository;
  * @author: yangxz
  * @description:
  */
-public interface MessageCodecManager extends Repository<Protocol, MessageCodec> , LifeCycle {
+public interface MessageCodecManager extends Repository<Protocol, MessageCodec>, LifeCycle {
 
 
     /**

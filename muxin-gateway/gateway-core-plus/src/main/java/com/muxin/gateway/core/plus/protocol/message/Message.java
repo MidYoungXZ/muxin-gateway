@@ -60,4 +60,8 @@ public interface Message {
      * 消息克隆
      */
     Message copy();
+
+
+
+
 } 

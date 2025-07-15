@@ -10,11 +10,10 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
+import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * HTTP 消息编解码器实现
@@ -32,7 +31,7 @@ public class HttpMessageCodec implements MessageCodec {
         if (sourceProtocol == null) {
             return false;
         }
-        
+
         // 支持 HTTP 协议的所有版本
         return "HTTP".equalsIgnoreCase(sourceProtocol.type());
     }
@@ -46,12 +45,12 @@ public class HttpMessageCodec implements MessageCodec {
         }
 
         Object rawData = protocolData.getData();
-        
+
         try {
-            if (rawData instanceof FullHttpRequest) {
-                return convertHttpRequestToMessage((FullHttpRequest) rawData, protocolData.getProtocol(), context);
-            } else if (rawData instanceof FullHttpResponse) {
-                return convertHttpResponseToMessage((FullHttpResponse) rawData, protocolData.getProtocol(), context);
+            if (rawData instanceof FullHttpRequest request) {
+                return convertHttpRequestToMessage(request, protocolData.getProtocol(), context);
+            } else if (rawData instanceof FullHttpResponse response) {
+                return convertHttpResponseToMessage(response, protocolData.getProtocol(), context);
             } else {
                 throw new IllegalArgumentException("不支持的 HTTP 数据类型: " + rawData.getClass().getName());
             }
@@ -72,7 +71,7 @@ public class HttpMessageCodec implements MessageCodec {
         }
 
         HttpMessage httpMessage = (HttpMessage) message;
-        
+
         try {
             Object httpObject;
             if (httpMessage.getType() == MessageType.REQUEST) {
@@ -84,7 +83,7 @@ public class HttpMessageCodec implements MessageCodec {
             }
 
             return new ProtocolData(httpMessage.getProtocol(), httpObject);
-            
+
         } catch (Exception e) {
             log.error("[HttpMessageCodec] 转换为 ProtocolData 失败", e);
             throw new RuntimeException("HTTP 消息解码失败: " + e.getMessage(), e);
@@ -96,13 +95,11 @@ public class HttpMessageCodec implements MessageCodec {
     /**
      * 将 Netty FullHttpRequest 转换为统一 Message 对象
      */
-    private Message convertHttpRequestToMessage(FullHttpRequest request, Protocol protocol, RequestContext context) {
+    private Message convertHttpRequestToMessage(FullHttpRequest request, Protocol protocol, RequestContext context) throws Exception {
         // 1. 生成消息ID
         String messageId = UUID.randomUUID().toString();
-
         // 2. 构建URL
-        URL url = buildUrlFromRequest(request, context);
-
+        URL url = new URL(request.uri());
         // 3. 转换头部
         MessageHeaders headers = convertNettyHeaders(request.headers());
 
@@ -153,7 +150,7 @@ public class HttpMessageCodec implements MessageCodec {
                 MessageType.RESPONSE,
                 protocol,
                 url,
-                "RESPONSE", // 响应没有方法，使用固定值
+                context.getInboundMessage().method(),
                 headers,
                 body,
                 metadata
@@ -169,15 +166,12 @@ public class HttpMessageCodec implements MessageCodec {
         // 1. 构建 HTTP 方法
         HttpMethod method = HttpMethod.valueOf(message.method().toUpperCase());
 
-        // 2. 构建 URI
-        String uri = buildUriFromMessage(message);
-
-        // 3. 构建请求体
+        // 2. 构建请求体
         ByteBuf content = buildContentFromMessage(message.getBody());
 
-        // 4. 创建 HTTP 请求
+        // 3. 创建 HTTP 请求
         FullHttpRequest request = new DefaultFullHttpRequest(
-                HttpVersion.HTTP_1_1, method, uri, content
+                HttpVersion.HTTP_1_1, method, message.url().toString(), content
         );
 
         // 5. 设置头部
@@ -226,11 +220,11 @@ public class HttpMessageCodec implements MessageCodec {
      */
     private MessageHeaders convertNettyHeaders(io.netty.handler.codec.http.HttpHeaders nettyHeaders) {
         HttpHeaders headers = new HttpHeaders();
-        
+
         for (Map.Entry<String, String> entry : nettyHeaders) {
             headers.set(entry.getKey(), entry.getValue());
         }
-        
+
         return headers;
     }
 
@@ -249,47 +243,6 @@ public class HttpMessageCodec implements MessageCodec {
         return new HttpBody(bytes, contentType != null ? contentType : "application/octet-stream");
     }
 
-    /**
-     * 从请求构建 URL
-     */
-    private URL buildUrlFromRequest(FullHttpRequest request, RequestContext context) {
-        try {
-            String scheme = "http"; // 默认 HTTP
-            String host = request.headers().get(HttpHeaderNames.HOST);
-            if (host == null) {
-                host = "localhost"; // 默认主机
-            }
-            
-            String uri = request.uri();
-            
-            return new URL(scheme + "://" + host + uri);
-        } catch (MalformedURLException e) {
-            log.warn("[HttpMessageCodec] 构建 URL 失败，使用默认值", e);
-            try {
-                return new URL("http://localhost" + request.uri());
-            } catch (MalformedURLException ex) {
-                throw new RuntimeException("无法构建有效的 URL", ex);
-            }
-        }
-    }
-
-    /**
-     * 从消息构建 URI
-     */
-    private String buildUriFromMessage(HttpMessage message) {
-        if (message.url() == null) {
-            return "/";
-        }
-        
-        String path = message.url().getPath();
-        String query = message.url().getQuery();
-        
-        if (query != null && !query.isEmpty()) {
-            return path + "?" + query;
-        }
-        
-        return path;
-    }
 
     /**
      * 从 MessageBody 构建 ByteBuf 内容
@@ -298,7 +251,7 @@ public class HttpMessageCodec implements MessageCodec {
         if (body == null || body.isEmpty()) {
             return Unpooled.EMPTY_BUFFER;
         }
-        
+
         return Unpooled.wrappedBuffer(body.getBytes());
     }
 
@@ -309,7 +262,7 @@ public class HttpMessageCodec implements MessageCodec {
         if (messageHeaders == null) {
             return;
         }
-        
+
         for (Map.Entry<String, Object> entry : messageHeaders.asMap().entrySet()) {
             if (entry.getValue() != null) {
                 nettyHeaders.set(entry.getKey(), entry.getValue().toString());
@@ -322,12 +275,12 @@ public class HttpMessageCodec implements MessageCodec {
      */
     private void setDefaultRequestHeaders(FullHttpRequest request, HttpMessage message) {
         io.netty.handler.codec.http.HttpHeaders headers = request.headers();
-        
+
         // 设置 Content-Length
         if (!headers.contains(HttpHeaderNames.CONTENT_LENGTH)) {
             headers.set(HttpHeaderNames.CONTENT_LENGTH, request.content().readableBytes());
         }
-        
+
         // 设置 Host
         if (!headers.contains(HttpHeaderNames.HOST) && message.url() != null) {
             String host = message.url().getHost();
@@ -337,7 +290,7 @@ public class HttpMessageCodec implements MessageCodec {
             }
             headers.set(HttpHeaderNames.HOST, host);
         }
-        
+
         // 设置 User-Agent
         if (!headers.contains(HttpHeaderNames.USER_AGENT)) {
             headers.set(HttpHeaderNames.USER_AGENT, "MuxinGateway/1.0");
@@ -349,20 +302,20 @@ public class HttpMessageCodec implements MessageCodec {
      */
     private void setDefaultResponseHeaders(FullHttpResponse response, HttpMessage message) {
         io.netty.handler.codec.http.HttpHeaders headers = response.headers();
-        
+
         // 设置 Content-Length
         if (!headers.contains(HttpHeaderNames.CONTENT_LENGTH)) {
             headers.set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
         }
-        
+
         // 设置 Server
         if (!headers.contains(HttpHeaderNames.SERVER)) {
             headers.set(HttpHeaderNames.SERVER, "MuxinGateway/1.0");
         }
-        
+
         // 设置 Date
         if (!headers.contains(HttpHeaderNames.DATE)) {
-            headers.set(HttpHeaderNames.DATE, new java.util.Date().toString());
+            headers.set(HttpHeaderNames.DATE, new Date().toString());
         }
     }
 
@@ -389,13 +342,6 @@ public class HttpMessageCodec implements MessageCodec {
         if (context != null && context.serverConnection() != null) {
             builder.connectionId(context.serverConnection().getConnectionId());
         }
-
-        // 添加 HTTP 特定属性
-        builder.attribute("method", request.method().name());
-        builder.attribute("uri", request.uri());
-        builder.attribute("version", request.protocolVersion().text());
-        builder.attribute("headers", convertNettyHeaders(request.headers()).asMap());
-
         return builder.build();
     }
 
@@ -408,21 +354,17 @@ public class HttpMessageCodec implements MessageCodec {
                 .sendTime(System.currentTimeMillis());
 
         // 从请求元数据继承信息
-        if (context != null && context.getInboundMessage() != null 
+        if (context != null && context.getInboundMessage() != null
                 && context.getInboundMessage().getMetadata() != null) {
             MessageMetadata requestMeta = context.getInboundMessage().getMetadata();
             builder.traceId(requestMeta.getTraceId())
-                   .connectionId(requestMeta.getConnectionId())
-                   .routeId(requestMeta.getRouteId())
-                   .serviceName(requestMeta.getServiceName());
+                    .connectionId(requestMeta.getConnectionId())
+                    .routeId(requestMeta.getRouteId())
+                    .serviceName(requestMeta.getServiceName());
         }
-
         // 添加 HTTP 响应特定属性
         builder.attribute("statusCode", response.status().code());
         builder.attribute("statusText", response.status().reasonPhrase());
-        builder.attribute("version", response.protocolVersion().text());
-        builder.attribute("headers", convertNettyHeaders(response.headers()).asMap());
-
         return builder.build();
     }
 

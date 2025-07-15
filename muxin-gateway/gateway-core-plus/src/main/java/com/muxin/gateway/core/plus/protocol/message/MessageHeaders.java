@@ -46,14 +46,5 @@ public interface MessageHeaders {
      * 转换为Map
      */
     Map<String, Object> asMap();
-    
-    /**
-     * 设置协议特定头部
-     */
-    void setProtocolHeaders(Map<String, Object> headers);
-    
-    /**
-     * 获取协议特定头部
-     */
-    Map<String, Object> getProtocolHeaders();
+
 } 

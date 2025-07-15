@@ -109,8 +109,8 @@ public class GatewayProcessor implements LifeCycle {
 
             // 第5步：负载均衡与节点选择
             log.debug("[GatewayProcessor] 步骤5：负载均衡与节点选择 - {}", requestId);
-            ServiceInstance selectedNode = selectTargetNode(context);
-            context.setSelectedInstance(selectedNode);
+            EndpointAddress endpointAddress = selectServiceEndpoint(context);
+            context.setSelectedEndpoint(endpointAddress);
 
             // 第6步：连接管理
             log.debug("[GatewayProcessor] 步骤6：连接管理 - {}", requestId);
@@ -240,7 +240,7 @@ public class GatewayProcessor implements LifeCycle {
     /**
      * 同步版本：负载均衡与节点选择
      */
-    protected ServiceInstance selectTargetNode(RequestContext context) {
+    protected EndpointAddress selectServiceEndpoint(RequestContext context) {
         try {
             Route route = context.getMatchedRoute();
             if (route == null) {
@@ -252,26 +252,8 @@ public class GatewayProcessor implements LifeCycle {
             if (selectedAddress == null) {
                 throw new RuntimeException("负载均衡选择结果为空");
             }
-
             log.debug("[GatewayProcessor] 负载均衡选择地址: {}", selectedAddress.toUri());
-
-            // 第二步：从NodeManager查找对应的ServiceInstance
-            String serviceId = route.getService().serviceDefinition().getId();
-            ServiceInstance serviceInstance = findServiceInstanceByAddress(serviceId, selectedAddress);
-
-            // 第三步：如果找不到现有实例，创建临时实例
-            //todo 兜底策略
-
-            // 第四步：验证实例可用性
-            validateServiceInstance(serviceInstance, context);
-
-            // 第五步：更新实例活跃时间和统计信息
-            updateInstanceMetrics(serviceInstance, context);
-
-            log.info("[GatewayProcessor] 成功选择服务节点: {} -> {}", serviceId, serviceInstance.getAddress().toUri());
-
-            return serviceInstance;
-
+            return selectedAddress;
         } catch (Exception e) {
             log.error("[GatewayProcessor] 负载均衡失败", e);
             throw new RuntimeException("负载均衡失败: " + e.getMessage(), e);
@@ -337,33 +319,6 @@ public class GatewayProcessor implements LifeCycle {
     }
 
     /**
-     * 验证服务实例可用性
-     */
-    private void validateServiceInstance(ServiceInstance instance, RequestContext context) {
-        // 检查实例基本信息
-        if (instance.getAddress() == null) {
-            throw new RuntimeException("服务实例地址为空: " + instance.instanceId());
-        }
-
-        // 检查健康状态
-        if (!instance.isHealthy()) {
-            log.warn("[GatewayProcessor] 选择了非健康实例: {} - 状态: {}",
-                    instance.instanceId(), instance.getStatus());
-            // 这里可以根据配置决定是否允许使用非健康实例
-        }
-        log.debug("[GatewayProcessor] 服务实例验证通过: {}", instance.instanceId());
-    }
-
-
-    /**
-     * 更新实例指标和统计信息
-     */
-    private void updateInstanceMetrics(ServiceInstance instance, RequestContext context) {
-        //todo  预留 暂不实现
-
-    }
-
-    /**
      * 提取客户端信息
      */
     private String extractClientInfo(RequestContext context) {
@@ -394,22 +349,21 @@ public class GatewayProcessor implements LifeCycle {
      * 同步版本：连接管理
      */
     protected ClientConnection acquireConnection(RequestContext context) {
-        ServiceInstance instance = context.getSelectedInstance();
-        if (instance == null) {
+        EndpointAddress endpoint = context.getSelectedEndpoint();
+        if (endpoint == null) {
             throw new RuntimeException("没有选定的服务节点");
         }
         try {
             // 使用正确的方法名和协议参数
             ClientConnection connection = connectionPoolManager
-                    .getClientConnection(instance.getAddress(), instance.service().getProtocol());
+                    .getClientConnection(endpoint, endpoint.getProtocol());
             if (connection == null) {
-                throw new RuntimeException("无法获取连接到: " + instance.getAddress().toUri());
+                throw new RuntimeException("无法获取连接到: " + endpoint.toUri());
             }
-
-            log.debug("[GatewayProcessor] 连接获取成功: {}", instance.getAddress().toUri());
+            log.debug("[GatewayProcessor] 连接获取成功: {}", endpoint.toUri());
             return connection;
         } catch (Exception e) {
-            log.error("[GatewayProcessor] 连接获取失败: {}", instance.getAddress().toUri(), e);
+            log.error("[GatewayProcessor] 连接获取失败: {}", endpoint.toUri(), e);
             throw new RuntimeException("连接获取失败: " + e.getMessage(), e);
         }
     }
@@ -490,12 +444,10 @@ public class GatewayProcessor implements LifeCycle {
 
                 } finally {
                     // 归还连接到池中
-                    if (connection != null) {
-                        try {
-                            connection.returnToPool();
-                        } catch (Exception e) {
-                            log.warn("[GatewayProcessor] 归还连接失败: {}", e.getMessage());
-                        }
+                    try {
+                        connection.returnToPool();
+                    } catch (Exception e) {
+                        log.warn("[GatewayProcessor] 归还连接失败: {}", e.getMessage());
                     }
                 }
             }).get();
@@ -520,11 +472,11 @@ public class GatewayProcessor implements LifeCycle {
 
         String errorBody = String.format(
                 "{"
-                + "    \"error\": \"TIMEOUT\","
-                + "    \"message\": \"后端服务调用超时\","
-                + "    \"timestamp\": %d,"
-                + "    \"requestId\": \"%s\""
-                + "}",
+                        + "    \"error\": \"TIMEOUT\","
+                        + "    \"message\": \"后端服务调用超时\","
+                        + "    \"timestamp\": %d,"
+                        + "    \"requestId\": \"%s\""
+                        + "}",
                 System.currentTimeMillis(), request.getMessageId());
 
         HttpBody body = new HttpBody(errorBody);
@@ -550,11 +502,11 @@ public class GatewayProcessor implements LifeCycle {
 
         String errorBody = String.format(
                 "{"
-                + "    \"error\": \"BACKEND_ERROR\","
-                + "    \"message\": \"%s\","
-                + "    \"timestamp\": %d,"
-                + "    \"requestId\": \"%s\""
-                + "}",
+                        + "    \"error\": \"BACKEND_ERROR\","
+                        + "    \"message\": \"%s\","
+                        + "    \"timestamp\": %d,"
+                        + "    \"requestId\": \"%s\""
+                        + "}",
                 throwable.getMessage() != null ? throwable.getMessage() : "未知错误",
                 System.currentTimeMillis(),
                 request.getMessageId()
@@ -584,11 +536,11 @@ public class GatewayProcessor implements LifeCycle {
 
         String errorBody = String.format(
                 "{"
-                + "    \"error\": \"EMPTY_RESPONSE\","
-                + "    \"message\": \"后端服务返回空响应\","
-                + "    \"timestamp\": %d,"
-                + "    \"requestId\": \"%s\""
-                + "}",
+                        + "    \"error\": \"EMPTY_RESPONSE\","
+                        + "    \"message\": \"后端服务返回空响应\","
+                        + "    \"timestamp\": %d,"
+                        + "    \"requestId\": \"%s\""
+                        + "}",
                 System.currentTimeMillis(), request.getMessageId());
 
         HttpBody body = new HttpBody(errorBody);
@@ -688,14 +640,12 @@ public class GatewayProcessor implements LifeCycle {
      * 执行出站协议转换
      */
     protected void performOutboundProtocolConversion(RequestContext context) {
-        // 出站消息协议
-        Protocol sourceProtocol = context.getOutboundMessage().getProtocol();
         // 原始入站消息协议
         Protocol targetProtocol = context.getInboundData().getProtocol();
         // 获取协议转换器并进行转换
-        MessageCodec converter = messageCodecManager.selectById(sourceProtocol);
+        MessageCodec converter = messageCodecManager.selectById(targetProtocol);
         if (converter == null) {
-            throw new RuntimeException("找不到协议转换器: " + sourceProtocol.type() + " -> " + targetProtocol.type());
+            throw new RuntimeException("找不到协议转换器: " + targetProtocol.type());
         }
 
         Object convertedResponse = converter.convertFromMessage(context.getOutboundMessage(), context);
@@ -867,14 +817,14 @@ public class GatewayProcessor implements LifeCycle {
         // 设置错误响应体（JSON格式）
         String errorBody = String.format(
                 "{"
-                + "    \"error\": {"
-                + "        \"type\": \"%s\","
-                + "        \"code\": \"%s\","
-                + "        \"message\": \"%s\","
-                + "        \"timestamp\": %d,"
-                + "        \"requestId\": \"%s\""
-                + "    }"
-                + "}",
+                        + "    \"error\": {"
+                        + "        \"type\": \"%s\","
+                        + "        \"code\": \"%s\","
+                        + "        \"message\": \"%s\","
+                        + "        \"timestamp\": %d,"
+                        + "        \"requestId\": \"%s\""
+                        + "    }"
+                        + "}",
                 errorInfo.getErrorType().name(),
                 errorInfo.getErrorCode(),
                 errorInfo.getErrorMessage(),

@@ -6,7 +6,7 @@ import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import com.muxin.gateway.core.plus.protocol.message.Message;
 import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
-import com.muxin.gateway.core.plus.route.service.ServiceInstance;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 
 /**
  * 通用请求上下文 - 协议无关
@@ -115,12 +115,12 @@ public interface RequestContext extends Attributes {
     /**
      * 选中的节点
      */
-    ServiceInstance getSelectedInstance();
+    EndpointAddress getSelectedEndpoint();
 
     /**
      * 设置选中的节点
      */
-    void setSelectedInstance(ServiceInstance instance);
+    void setSelectedEndpoint(EndpointAddress instance);
 
     /**
      * 是否需要协议转换

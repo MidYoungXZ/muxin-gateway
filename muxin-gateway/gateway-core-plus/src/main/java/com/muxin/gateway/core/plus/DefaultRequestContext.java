@@ -7,7 +7,8 @@ import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import com.muxin.gateway.core.plus.protocol.message.ProtocolData;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.Route;
-import com.muxin.gateway.core.plus.route.service.ServiceInstance;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
+import lombok.Data;
 
 import java.util.Map;
 import java.util.UUID;
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author muxin
  */
+@Data
 public class DefaultRequestContext implements RequestContext {
 
     private final long startTime;
@@ -36,7 +38,7 @@ public class DefaultRequestContext implements RequestContext {
     private ServerConnection serverConnection;
     private ClientConnection clientConnection;
     private Route matchedRoute;
-    private ServiceInstance selectedNode;
+    private EndpointAddress endpointAddress;
     private boolean completed;
     private Throwable error;
 
@@ -154,13 +156,13 @@ public class DefaultRequestContext implements RequestContext {
     }
 
     @Override
-    public ServiceInstance getSelectedInstance() {
-        return selectedNode;
+    public EndpointAddress getSelectedEndpoint() {
+        return endpointAddress;
     }
 
     @Override
-    public void setSelectedInstance(ServiceInstance instance) {
-        this.selectedNode = instance;
+    public void setSelectedEndpoint(EndpointAddress endpointAddress) {
+        this.endpointAddress = endpointAddress;
     }
 
 
@@ -228,25 +230,4 @@ public class DefaultRequestContext implements RequestContext {
         return null;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("DefaultRequestContext{");
-        sb.append("startTime=").append(startTime);
-        sb.append(", requestId='").append(requestId).append('\'');
-        sb.append(", attributes=").append(attributes);
-        sb.append(", inboundData=").append(inboundData);
-        sb.append(", outboundData=").append(outboundData);
-        sb.append(", inboundMessage=").append(inboundMessage);
-        sb.append(", outboundMessage=").append(outboundMessage);
-        sb.append(", backendServiceRequest=").append(backendServiceRequest);
-        sb.append(", backendServiceResponse=").append(backendServiceResponse);
-        sb.append(", serverConnection=").append(serverConnection);
-        sb.append(", clientConnection=").append(clientConnection);
-        sb.append(", matchedRoute=").append(matchedRoute);
-        sb.append(", selectedNode=").append(selectedNode);
-        sb.append(", completed=").append(completed);
-        sb.append(", error=").append(error);
-        sb.append('}');
-        return sb.toString();
-    }
 }

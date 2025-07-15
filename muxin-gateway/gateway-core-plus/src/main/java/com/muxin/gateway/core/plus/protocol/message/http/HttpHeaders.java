@@ -62,18 +62,7 @@ public class HttpHeaders implements MessageHeaders {
     public Map<String, Object> asMap() {
         return new LinkedHashMap<>(headers);
     }
-    
-    @Override
-    public void setProtocolHeaders(Map<String, Object> headers) {
-        this.protocolHeaders.clear();
-        this.protocolHeaders.putAll(headers);
-    }
-    
-    @Override
-    public Map<String, Object> getProtocolHeaders() {
-        return new LinkedHashMap<>(protocolHeaders);
-    }
-    
+
     // HTTP特定方法
     public String getContentType() {
         return get("Content-Type", String.class);
