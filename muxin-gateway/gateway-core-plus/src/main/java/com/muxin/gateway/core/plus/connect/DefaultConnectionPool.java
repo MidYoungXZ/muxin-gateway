@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.msg.Protocol;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 
@@ -139,20 +139,6 @@ public class DefaultConnectionPool implements ConnectionPool {
         }
 
         try {
-            if (connection instanceof NettyClientConnection) {
-                NettyClientConnection clientConn = (NettyClientConnection) connection;
-                String poolKey = generatePoolKey(clientConn.getTarget(), connection.getProtocol());
-
-                if (clientConn.isHealthy()) {
-                    clientConn.markIdle();
-                    BlockingQueue<Connection> pool = pools.get(poolKey);
-                    if (pool != null && pool.size() < config.getMaxConnectionsPerTarget()) {
-                        pool.offer(connection);
-                        return;
-                    }
-                }
-            }
-
             // 无法归还，直接关闭
             connection.close();
         } catch (Exception e) {

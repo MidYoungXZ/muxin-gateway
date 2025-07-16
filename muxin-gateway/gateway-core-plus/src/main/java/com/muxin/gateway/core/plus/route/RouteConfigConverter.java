@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.msg.Protocol;
 import com.muxin.gateway.core.plus.route.filter.*;
 import com.muxin.gateway.core.plus.route.predicate.*;
 import lombok.extern.slf4j.Slf4j;
@@ -76,15 +76,7 @@ public class RouteConfigConverter {
      * 初始化FilterFactory映射
      */
     private void initFilterFactories() {
-        // 注册内置FilterFactory
-        registerFilterFactory(new HttpLoggingFilterFactory());
-        registerFilterFactory(new HttpAuthFilterFactory());
-        
         // TODO: 后续可以注册更多内置FilterFactory
-        // registerFilterFactory(new CorsFilterFactory());
-        // registerFilterFactory(new RateLimitFilterFactory());
-        // registerFilterFactory(new CircuitBreakerFilterFactory());
-
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 
@@ -92,16 +84,7 @@ public class RouteConfigConverter {
      * 初始化PredicateFactory映射
      */
     private void initPredicateFactories() {
-        // 注册内置PredicateFactory
-        registerPredicateFactory(new HttpPathPredicateFactory());
-        registerPredicateFactory(new HttpMethodPredicateFactory());
-        registerPredicateFactory(new HttpHeaderPredicateFactory());
-        
         // TODO: 后续可以注册更多内置PredicateFactory
-        // registerPredicateFactory(new HttpQueryPredicateFactory());
-        // registerPredicateFactory(new HttpHostPredicateFactory());
-        // registerPredicateFactory(new HttpCookiePredicateFactory());
-
         log.info("[RouteConfigConverter] PredicateFactory初始化完成，支持的Predicate类型: {}", predicateFactories.keySet());
     }
 
@@ -111,7 +94,6 @@ public class RouteConfigConverter {
     private void initRouteServiceFactories() {
         // 注册内置RouteServiceFactory
         registerRouteServiceFactory(new ConfigRouteServiceFactory());
-        
         // TODO: 后续可以注册服务发现工厂（需要ServiceRegistry依赖）
         // registerRouteServiceFactory(new DiscoveryRouteServiceFactory(serviceRegistry));
 
@@ -196,7 +178,7 @@ public class RouteConfigConverter {
     /**
      * 将RouteDefinition转换为EnhancedRoute
      */
-    public EnhancedRoute convertToRoute(RouteDefinition config) {
+    public Route convertToRoute(RouteDefinition config) {
         if (config == null) {
             throw new IllegalArgumentException("路由配置不能为空");
         }
@@ -219,25 +201,11 @@ public class RouteConfigConverter {
 
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
+            // todo  Route实现
 
-            // 构建路由对象
-            EnhancedRoute route = EnhancedRoute.builder()
-                    .id(config.getId())
-                    .name(config.getName())
-                    .description(config.getDescription())
-                    .order(config.getOrder())
-                    .enabled(config.isEnabled())
-                    .inboundProtocol(inboundProtocol)
-                    .predicates(predicates)  // 每个路由独立的Predicate实例
-                    .filters(filters)  // 每个路由独立的Filter实例
-                    .target(target)
-                    .timeouts(timeouts)
-                    .metadata(config.getMetadata())
-                    .build();
-            
             log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
             
-            return route;
+            return null;
 
         } catch (Exception e) {
             log.error("[RouteConfigConverter] 转换路由配置失败: {}", config.getId(), e);
@@ -248,18 +216,18 @@ public class RouteConfigConverter {
     /**
      * 批量转换路由配置
      */
-    public List<EnhancedRoute> convertToRoutes(List<RouteDefinition> configs) {
+    public List<Route> convertToRoutes(List<RouteDefinition> configs) {
         if (configs == null || configs.isEmpty()) {
             log.warn("[RouteConfigConverter] 路由配置列表为空");
             return new ArrayList<>();
         }
 
-        List<EnhancedRoute> routes = new ArrayList<>();
+        List<Route> routes = new ArrayList<>();
         long startTime = System.currentTimeMillis();
 
         for (RouteDefinition config : configs) {
             try {
-                EnhancedRoute route = convertToRoute(config);
+                Route route = convertToRoute(config);
                 routes.add(route);
                 log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
             } catch (Exception e) {

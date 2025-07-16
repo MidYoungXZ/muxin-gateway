@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
-import com.muxin.gateway.core.plus.protocol.message.ProtocolEnum;
+import com.muxin.gateway.core.plus.msg.Protocol;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,9 +39,7 @@ public class DefaultConnectionPoolManager implements ConnectionPoolManager {
         if (initialized.compareAndSet(false, true)) {
             log.info("[DefaultConnectionPoolManager] 连接池管理器初始化");
             
-            // 注册默认的HTTP连接工厂
-            HttpConnectionFactory httpFactory = new HttpConnectionFactory();
-            registerConnectionFactory(httpFactory);
+            // todo 注册默认的HTTP连接工厂
         }
     }
 

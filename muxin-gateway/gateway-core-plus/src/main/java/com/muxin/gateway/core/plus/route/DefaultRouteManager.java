@@ -1,7 +1,5 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.protocol.message.Message;
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -80,43 +78,9 @@ public class DefaultRouteManager implements RouteManager {
         if (!started || shutdown) {
             throw new IllegalStateException("路由管理器未启动或已关闭");
         }
-
         try {
-            // 从请求上下文中获取协议信息
-            Message inboundMessage = context.getInboundMessage();
-            if (inboundMessage == null) {
-                log.debug("[DefaultRouteManager] 请求上下文中未包含入站消息");
-                return null;
-            }
-            
-            Protocol protocol = inboundMessage.getProtocol();
-            if (protocol == null) {
-                log.debug("[DefaultRouteManager] 入站消息中未包含协议信息");
-                return null;
-            }
 
-            String protocolType = protocol.type();
-            
-            // 获取协议对应的路由列表（已按优先级排序）
-            List<Route> routes = getRoutesByProtocol(protocolType);
-            if (routes.isEmpty()) {
-                log.debug("[DefaultRouteManager] 未找到协议 {} 的路由规则", protocolType);
-                return null;
-            }
-
-            // 按优先级顺序匹配路由
-            for (Route route : routes) {
-                if (route.isEnabled() && route.matches(context)) {
-                    log.debug("[DefaultRouteManager] 路由匹配成功: {} -> {}", 
-                        getRequestPath(inboundMessage), route.getId());
-                    return route;
-                }
-            }
-
-            log.debug("[DefaultRouteManager] 未找到匹配的路由: {} - {}", 
-                protocolType, getRequestPath(inboundMessage));
             return null;
-
         } catch (Exception e) {
             log.error("[DefaultRouteManager] 路由匹配异常", e);
             return null;
@@ -309,19 +273,7 @@ public class DefaultRouteManager implements RouteManager {
         }
     }
 
-    /**
-     * 从消息中提取请求路径
-     */
-    private String getRequestPath(Message message) {
-        try {
-            if (message != null && message.url() != null) {
-                return message.url().getPath();
-            }
-        } catch (Exception e) {
-            log.debug("[DefaultRouteManager] 提取请求路径异常", e);
-        }
-        return "unknown";
-    }
+
 
     /**
      * 路由变更监听器接口

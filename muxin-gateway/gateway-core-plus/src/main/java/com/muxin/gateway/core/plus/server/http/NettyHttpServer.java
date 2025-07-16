@@ -1,12 +1,6 @@
 package com.muxin.gateway.core.plus.server.http;
 
-import com.muxin.gateway.core.plus.DefaultRequestContext;
 import com.muxin.gateway.core.plus.GatewayProcessor;
-import com.muxin.gateway.core.plus.connect.NettyServerConnection;
-import com.muxin.gateway.core.plus.common.Constant;
-import com.muxin.gateway.core.plus.protocol.message.*;
-import com.muxin.gateway.core.plus.protocol.message.http.HttpMessage;
-import com.muxin.gateway.core.plus.route.RequestContext;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
@@ -23,7 +17,6 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.UUID;
 
 /**
  * 简化的 HTTP 服务器实现
@@ -246,114 +239,16 @@ public class NettyHttpServer {
             // 存储请求到Channel属性中，用于后续判断Keep-Alive
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             try {
-                DefaultRequestContext context = new DefaultRequestContext(new ProtocolData(ProtocolEnum.HTTP, request));
-                NettyServerConnection connection = new NettyServerConnection(ctx, ProtocolEnum.HTTP);
-                context.setServerConnection(connection);
-                context.setAttribute(Constant.CTX, ctx);
-                gatewayProcessor.processRequest(context);
+                //todo
+                gatewayProcessor.processRequest(null);
             } catch (Exception e) {
                 log.error("[SimpleHttpServerHandler] 处理请求异常", e);
                 writeErrorResponse(e, ctx);
             }
         }
 
-        /**
-         * 创建HTTP消息对象
-         */
-        private Message createHttpMessage(FullHttpRequest request) {
-            // 使用HttpMessage实现
-            String messageId = UUID.randomUUID().toString();
-            MessageType type = MessageType.REQUEST;
-            Protocol protocol = ProtocolEnum.LB;
 
-            return new HttpMessage(
-                    messageId,
-                    type,
-                    protocol,
-                    null, // headers
-                    null,
-                    null,
-                    null, // body
-                    null  // metadata
-            );
-        }
 
-        /**
-         * 创建请求上下文
-         */
-        private RequestContext createRequestContext(FullHttpRequest request, ChannelHandlerContext ctx) {
-            // 创建HTTP协议
-            Protocol httpProtocol = ProtocolEnum.LB;
-
-            // 创建服务器连接
-            NettyServerConnection connection = new NettyServerConnection(ctx, httpProtocol);
-
-            // 先创建一个简单的Message对象
-            Message httpMessage = createHttpMessage(request);
-
-            // 创建上下文
-            RequestContext context = new DefaultRequestContext(httpMessage, connection);
-
-            // 设置原始请求信息到上下文属性中
-            context.setAttribute("nettyRequest", request);
-            context.setAttribute("nettyContext", ctx);
-            context.setAttribute("protocol", httpProtocol);
-            context.setAttribute("startTime", System.currentTimeMillis());
-
-            // 从HTTP请求中提取基本信息
-            context.setAttribute("method", request.method().name());
-            context.setAttribute("uri", request.uri());
-            context.setAttribute("path", extractPath(request.uri()));
-            context.setAttribute("queryString", extractQueryString(request.uri()));
-
-            return context;
-        }
-
-        /**
-         * 写入HTTP响应
-         */
-        private void writeHttpResponse(Message response, ChannelHandlerContext ctx, FullHttpRequest originalRequest) {
-            try {
-                // 创建Netty HTTP响应
-                FullHttpResponse httpResponse = new DefaultFullHttpResponse(
-                        HttpVersion.HTTP_1_1,
-                        HttpResponseStatus.OK
-                );
-
-                // 设置响应内容
-                if (response != null && response.getBody() != null) {
-                    byte[] content = response.getBody().getBytes();
-                    httpResponse.content().writeBytes(content);
-                    httpResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
-                }
-
-                // 设置响应头
-                httpResponse.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json;charset=UTF-8");
-                if (response != null && response.getHeaders() != null) {
-                    response.getHeaders().asMap().forEach((name, value) -> {
-                        if (value != null) {
-                            httpResponse.headers().set(name, value.toString());
-                        }
-                    });
-                }
-
-                // 检查Keep-Alive
-                boolean keepAlive = HttpUtil.isKeepAlive(originalRequest);
-
-                if (keepAlive) {
-                    httpResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-                    ctx.writeAndFlush(httpResponse);
-                } else {
-                    ctx.writeAndFlush(httpResponse).addListener(ChannelFutureListener.CLOSE);
-                }
-
-                log.debug("[SimpleHttpServerHandler] HTTP响应写入完成 - keepAlive: {}", keepAlive);
-
-            } catch (Exception e) {
-                log.error("[SimpleHttpServerHandler] 写入响应失败", e);
-                ctx.close();
-            }
-        }
 
         /**
          * 写入错误响应
@@ -380,24 +275,6 @@ public class NettyHttpServer {
                 log.error("[SimpleHttpServerHandler] 写入错误响应失败", e);
                 ctx.close();
             }
-        }
-
-        /**
-         * 从URI中提取路径
-         */
-        private String extractPath(String uri) {
-            if (uri == null) return "/";
-            int queryIndex = uri.indexOf('?');
-            return queryIndex > 0 ? uri.substring(0, queryIndex) : uri;
-        }
-
-        /**
-         * 从URI中提取查询字符串
-         */
-        private String extractQueryString(String uri) {
-            if (uri == null) return null;
-            int queryIndex = uri.indexOf('?');
-            return queryIndex > 0 && queryIndex < uri.length() - 1 ? uri.substring(queryIndex + 1) : null;
         }
 
         @Override

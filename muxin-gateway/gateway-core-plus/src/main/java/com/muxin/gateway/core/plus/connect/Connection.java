@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.protocol.message.Protocol;
+import com.muxin.gateway.core.plus.msg.Protocol;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -30,22 +30,6 @@ public interface Connection {
     CompletableFuture<Void> close();
 
     // ========== 连接属性管理 ==========
-
-    /**
-     * 设置连接属性
-     *
-     * @param key   属性键
-     * @param value 属性值
-     */
-    void setAttribute(String key, Object value);
-
-    /**
-     * 获取连接属性
-     *
-     * @param key 属性键
-     * @return 属性值
-     */
-    Object getAttribute(String key);
 
     /**
      * 获取连接创建时间

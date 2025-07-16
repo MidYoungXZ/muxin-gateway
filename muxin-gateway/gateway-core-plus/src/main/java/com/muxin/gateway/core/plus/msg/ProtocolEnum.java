@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.plus.protocol.message;
+package com.muxin.gateway.core.plus.msg;
 
 /**
  * @projectname: muxin-gateway
@@ -7,7 +7,7 @@ package com.muxin.gateway.core.plus.protocol.message;
  * @data:2025/7/13 15:05
  * @description:
  */
-public enum ProtocolEnum implements Protocol{
+public enum ProtocolEnum implements Protocol {
     HTTP("HTTP","1.1",true,true,false),
     LB("LB","1.0",false,false,false);
 

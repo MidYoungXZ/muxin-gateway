@@ -1,6 +1,7 @@
 package com.muxin.gateway.core.plus.connect;
 
-import com.muxin.gateway.core.plus.protocol.message.Message;
+
+import com.muxin.gateway.core.plus.msg.Message;
 
 import java.util.concurrent.CompletableFuture;
 

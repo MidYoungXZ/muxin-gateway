@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.plus.protocol.message;
+package com.muxin.gateway.core.plus.msg;
 
 /**
  * 协议接口 - 定义协议的基本特征
