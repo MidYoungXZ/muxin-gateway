@@ -1,11 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.msg.Protocol;
-import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
-import com.muxin.gateway.core.plus.route.loadbalance.RandomLoadBalanceStrategy;
-import com.muxin.gateway.core.plus.route.loadbalance.RoundRobinLoadBalanceStrategy;
-import com.muxin.gateway.core.plus.route.loadbalance.WeightedRoundRobinLoadBalanceStrategy;
-import com.muxin.gateway.core.plus.route.loadbalance.LeastConnectionsLoadBalanceStrategy;
+import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import com.muxin.gateway.core.plus.route.service.HttpEndpointAddress;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * CONFIG类型路由目标工厂
- * 负责根据服务定义创建CONFIG类型的RouteTarget实例
+ * CONFIG类型路由服务工厂
+ * 负责根据服务定义创建CONFIG类型的RouteService实例
+ * 负载均衡策略由Route级别管理
  *
  * @author muxin
  */
@@ -29,9 +25,9 @@ public class ConfigRouteServiceFactory implements RouteServiceFactory {
     
     @Override
     public RouteService createRouteTarget(ServiceDefinition serviceDefinition) {
-        log.debug("创建CONFIG类型路由目标: {}", serviceDefinition.getId());
+        log.debug("创建CONFIG类型路由服务: {}", serviceDefinition.getId());
         
-        // 验证配置（内部验证）
+        // 验证配置
         validateConfig(serviceDefinition);
         
         // 转换协议
@@ -40,15 +36,11 @@ public class ConfigRouteServiceFactory implements RouteServiceFactory {
         // 转换地址列表
         List<EndpointAddress> addresses = convertAddresses(serviceDefinition, protocol);
         
-        // 创建负载均衡策略
-        LoadBalanceStrategy strategy = createLoadBalanceStrategy(serviceDefinition);
-        
-        // 创建并返回RouteTarget
+        // 创建并返回RouteService
         return new ConfigRouteService(
             serviceDefinition,
             protocol,
             addresses,
-            strategy,
             serviceDefinition.getConfig()
         );
     }
@@ -96,31 +88,6 @@ public class ConfigRouteServiceFactory implements RouteServiceFactory {
                 throw new IllegalArgumentException("addresses[" + i + "]配置无效: " + e.getMessage(), e);
             }
         }
-        
-        // 3. 验证负载均衡配置
-        validateLoadBalanceConfig(serviceDefinition);
-    }
-    
-    /**
-     * 验证负载均衡配置
-     */
-    private void validateLoadBalanceConfig(ServiceDefinition serviceDefinition) {
-        if (serviceDefinition.getLoadBalance() != null) {
-            String strategy = serviceDefinition.getLoadBalance().getStrategy();
-            if (strategy != null && !isSupportedStrategy(strategy)) {
-                throw new IllegalArgumentException("不支持的负载均衡策略: " + strategy);
-            }
-        }
-    }
-    
-    /**
-     * 检查是否为支持的负载均衡策略
-     */
-    private boolean isSupportedStrategy(String strategy) {
-        return "ROUND_ROBIN".equalsIgnoreCase(strategy) ||
-               "RANDOM".equalsIgnoreCase(strategy) ||
-               "WEIGHTED_ROUND_ROBIN".equalsIgnoreCase(strategy) ||
-               "LEAST_CONNECTIONS".equalsIgnoreCase(strategy);
     }
     
     /**
@@ -171,50 +138,12 @@ public class ConfigRouteServiceFactory implements RouteServiceFactory {
         // TODO: 后续可以根据protocol类型创建不同的EndpointAddress实现
         
         // 使用URI构造函数，权重和元数据信息保存在AddressDefinition中
-        // 通过负载均衡策略来处理权重信息
+        // 通过Route级别的负载均衡策略来处理权重信息
         return new HttpEndpointAddress(addressDef.getUri());
-    }
-    
-    /**
-     * 创建负载均衡策略
-     */
-    private LoadBalanceStrategy createLoadBalanceStrategy(ServiceDefinition serviceDefinition) {
-        String strategyName = "ROUND_ROBIN"; // 默认策略
-        
-        if (serviceDefinition.getLoadBalance() != null && 
-            serviceDefinition.getLoadBalance().getStrategy() != null) {
-            strategyName = serviceDefinition.getLoadBalance().getStrategy().toUpperCase();
-        }
-        
-        LoadBalanceStrategy strategy = createStrategyByName(strategyName);
-        
-        log.debug("为CONFIG服务 {} 创建负载均衡策略: {}", 
-                serviceDefinition.getName(), strategy.getStrategyName());
-        
-        return strategy;
-    }
-    
-    /**
-     * 根据策略名称创建策略实例
-     */
-    private LoadBalanceStrategy createStrategyByName(String strategyName) {
-        switch (strategyName.toUpperCase()) {
-            case "ROUND_ROBIN":
-                return new RoundRobinLoadBalanceStrategy();
-            case "RANDOM":
-                return new RandomLoadBalanceStrategy();
-            case "WEIGHTED_ROUND_ROBIN":
-                return new WeightedRoundRobinLoadBalanceStrategy();
-            case "LEAST_CONNECTIONS":
-                return new LeastConnectionsLoadBalanceStrategy();
-            default:
-                log.warn("未知的负载均衡策略: {}, 使用默认策略: ROUND_ROBIN", strategyName);
-                return new RoundRobinLoadBalanceStrategy();
-        }
     }
     
     @Override
     public String toString() {
-        return "ConfigRouteTargetFactory{supportedType=" + getSupportedType() + "}";
+        return "ConfigRouteServiceFactory{supportedType=" + getSupportedType() + "}";
     }
 } 

@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.msg.Message;
-import com.muxin.gateway.core.plus.msg.Protocol;
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 
 import java.util.Map;
 import java.util.Set;

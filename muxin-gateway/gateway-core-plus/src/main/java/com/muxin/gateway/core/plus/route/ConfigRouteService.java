@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.msg.Protocol;
+import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +11,7 @@ import java.util.Objects;
 
 /**
  * CONFIG类型路由目标实现
- * 使用静态配置的地址列表
+ * 使用静态配置的地址列表，负载均衡由外部Route管理
  *
  * @author muxin
  */
@@ -24,25 +24,20 @@ public class ConfigRouteService implements RouteService {
     // ========== 协议和地址 ==========
     private final Protocol supportProtocol;
     private final List<EndpointAddress> addresses;
-    
-    // ========== 负载均衡 ==========
-    private final LoadBalanceStrategy loadBalanceStrategy;
     private final Map<String, Object> config;
     
     public ConfigRouteService(ServiceDefinition serviceDefinition,
                               Protocol supportProtocol,
                               List<EndpointAddress> addresses,
-                              LoadBalanceStrategy loadBalanceStrategy,
                               Map<String, Object> config) {
         this.serviceDefinition = Objects.requireNonNull(serviceDefinition, "serviceDefinition不能为空");
         this.supportProtocol = Objects.requireNonNull(supportProtocol, "supportProtocol不能为空");
         this.addresses = Objects.requireNonNull(addresses, "addresses不能为空");
-        this.loadBalanceStrategy = Objects.requireNonNull(loadBalanceStrategy, "loadBalanceStrategy不能为空");
         this.config = config;
         
         // 验证服务类型
         if (!serviceDefinition.isConfigType()) {
-            throw new IllegalArgumentException("ConfigRouteTarget只支持CONFIG类型服务");
+            throw new IllegalArgumentException("ConfigRouteService只支持CONFIG类型服务");
         }
         
         // 验证地址列表
@@ -50,15 +45,16 @@ public class ConfigRouteService implements RouteService {
             throw new IllegalArgumentException("CONFIG类型服务必须配置至少一个地址");
         }
         
-        log.info("创建CONFIG路由目标: {} ({}), 地址数量: {}, 负载均衡: {}", 
-                serviceDefinition.getName(), serviceDefinition.getId(), addresses.size(), loadBalanceStrategy.getStrategyName());
+        log.info("创建CONFIG路由服务: {} - {} addresses", serviceDefinition.getName(), addresses.size());
     }
-
+    
+    // ========== RouteService 接口实现 ==========
+    
     @Override
     public ServiceDefinition serviceDefinition() {
         return serviceDefinition;
     }
-
+    
     @Override
     public Protocol supportProtocol() {
         return supportProtocol;
@@ -70,40 +66,26 @@ public class ConfigRouteService implements RouteService {
     }
     
     @Override
-    public LoadBalanceStrategy loadBalanceStrategy() {
-        return loadBalanceStrategy;
-    }
-    
-    @Override
     public Map<String, Object> getTargetConfig() {
         return config;
     }
     
     @Override
-    public EndpointAddress selectTarget(RequestContext context) {
-        if (addresses.isEmpty()) {
-            throw new IllegalStateException("没有可用的地址");
-        }
-        
+    public EndpointAddress selectTarget(RequestContext context, LoadBalanceStrategy strategy) {
+        // 使用外部提供的负载均衡策略选择目标
         try {
-            // 使用负载均衡策略选择地址
-            EndpointAddress selected = loadBalanceStrategy.select(addresses, context);
-            
-            log.debug("CONFIG路由目标选择地址: {} -> {} (策略: {})", 
-                    serviceDefinition.getName(), selected.toUri(), loadBalanceStrategy.getStrategyName());
-            
+            EndpointAddress selected = strategy.select(addresses, context);
+            log.debug("选择目标地址: {} (策略: {})", selected.toUri(), strategy.getStrategyName());
             return selected;
-            
         } catch (Exception e) {
-            log.error("CONFIG路由目标选择地址失败: {}", serviceDefinition.getName(), e);
-            // 降级：返回第一个地址
+            log.error("负载均衡选择失败，使用第一个地址作为降级", e);
             EndpointAddress fallback = addresses.get(0);
             log.warn("使用降级地址: {}", fallback.toUri());
             return fallback;
         }
     }
     
-    // ========== Getter方法 ==========
+    // ========== 查询方法 ==========
     
     public String getServiceId() {
         return serviceDefinition.getId();
@@ -131,21 +113,6 @@ public class ConfigRouteService implements RouteService {
         return addresses.contains(address);
     }
     
-    /**
-     * 获取负载均衡统计信息
-     */
-        public String getLoadBalanceStats() {
-        return "统计功能暂未实现";
-    }
-    
-    /**
-     * 重置负载均衡状态
-     */
-    public void resetLoadBalanceState() {
-        loadBalanceStrategy.reset();
-        log.info("重置CONFIG路由目标负载均衡状态: {}", serviceDefinition.getName());
-    }
-    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -162,8 +129,8 @@ public class ConfigRouteService implements RouteService {
     @Override
     public String toString() {
         return String.format(
-            "ConfigRouteTarget{serviceId='%s', serviceName='%s', protocol=%s, addresses=%d, strategy='%s'}",
-            serviceDefinition.getId(), serviceDefinition.getName(), supportProtocol.type(), addresses.size(), loadBalanceStrategy.getStrategyName()
+            "ConfigRouteService{serviceId='%s', serviceName='%s', protocol=%s, addresses=%d}",
+            serviceDefinition.getId(), serviceDefinition.getName(), supportProtocol.type(), addresses.size()
         );
     }
 } 

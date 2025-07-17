@@ -14,12 +14,18 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author muxin
  */
 @Slf4j
-public class RandomLoadBalanceStrategy implements LoadBalanceStrategy {
+public class RandomLoadBalanceStrategy extends LoadBalanceStrategy {
     
     private static final String STRATEGY_NAME = "RANDOM";
     private static final String DESCRIPTION = "随机负载均衡，随机选择可用地址";
     
-    public RandomLoadBalanceStrategy() {
+    /**
+     * 构造函数
+     * @param definition 负载均衡定义
+     */
+    public RandomLoadBalanceStrategy(LoadBalanceDefinition definition) {
+        super(definition);
+        log.debug("创建随机负载均衡策略，策略配置: {}", definition.getStrategy());
     }
     
     @Override
@@ -47,22 +53,17 @@ public class RandomLoadBalanceStrategy implements LoadBalanceStrategy {
     }
     
     @Override
-    public boolean requiresWeight() {
-        return false;
-    }
-    
-    @Override
     public boolean isStateful() {
         return false; // 无状态策略
     }
     
     @Override
     public void reset() {
-        log.info("随机策略统计信息已重置");
+        log.debug("随机策略重置（无状态，无操作）");
     }
     
     @Override
     public String toString() {
-        return "RandomLoadBalanceStrategy{}";
+        return String.format("RandomLoadBalanceStrategy{strategy='%s'}", getStrategyName());
     }
 } 

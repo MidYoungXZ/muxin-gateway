@@ -1,11 +1,11 @@
 package com.muxin.gateway.core.plus.route;
 
 
-import com.muxin.gateway.core.plus.common.Attributes;
+import com.muxin.gateway.core.plus.common.AttributesHolder;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.msg.Message;
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 
 /**
@@ -13,7 +13,7 @@ import com.muxin.gateway.core.plus.route.service.EndpointAddress;
  *
  * @author muxin
  */
-public interface RequestContext extends Attributes {
+public interface RequestContext extends AttributesHolder {
 
     String requestId();
 

@@ -5,11 +5,12 @@ import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.Connection;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.msg.Message;
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.Route;
 import com.muxin.gateway.core.plus.route.RouteManager;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.filter.Filter;
 import com.muxin.gateway.core.plus.route.filter.FilterChain;
 import com.muxin.gateway.core.plus.route.filter.FilterType;
@@ -107,10 +108,12 @@ public class GatewayProcessor implements LifeCycle {
         log.debug("[GatewayProcessor] 前置过滤器执行完成: {}", context.requestId());
 
         // 端点选择
-        EndpointAddress endpoint = route.getService().selectTarget(context);
+        LoadBalanceStrategy strategy = route.getLoadBalanceStrategy();
+        EndpointAddress endpoint = route.getService().selectTarget(context, strategy);
         requireNonNull(endpoint, () -> new ProcessingException("端点选择失败", context.requestId()));
         context.setSelectedEndpoint(endpoint);
-        log.debug("[GatewayProcessor] 端点选择成功: {} -> {}", context.requestId(), endpoint.toUri());
+        log.debug("[GatewayProcessor] 端点选择成功: {} -> {} (策略: {})", 
+                context.requestId(), endpoint.toUri(), strategy.getStrategyName());
 
         // 连接获取
         ClientConnection connection = connectionPoolManager.getClientConnection(endpoint, endpoint.getProtocol());

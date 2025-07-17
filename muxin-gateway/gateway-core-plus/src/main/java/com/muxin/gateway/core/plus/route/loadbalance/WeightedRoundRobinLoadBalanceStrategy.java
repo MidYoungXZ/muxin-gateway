@@ -16,14 +16,24 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author muxin
  */
 @Slf4j
-public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
+public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
     
     private static final String STRATEGY_NAME = "WEIGHTED_ROUND_ROBIN";
     private static final String DESCRIPTION = "加权轮询负载均衡，根据权重选择地址";
     
     private final ConcurrentHashMap<String, WeightedNode> weightedNodes = new ConcurrentHashMap<>();
+    private final boolean smoothWeighted;
     
-    public WeightedRoundRobinLoadBalanceStrategy() {
+    /**
+     * 构造函数
+     * @param definition 负载均衡定义
+     */
+    public WeightedRoundRobinLoadBalanceStrategy(LoadBalanceDefinition definition) {
+        super(definition);
+        // 从配置中获取平滑加权配置，默认为true
+        this.smoothWeighted = getConfigValue("smooth-weighted", true);
+        log.debug("创建加权轮询负载均衡策略，策略配置: {}, 平滑加权: {}", 
+                definition.getStrategy(), smoothWeighted);
     }
     
     @Override
@@ -49,70 +59,85 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     private void updateWeightedNodes(List<EndpointAddress> addresses) {
         for (EndpointAddress address : addresses) {
             String key = address.toUri();
-            weightedNodes.computeIfAbsent(key, k -> {
+            
+            // 如果节点不存在，则创建新节点
+            if (!weightedNodes.containsKey(key)) {
                 int weight = getWeight(address);
-                return new WeightedNode(address, weight, weight);
-            });
+                WeightedNode node = new WeightedNode(address, weight, 0);
+                weightedNodes.put(key, node);
+                
+                log.debug("添加权重节点: {} (权重: {})", key, weight);
+            }
         }
         
-        // 移除不再存在的节点
-        weightedNodes.entrySet().removeIf(entry -> 
-            addresses.stream().noneMatch(addr -> addr.toUri().equals(entry.getKey())));
+        // 清理已删除的地址对应的节点
+        weightedNodes.entrySet().removeIf(entry -> {
+            String key = entry.getKey();
+            boolean exists = addresses.stream()
+                    .anyMatch(addr -> addr.toUri().equals(key));
+            
+            if (!exists) {
+                log.debug("移除权重节点: {}", key);
+            }
+            
+            return !exists;
+        });
     }
     
     /**
-     * 平滑加权轮询选择
+     * 根据权重选择地址（平滑加权轮询算法）
      */
     private EndpointAddress selectByWeight(List<EndpointAddress> addresses) {
         synchronized (this) {
-            WeightedNode selected = null;
             int totalWeight = 0;
+            WeightedNode maxWeightNode = null;
             
-            // 计算总权重并选择当前权重最高的节点
+            // 找到当前权重最大的节点，并计算总权重
             for (EndpointAddress address : addresses) {
-                String key = address.toUri();
-                WeightedNode node = weightedNodes.get(key);
+                WeightedNode node = weightedNodes.get(address.toUri());
                 if (node != null) {
-                    totalWeight += node.getWeight();
+                    // 增加当前权重
                     node.increaseCurrent();
+                    totalWeight += node.getWeight();
                     
-                    if (selected == null || node.getCurrentWeight() > selected.getCurrentWeight()) {
-                        selected = node;
+                    // 找到当前权重最大的节点
+                    if (maxWeightNode == null || node.getCurrentWeight() > maxWeightNode.getCurrentWeight()) {
+                        maxWeightNode = node;
                     }
                 }
             }
             
-            if (selected != null) {
-                // 减少选中节点的当前权重
-                selected.decreaseCurrent(totalWeight);
-                return selected.getAddress();
+            if (maxWeightNode == null) {
+                // 降级处理：如果没有权重信息，使用第一个地址
+                log.warn("未找到权重节点，使用第一个地址");
+                return addresses.get(0);
             }
             
-            // 如果没有找到，使用简单轮询
-            return addresses.get(0);
+            // 减少选中节点的当前权重
+            maxWeightNode.decreaseCurrent(totalWeight);
+            
+            return maxWeightNode.getAddress();
         }
     }
     
     /**
-     * 获取地址权重
+     * 获取地址权重（从协议特定信息中获取）
      */
     private int getWeight(EndpointAddress address) {
-        // 从地址协议特定信息中获取权重，默认为100
-        Map<String, Object> protocolInfo = address.getProtocolSpecificInfo();
-        if (protocolInfo != null) {
-            Object weight = protocolInfo.get("weight");
-            if (weight instanceof Number) {
-                return ((Number) weight).intValue();
-            }
-            if (weight instanceof String) {
-                try {
-                    return Integer.parseInt((String) weight);
-                } catch (NumberFormatException e) {
-                    log.warn("无法解析权重值: {}, 使用默认值100", weight);
+        try {
+            Map<String, Object> protocolInfo = address.getProtocolSpecificInfo();
+            if (protocolInfo != null && protocolInfo.containsKey("weight")) {
+                Object weightObj = protocolInfo.get("weight");
+                if (weightObj instanceof Number) {
+                    return Math.max(1, ((Number) weightObj).intValue());
                 }
             }
+        } catch (Exception e) {
+            log.warn("获取地址权重失败: {}", address.toUri(), e);
         }
-        return 100; // 默认权重
+        
+        // 默认权重为1
+        return 1;
     }
     
     @Override
@@ -139,7 +164,7 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     public void reset() {
         synchronized (this) {
             weightedNodes.clear();
-            log.info("加权轮询策略状态已重置");
+            log.debug("加权轮询策略状态已重置");
         }
     }
     
@@ -186,7 +211,7 @@ public class WeightedRoundRobinLoadBalanceStrategy implements LoadBalanceStrateg
     
     @Override
     public String toString() {
-        return String.format("WeightedRoundRobinLoadBalanceStrategy{nodes=%d}", 
-                weightedNodes.size());
+        return String.format("WeightedRoundRobinLoadBalanceStrategy{strategy='%s', nodes=%d, smoothWeighted=%s}", 
+                getStrategyName(), weightedNodes.size(), smoothWeighted);
     }
 } 

@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.msg.ProtocolDefinition;
-import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
+import com.muxin.gateway.core.plus.message.ProtocolDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -58,13 +57,6 @@ public class ServiceDefinition {
      */
     private List<AddressDefinition> addresses;
     
-    // ========== 负载均衡配置 ==========
-    
-    /**
-     * 负载均衡配置
-     */
-    private LoadBalanceDefinition loadBalance;
-    
     // ========== 扩展配置 ==========
     
     /**
@@ -105,15 +97,6 @@ public class ServiceDefinition {
      */
     public boolean hasAddresses() {
         return addresses != null && !addresses.isEmpty();
-    }
-    
-    // ========== 负载均衡配置 ==========
-    
-    /**
-     * 获取负载均衡策略名称
-     */
-    public String getLoadBalanceStrategy() {
-        return loadBalance != null ? loadBalance.getStrategy() : "ROUND_ROBIN";
     }
     
     // ========== 配置参数管理 ==========

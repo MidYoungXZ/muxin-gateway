@@ -1,4 +1,6 @@
-package com.muxin.gateway.core.plus.msg;
+package com.muxin.gateway.core.plus.message;
+
+import com.muxin.gateway.core.plus.common.AttributesHolder;
 
 /**
  * @projectname: muxin-gateway

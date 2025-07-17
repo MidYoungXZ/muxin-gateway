@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.connect;
 
 
-import com.muxin.gateway.core.plus.msg.Message;
+import com.muxin.gateway.core.plus.message.Message;
 
 /**
  * 连接监听器接口

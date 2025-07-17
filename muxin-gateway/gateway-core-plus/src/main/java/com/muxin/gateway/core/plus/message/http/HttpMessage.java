@@ -1,6 +1,6 @@
-package com.muxin.gateway.core.plus.msg.http;
+package com.muxin.gateway.core.plus.message.http;
 
-import com.muxin.gateway.core.plus.msg.Message;
+import com.muxin.gateway.core.plus.message.Message;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpVersion;
 

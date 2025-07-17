@@ -1,8 +1,9 @@
 package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.route.predicate.Predicate;
-import com.muxin.gateway.core.plus.msg.Protocol;
+import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.filter.Filter;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 
 import java.time.Duration;
 import java.util.List;
@@ -61,6 +62,12 @@ public interface Route {
      * 目标服务配置
      */
     RouteService getService();
+    
+    /**
+     * 负载均衡策略
+     * 如果未配置则返回默认策略
+     */
+    LoadBalanceStrategy getLoadBalanceStrategy();
     
     /**
      * 路由元数据

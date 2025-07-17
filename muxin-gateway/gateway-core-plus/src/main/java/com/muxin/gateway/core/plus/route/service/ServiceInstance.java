@@ -10,8 +10,7 @@ import java.util.Map;
  */
 public interface ServiceInstance {
 
-    ServiceMeta service();
-
+    ServiceMeta serviceMeta();
     /**
      * 获取节点唯一标识
      */

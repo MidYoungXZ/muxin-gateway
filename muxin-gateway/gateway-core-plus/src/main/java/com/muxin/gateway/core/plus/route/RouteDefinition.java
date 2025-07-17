@@ -1,7 +1,8 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.msg.ProtocolDefinition;
+import com.muxin.gateway.core.plus.message.ProtocolDefinition;
 import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 /**
  * 增强的路由配置类
- * 支持新的YAML配置结构
+ * 支持新的YAML配置结构，负载均衡配置移到路由级别
  *
  * @author muxin
  */
@@ -71,6 +72,11 @@ public class RouteDefinition {
     private ServiceDefinition service;
     
     /**
+     * 负载均衡配置（路由级别）
+     */
+    private LoadBalanceDefinition loadBalance;
+    
+    /**
      * 超时配置
      */
     private TimeoutConfig timeouts;
@@ -79,6 +85,36 @@ public class RouteDefinition {
      * 路由元数据
      */
     private Map<String, Object> metadata;
+    
+    // ========== 负载均衡配置方法 ==========
+    
+    /**
+     * 获取负载均衡策略名称
+     */
+    public String getLoadBalanceStrategy() {
+        return loadBalance != null ? loadBalance.getStrategy() : "ROUND_ROBIN";
+    }
+    
+    /**
+     * 是否配置了自定义负载均衡策略
+     */
+    public boolean hasCustomLoadBalance() {
+        return loadBalance != null;
+    }
+    
+    /**
+     * 获取有效的负载均衡配置（考虑默认值）
+     */
+    public LoadBalanceDefinition getEffectiveLoadBalance() {
+        if (loadBalance != null) {
+            return loadBalance;
+        }
+        
+        // 返回默认的负载均衡配置
+        return LoadBalanceDefinition.builder()
+            .strategy("ROUND_ROBIN")
+            .build();
+    }
     
     /**
      * 验证配置
@@ -114,10 +150,42 @@ public class RouteDefinition {
             throw new IllegalArgumentException("CONFIG类型服务必须配置addresses");
         }
         
+        // 验证负载均衡配置
+        validateLoadBalanceConfig();
+        
         // 验证协议转换
         if (supportProtocol.needsConversion(service.getSupportProtocol())) {
             validateProtocolConversion();
         }
+    }
+    
+    /**
+     * 验证负载均衡配置
+     */
+    private void validateLoadBalanceConfig() {
+        if (loadBalance != null) {
+            // 验证策略名称不能为空
+            if (loadBalance.getStrategy() == null || loadBalance.getStrategy().trim().isEmpty()) {
+                throw new IllegalArgumentException("负载均衡策略名称不能为空");
+            }
+            
+            // 验证策略名称是否有效
+            String strategy = loadBalance.getStrategy().toUpperCase();
+            if (!isValidLoadBalanceStrategy(strategy)) {
+                throw new IllegalArgumentException("不支持的负载均衡策略: " + loadBalance.getStrategy());
+            }
+        }
+    }
+    
+    /**
+     * 检查负载均衡策略是否有效
+     */
+    private boolean isValidLoadBalanceStrategy(String strategy) {
+        return "ROUND_ROBIN".equals(strategy) ||
+               "RANDOM".equals(strategy) ||
+               "WEIGHTED_ROUND_ROBIN".equals(strategy) ||
+               "LEAST_CONNECTIONS".equals(strategy) ||
+               "CONSISTENT_HASH".equals(strategy);
     }
     
     /**

@@ -110,18 +110,10 @@ public class GlobalRouteConfig {
                 routeDefinition.getTimeouts() : defaultTimeouts;
         builder.timeouts(timeouts);
         
-        // 合并负载均衡配置：服务定义的负载均衡优先
-        ServiceDefinition service = routeDefinition.getService();
-        if (service != null && service.getLoadBalance() == null) {
-            // 如果服务定义没有配置负载均衡，使用默认配置
-            ServiceDefinition.ServiceDefinitionBuilder serviceBuilder = ServiceDefinition.builder()
-                    .type(service.getType())
-                    .supportProtocol(service.getSupportProtocol())
-                    .addresses(service.getAddresses())
-                    .loadBalance(defaultLoadBalance)
-                    .config(service.getConfig());
-            builder.service(serviceBuilder.build());
-        }
+        // 合并负载均衡配置：路由级别的负载均衡优先，如果没有则使用默认配置
+        LoadBalanceDefinition loadBalance = routeDefinition.getLoadBalance() != null ? 
+                routeDefinition.getLoadBalance() : defaultLoadBalance;
+        builder.loadBalance(loadBalance);
         
         // 合并元数据
         Map<String, Object> mergedMetadata = routeDefinition.getMetadata();

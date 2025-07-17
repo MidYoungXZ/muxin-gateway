@@ -1,8 +1,8 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.msg.Message;
-import com.muxin.gateway.core.plus.msg.Protocol;
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.Protocol;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 
 /**
  * 通用过滤器接口 - 支持多协议
@@ -39,5 +39,5 @@ public interface Filter {
     /**
      * 支持的协议
      */
-    Protocol getSupportedProtocols();
+    Protocol getSupportedProtocol();
 } 

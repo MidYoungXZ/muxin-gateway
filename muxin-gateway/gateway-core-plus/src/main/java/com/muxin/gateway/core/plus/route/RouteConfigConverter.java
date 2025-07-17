@@ -1,7 +1,9 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.msg.Protocol;
+import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.filter.*;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory;
 import com.muxin.gateway.core.plus.route.predicate.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -201,11 +203,32 @@ public class RouteConfigConverter {
 
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
-            // todo  Route实现
-
-            log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
             
-            return null;
+            // 创建负载均衡策略（支持null配置）
+            LoadBalanceStrategy loadBalanceStrategy = LoadBalanceStrategyFactory.createStrategy(
+                config.getLoadBalance()  // 可能为null，工厂内部处理
+            );
+
+            // 创建Route实例
+            DefaultRoute route = DefaultRoute.builder()
+                    .id(config.getId())
+                    .name(config.getName())
+                    .description(config.getDescription())
+                    .order(config.getOrder())
+                    .enabled(config.isEnabled())
+                    .supportedProtocol(inboundProtocol)
+                    .predicates(predicates)
+                    .filters(filters)
+                    .service(target)
+                    .loadBalanceStrategy(loadBalanceStrategy)
+                    .metadata(config.getMetadata())
+                    .timeoutConfig(timeouts)
+                    .build();
+
+            log.debug("[RouteConfigConverter] 成功转换路由: {} (策略: {})", 
+                    config.getId(), loadBalanceStrategy.getStrategyName());
+            
+            return route;
 
         } catch (Exception e) {
             log.error("[RouteConfigConverter] 转换路由配置失败: {}", config.getId(), e);

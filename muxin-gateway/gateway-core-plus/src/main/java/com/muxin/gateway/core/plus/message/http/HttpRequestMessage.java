@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.plus.msg.http;
+package com.muxin.gateway.core.plus.message.http;
 
 import io.netty.handler.codec.http.HttpMethod;
 

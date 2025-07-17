@@ -72,7 +72,7 @@ public class DefaultInstanceManager implements InstanceManager {
         }
 
         String instanceId = instance.instanceId();
-        String serviceId = instance.service().getServiceId();
+        String serviceId = instance.serviceMeta().getServiceId();
 
         ServiceInstance existingInstance = instanceStorage.put(instanceId, instance);
 
@@ -101,7 +101,7 @@ public class DefaultInstanceManager implements InstanceManager {
 
         ServiceInstance removedInstance = instanceStorage.remove(instanceId);
         if (removedInstance != null) {
-            String serviceId = removedInstance.service().getServiceId();
+            String serviceId = removedInstance.serviceMeta().getServiceId();
 
             // 更新服务索引
             Set<String> serviceInstances = serviceIndex.get(serviceId);
@@ -162,7 +162,7 @@ public class DefaultInstanceManager implements InstanceManager {
         }
 
         ServiceInstance instance = instanceStorage.get(instanceId);
-        if (instance != null && serviceId.equals(instance.service().getServiceId())) {
+        if (instance != null && serviceId.equals(instance.serviceMeta().getServiceId())) {
             return instance;
         }
         return null;
@@ -193,7 +193,7 @@ public class DefaultInstanceManager implements InstanceManager {
         }
 
         ServiceInstance instance = instanceStorage.get(instanceId);
-        if (instance == null || !serviceName.equals(instance.service().getServiceId())) {
+        if (instance == null || !serviceName.equals(instance.serviceMeta().getServiceId())) {
             return;
         }
 

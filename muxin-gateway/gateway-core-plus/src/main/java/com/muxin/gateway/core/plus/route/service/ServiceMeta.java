@@ -1,12 +1,12 @@
 package com.muxin.gateway.core.plus.route.service;
 
-import com.muxin.gateway.core.plus.msg.Protocol;
+
+import com.muxin.gateway.core.plus.message.Protocol;
 
 import java.util.Map;
 
 /**
  * @author: yangxz
- * @data:2025/7/11 22:37
  * @description:
  */
 public interface ServiceMeta {

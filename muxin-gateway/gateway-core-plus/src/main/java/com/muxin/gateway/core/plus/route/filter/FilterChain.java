@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.msg.Message;
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 
 /**
  * 通用过滤器链接口

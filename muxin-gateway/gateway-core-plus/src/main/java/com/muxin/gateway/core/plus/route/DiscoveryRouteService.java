@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.common.ServiceRegistry;
-import com.muxin.gateway.core.plus.msg.Protocol;
+import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import com.muxin.gateway.core.plus.route.service.ServiceInstance;
@@ -16,8 +16,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * DISCOVERY类型路由目标实现
- * 通过服务发现中心动态获取服务实例
+ * DISCOVERY类型路由服务实现
+ * 通过服务发现中心动态获取服务实例，负载均衡由外部Route管理
  *
  * @author muxin
  */
@@ -32,7 +32,6 @@ public class DiscoveryRouteService implements RouteService {
     
     // ========== 服务发现相关 ==========
     private final ServiceRegistry serviceRegistry;
-    private final LoadBalanceStrategy loadBalanceStrategy;
     private final Map<String, Object> config;
     
     // ========== 缓存和性能优化 ==========
@@ -44,17 +43,15 @@ public class DiscoveryRouteService implements RouteService {
     public DiscoveryRouteService(ServiceDefinition serviceDefinition,
                                  Protocol supportProtocol,
                                  ServiceRegistry serviceRegistry,
-                                 LoadBalanceStrategy loadBalanceStrategy,
                                  Map<String, Object> config) {
         this.serviceDefinition = Objects.requireNonNull(serviceDefinition, "serviceDefinition不能为空");
         this.supportProtocol = Objects.requireNonNull(supportProtocol, "supportProtocol不能为空");
-        this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceDiscovery不能为空");
-        this.loadBalanceStrategy = Objects.requireNonNull(loadBalanceStrategy, "loadBalanceStrategy不能为空");
+        this.serviceRegistry = Objects.requireNonNull(serviceRegistry, "serviceRegistry不能为空");
         this.config = config;
         
         // 验证服务类型
         if (!serviceDefinition.isDiscoveryType()) {
-            throw new IllegalArgumentException("DiscoveryRouteTarget只支持DISCOVERY类型服务");
+            throw new IllegalArgumentException("DiscoveryRouteService只支持DISCOVERY类型服务");
         }
         
         // 缓存过期时间，默认30秒
@@ -62,8 +59,8 @@ public class DiscoveryRouteService implements RouteService {
         this.cachedAddresses = new ArrayList<>();
         this.lastRefreshTime = 0;
         
-        log.info("创建DISCOVERY路由目标: {} ({}), 负载均衡: {}, 缓存过期时间: {}秒", 
-                serviceDefinition.getName(), serviceDefinition.getId(), loadBalanceStrategy.getStrategyName(), cacheExpireTime.getSeconds());
+        log.info("创建DISCOVERY路由服务: {} - 缓存过期时间: {}秒", 
+                serviceDefinition.getName(), cacheExpireTime.getSeconds());
     }
 
     @Override
@@ -83,12 +80,7 @@ public class DiscoveryRouteService implements RouteService {
             refreshAddresses();
         }
         
-        return new ArrayList<>(cachedAddresses);
-    }
-    
-    @Override
-    public LoadBalanceStrategy loadBalanceStrategy() {
-        return loadBalanceStrategy;
+        return new ArrayList<>(cachedAddresses); // 返回副本避免并发修改
     }
     
     @Override
@@ -97,7 +89,7 @@ public class DiscoveryRouteService implements RouteService {
     }
     
     @Override
-    public EndpointAddress selectTarget(RequestContext context) {
+    public EndpointAddress selectTarget(RequestContext context, LoadBalanceStrategy strategy) {
         try {
             // 获取最新的地址列表
             List<EndpointAddress> addresses = getTargetAddresses();
@@ -106,16 +98,16 @@ public class DiscoveryRouteService implements RouteService {
                 throw new IllegalStateException("服务 " + serviceDefinition.getName() + " 没有可用的实例");
             }
             
-            // 使用负载均衡策略选择地址
-            EndpointAddress selected = loadBalanceStrategy.select(addresses, context);
+            // 使用外部提供的负载均衡策略选择地址
+            EndpointAddress selected = strategy.select(addresses, context);
             
-            log.debug("DISCOVERY路由目标选择地址: {} -> {} (策略: {}, 可用实例: {})", 
-                    serviceDefinition.getName(), selected.toUri(), loadBalanceStrategy.getStrategyName(), addresses.size());
+            log.debug("选择服务实例: {} -> {} (策略: {}, 可用实例: {})", 
+                    serviceDefinition.getName(), selected.toUri(), strategy.getStrategyName(), addresses.size());
             
             return selected;
             
         } catch (Exception e) {
-            log.error("DISCOVERY路由目标选择地址失败: {}", serviceDefinition.getName(), e);
+            log.error("服务发现选择地址失败: {}", serviceDefinition.getName(), e);
             throw new RuntimeException("服务发现选择地址失败: " + serviceDefinition.getName(), e);
         }
     }
@@ -281,7 +273,7 @@ public class DiscoveryRouteService implements RouteService {
      * 重置负载均衡状态
      */
     public void resetLoadBalanceState() {
-        loadBalanceStrategy.reset();
+        // This method is no longer needed as LoadBalanceStrategy is external
         log.info("重置DISCOVERY路由目标负载均衡状态: {}", serviceDefinition.getName());
     }
     
@@ -303,7 +295,7 @@ public class DiscoveryRouteService implements RouteService {
         return String.format(
             "DiscoveryRouteTarget{serviceId='%s', serviceName='%s', protocol=%s, instances=%d, strategy='%s', cache='%s'}",
             serviceDefinition.getId(), serviceDefinition.getName(), supportProtocol.type(), cachedAddresses.size(),
-            loadBalanceStrategy.getStrategyName(), getCacheStats()
+            "External", getCacheStats()
         );
     }
 } 

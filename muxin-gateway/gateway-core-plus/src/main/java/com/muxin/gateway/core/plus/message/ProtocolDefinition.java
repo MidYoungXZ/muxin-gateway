@@ -1,4 +1,4 @@
-package com.muxin.gateway.core.plus.msg;
+package com.muxin.gateway.core.plus.message;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

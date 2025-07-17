@@ -1,7 +1,6 @@
 # ========================================
 # Muxin Gateway 路由配置文件
 # 基于 gateway-core-plus 重构后架构设计
-# 使用统一的 ServiceDefinition 标准
 # ========================================
 
 # 全局网关配置
@@ -54,6 +53,15 @@ routes:
       - type: METHOD
         config:
           methods: ["GET", "POST", "PUT", "DELETE"]
+
+    # 负载均衡配置（现在在Route级别）
+    loadBalance:
+      strategy: "ROUND_ROBIN"
+      config:
+        health-check:
+          enabled: true
+          interval: 30
+          timeout: 5
           
     # 过滤器配置
     filters:
@@ -86,8 +94,6 @@ routes:
           metadata:
             zone: "zone-b"
             version: "v1.0"
-      loadBalance:
-        strategy: "ROUND_ROBIN"
       config:
         health-check:
           enabled: true
@@ -128,6 +134,13 @@ routes:
         config:
           methods: ["GET", "POST", "PUT", "DELETE"]
 
+    # 负载均衡配置（Route级别）
+    loadBalance:
+      strategy: "WEIGHTED_ROUND_ROBIN"
+      config:
+        weight-attribute: "weight"
+        smooth-weighted: true
+
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -145,8 +158,6 @@ routes:
       supportProtocol:
         type: HTTP
         version: "1.1"
-      loadBalance:
-        strategy: "WEIGHTED_ROUND_ROBIN"
       config:
         cache-expire-time: 30
         health-check:
@@ -190,6 +201,13 @@ routes:
           pattern: "/api/payments/**"
           strip-prefix: 1
 
+    # 负载均衡配置（Route级别）
+    loadBalance:
+      strategy: "CONSISTENT_HASH"
+      config:
+        hash-key: "user-id"
+        virtual-nodes: 160
+
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -207,11 +225,8 @@ routes:
       supportProtocol:
         type: GRPC
         version: "1.0"
-      loadBalance:
-        strategy: "CONSISTENT_HASH"
       config:
         cache-expire-time: 60
-        hash-key: "user-id"
         registry:
           namespace: "production"
           group: "payment-group"
@@ -252,6 +267,12 @@ routes:
         config:
           methods: ["GET", "POST", "PUT", "DELETE"]
 
+    # 负载均衡配置（Route级别）
+    loadBalance:
+      strategy: "LEAST_CONNECTIONS"
+      config:
+        connection-count-header: "X-Connection-Count"
+
     # 过滤器配置
     filters:
       - type: REQUEST_SIZE_LIMIT
@@ -287,8 +308,6 @@ routes:
           metadata:
             storage-type: "oss"
             capacity: "unlimited"
-      loadBalance:
-        strategy: "LEAST_CONNECTIONS"
       config:
         health-check:
           enabled: true
@@ -329,6 +348,12 @@ routes:
         config:
           methods: ["GET", "POST", "PUT"]
 
+    # 负载均衡配置（Route级别）
+    loadBalance:
+      strategy: "ROUND_ROBIN"
+      config:
+        reset-period: 3600s
+
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -352,8 +377,6 @@ routes:
       supportProtocol:
         type: HTTP
         version: "1.1"
-      loadBalance:
-        strategy: "ROUND_ROBIN"
       config:
         cache-expire-time: 15
         health-check:
@@ -396,6 +419,10 @@ routes:
         config:
           pattern: "/**"
 
+    # 负载均衡配置（Route级别）
+    loadBalance:
+      strategy: "ROUND_ROBIN"
+
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -415,7 +442,7 @@ routes:
             }
           content-type: "application/json"
 
-    # 服务定义配置（兜底服务）
+    # 服务定义配置（兜底服务，移除loadBalance）
     service:
       id: "default-service-999"
       name: "默认处理服务"
@@ -429,8 +456,6 @@ routes:
           metadata:
             type: "fallback"
             purpose: "default-handler"
-      loadBalance:
-        strategy: "ROUND_ROBIN"
       config:
         health-check:
           enabled: false
@@ -490,6 +515,13 @@ load-balance-strategies:
     config:
       hash-key: "client-ip"
       virtual-nodes: 160
+
+# ========== 全局负载均衡默认配置 ==========
+global-route-config:
+  default-load-balance:
+    strategy: "ROUND_ROBIN"
+    config:
+      reset-period: 3600s
 
 # ========== 协议配置 ==========
 protocols:

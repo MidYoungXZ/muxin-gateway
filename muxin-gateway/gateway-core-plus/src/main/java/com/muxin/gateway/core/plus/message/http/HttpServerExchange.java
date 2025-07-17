@@ -1,6 +1,6 @@
-package com.muxin.gateway.core.plus.msg.http;
+package com.muxin.gateway.core.plus.message.http;
 
-import com.muxin.gateway.core.plus.msg.ServerExchange;
+import com.muxin.gateway.core.plus.message.ServerExchange;
 
 /**
  * @projectname: muxin-gateway

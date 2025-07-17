@@ -14,14 +14,20 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author muxin
  */
 @Slf4j
-public class RoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
+public class RoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
     
     private static final String STRATEGY_NAME = "ROUND_ROBIN";
     private static final String DESCRIPTION = "轮询负载均衡，依次选择可用地址";
     
     private final AtomicInteger counter = new AtomicInteger(0);
     
-    public RoundRobinLoadBalanceStrategy() {
+    /**
+     * 构造函数
+     * @param definition 负载均衡定义
+     */
+    public RoundRobinLoadBalanceStrategy(LoadBalanceDefinition definition) {
+        super(definition);
+        log.debug("创建轮询负载均衡策略，策略配置: {}", definition.getStrategy());
     }
     
     @Override
@@ -42,7 +48,12 @@ public class RoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
      * 获取下一个索引
      */
     private int getNextIndex(int size) {
-        return counter.getAndIncrement() % size;
+        if (size <= 0) {
+            throw new IllegalArgumentException("地址数量必须大于0");
+        }
+        
+        // 使用原子操作确保线程安全
+        return Math.abs(counter.getAndIncrement()) % size;
     }
     
     @Override
@@ -56,11 +67,6 @@ public class RoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
     }
     
     @Override
-    public boolean requiresWeight() {
-        return false;
-    }
-    
-    @Override
     public boolean isStateful() {
         return true; // 有计数器状态
     }
@@ -68,7 +74,7 @@ public class RoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
     @Override
     public void reset() {
         counter.set(0);
-        log.info("轮询策略状态已重置");
+        log.debug("重置轮询负载均衡计数器");
     }
     
     /**
@@ -80,6 +86,7 @@ public class RoundRobinLoadBalanceStrategy implements LoadBalanceStrategy {
     
     @Override
     public String toString() {
-        return String.format("RoundRobinLoadBalanceStrategy{counter=%d}", counter.get());
+        return String.format("RoundRobinLoadBalanceStrategy{strategy='%s', counter=%d}", 
+                getStrategyName(), counter.get());
     }
 } 
