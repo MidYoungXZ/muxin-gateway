@@ -1,4 +1,4 @@
-# Muxin Gateway
+# Muxin Gateway（cursor升级版）
 
 一个基于 Netty 的高性能、协议无关的 API 网关系统。包含轻量级核心模块（Gateway Core Plus）和完整的管理系统。
 
