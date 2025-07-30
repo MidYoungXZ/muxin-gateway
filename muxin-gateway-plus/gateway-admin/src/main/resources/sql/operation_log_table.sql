@@ -1,0 +1,46 @@
+-- 操作日志表
+CREATE TABLE `sys_operation_log` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `module` varchar(50) DEFAULT NULL COMMENT '模块名称',
+  `operation` varchar(50) DEFAULT NULL COMMENT '操作类型',
+  `method` varchar(10) DEFAULT NULL COMMENT '请求方法',
+  `request_url` varchar(500) DEFAULT NULL COMMENT '请求URL',
+  `params` text DEFAULT NULL COMMENT '请求参数',
+  `result` text DEFAULT NULL COMMENT '返回结果',
+  `error` text DEFAULT NULL COMMENT '异常信息',
+  `duration` bigint DEFAULT NULL COMMENT '执行时长(ms)',
+  `operator` varchar(50) DEFAULT NULL COMMENT '操作人',
+  `operator_id` bigint DEFAULT NULL COMMENT '操作人ID',
+  `operator_ip` varchar(50) DEFAULT NULL COMMENT '操作IP',
+  `operator_location` varchar(100) DEFAULT NULL COMMENT '操作地点',
+  `browser` varchar(100) DEFAULT NULL COMMENT '浏览器',
+  `os` varchar(100) DEFAULT NULL COMMENT '操作系统',
+  `status` tinyint DEFAULT NULL COMMENT '状态：0-失败，1-成功',
+  `operate_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
+  `deleted` tinyint DEFAULT '0' COMMENT '是否删除：0-否，1-是',
+  PRIMARY KEY (`id`),
+  KEY `idx_module` (`module`),
+  KEY `idx_operation` (`operation`),
+  KEY `idx_operator` (`operator`),
+  KEY `idx_status` (`status`),
+  KEY `idx_operate_time` (`operate_time`),
+  KEY `idx_deleted` (`deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
+
+-- 插入一些测试数据
+INSERT INTO `sys_operation_log` (`module`, `operation`, `method`, `request_url`, `params`, `result`, `error`, `duration`, `operator`, `operator_id`, `operator_ip`, `operator_location`, `browser`, `os`, `status`, `operate_time`, `deleted`) VALUES
+('用户管理', '用户登录', 'POST', '/api/auth/login', '{"username":"admin","password":"******"}', '{"code":200,"message":"登录成功"}', NULL, 156, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 09:30:00', 0),
+('用户管理', '创建用户', 'POST', '/api/users', '{"username":"testuser","email":"test@example.com"}', '{"code":200,"data":{"id":5}}', NULL, 234, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 10:15:00', 0),
+('角色管理', '创建角色', 'POST', '/api/roles', '{"roleName":"测试角色","roleCode":"test_role"}', '{"code":200,"data":{"id":3}}', NULL, 189, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 10:30:00', 0),
+('权限管理', '分配权限', 'PUT', '/api/roles/3/permissions', '{"permissionIds":[1,2,3,4]}', '{"code":200,"message":"权限分配成功"}', NULL, 145, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 10:45:00', 0),
+('部门管理', '创建部门', 'POST', '/api/dept', '{"deptName":"研发部","parentId":1}', '{"code":200,"data":{"id":6}}', NULL, 167, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 11:00:00', 0),
+('用户管理', '删除用户', 'DELETE', '/api/users/10', '{"id":10}', NULL, '权限不足，无法删除管理员用户', 89, 'test', 2, '192.168.1.101', '上海', 'Firefox', 'macOS', 0, '2024-01-15 11:15:00', 0),
+('系统设置', '修改配置', 'PUT', '/api/config/system', '{"siteName":"网关管理系统","version":"1.0.0"}', '{"code":200,"message":"配置更新成功"}', NULL, 123, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 11:30:00', 0),
+('操作日志', '导出日志', 'POST', '/api/system/logs/operation/export', '{"startTime":"2024-01-01","endTime":"2024-01-15"}', '{"code":200,"message":"导出成功"}', NULL, 2345, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 11:45:00', 0),
+('路由管理', '创建路由', 'POST', '/api/routes', '{"routeId":"test-route","routeName":"测试路由"}', '{"code":200,"data":{"id":8}}', NULL, 198, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 12:00:00', 0),
+('过滤器管理', '启用过滤器', 'PUT', '/api/filters/5/enable', '{"enabled":true}', '{"code":200,"message":"过滤器已启用"}', NULL, 76, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 12:15:00', 0),
+('监控管理', '查看监控', 'GET', '/api/metrics/overview', '{}', '{"code":200,"data":{"requestCount":1000}}', NULL, 45, 'viewer', 3, '192.168.1.102', '广州', 'Safari', 'macOS', 1, '2024-01-15 12:30:00', 0),
+('用户管理', '修改密码', 'PUT', '/api/users/profile/password', '{"oldPassword":"******","newPassword":"******"}', NULL, '原密码错误', 67, 'test', 2, '192.168.1.101', '上海', 'Firefox', 'macOS', 0, '2024-01-15 12:45:00', 0),
+('系统设置', '清理缓存', 'POST', '/api/system/cache/clear', '{"type":"all"}', '{"code":200,"message":"缓存清理成功"}', NULL, 1234, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 13:00:00', 0),
+('用户管理', '用户登出', 'POST', '/api/auth/logout', '{}', '{"code":200,"message":"登出成功"}', NULL, 34, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 13:15:00', 0),
+('数据备份', '备份数据库', 'POST', '/api/system/backup', '{"type":"full"}', '{"code":200,"message":"备份完成","file":"backup_20240115.sql"}', NULL, 15678, 'admin', 1, '192.168.1.100', '北京', 'Chrome', 'Windows', 1, '2024-01-15 13:30:00', 0); 

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Muxin Gateway 管理系统</title>
+    <style>
+      /* 预设亮色主题样式，避免页面闪烁 */
+      html, body {
+        background-color: #ffffff;
+        color: #111827;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      
+      /* 防止暗色主题样式 */
+      html.dark, body.dark {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+      }
+      
+      #app {
+        height: 100%;
+        background-color: #ffffff;
+      }
+    </style>
+  </head>
+  <body class="light">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

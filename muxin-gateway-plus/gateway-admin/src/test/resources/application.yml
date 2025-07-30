@@ -1,0 +1,76 @@
+spring:
+  profiles:
+    active: mysql
+  datasource:
+    url: jdbc:mysql://localhost:3306/muxin_gateway?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 15
+      auto-commit: true
+      idle-timeout: 30000
+      pool-name: GatewayAdminHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 604800
+          must-revalidate: true
+      chain:
+        strategy:
+          content:
+            enabled: true
+            paths: /**
+        cache: true
+        compressed: true
+
+# MyBatis-Flex配置
+mybatis-flex:
+  # 打印SQL
+  print-sql: true
+  # 逻辑删除配置
+  logic-delete-column: deleted
+  logic-delete-value: 1
+  logic-not-delete-value: 0
+  # 配置文件位置
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 配置别名包
+  type-aliases-package: com.muxin.gateway.admin.entity
+  # 全局配置
+  global-config:
+    # 打印banner
+    print-banner: false
+
+# 服务器配置
+server:
+  port: 8080
+
+# 日志配置
+logging:
+  level:
+    com.muxin.gateway.admin.mapper: debug
+    org.springframework.jdbc: debug
+    com.mybatisflex: debug
+
+# Sa-Token配置
+sa-token:
+  # token名称
+  token-name: Authorization
+  # token有效期，单位秒，-1代表永不过期
+  timeout: 2592000
+  # token临时有效期（指定时间内无操作就过期），单位秒
+  activity-timeout: -1
+  # 是否允许同一账号并发登录
+  is-concurrent: true
+  # 在多人登录同一账号时，是否共用一个token
+  is-share: true
+  # token风格
+  token-style: uuid
+  # 是否输出操作日志
+  is-log: false
+  # jwt密钥
+  jwt-secret-key: muxin-gateway-jwt-secret-key-2024 

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="LOG_PATH">logs</Property>
+    </Properties>
+    
+    <Appenders>
+        <!-- 控制台输出 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+        
+        <!-- 异步日志文件 -->
+        <RollingRandomAccessFile name="RollingFile" 
+                                fileName="${LOG_PATH}/gateway.log"
+                                filePattern="${LOG_PATH}/gateway-%d{yyyy-MM-dd}-%i.log.gz"
+                                immediateFlush="false">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10">
+                <Delete basePath="${LOG_PATH}" maxDepth="1">
+                    <IfFileName glob="gateway-*.log.gz"/>
+                    <IfLastModified age="7d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+        
+        <!-- 错误日志单独记录 -->
+        <RollingRandomAccessFile name="ErrorFile"
+                                fileName="${LOG_PATH}/gateway-error.log"
+                                filePattern="${LOG_PATH}/gateway-error-%d{yyyy-MM-dd}-%i.log.gz"
+                                immediateFlush="false">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="50MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="5"/>
+        </RollingRandomAccessFile>
+        
+        <!-- 异步Appender包装器 -->
+        <Async name="AsyncRollingFile" bufferSize="262144" includeLocation="false">
+            <AppenderRef ref="RollingFile"/>
+        </Async>
+        
+        <Async name="AsyncErrorFile" bufferSize="262144" includeLocation="false">
+            <AppenderRef ref="ErrorFile"/>
+        </Async>
+    </Appenders>
+    
+    <Loggers>
+        <!-- 网关核心日志配置 -->
+        <Logger name="com.muxin.gateway" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncRollingFile"/>
+            <AppenderRef ref="AsyncErrorFile"/>
+        </Logger>
+        
+        <!-- Netty日志配置 -->
+        <Logger name="io.netty" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncRollingFile"/>
+        </Logger>
+        
+        <!-- Spring日志配置 -->
+        <Logger name="org.springframework" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncRollingFile"/>
+        </Logger>
+        
+        <!-- 根日志配置 -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="AsyncRollingFile"/>
+            <AppenderRef ref="AsyncErrorFile"/>
+        </Root>
+    </Loggers>
+</Configuration> 

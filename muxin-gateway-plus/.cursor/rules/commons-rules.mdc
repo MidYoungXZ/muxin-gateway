@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+1.当会话是第一次进行本项目的问答、问题修复、新增功能、删除更改功能时，先阅读doc目录下所有的.md文件及README.md文件来了解项目情况，后续请求非必要不要重复阅读文档。
+2.在成功完成任务后及时更新doc目录下.md文件和README.md文件。
+
+3.生成的命令必须兼容 Windows、Linux 和 macOS 操作系统。如果某条命令在不同系统语法不同，请使用跨平台写法，或提供三种系统的对应命令注释。不要使用仅限 Linux/macOS 的命令如 `rm`, `touch`, `export`，建议用 Node.js、Java、Python 或平台中立脚本封装逻辑。

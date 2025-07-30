@@ -1,0 +1,514 @@
+// 响应式适配样式文件
+
+// 断点定义
+$breakpoints: (
+  'xs': 0,          // 超小屏幕（手机竖屏）
+  'sm': 576px,      // 小屏幕（手机横屏）
+  'md': 768px,      // 中等屏幕（平板竖屏）
+  'lg': 992px,      // 大屏幕（平板横屏/小桌面）
+  'xl': 1200px,     // 超大屏幕（桌面）
+  'xxl': 1400px     // 超超大屏幕（大桌面）
+);
+
+// 响应式混入
+@mixin respond-to($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    $value: map-get($breakpoints, $breakpoint);
+    @if $value == 0 {
+      @content;
+    } @else {
+      @media (min-width: $value) {
+        @content;
+      }
+    }
+  }
+}
+
+@mixin respond-below($breakpoint) {
+  @if map-has-key($breakpoints, $breakpoint) {
+    $value: map-get($breakpoints, $breakpoint);
+    @media (max-width: $value - 1px) {
+      @content;
+    }
+  }
+}
+
+// 移动端优先响应式布局
+
+// 超小屏幕适配 (0-575px)
+@include respond-below('sm') {
+  .dashboard-container {
+    .welcome-card {
+      padding: var(--space-4) !important;
+      
+      .welcome-content {
+        flex-direction: column !important;
+        text-align: center;
+        gap: var(--space-4);
+      }
+      
+      .welcome-title {
+        font-size: var(--text-xl) !important;
+      }
+      
+      .welcome-stats {
+        flex-direction: row !important;
+        justify-content: space-around;
+        width: 100%;
+      }
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr !important;
+      gap: var(--space-4);
+    }
+    
+    .main-content {
+      grid-template-columns: 1fr !important;
+      gap: var(--space-4);
+    }
+    
+    .quick-actions .actions-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+  }
+  
+  .layout-container {
+    .layout-aside {
+      position: fixed !important;
+      left: -280px;
+      height: 100vh !important;
+      z-index: var(--z-overlay);
+      transition: left var(--transition-base);
+      
+      &.show {
+        left: 0;
+        box-shadow: var(--shadow-2xl);
+      }
+    }
+    
+    .layout-header {
+      padding: 0 var(--space-3) !important;
+      
+      .header-center {
+        display: none !important;
+      }
+      
+      .header-left {
+        .header-breadcrumb {
+          display: none !important;
+        }
+      }
+      
+      .header-right {
+        gap: var(--space-1);
+        
+        .header-action-btn {
+          width: 36px !important;
+          height: 36px !important;
+        }
+        
+        .theme-toggle {
+          margin: 0 !important;
+        }
+      }
+    }
+    
+    .layout-main {
+      .content-wrapper {
+        padding: var(--space-3) !important;
+      }
+    }
+  }
+  
+  .page-container {
+    padding: var(--space-3) !important;
+    margin-bottom: var(--space-4) !important;
+  }
+  
+  .modern-card {
+    .card-header,
+    .card-body {
+      padding: var(--space-3) !important;
+    }
+    
+    .card-title {
+      font-size: var(--text-base) !important;
+    }
+  }
+  
+  .stats-card {
+    .stats-value {
+      font-size: var(--text-2xl) !important;
+    }
+    
+    .stats-icon {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: var(--text-lg) !important;
+    }
+  }
+}
+
+// 小屏幕适配 (576-767px)
+@include respond-to('sm') {
+  @include respond-below('md') {
+    .dashboard-container {
+      .welcome-card {
+        .welcome-title {
+          font-size: var(--text-3xl);
+        }
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .layout-container {
+      .layout-aside {
+        position: fixed;
+        z-index: var(--z-fixed);
+      }
+      
+      .layout-header {
+        .header-center {
+          max-width: 200px;
+        }
+      }
+    }
+  }
+}
+
+// 中等屏幕适配 (768-991px) - 平板竖屏
+@include respond-to('md') {
+  @include respond-below('lg') {
+    .dashboard-container {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: var(--space-4);
+      }
+      
+      .service-monitor {
+        .service-grid {
+          .service-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: var(--space-2);
+            
+            .service-metrics {
+              width: 100%;
+              justify-content: space-between;
+            }
+          }
+        }
+      }
+    }
+    
+    .layout-container {
+      .layout-aside {
+        width: 240px !important;
+        
+        &.collapsed {
+          width: 64px !important;
+        }
+      }
+      
+      .layout-header {
+        .header-center {
+          max-width: 300px;
+        }
+      }
+    }
+  }
+}
+
+// 大屏幕适配 (992-1199px) - 平板横屏/小桌面
+@include respond-to('lg') {
+  @include respond-below('xl') {
+    .dashboard-container {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      
+      .main-content {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
+    
+    .layout-container {
+      .layout-header {
+        .header-center {
+          max-width: 350px;
+        }
+      }
+    }
+  }
+}
+
+// 超大屏幕适配 (1200px+) - 桌面
+@include respond-to('xl') {
+  .dashboard-container {
+    .welcome-card {
+      padding: var(--space-10);
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-8);
+    }
+    
+    .main-content {
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-8);
+    }
+  }
+  
+  .layout-container {
+    .layout-header {
+      .header-center {
+        max-width: 500px;
+      }
+    }
+  }
+}
+
+// 超超大屏幕适配 (1400px+) - 大桌面
+@include respond-to('xxl') {
+  .dashboard-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    
+    .stats-grid {
+      gap: var(--space-10);
+    }
+    
+    .main-content {
+      gap: var(--space-10);
+    }
+  }
+}
+
+// 特殊设备适配
+
+// 横屏手机
+@media (max-height: 500px) and (orientation: landscape) {
+  .layout-container {
+    .layout-aside {
+      .user-section {
+        display: none;
+      }
+    }
+    
+    .layout-header {
+      height: 48px !important;
+    }
+    
+    .dashboard-container {
+      .welcome-card {
+        padding: var(--space-4);
+        
+        .welcome-title {
+          font-size: var(--text-lg);
+        }
+        
+        .welcome-subtitle {
+          display: none;
+        }
+      }
+    }
+  }
+}
+
+// 高分辨率屏幕
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .stats-card .stats-icon,
+  .action-item .action-icon,
+  .notification-icon {
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+// 触摸设备优化
+@media (pointer: coarse) {
+  .layout-container {
+    .layout-header {
+      .header-action-btn {
+        min-width: 44px;
+        min-height: 44px;
+      }
+    }
+    
+    .layout-aside {
+      .sidebar-menu {
+        :deep(.el-menu-item),
+        :deep(.el-sub-menu__title) {
+          min-height: 48px;
+          line-height: 48px;
+        }
+      }
+    }
+  }
+  
+  .dashboard-container {
+    .quick-actions {
+      .action-item {
+        min-height: 80px;
+        padding: var(--space-4);
+      }
+    }
+    
+    .stats-card {
+      padding: var(--space-6);
+    }
+  }
+}
+
+// 暗色模式下的响应式调整
+@media (prefers-color-scheme: dark) {
+  @include respond-below('md') {
+    .layout-container {
+      .layout-aside {
+        background: var(--gray-900);
+        border-right-color: var(--gray-700);
+      }
+    }
+  }
+}
+
+// 减少动画（用户偏好）
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-container {
+    .stats-card,
+    .modern-card {
+      transition: none;
+      
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+  
+  .layout-container {
+    .layout-aside {
+      transition: none;
+    }
+    
+    .sidebar-menu {
+      :deep(.el-menu-item),
+      :deep(.el-sub-menu__title) {
+        transition: none;
+        
+        &:hover {
+          transform: none;
+        }
+      }
+    }
+  }
+  
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+  
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in {
+    animation: none;
+  }
+}
+
+// 打印样式
+@media print {
+  .layout-container {
+    .layout-aside,
+    .layout-header {
+      display: none !important;
+    }
+    
+    .layout-main {
+      margin: 0 !important;
+      padding: 0 !important;
+      
+      .page-tabs {
+        display: none !important;
+      }
+      
+      .content-wrapper {
+        padding: 0 !important;
+      }
+    }
+  }
+  
+  .dashboard-container {
+    .welcome-card {
+      background: white !important;
+      color: black !important;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
+    
+    .modern-card {
+      break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+    }
+    
+    .quick-actions,
+    .activity-card {
+      display: none !important;
+    }
+  }
+}
+
+// 工具类的响应式变体
+@each $breakpoint, $value in $breakpoints {
+  @if $value > 0 {
+    @include respond-to($breakpoint) {
+      .hidden-#{$breakpoint}-up {
+        display: none !important;
+      }
+    }
+    
+    @include respond-below($breakpoint) {
+      .hidden-#{$breakpoint}-down {
+        display: none !important;
+      }
+    }
+  }
+}
+
+// 间距响应式工具类
+@include respond-below('md') {
+  @each $size in (0, 1, 2, 3, 4, 5, 6, 8) {
+    .p-mobile-#{$size} { padding: var(--space-#{$size}) !important; }
+    .m-mobile-#{$size} { margin: var(--space-#{$size}) !important; }
+    .px-mobile-#{$size} { 
+      padding-left: var(--space-#{$size}) !important; 
+      padding-right: var(--space-#{$size}) !important; 
+    }
+    .py-mobile-#{$size} { 
+      padding-top: var(--space-#{$size}) !important; 
+      padding-bottom: var(--space-#{$size}) !important; 
+    }
+  }
+}
+
+// 字体大小响应式工具类
+@include respond-below('md') {
+  .text-mobile-xs { font-size: 10px !important; }
+  .text-mobile-sm { font-size: 12px !important; }
+  .text-mobile-base { font-size: 14px !important; }
+  .text-mobile-lg { font-size: 16px !important; }
+  .text-mobile-xl { font-size: 18px !important; }
+  .text-mobile-2xl { font-size: 20px !important; }
+} 
