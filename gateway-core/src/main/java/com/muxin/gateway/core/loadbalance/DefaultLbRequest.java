@@ -3,10 +3,12 @@ package com.muxin.gateway.core.loadbalance;
 import com.muxin.gateway.core.http.ServerWebExchange;
 
 /**
- * [Class description]
+ * 默认负载均衡请求类
+ * 
+ * 实现LbRequest接口，提供默认的负载均衡请求实现
  *
  * @author Administrator
- * @date 2025/1/10 15:29
+ * @since 1.0.0
  */
 public class DefaultLbRequest implements LbRequest<ServerWebExchange> {
 

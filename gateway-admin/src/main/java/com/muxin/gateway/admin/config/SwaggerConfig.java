@@ -14,11 +14,33 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * Swagger配置类
+ * Swagger配置类.
+ * <p>
+ * 该配置类用于集成Swagger/OpenAPI 3.0，自动生成API接口文档。
+ * 主要配置包括：
+ * <ul>
+ *     <li>API文档的基本信息（标题、描述、版本、许可协议等）</li>
+ *     <li>联系信息</li>
+ *     <li>安全认证配置（Cookie认证）</li>
+ *     <li>外部文档链接</li>
+ *     <li>服务器配置</li>
+ * </ul>
+ * </p>
+ *
+ * @author muxin
+ * @since 1.0.0
  */
 @Configuration
 public class SwaggerConfig {
 
+    /**
+     * 配置OpenAPI文档信息.
+     * <p>
+     * 创建并配置OpenAPI实例，定义API文档的元数据和认证方式。
+     * </p>
+     *
+     * @return OpenAPI实例，包含完整的API文档配置
+     */
     @Bean
     public OpenAPI gatewayAdminOpenAPI() {
         return new OpenAPI()

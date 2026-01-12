@@ -5,10 +5,12 @@ import com.muxin.gateway.core.http.ServerWebExchange;
 import java.util.function.Predicate;
 
 /**
- * [Class description]
+ * 路由断言接口
+ * 
+ * 扩展Java标准Predicate接口，定义路由匹配的条件
  *
  * @author Administrator
- * @date 2024/11/19 14:48
+ * @since 1.0.0
  */
 public interface RoutePredicate extends Predicate<ServerWebExchange> {
 

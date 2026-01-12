@@ -5,15 +5,28 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * MyBatis-Flex 配置
+ * MyBatis-Flex配置类.
+ * <p>
+ * 该配置类负责定制MyBatis-Flex框架的全局配置，包括：
+ * <ul>
+ *     <li>设置逻辑删除字段名为"deleted"</li>
+ *     <li>关闭启动时的Banner打印</li>
+ * </ul>
+ * </p>
  *
  * @author muxin
+ * @since 1.0.0
  */
 @Configuration
 public class MyBatisFlexConfig {
-    
+
     /**
-     * MyBatis-Flex 自定义配置
+     * MyBatis-Flex自定义配置.
+     * <p>
+     * 创建并返回一个MyBatisFlexCustomizer实例，用于配置MyBatis-Flex的全局行为。
+     * </p>
+     *
+     * @return MyBatisFlexCustomizer实例，用于自定义MyBatis-Flex配置
      */
     @Bean
     public MyBatisFlexCustomizer myBatisFlexCustomizer() {

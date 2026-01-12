@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.route.filter;
 
 /**
- * [Class description]
+ * 过滤器类型枚举
+ * 
+ * 定义过滤器的两种类型：PART（部分）和GLOBAL（全局）
  *
  * @author Administrator
- * @date 2024/11/20 16:21
+ * @since 1.0.0
  */
 public enum FilterTypeEnum {
 

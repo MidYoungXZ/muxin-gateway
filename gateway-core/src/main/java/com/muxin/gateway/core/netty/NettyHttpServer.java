@@ -27,10 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 import java.net.InetSocketAddress;
 
 /**
- * [Class description]
+ * Netty HTTP服务器
+ * 
+ * 基于Netty实现的HTTP服务器，实现LifeCycle接口
  *
  * @author Administrator
- * @date 2024/11/20 16:50
+ * @since 1.0.0
  */
 @Slf4j
 @Data

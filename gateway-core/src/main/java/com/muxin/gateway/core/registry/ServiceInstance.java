@@ -10,7 +10,7 @@ import java.util.UUID;
  * 表示一个具体的服务实例
  *
  * @author Administrator
- * @date 2025/6/13 18:00
+ * @since 1.0.0
  */
 public interface ServiceInstance {
 

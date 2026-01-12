@@ -7,7 +7,7 @@ import java.util.Map;
  * 定义了服务的基本信息
  *
  * @author Administrator
- * @date 2025/6/13 18:00
+ * @since 1.0.0
  */
 public interface ServiceDefinition {
 

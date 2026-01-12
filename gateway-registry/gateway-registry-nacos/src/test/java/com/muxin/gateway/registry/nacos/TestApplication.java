@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 测试应用启动类
  *
  * @author Administrator
- * @date 2025/6/13 20:30
+ * @since 1.0.0
  */
 @SpringBootApplication
 public class TestApplication {

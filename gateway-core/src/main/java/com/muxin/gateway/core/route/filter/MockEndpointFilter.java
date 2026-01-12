@@ -5,10 +5,12 @@ import com.muxin.gateway.core.utils.ResponseUtil;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * [Class description]
+ * 模拟端点过滤器
+ * 
+ * 实现GlobalFilter接口，返回模拟的响应数据
  *
  * @author Administrator
- * @date 2025/1/9 15:47
+ * @since 1.0.0
  */
 public class MockEndpointFilter implements GlobalFilter {
 

@@ -4,10 +4,12 @@ import com.muxin.gateway.core.common.Ordered;
 import com.muxin.gateway.core.http.ServerWebExchange;
 
 /**
- * [Class description]
+ * 路由过滤器接口
+ * 
+ * 定义路由过滤器的通用接口，扩展Ordered接口
  *
  * @author Administrator
- * @date 2024/11/19 09:36
+ * @since 1.0.0
  */
 public interface RouteFilter extends Ordered {
 

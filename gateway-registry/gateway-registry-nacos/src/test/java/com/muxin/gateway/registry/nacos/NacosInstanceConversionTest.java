@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Nacos Instance转换测试
  *
  * @author Administrator
- * @date 2025/1/16 20:00
+ * @since 1.0.0
  */
 @DisplayName("Nacos Instance转换测试")
 public class NacosInstanceConversionTest {

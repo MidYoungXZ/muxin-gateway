@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.common.exception;
 
 /**
- * [Class description]
+ * 网关异常类
+ * 
+ * 网关系统运行时抛出的自定义异常
  *
  * @author Administrator
- * @date 2024/11/21 11:25
+ * @since 1.0.0
  */
 public class GatewayException extends RuntimeException{
 

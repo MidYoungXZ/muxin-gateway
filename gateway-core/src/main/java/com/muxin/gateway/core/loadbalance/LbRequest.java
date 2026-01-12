@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.loadbalance;
 
 /**
- * [Class description]
+ * 负载均衡请求接口
+ * 
+ * 定义负载均衡请求的通用接口
  *
  * @author Administrator
- * @date 2025/1/9 17:26
+ * @since 1.0.0
  */
 public interface LbRequest<C> {
 

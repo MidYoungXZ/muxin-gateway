@@ -12,6 +12,14 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.Import;
 
+/**
+ * 网关应用程序主类
+ * 
+ * 应用程序启动入口，负责初始化系统核心组件和启动服务
+ * 
+ * @author muxin
+ * @since 1.0.0
+ */
 @SpringBootApplication
 @ConfigurationPropertiesScan
 @Import({GatewayAutoConfiguration.class, GatewayAdminAutoConfiguration.class})

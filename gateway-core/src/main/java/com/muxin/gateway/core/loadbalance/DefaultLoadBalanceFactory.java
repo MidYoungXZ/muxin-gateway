@@ -5,10 +5,12 @@ import lombok.Data;
 import java.util.Map;
 
 /**
- * [Class description]
+ * 默认负载均衡工厂类
+ * 
+ * 实现GatewayLoadBalanceFactory接口，提供默认的负载均衡工厂实现
  *
  * @author Administrator
- * @date 2025/1/16 16:42
+ * @since 1.0.0
  */
 @Data
 public class DefaultLoadBalanceFactory implements GatewayLoadBalanceFactory {

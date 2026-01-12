@@ -11,10 +11,12 @@ import java.util.function.Predicate;
 import static java.util.Collections.synchronizedMap;
 
 /**
- * [Class description]
+ * 内存路由定义仓库
+ * 
+ * 实现RouteDefinitionRepository接口，使用内存存储路由定义
  *
  * @author Administrator
- * @date 2025/1/9 15:10
+ * @since 1.0.0
  */
 @Data
 public class InMemoryRouteDefinitionRepository implements RouteDefinitionRepository {

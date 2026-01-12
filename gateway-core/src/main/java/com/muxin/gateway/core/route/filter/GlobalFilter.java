@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.route.filter;
 
 /**
- * [Class description]
+ * 全局过滤器接口
+ * 
+ * 扩展RouteFilter接口，定义全局过滤器的默认类型
  *
  * @author Administrator
- * @date 2024/11/22 15:40
+ * @since 1.0.0
  */
 public interface GlobalFilter extends RouteFilter {
 

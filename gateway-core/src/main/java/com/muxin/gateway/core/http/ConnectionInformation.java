@@ -3,10 +3,12 @@ package com.muxin.gateway.core.http;
 import java.net.SocketAddress;
 
 /**
- * [Class description]
+ * 连接信息接口
+ * 
+ * 定义获取连接相关信息的接口方法
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface ConnectionInformation {
 

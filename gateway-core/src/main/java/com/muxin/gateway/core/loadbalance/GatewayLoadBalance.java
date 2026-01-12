@@ -4,10 +4,12 @@ import com.muxin.gateway.core.http.ServerWebExchange;
 import com.muxin.gateway.core.registry.ServiceInstance;
 
 /**
- * [Class description]
+ * 网关负载均衡接口
+ * 
+ * 定义网关负载均衡器的基本接口
  *
  * @author Administrator
- * @date 2025/1/9 17:44
+ * @since 1.0.0
  */
 public interface GatewayLoadBalance extends LoadBalance<ServiceInstance, ServerWebExchange>{
 

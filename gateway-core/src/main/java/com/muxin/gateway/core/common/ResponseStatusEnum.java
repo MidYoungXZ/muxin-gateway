@@ -4,10 +4,13 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.Getter;
 
 /**
- * [Class description]
+ * 响应状态枚举
+ * 
+ * 定义网关系统使用的HTTP响应状态码和内部状态码
+ * 格式：模块-错误类型-具体错误码 (例如：00-04-0004)
  *
  * @author Administrator
- * @date 2024/11/21 14:19
+ * @since 1.0.0
  */
 @Getter
 public enum ResponseStatusEnum implements ResponseStatusCode{

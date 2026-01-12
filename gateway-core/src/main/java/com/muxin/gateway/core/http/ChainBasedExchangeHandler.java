@@ -14,10 +14,12 @@ import java.util.stream.Collectors;
 import static com.muxin.gateway.core.common.GatewayConstants.SERVICE_ID;
 
 /**
- * [Class description]
+ * 基于过滤链的请求处理器
+ * 
+ * 实现ExchangeHandler接口，通过过滤链处理HTTP请求
  *
  * @author Administrator
- * @date 2024/11/21 10:11
+ * @since 1.0.0
  */
 @Slf4j
 public class ChainBasedExchangeHandler implements ExchangeHandler {

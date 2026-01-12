@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * [Class description]
+ * HTTP服务器信息接口
+ * 
+ * 扩展HttpInfos和ConnectionInformation接口，提供HTTP服务器端信息
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface HttpServerInfos extends HttpInfos, ConnectionInformation {
 

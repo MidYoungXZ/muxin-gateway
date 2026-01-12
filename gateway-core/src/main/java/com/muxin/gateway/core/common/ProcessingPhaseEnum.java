@@ -1,10 +1,10 @@
 package com.muxin.gateway.core.common;
 
 /**
- * 标记请求的处理阶段
+ * 标记请求的处理阶段枚举
  *
  * @author Administrator
- * @date 2024/12/10 15:13
+ * @since 1.0.0
  */
 public enum ProcessingPhaseEnum {
 

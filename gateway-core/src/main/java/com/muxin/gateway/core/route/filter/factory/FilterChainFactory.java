@@ -4,10 +4,12 @@ import com.muxin.gateway.core.route.filter.GatewayFilterChain;
 import com.muxin.gateway.core.http.ServerWebExchange;
 
 /**
- * [Class description]
+ * 过滤器链工厂接口
+ * 
+ * 定义创建GatewayFilterChain的工厂方法
  *
  * @author Administrator
- * @date 2024/11/20 16:30
+ * @since 1.0.0
  */
 public interface FilterChainFactory {
 

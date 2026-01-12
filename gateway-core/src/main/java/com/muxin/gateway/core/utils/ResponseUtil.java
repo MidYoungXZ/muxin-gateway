@@ -8,7 +8,14 @@ import org.asynchttpclient.Response;
 
 
 @Slf4j
-public class ResponseUtil {
+public /**
+ * 类 - 工具类
+ * 
+ * @author muxin
+ * @since 1.0.0
+ */
+
+class ResponseUtil {
 
 
     public static FullHttpResponse error() {

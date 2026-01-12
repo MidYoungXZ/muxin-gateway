@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.loadbalance;
 
 /**
- * [Class description]
+ * 网关负载均衡工厂接口
+ * 
+ * 定义负载均衡器工厂的接口
  *
  * @author Administrator
- * @date 2025/1/16 16:29
+ * @since 1.0.0
  */
 public interface GatewayLoadBalanceFactory {
 

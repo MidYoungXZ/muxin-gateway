@@ -12,7 +12,7 @@ import java.util.List;
  * 网关配置属性类
  *
  * @author Administrator
- * @date 2024/11/20 16:51
+ * @since 1.0.0
  */
 @Data
 @ConfigurationProperties(prefix = "muxin.gateway")

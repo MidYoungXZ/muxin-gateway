@@ -16,10 +16,12 @@ import static com.muxin.gateway.core.common.GatewayConstants.*;
 
 
 /**
- * [Class description]
+ * 负载均衡过滤器
+ * 
+ * 实现GlobalFilter接口，根据负载均衡策略选择服务实例
  *
  * @author Administrator
- * @date 2025/1/9 16:45
+ * @since 1.0.0
  */
 @Data
 @Slf4j

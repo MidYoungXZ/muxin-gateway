@@ -7,7 +7,7 @@ import java.util.List;
  * 定义了服务注册、发现、订阅等核心功能
  *
  * @author Administrator
- * @date 2025/6/13 18:00
+ * @since 1.0.0
  */
 public interface RegisterCenter {
 

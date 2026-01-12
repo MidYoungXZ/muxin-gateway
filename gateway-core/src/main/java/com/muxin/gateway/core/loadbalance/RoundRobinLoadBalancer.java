@@ -11,10 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.muxin.gateway.core.common.GatewayConstants.SERVICE_ID;
 
 /**
- * [Class description]
+ * 轮询负载均衡算法
+ * 
+ * 实现GatewayLoadBalance接口，使用轮询策略选择服务实例
  *
  * @author Administrator
- * @date 2025/1/10 15:14
+ * @since 1.0.0
  */
 public class RoundRobinLoadBalancer implements GatewayLoadBalance {
 

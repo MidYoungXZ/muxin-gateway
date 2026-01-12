@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.http;
 
 /**
- * [Class description]
+ * 交换处理器接口
+ * 
+ * 定义HTTP请求处理的接口
  *
  * @author Administrator
- * @date 2024/11/20 10:42
+ * @since 1.0.0
  */
 public interface ExchangeHandler {
 

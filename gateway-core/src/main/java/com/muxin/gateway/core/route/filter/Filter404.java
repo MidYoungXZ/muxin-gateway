@@ -5,10 +5,12 @@ import com.muxin.gateway.core.utils.ResponseUtil;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 /**
- * [Class description]
+ * 404过滤器
+ * 
+ * 实现PartFilter接口，当请求无法匹配路由时返回404响应
  *
  * @author Administrator
- * @date 2024/11/21 14:44
+ * @since 1.0.0
  */
 public class Filter404 implements PartFilter {
 

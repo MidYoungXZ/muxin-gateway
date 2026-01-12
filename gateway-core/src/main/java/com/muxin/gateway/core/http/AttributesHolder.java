@@ -4,10 +4,12 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * [Class description]
+ * 属性持有者接口
+ * 
+ * 定义用于存储和访问属性的接口
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface AttributesHolder {
     /**

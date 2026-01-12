@@ -7,7 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
  * 统一的HTTP交换接口，同时提供请求和响应的功能
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface ServerWebExchange extends HttpServerRequest, HttpServerResponse, ReleaseAble, AttributesHolder {
 

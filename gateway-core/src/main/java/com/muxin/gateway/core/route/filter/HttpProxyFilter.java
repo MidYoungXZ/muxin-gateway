@@ -26,7 +26,7 @@ import java.util.concurrent.TimeoutException;
  * 基于AsyncHttpClient实现的http请求过滤器
  *
  * @author Administrator
- * @date 2024/11/22 16:00
+ * @since 1.0.0
  */
 @Slf4j
 @Data

@@ -3,10 +3,12 @@ package com.muxin.gateway.core.loadbalance;
 import com.muxin.gateway.core.registry.ServiceInstance;
 
 /**
- * [Class description]
+ * 默认负载均衡响应类
+ * 
+ * 实现LbResponse接口，提供默认的负载均衡响应实现
  *
  * @author Administrator
- * @date 2025/1/10 15:27
+ * @since 1.0.0
  */
 public class DefaultLbResponse implements LbResponse<ServiceInstance> {
 

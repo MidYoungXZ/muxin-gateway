@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 测试Nacos注册中心的功能，包括用户名密码认证
  *
  * @author Administrator
- * @date 2025/6/13 20:00
+ * @since 1.0.0
  */
 @Slf4j
 @SpringBootTest

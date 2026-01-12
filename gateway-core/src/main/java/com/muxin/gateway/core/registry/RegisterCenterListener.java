@@ -7,7 +7,7 @@ import java.util.List;
  * 用于监听服务实例变更事件
  *
  * @author Administrator
- * @date 2025/6/13 18:00
+ * @since 1.0.0
  */
 @FunctionalInterface
 public interface RegisterCenterListener {

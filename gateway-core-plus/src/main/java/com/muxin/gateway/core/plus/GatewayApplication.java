@@ -3,14 +3,13 @@ package com.muxin.gateway.core.plus;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Muxin Gateway 应用启动类
- * 提供独立的Java应用启动入口，不依赖Spring Boot
+ * 网关应用程序主类
  * 
- * 使用方法：
- * 1. 编译项目：mvn clean compile
- * 2. 运行网关：java -cp "target/classes:target/dependency/*" com.muxin.gateway.core.plus.GatewayApplication
- * 
+ * Spring Boot应用程序启动入口，负责初始化网关核心组件、
+ * 配置自动装配，并启动Netty服务器和管理界面
+ *
  * @author muxin
+ * @since 1.0.0
  */
 @Slf4j
 public class GatewayApplication {

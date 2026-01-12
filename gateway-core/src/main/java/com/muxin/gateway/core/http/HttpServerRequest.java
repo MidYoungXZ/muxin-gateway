@@ -8,10 +8,12 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * [Class description]
+ * HTTP服务器请求接口
+ * 
+ * 定义HTTP服务器端请求的相关操作
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface HttpServerRequest extends HttpServerInfos {
 

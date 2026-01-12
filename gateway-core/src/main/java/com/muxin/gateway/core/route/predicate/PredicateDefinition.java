@@ -11,10 +11,12 @@ import java.util.UUID;
 import static org.springframework.util.StringUtils.tokenizeToStringArray;
 
 /**
- * [Class description]
+ * 断言定义类
+ * 
+ * 定义路由断言的名称和参数
  *
  * @author Administrator
- * @date 2024/11/21 10:53
+ * @since 1.0.0
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

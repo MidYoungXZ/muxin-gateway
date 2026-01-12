@@ -1,10 +1,12 @@
 package com.muxin.gateway.core.common;
 
 /**
- * [Class description]
+ * 有序接口
+ * 
+ * 定义对象的顺序值，用于排序和优先级控制
  *
  * @author Administrator
- * @date 2024/11/18 16:40
+ * @since 1.0.0
  */
 public interface Ordered {
 

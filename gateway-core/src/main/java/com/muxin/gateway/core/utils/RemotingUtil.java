@@ -5,7 +5,14 @@ import io.netty.channel.Channel;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-public class RemotingUtil {
+public /**
+ * 类 - 工具类
+ * 
+ * @author muxin
+ * @since 1.0.0
+ */
+
+class RemotingUtil {
 	
     public static String exceptionSimpleDesc(final Throwable e) {
         StringBuffer sb = new StringBuffer();

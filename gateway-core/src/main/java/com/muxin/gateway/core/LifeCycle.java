@@ -1,10 +1,12 @@
 package com.muxin.gateway.core;
 
 /**
- * [Class description]
+ * 生命周期接口
+ * 
+ * 定义对象的初始化、启动和关闭生命周期方法
  *
  * @author Administrator
- * @date 2024/11/19 16:51
+ * @since 1.0.0
  */
 public interface LifeCycle {
 

@@ -13,10 +13,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * [Class description]
+ * JSON工具类
+ * 
+ * 提供JSON序列化和反序列化的静态方法
  *
  * @author Administrator
- * @date 2025/1/13 11:35
+ * @since 1.0.0
  */
 @Getter
 public class JsonUtils {
