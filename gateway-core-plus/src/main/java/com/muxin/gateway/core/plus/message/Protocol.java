@@ -4,6 +4,8 @@ package com.muxin.gateway.core.plus.message;
  * 协议接口 - 定义协议的基本特征
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Protocol {
     /**

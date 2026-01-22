@@ -14,6 +14,8 @@ import java.util.List;
  * 负载均衡策略由Route级别管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class ConfigRouteServiceFactory implements RouteServiceFactory {

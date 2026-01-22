@@ -11,6 +11,8 @@ import java.util.Map;
  * HTTP端点地址实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class HttpEndpointAddress implements EndpointAddress {
     

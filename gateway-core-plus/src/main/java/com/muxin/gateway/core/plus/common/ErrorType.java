@@ -1,11 +1,12 @@
 package com.muxin.gateway.core.plus.common;
 
 /**
- * @projectname: muxin-gateway
- * @filename: ErrorType
- * @author: yangxz
- * @data:2025/7/16 22:35
- * @description:
+ * 错误类型枚举
+ * 定义网关中可能出现的各种错误类型及其对应的错误码、用户消息和HTTP状态码
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public enum ErrorType {
     TIMEOUT("E001", "请求超时，请稍后重试", 504),

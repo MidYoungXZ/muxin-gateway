@@ -14,6 +14,8 @@ import java.util.Map;
  * 每个路由专门处理一种协议，简化设计并避免协议冲突
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Route {
     

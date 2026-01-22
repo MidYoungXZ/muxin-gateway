@@ -6,8 +6,10 @@ import java.util.List;
  * 注册中心变更监听器
  * 用于监听服务实例变更事件
  *
- * @author Administrator
+ * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @FunctionalInterface
 public interface RegisterCenterListener {

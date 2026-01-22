@@ -6,8 +6,9 @@ import com.mybatisflex.core.table.TableDef;
 /**
  * sys_user_role 表定义
  *
- * @author mybatis-flex-processor
- * @since 2024-01-01
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class SysUserRoleTableDef extends TableDef {
 

@@ -10,6 +10,9 @@ import java.util.List;
  * 用户实体
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Table("sys_user")

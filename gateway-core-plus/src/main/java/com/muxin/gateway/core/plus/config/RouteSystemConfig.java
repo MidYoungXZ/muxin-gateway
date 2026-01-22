@@ -10,6 +10,9 @@ import java.time.Duration;
  * 管理路由系统的全局配置参数，与route包下的RouteConfig（路由实例配置）区分
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

@@ -4,6 +4,7 @@ package com.muxin.gateway.core.plus.message.converter;
  * 协议转换异常
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public class ProtocolConversionException extends RuntimeException {

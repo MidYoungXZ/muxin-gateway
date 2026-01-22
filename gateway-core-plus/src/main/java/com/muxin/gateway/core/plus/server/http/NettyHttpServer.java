@@ -26,6 +26,9 @@ import java.net.InetSocketAddress;
  * 专注于网络层功能，业务逻辑委托给 GatewayProcessor
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class NettyHttpServer {
@@ -186,7 +189,7 @@ public class NettyHttpServer {
     }
 
     /**
-     * HTTP Channel初始化器
+ * HTTP Channel初始化器
      */
     private class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
         @Override
@@ -226,8 +229,8 @@ public class NettyHttpServer {
     }
 
     /**
-     * 简化的HTTP服务器处理器
-     * 直接与GatewayProcessor对接，处理HTTP请求到网关处理的完整流程
+ * 简化的HTTP服务器处理器
+ * 直接与GatewayProcessor对接，处理HTTP请求到网关处理的完整流程
      */
     private static class DefaultHttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 

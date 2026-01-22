@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
  * 操作日志实体
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Table("sys_operation_log")

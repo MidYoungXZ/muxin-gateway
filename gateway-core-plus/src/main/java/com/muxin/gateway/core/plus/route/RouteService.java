@@ -12,6 +12,8 @@ import java.util.Map;
  * 路由的后端服务目标抽象，负载均衡策略由Route级别管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface RouteService {
 

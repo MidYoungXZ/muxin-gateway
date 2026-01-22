@@ -12,6 +12,8 @@ import com.muxin.gateway.core.plus.route.service.EndpointAddress;
  * 通用请求上下文 - 协议无关
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface RequestContext extends AttributesHolder {
 

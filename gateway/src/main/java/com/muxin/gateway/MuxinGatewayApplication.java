@@ -15,7 +15,9 @@ import org.springframework.context.annotation.Import;
  * 应用程序启动入口，负责初始化系统核心组件和启动服务
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan

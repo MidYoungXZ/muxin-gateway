@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
  * 测试控制器 - 仅用于开发环境
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @RestController
 @RequestMapping("/api/test")

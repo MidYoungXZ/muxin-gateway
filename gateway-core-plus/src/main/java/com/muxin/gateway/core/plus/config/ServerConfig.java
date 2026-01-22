@@ -9,6 +9,9 @@ import java.time.Duration;
  * 服务器配置
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

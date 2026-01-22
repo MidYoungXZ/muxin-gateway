@@ -9,6 +9,9 @@ import java.util.List;
  * 角色VO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class RoleVO {

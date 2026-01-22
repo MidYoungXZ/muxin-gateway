@@ -8,6 +8,9 @@ import java.time.LocalDateTime;
  * 部门VO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class DeptVO {

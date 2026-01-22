@@ -12,6 +12,8 @@ import java.util.stream.Collectors;
  * 负责服务实例的生命周期管理
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class DefaultInstanceManager implements InstanceManager {

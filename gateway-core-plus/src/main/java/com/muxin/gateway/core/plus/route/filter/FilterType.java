@@ -4,6 +4,8 @@ package com.muxin.gateway.core.plus.route.filter;
  * 过滤器类型枚举
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public enum FilterType {
     

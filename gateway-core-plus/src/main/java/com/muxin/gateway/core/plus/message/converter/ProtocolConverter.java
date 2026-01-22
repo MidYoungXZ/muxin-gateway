@@ -8,6 +8,7 @@ import com.muxin.gateway.core.plus.message.Protocol;
  * 负责在不同协议版本或协议类型之间进行消息转换
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface ProtocolConverter {

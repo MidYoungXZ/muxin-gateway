@@ -4,6 +4,8 @@ package com.muxin.gateway.core.plus.route.service;
  * 服务变化监听器接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ServiceChangeListener {
 

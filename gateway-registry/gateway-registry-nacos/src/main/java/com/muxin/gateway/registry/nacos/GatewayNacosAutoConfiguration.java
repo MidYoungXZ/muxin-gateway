@@ -11,11 +11,9 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Nacos注册中心自动配置
  *
- * @projectname: muxin-gateway
- * @filename: GatewayNacosAutoConfiguration
- * @author: yangxz
- * @data:2025/6/17 20:23
- * @description:
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 @Configuration

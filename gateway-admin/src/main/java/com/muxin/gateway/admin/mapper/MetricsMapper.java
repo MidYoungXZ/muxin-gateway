@@ -8,6 +8,9 @@ import org.apache.ibatis.annotations.Mapper;
  * 监控指标Mapper
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Mapper
 public interface MetricsMapper extends BaseMapper<GwMetrics> {

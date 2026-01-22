@@ -8,6 +8,9 @@ import org.apache.ibatis.annotations.Mapper;
  * 角色Mapper
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Mapper
 public interface RoleMapper extends BaseMapper<SysRole> {

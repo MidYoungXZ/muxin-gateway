@@ -1,11 +1,12 @@
 package com.muxin.gateway.core.plus.message;
 
 /**
- * @projectname: muxin-gateway
- * @filename: ProtocolEnum
- * @author: yangxz
- * @data:2025/7/13 15:05
- * @description:
+ * 协议枚举
+ * 定义网关支持的协议类型，包括HTTP和负载均衡协议
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public enum ProtocolEnum implements Protocol {
     HTTP("HTTP","1.1",true,true,false),

@@ -14,6 +14,9 @@ import org.springframework.context.annotation.Configuration;
  * 仅负责启动和配置映射，不涉及Web服务器
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 @Configuration

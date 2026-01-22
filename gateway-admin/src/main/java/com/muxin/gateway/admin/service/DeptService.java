@@ -13,6 +13,8 @@ import java.util.List;
  * 部门服务接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface DeptService extends IService<SysDept> {
     

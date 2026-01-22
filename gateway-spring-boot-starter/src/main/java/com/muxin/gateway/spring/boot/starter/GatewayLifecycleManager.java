@@ -10,6 +10,9 @@ import org.springframework.context.SmartLifecycle;
  * 负责与Spring生命周期同步，管理网关组件的启动和关闭
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class GatewayLifecycleManager implements SmartLifecycle {

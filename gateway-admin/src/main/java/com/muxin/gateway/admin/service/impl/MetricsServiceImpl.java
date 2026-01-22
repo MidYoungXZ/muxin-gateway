@@ -32,6 +32,9 @@ import static com.muxin.gateway.admin.entity.table.Tables.GW_ROUTE;
  * 监控服务实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 @Service

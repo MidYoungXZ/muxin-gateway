@@ -9,6 +9,9 @@ import lombok.Data;
  * 整合所有组件的配置信息
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

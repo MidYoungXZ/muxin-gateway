@@ -4,6 +4,8 @@ package com.muxin.gateway.core.plus.utils;
  * JSON工具类 - 简单实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class JsonUtils {
     

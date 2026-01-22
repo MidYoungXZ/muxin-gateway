@@ -12,6 +12,8 @@ import java.util.Set;
  * 统一管理所有协议的连接池，简化网关的连接管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ConnectionPoolManager extends LifeCycle {
 

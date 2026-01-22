@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * 负责管理和复用网络连接，提高网关性能
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class DefaultConnectionPool implements ConnectionPool {

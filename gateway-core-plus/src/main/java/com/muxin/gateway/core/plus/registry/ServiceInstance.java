@@ -9,7 +9,8 @@ import java.util.UUID;
  * 服务实例接口
  * 表示一个具体的服务实例（用于注册中心）
  *
- * @author Administrator
+ * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface ServiceInstance {

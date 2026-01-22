@@ -8,6 +8,8 @@ import com.muxin.gateway.core.plus.message.ServerExchange;
  * 通用过滤器接口 - 支持多协议
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Filter {
 

@@ -13,6 +13,8 @@ import java.util.List;
  * 菜单服务接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface MenuService {
     

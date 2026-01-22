@@ -6,11 +6,12 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 
 /**
- * @projectname: muxin-gateway
- * @filename: HttpRequestMessage
- * @author: yangxz
- * @data:2025/7/16 21:20
- * @description:
+ * HTTP请求消息接口
+ * 定义HTTP请求消息的接口，包含请求方法、URI等请求特定属性
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface HttpRequestMessage extends HttpMessage {
 

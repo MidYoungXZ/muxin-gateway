@@ -7,6 +7,8 @@ import com.muxin.gateway.core.plus.common.Repository;
  * 路由管理器接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface RouteManager extends Repository<String, Route>, LifeCycle {
 

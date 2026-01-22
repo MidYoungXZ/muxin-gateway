@@ -9,6 +9,9 @@ import java.time.Duration;
  * 协议转换器配置
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

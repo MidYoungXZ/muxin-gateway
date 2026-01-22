@@ -12,6 +12,9 @@ import java.util.List;
  * 登录响应DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

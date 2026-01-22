@@ -6,8 +6,9 @@ import com.mybatisflex.core.table.TableDef;
 /**
  * sys_user 表定义
  *
- * @author mybatis-flex-processor
- * @since 2024-01-01
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class SysUserTableDef extends TableDef {
 

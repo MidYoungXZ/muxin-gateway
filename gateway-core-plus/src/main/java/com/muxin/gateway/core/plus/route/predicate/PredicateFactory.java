@@ -4,8 +4,10 @@ package com.muxin.gateway.core.plus.route.predicate;
  * 断言工厂接口
  * 每种Predicate类型有对应的Factory实现
  * 参考FilterFactory的设计模式
- * 
+ *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface PredicateFactory {
     

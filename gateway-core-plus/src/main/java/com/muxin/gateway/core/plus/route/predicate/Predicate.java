@@ -11,6 +11,8 @@ import java.util.Set;
  * 通用断言接口 - 支持多协议
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Predicate {
 

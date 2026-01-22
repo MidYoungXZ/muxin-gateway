@@ -6,8 +6,12 @@ import com.muxin.gateway.core.plus.message.Protocol;
 import java.util.Map;
 
 /**
- * @author: yangxz
- * @description:
+ * 服务元数据接口
+ * 定义服务的元数据信息，包括服务ID、名称、版本、协议、地址等
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ServiceMeta {
     /**

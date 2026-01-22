@@ -9,6 +9,8 @@ import java.util.concurrent.CompletableFuture;
  * 定义所有类型连接的通用行为
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Connection {
 

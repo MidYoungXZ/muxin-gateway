@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
  * 通过服务发现中心动态获取服务实例，负载均衡由外部Route管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class DiscoveryRouteService implements RouteService {

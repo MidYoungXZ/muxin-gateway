@@ -8,6 +8,9 @@ import lombok.Data;
  * 菜单创建DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class MenuCreateDTO {

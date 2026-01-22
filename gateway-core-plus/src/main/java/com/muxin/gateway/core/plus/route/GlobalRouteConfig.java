@@ -17,6 +17,9 @@ import java.util.Map;
  * 提供默认配置，路由可以继承这些配置
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

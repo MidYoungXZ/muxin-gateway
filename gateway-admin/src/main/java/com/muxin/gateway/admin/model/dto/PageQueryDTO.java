@@ -6,6 +6,9 @@ import lombok.Data;
  * 分页查询基类DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class PageQueryDTO {

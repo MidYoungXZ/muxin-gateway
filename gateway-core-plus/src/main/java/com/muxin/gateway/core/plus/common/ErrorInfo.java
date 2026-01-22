@@ -1,11 +1,12 @@
 package com.muxin.gateway.core.plus.common;
 
 /**
- * @projectname: muxin-gateway
- * @filename: ErrorInfo
- * @author: yangxz
- * @data:2025/7/16 22:36
- * @description:
+ * 错误信息类
+ * 封装网关处理过程中的错误信息，包括错误类型、错误码、错误消息等
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class ErrorInfo {
     private final ErrorType errorType;

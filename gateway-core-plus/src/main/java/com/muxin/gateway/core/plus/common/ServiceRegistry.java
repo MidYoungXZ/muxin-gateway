@@ -11,6 +11,8 @@ import java.util.List;
  * 负责发现和管理后端服务节点
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ServiceRegistry extends LifeCycle {
     

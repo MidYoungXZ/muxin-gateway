@@ -5,6 +5,8 @@ package com.muxin.gateway.core.plus.route;
  * 负责根据服务定义创建具体的路由目标实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface RouteServiceFactory {
     

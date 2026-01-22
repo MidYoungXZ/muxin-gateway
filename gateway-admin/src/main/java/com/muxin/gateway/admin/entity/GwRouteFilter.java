@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
  * 路由过滤器关联表实体
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Table("gw_route_filter")

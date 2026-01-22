@@ -11,6 +11,9 @@ import java.util.Map;
  * 支持默认配置创建
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class LoadBalanceStrategyFactory {

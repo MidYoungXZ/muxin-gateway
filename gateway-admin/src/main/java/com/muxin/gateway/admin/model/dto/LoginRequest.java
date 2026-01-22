@@ -9,6 +9,9 @@ import java.io.Serializable;
  * 登录请求DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class LoginRequest implements Serializable {

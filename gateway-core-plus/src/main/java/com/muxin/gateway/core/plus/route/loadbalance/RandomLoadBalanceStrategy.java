@@ -12,6 +12,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * 随机选择可用地址
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class RandomLoadBalanceStrategy extends LoadBalanceStrategy {

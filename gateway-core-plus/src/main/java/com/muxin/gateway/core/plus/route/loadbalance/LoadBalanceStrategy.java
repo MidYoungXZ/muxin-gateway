@@ -11,6 +11,8 @@ import java.util.Objects;
  * 定义负载均衡算法的基础契约，内部保存负载均衡定义信息
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public abstract class LoadBalanceStrategy {
     

@@ -12,14 +12,15 @@ import java.util.List;
  * <p>
  * 该接口定义了用户认证相关的核心业务方法，包括：
  * <ul>
- *     <li>用户登录和登出</li>
- *     <li>用户信息查询</li>
- *     <li>权限和菜单管理</li>
- *     <li>令牌刷新</li>
+ * <li>用户登录和登出</li>
+ * <li>用户信息查询</li>
+ * <li>权限和菜单管理</li>
+ * <li>令牌刷新</li>
  * </ul>
  * </p>
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface AuthService {

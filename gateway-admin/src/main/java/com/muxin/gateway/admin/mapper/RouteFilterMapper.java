@@ -10,6 +10,9 @@ import org.apache.ibatis.annotations.Param;
  * 路由过滤器关联Mapper
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Mapper
 public interface RouteFilterMapper extends BaseMapper<GwRouteFilter> {

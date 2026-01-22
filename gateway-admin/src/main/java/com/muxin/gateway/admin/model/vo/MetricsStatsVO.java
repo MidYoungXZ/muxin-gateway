@@ -10,6 +10,9 @@ import java.util.Map;
  * 指标统计VO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class MetricsStatsVO {

@@ -11,6 +11,9 @@ import java.time.Duration;
  * 超时配置类
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

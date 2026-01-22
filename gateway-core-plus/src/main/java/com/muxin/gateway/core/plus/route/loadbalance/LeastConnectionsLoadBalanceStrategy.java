@@ -14,6 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 选择当前连接数最少的地址
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class LeastConnectionsLoadBalanceStrategy extends LoadBalanceStrategy {

@@ -13,6 +13,8 @@ import java.util.List;
  * 过滤器服务接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface FilterService {
     

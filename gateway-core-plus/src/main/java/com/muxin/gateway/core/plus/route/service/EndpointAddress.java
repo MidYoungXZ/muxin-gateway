@@ -8,6 +8,8 @@ import java.util.Map;
  * 端点地址接口 - 协议无关的地址抽象
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface EndpointAddress {
     

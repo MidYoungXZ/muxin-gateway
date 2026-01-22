@@ -5,11 +5,12 @@ import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpVersion;
 
 /**
- * @projectname: muxin-gateway
- * @filename: HttpMessage
- * @author: yangxz
- * @data:2025/7/16 21:12
- * @description:
+ * HTTP消息接口
+ * 定义HTTP协议消息的基本接口，包含HTTP版本和请求头
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface HttpMessage extends Message {
 

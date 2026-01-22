@@ -7,8 +7,9 @@ import java.util.Objects;
 /**
  * 属性持有者接口
  * 提供统一的属性存储和管理功能，支持泛型类型安全的属性访问
- * 
+ *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface AttributesHolder extends Serializable {

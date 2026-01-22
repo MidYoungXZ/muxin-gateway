@@ -11,6 +11,9 @@ import java.util.List;
  * 创建用户DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class UserCreateDTO {

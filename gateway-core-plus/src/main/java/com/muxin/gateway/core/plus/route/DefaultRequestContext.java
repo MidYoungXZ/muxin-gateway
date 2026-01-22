@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * 提供完整的请求生命周期管理、连接管理、路由信息管理和协议转换检测
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class DefaultRequestContext implements RequestContext {

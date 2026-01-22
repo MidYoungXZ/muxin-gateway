@@ -9,6 +9,9 @@ import java.time.Duration;
  * 节点管理器配置
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

@@ -6,7 +6,8 @@ import java.util.List;
  * 注册中心接口
  * 定义了服务注册、发现、订阅等核心功能
  *
- * @author Administrator
+ * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface RegisterCenter {

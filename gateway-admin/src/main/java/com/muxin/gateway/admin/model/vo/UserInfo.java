@@ -8,6 +8,9 @@ import java.util.List;
  * 用户信息VO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class UserInfo {

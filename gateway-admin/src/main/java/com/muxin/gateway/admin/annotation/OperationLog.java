@@ -19,7 +19,9 @@ import java.lang.annotation.*;
  * </p>
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

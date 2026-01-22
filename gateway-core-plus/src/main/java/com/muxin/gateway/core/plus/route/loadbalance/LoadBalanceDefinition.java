@@ -11,6 +11,9 @@ import java.util.Map;
  * 负载均衡配置类
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

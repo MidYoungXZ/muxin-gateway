@@ -3,8 +3,9 @@ package com.muxin.gateway.admin.entity.table;
 /**
  * 所有表定义的统一管理类
  *
- * @author mybatis-flex
- * @since 2024-01-01
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public final class Tables {
     

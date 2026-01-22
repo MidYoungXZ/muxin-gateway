@@ -8,6 +8,8 @@ import org.apache.ibatis.annotations.Mapper;
  * 部门Mapper
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Mapper
 public interface DeptMapper extends BaseMapper<SysDept> {

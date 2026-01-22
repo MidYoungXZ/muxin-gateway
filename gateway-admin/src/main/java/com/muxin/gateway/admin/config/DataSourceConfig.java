@@ -12,10 +12,11 @@ import org.springframework.context.annotation.Configuration;
  * 注意：@MapperScan注解已在GatewayAdminAutoConfiguration中配置，此处无需重复配置。
  * </p>
  *
- * @author muxin
- * @since 1.0.0
  * @see org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
  * @see com.mybatisflex.spring.boot.MyBatisFlexAutoConfiguration
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Configuration
 public class DataSourceConfig {

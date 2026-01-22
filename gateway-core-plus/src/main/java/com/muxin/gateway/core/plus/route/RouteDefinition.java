@@ -17,6 +17,9 @@ import java.util.Map;
  * 支持新的YAML配置结构，负载均衡配置移到路由级别
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

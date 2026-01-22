@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
  * 断言服务实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 @Service

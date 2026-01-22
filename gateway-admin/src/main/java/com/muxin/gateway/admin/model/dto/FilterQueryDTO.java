@@ -7,6 +7,9 @@ import lombok.EqualsAndHashCode;
  * 过滤器查询DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -11,6 +11,9 @@ import java.util.List;
  * 更新用户DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class UserUpdateDTO {

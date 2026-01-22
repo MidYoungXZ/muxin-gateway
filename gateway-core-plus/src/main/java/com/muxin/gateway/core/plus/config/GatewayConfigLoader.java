@@ -12,6 +12,8 @@ import java.util.List;
  * 负责加载和解析YAML配置文件
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class GatewayConfigLoader {

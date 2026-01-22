@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
  * 认证服务实现
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 @Service

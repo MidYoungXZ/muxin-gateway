@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
  * 路由断言关联表实体
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Table("gw_route_predicate")

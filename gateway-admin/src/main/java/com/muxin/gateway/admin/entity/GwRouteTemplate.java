@@ -11,6 +11,9 @@ import java.util.List;
  * 路由模板实体
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Table("gw_route_template")

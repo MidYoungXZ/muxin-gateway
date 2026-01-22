@@ -18,6 +18,8 @@ import java.util.Objects;
  * 将Netty的HTTP对象适配为网关的消息接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class DefaultHttpServerExchange implements HttpServerExchange {
@@ -95,7 +97,7 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     // ========== Netty HTTP请求适配器 ==========
 
     /**
-     * 将Netty的FullHttpRequest适配为HttpRequestMessage接口
+ * 将Netty的FullHttpRequest适配为HttpRequestMessage接口
      */
     private static class NettyHttpRequestAdapter implements HttpRequestMessage {
 
@@ -230,7 +232,7 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     // ========== Netty HTTP响应适配器 ==========
 
     /**
-     * 将Netty的FullHttpResponse适配为HttpResponseMessage接口
+ * 将Netty的FullHttpResponse适配为HttpResponseMessage接口
      */
     private static class NettyHttpResponseAdapter implements HttpResponseMessage {
 

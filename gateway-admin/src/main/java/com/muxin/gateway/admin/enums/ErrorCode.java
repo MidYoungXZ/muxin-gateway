@@ -16,6 +16,7 @@ import lombok.Getter;
  * </p>
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 @Getter

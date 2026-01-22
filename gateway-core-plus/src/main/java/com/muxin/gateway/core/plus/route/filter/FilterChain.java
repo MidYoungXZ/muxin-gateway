@@ -7,6 +7,8 @@ import com.muxin.gateway.core.plus.message.ServerExchange;
  * 通用过滤器链接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface FilterChain {
 

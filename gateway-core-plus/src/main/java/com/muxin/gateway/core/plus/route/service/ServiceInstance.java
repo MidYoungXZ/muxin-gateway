@@ -7,6 +7,8 @@ import java.util.Map;
  * 表示网关后端的一个服务实例
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ServiceInstance {
 

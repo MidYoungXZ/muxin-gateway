@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
  * 负责路由规则管理和匹配，提供高性能的路由查找能力
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class DefaultRouteManager implements RouteManager {
@@ -276,7 +278,7 @@ public class DefaultRouteManager implements RouteManager {
 
 
     /**
-     * 路由变更监听器接口
+ * 路由变更监听器接口
      */
     public interface RouteChangeListener {
         /**

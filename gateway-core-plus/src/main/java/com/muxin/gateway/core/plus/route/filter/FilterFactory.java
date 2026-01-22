@@ -3,8 +3,10 @@ package com.muxin.gateway.core.plus.route.filter;
 /**
  * 过滤器工厂接口
  * 每种Filter类型有对应的Factory实现
- * 
+ *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface FilterFactory {
     

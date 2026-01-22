@@ -9,6 +9,9 @@ import java.util.List;
  * 更新角色DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 public class RoleUpdateDTO {

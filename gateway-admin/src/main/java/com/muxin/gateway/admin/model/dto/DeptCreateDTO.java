@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
  * 部门创建DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
 public class DeptCreateDTO {

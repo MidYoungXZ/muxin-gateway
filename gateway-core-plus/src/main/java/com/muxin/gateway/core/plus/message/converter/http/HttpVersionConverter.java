@@ -13,7 +13,9 @@ import lombok.extern.slf4j.Slf4j;
  * 支持HTTP/1.0、HTTP/1.1、HTTP/2.0之间的转换
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @Slf4j
 public class HttpVersionConverter implements ProtocolConverter {

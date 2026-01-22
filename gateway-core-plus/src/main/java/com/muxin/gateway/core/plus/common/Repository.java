@@ -6,9 +6,12 @@ import java.util.function.Predicate;
 
 /**
  * 仓库接口
- *
  * @param <ID> 仓唯一标识
  * @param <T>  仓库实体
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface Repository<ID, T> {
 

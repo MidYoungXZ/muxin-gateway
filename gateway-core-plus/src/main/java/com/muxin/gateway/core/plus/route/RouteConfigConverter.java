@@ -17,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * 内部维护各种Factory，简化设计
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class RouteConfigConverter {

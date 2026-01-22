@@ -10,6 +10,8 @@ import java.util.Map;
  * 创建过滤器DTO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
 public class FilterCreateDTO {

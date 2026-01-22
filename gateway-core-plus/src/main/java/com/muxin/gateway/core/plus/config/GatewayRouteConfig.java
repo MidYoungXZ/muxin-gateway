@@ -14,6 +14,9 @@ import java.util.Map;
  * 对应YAML配置文件的整体结构
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

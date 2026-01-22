@@ -10,6 +10,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 直接复用 gateway-core-plus 的配置类，只做简单的包装和映射
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @ConfigurationProperties(prefix = "gateway")
 @Data

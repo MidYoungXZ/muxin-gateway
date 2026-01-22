@@ -7,6 +7,8 @@ import com.muxin.gateway.core.plus.message.Message;
  * 连接监听器接口
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ConnectionListener {
 

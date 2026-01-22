@@ -14,6 +14,8 @@ import java.util.Objects;
  * 使用静态配置的地址列表，负载均衡由外部Route管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Slf4j
 public class ConfigRouteService implements RouteService {

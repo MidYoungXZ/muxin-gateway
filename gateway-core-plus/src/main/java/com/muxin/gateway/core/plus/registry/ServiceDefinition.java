@@ -6,7 +6,8 @@ import java.util.Map;
  * 服务定义接口
  * 定义了服务的基本信息
  *
- * @author Administrator
+ * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
  */
 public interface ServiceDefinition {

@@ -7,6 +7,9 @@ import lombok.Data;
  * 监控概览VO
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

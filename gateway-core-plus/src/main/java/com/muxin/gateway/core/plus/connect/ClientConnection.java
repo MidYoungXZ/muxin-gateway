@@ -8,8 +8,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 客户端连接接口
  * 网关作为客户端连接后端服务时使用，专注于请求发送功能
- * 
+ *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ClientConnection extends Connection {
     

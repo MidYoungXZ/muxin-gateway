@@ -12,6 +12,9 @@ import java.util.Map;
  * 参考NettyHttpServer的配置设计，适配refactory架构
  * 
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Data
 @Builder

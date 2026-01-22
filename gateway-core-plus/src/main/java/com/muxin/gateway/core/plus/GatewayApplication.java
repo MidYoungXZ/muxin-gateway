@@ -9,7 +9,9 @@ import lombok.extern.slf4j.Slf4j;
  * 配置自动装配，并启动Netty服务器和管理界面
  *
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @Slf4j
 public class GatewayApplication {

@@ -6,6 +6,10 @@ import java.util.List;
 
 /**
  * 用户角色信息VO
+ *
+ * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public class UserRoleVO implements Serializable {
     
@@ -23,7 +27,7 @@ public class UserRoleVO implements Serializable {
     private List<RoleInfo> roles;
     
     /**
-     * 角色信息
+ * 角色信息
      */
     public static class RoleInfo implements Serializable {
         private Long roleId;

@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
  * 全局异常处理器
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 @RestControllerAdvice

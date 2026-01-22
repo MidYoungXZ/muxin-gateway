@@ -16,7 +16,9 @@ import java.io.Serializable;
  *
  * @param <T> 数据类型
  * @author muxin
+ * @version 1.0.0
  * @since 1.0.0
+
  */
 @Data
 public class Result<T> implements Serializable {

@@ -5,6 +5,8 @@ package com.muxin.gateway.core.plus.route;
  * 定义网关支持的服务类型
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public enum ServiceType {
     

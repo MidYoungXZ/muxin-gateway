@@ -9,9 +9,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * 连接工厂接口 - 负责创建各种类型的网络连接
  * 每个协议都应该有对应的连接工厂实现
- * 
+ *
  * @author muxin
- * @since 2.0
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface ConnectionFactory {
 
@@ -128,7 +129,7 @@ public interface ConnectionFactory {
     boolean isShutdown();
 
     /**
-     * 连接创建异常
+ * 连接创建异常
      */
     class ConnectionCreationException extends RuntimeException {
 
@@ -163,7 +164,7 @@ public interface ConnectionFactory {
     }
 
     /**
-     * 连接健康状态
+ * 连接健康状态
      */
     enum ConnectionHealthStatus {
         /**
@@ -185,7 +186,7 @@ public interface ConnectionFactory {
     }
 
     /**
-     * 连接工厂配置
+ * 连接工厂配置
      */
     interface ConnectionFactoryConfig {
         
@@ -215,7 +216,7 @@ public interface ConnectionFactory {
     }
 
     /**
-     * 连接工厂统计信息
+ * 连接工厂统计信息
      */
     interface ConnectionFactoryStats {
         

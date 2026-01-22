@@ -5,6 +5,8 @@ package com.muxin.gateway.core.plus.connect;
  * 连接状态枚举
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public enum ConnectionStatus {
     

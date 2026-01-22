@@ -31,6 +31,9 @@ import java.util.function.Supplier;
  * 同步执行准备工作，只在必要时进行一次线程切换
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
+
  */
 @Slf4j
 public class GatewayProcessor implements LifeCycle {
@@ -304,7 +307,7 @@ public class GatewayProcessor implements LifeCycle {
     // ========== 内部类 ==========
 
     /**
-     * 处理异常 - 携带请求ID便于追踪
+ * 处理异常 - 携带请求ID便于追踪
      */
     public static class ProcessingException extends RuntimeException {
         private final String requestId;
@@ -325,7 +328,7 @@ public class GatewayProcessor implements LifeCycle {
     }
 
     /**
-     * 空操作过滤器链 - 简化实现
+ * 空操作过滤器链 - 简化实现
      */
     private static class NoOpFilterChain implements FilterChain {
         static final NoOpFilterChain INSTANCE = new NoOpFilterChain();

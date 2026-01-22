@@ -10,6 +10,8 @@ import java.util.List;
  * 负责服务节点的生命周期管理
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 public interface InstanceManager extends Repository<String, ServiceInstance>, LifeCycle {
 

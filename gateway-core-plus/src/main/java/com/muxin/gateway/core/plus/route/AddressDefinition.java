@@ -12,6 +12,8 @@ import java.util.Map;
  * 支持静态地址和lb://协议
  *
  * @author muxin
+ * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
 @Builder
