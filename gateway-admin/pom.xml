@@ -18,13 +18,6 @@
     </properties>
 
     <dependencies>
-        <!-- 核心模块依赖，用于访问网关路由等核心功能 -->
-        <dependency>
-            <groupId>com.muxin.gateway</groupId>
-            <artifactId>gateway-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Spring Web模块，用于开发RESTful API -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

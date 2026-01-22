@@ -72,17 +72,16 @@ muxin-gateway/
 │   │   ├── GatewayProcessor.java       # 核心请求处理器（优化线程模型）✅
 │   │   ├── server/http/               # HTTP服务器实现 ✅
 │   │   ├── connect/                   # 连接池管理 ✅
+│   │   ├── registry/                  # 注册中心接口 ✅
 │   │   ├── route/                     # 路由系统 ✅
 │   │   │   ├── filter/                # 过滤器实现（认证、日志）✅
 │   │   │   ├── loadbalance/           # 负载均衡策略（4种）✅
-│   │   │   └── predicate/             # 断言实现（路径、方法、头部）✅
+│   │   │   ├── predicate/             # 断言实现（路径、方法、头部）✅
+│   │   │   └── service/               # 服务实例管理 ✅
 │   │   └── protocol/message/          # 协议抽象和HTTP实现 ✅
 │   └── src/main/resources/
 │       └── gateway-routes.yml         # 配置示例文件 ✅
 ├── gateway/              # 完整网关主程序（包含管理界面）✅
-├── gateway-core/         # 传统核心功能模块 🚧
-│   ├── processor/        # 网关处理器 ✅
-│   └── common/           # 公共组件 ✅
 ├── gateway-admin/        # 后端管理API模块 ✅
 ├── gateway-admin-ui/     # 前端管理界面（Vue3 + Element Plus）✅
 ├── gateway-registry/     # 注册中心模块 ✅
@@ -295,24 +294,16 @@ public class CustomLoadBalancer implements LoadBalanceStrategy {
 - [ ] **AI智能路由** - 基于机器学习的智能路由决策
 - [ ] **边缘计算** - 边缘节点部署和就近访问
 
-## 📚 文档指南
+## 📚 文档导航
 
-### 核心文档
-- [Gateway Core Plus 实现说明](./doc/gateway-core-plus实现说明文档.md) - 详细的实现说明和使用指南
-- [协议无关网关架构设计](./doc/协议无关网关架构设计文档.md) - 整体架构设计和原理
-- [HTTP网关实现说明](./doc/HTTP网关实现说明.md) - HTTP网关的具体实现
-- [架构重构变更日志](./doc/架构重构变更日志.md) - 重构过程和变更记录
+### 设计文档
+- **前端设计文档** → [前端设计文档](./doc/前端设计文档.md) - 前端架构、功能设计、交互设计
+- **后端设计文档** → [后端设计文档](./doc/后端设计文档.md) - 后端架构、核心功能实现
+- **数据库设计文档** → [数据库设计文档](./doc/数据库设计文档.md) - 数据库表结构、索引设计、数据字典
+- **接口设计文档** → [接口设计文档](./doc/接口设计文档.md) - RESTful API 接口规范、请求响应格式
 
 ### 快速链接
-- **快速开始** → [Gateway Core Plus 使用指南](./doc/gateway-core-plus实现说明文档.md#-快速开始)
 - **配置示例** → [完整配置示例](./gateway-core-plus/src/main/resources/gateway-routes.yml)
-- **扩展开发** → [自定义组件开发](./doc/HTTP网关实现说明.md#-扩展开发)
-- **性能优化** → [性能优化指南](./doc/gateway-core-plus实现说明文档.md#-性能优化)
-
-- **🔄 职责分离**：协议转换、连接管理、业务处理完全分离 ✅
-- **🚀 高性能**：基于Netty的异步IO和连接池化 ✅
-- **📈 可扩展**：新协议和连接类型的轻松扩展 ✅（架构支持）
-- **📊 可监控**：全面的事件监听和统计信息 🚧（部分实现）
 - **🔒 向后兼容**：现有代码无缝迁移 ✅
 
 ## 🛠️ 技术栈

@@ -20,7 +20,7 @@
 
         <dependency>
             <groupId>com.muxin.gateway</groupId>
-            <artifactId>gateway-core</artifactId>
+            <artifactId>gateway-core-plus</artifactId>
             <version>${project.version}</version>
         </dependency>
 
