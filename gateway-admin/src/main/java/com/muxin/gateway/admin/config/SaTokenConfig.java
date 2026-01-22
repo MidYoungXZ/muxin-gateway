@@ -25,9 +25,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * </p>
  *
  * @author muxin
- * @since 1.0.0
- 
  * @version 1.0.0
+ * @since 1.0.0
 */
 //@Configuration
 public class SaTokenConfig implements WebMvcConfigurer {

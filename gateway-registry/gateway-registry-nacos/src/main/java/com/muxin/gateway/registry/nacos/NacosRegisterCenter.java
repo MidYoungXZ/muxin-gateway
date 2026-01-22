@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Data
 @Slf4j
@@ -402,7 +401,7 @@ public class NacosRegisterCenter implements RegisterCenter {
     }
 
     /**
- * Nacos事件监听器
+     * Nacos事件监听器
      */
     private class NacosRegisterListener implements EventListener {
         

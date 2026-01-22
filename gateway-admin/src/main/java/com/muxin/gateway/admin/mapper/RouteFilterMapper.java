@@ -12,7 +12,6 @@ import org.apache.ibatis.annotations.Param;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Mapper
 public interface RouteFilterMapper extends BaseMapper<GwRouteFilter> {

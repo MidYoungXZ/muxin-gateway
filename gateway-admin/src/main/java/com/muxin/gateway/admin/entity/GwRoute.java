@@ -13,7 +13,6 @@ import java.util.Map;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Data
 @Table("gw_route")

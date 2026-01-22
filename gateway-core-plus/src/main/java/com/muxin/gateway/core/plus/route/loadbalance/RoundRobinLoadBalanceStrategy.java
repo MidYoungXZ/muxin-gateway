@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Slf4j
 public class RoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {

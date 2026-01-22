@@ -278,7 +278,7 @@ public class DefaultRouteManager implements RouteManager {
 
 
     /**
- * 路由变更监听器接口
+     * 路由变更监听器接口
      */
     public interface RouteChangeListener {
         /**

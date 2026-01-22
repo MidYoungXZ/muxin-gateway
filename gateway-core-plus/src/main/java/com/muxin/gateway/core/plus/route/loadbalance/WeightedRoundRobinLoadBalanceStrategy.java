@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Slf4j
 public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
@@ -172,7 +171,7 @@ public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
     }
     
     /**
- * 权重节点内部类
+     * 权重节点内部类
      */
     private static class WeightedNode {
         private final EndpointAddress address;

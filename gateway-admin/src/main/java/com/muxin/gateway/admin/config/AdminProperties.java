@@ -15,8 +15,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * </p>
  *
  * @author muxin
- * @since 1.0.0
  * @version 1.0.0
+ * @since 1.0.0
  */
 @Data
 @ConfigurationProperties(prefix = "muxin.gateway.admin")

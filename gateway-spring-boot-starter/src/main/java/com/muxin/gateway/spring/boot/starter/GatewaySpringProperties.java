@@ -12,7 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @ConfigurationProperties(prefix = "gateway")
 @Data

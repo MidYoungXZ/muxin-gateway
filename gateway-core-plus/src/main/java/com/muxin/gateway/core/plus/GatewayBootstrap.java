@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Slf4j
 public class GatewayBootstrap implements LifeCycle {

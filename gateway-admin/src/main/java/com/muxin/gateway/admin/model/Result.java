@@ -18,7 +18,6 @@ import java.io.Serializable;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Data
 public class Result<T> implements Serializable {

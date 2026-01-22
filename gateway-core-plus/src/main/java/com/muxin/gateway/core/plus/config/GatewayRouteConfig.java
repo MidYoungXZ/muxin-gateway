@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.config;
 
+import com.muxin.gateway.core.plus.route.ServiceDefinition;
 import com.muxin.gateway.core.plus.route.RouteDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,12 +12,11 @@ import java.util.Map;
 
 /**
  * 完整的网关路由配置类
- * 对应YAML配置文件的整体结构
+ * 对应YAML配置文件的整体结构（v2.0）
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
-
  */
 @Data
 @Builder
@@ -25,9 +25,19 @@ import java.util.Map;
 public class GatewayRouteConfig {
     
     /**
-     * 网关核心配置
+     * 功能域配置
      */
-    private GatewayConfig gateway;
+    private DomainsConfig domains;
+    
+    /**
+     * 枚举定义
+     */
+    private EnumsConfig enums;
+    
+    /**
+     * 服务定义（独立资源）
+     */
+    private List<ServiceDefinition> services;
     
     /**
      * 路由配置列表
@@ -43,6 +53,11 @@ public class GatewayRouteConfig {
      * 负载均衡策略配置
      */
     private Map<String, LoadBalanceStrategyConfig> loadBalanceStrategies;
+    
+    /**
+     * 全局路由配置
+     */
+    private GlobalRouteConfig globalRouteConfig;
     
     /**
      * 协议配置
@@ -70,15 +85,32 @@ public class GatewayRouteConfig {
     private CacheConfig cache;
     
     /**
-     * 网关配置
+     * 功能域配置
      */
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class GatewayConfig {
+    public static class DomainsConfig {
         private CoreConfig core;
-        private ServerConfig server;
+        private ThreadPoolConfig threadPools;
+        private ServerConfig servers;
+        private ConnectionPoolConfig connectionPools;
+    }
+    
+    /**
+     * 枚举配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EnumsConfig {
+        private List<String> protocolType;
+        private List<String> filterType;
+        private List<String> loadBalanceStrategy;
+        private List<String> predicateType;
+        private List<String> httpMethod;
     }
     
     /**
@@ -92,8 +124,31 @@ public class GatewayRouteConfig {
         private String defaultTimeout;
         private String maxRequestSize;
         private String maxResponseSize;
-        private ThreadPoolConfig businessThreadPool;
-        private ConnectionPoolConfig connectionPool;
+    }
+    
+    /**
+     * 线程池配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ThreadPoolConfig {
+        private BusinessThreadPoolConfig business;
+    }
+    
+    /**
+     * 业务线程池配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BusinessThreadPoolConfig {
+        private int coreSize;
+        private int maxSize;
+        private int queueCapacity;
+        private String keepAlive;
     }
     
     /**
@@ -135,20 +190,6 @@ public class GatewayRouteConfig {
     }
     
     /**
-     * 线程池配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ThreadPoolConfig {
-        private int coreSize;
-        private int maxSize;
-        private int queueCapacity;
-        private String keepAlive;
-    }
-    
-    /**
      * 连接池配置
      */
     @Data
@@ -156,6 +197,17 @@ public class GatewayRouteConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ConnectionPoolConfig {
+        private DefaultConnectionPoolConfig defaultConfig;
+    }
+    
+    /**
+     * 默认连接池配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DefaultConnectionPoolConfig {
         private int maxConnectionsPerHost;
         private int maxIdleConnections;
         private String connectionTimeout;
@@ -185,6 +237,29 @@ public class GatewayRouteConfig {
     @AllArgsConstructor
     public static class LoadBalanceStrategyConfig {
         private String className;
+        private Map<String, Object> config;
+    }
+    
+    /**
+     * 全局路由配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GlobalRouteConfig {
+        private DefaultLoadBalanceConfig defaultLoadBalance;
+    }
+    
+    /**
+     * 默认负载均衡配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class DefaultLoadBalanceConfig {
+        private String strategy;
         private Map<String, Object> config;
     }
     
@@ -393,4 +468,4 @@ public class GatewayRouteConfig {
         private String ttl;
         private int maxSize;
     }
-} 
+}

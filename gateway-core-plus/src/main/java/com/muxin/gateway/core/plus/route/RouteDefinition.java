@@ -14,12 +14,14 @@ import java.util.Map;
 
 /**
  * 增强的路由配置类
- * 支持新的YAML配置结构，负载均衡配置移到路由级别
+ * 支持新的YAML配置结构（v2.0）
+ * - 服务通过 service-ref 引用独立的服务定义
+ * - 协议配置简化为枚举引用
+ * - 支持配置继承机制
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
-
  */
 @Data
 @Builder
@@ -55,9 +57,16 @@ public class RouteDefinition {
     private boolean enabled = true;
     
     /**
-     * 入站协议配置（单协议）
+     * 协议类型（枚举引用）
+     * 从 ProtocolType 枚举中选择
      */
-    private ProtocolDefinition supportProtocol;
+    private String protocol;
+    
+    /**
+     * 服务引用（引用 services 中的服务ID）
+     * 使用 service-ref 替代嵌套的 service 定义
+     */
+    private String serviceRef;
     
     /**
      * 断言配置列表（AND关系）
@@ -66,21 +75,19 @@ public class RouteDefinition {
     
     /**
      * 过滤器配置列表
+     * 继承策略：APPEND（追加到全局过滤器）
      */
     private List<FilterDefinition> filters;
     
     /**
-     * 目标服务配置
-     */
-    private ServiceDefinition service;
-    
-    /**
      * 负载均衡配置（路由级别）
+     * 继承策略：OVERRIDE（覆盖全局）
      */
     private LoadBalanceDefinition loadBalance;
     
     /**
      * 超时配置
+     * 继承策略：OVERRIDE（覆盖全局）
      */
     private TimeoutConfig timeouts;
     
@@ -88,8 +95,6 @@ public class RouteDefinition {
      * 路由元数据
      */
     private Map<String, Object> metadata;
-    
-    // ========== 负载均衡配置方法 ==========
     
     /**
      * 获取负载均衡策略名称
@@ -113,10 +118,9 @@ public class RouteDefinition {
             return loadBalance;
         }
         
-        // 返回默认的负载均衡配置
         return LoadBalanceDefinition.builder()
-            .strategy("ROUND_ROBIN")
-            .build();
+                .strategy("ROUND_ROBIN")
+                .build();
     }
     
     /**
@@ -131,35 +135,27 @@ public class RouteDefinition {
             throw new IllegalArgumentException("路由名称不能为空");
         }
         
-        if (supportProtocol == null) {
-            throw new IllegalArgumentException("入站协议不能为空");
+        if (protocol == null || protocol.trim().isEmpty()) {
+            throw new IllegalArgumentException("协议类型不能为空");
+        }
+        
+        if (serviceRef == null || serviceRef.trim().isEmpty()) {
+            throw new IllegalArgumentException("服务引用（service-ref）不能为空");
         }
         
         if (predicates == null || predicates.isEmpty()) {
             throw new IllegalArgumentException("断言配置不能为空");
         }
         
-        if (service == null) {
-            throw new IllegalArgumentException("服务配置不能为空");
-        }
-        
-        // 验证服务配置的基本信息
-        if (service.getType() == null) {
-            throw new IllegalArgumentException("服务类型不能为空");
-        }
-
-        // CONFIG类型需要验证addresses
-        if (service.isConfigType() && (service.getAddresses() == null || service.getAddresses().isEmpty())) {
-            throw new IllegalArgumentException("CONFIG类型服务必须配置addresses");
+        // 验证协议类型是否有效
+        try {
+            com.muxin.gateway.core.plus.route.ProtocolType.fromCode(protocol);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("不支持的协议类型: " + protocol, e);
         }
         
         // 验证负载均衡配置
         validateLoadBalanceConfig();
-        
-        // 验证协议转换
-        if (supportProtocol.needsConversion(service.getSupportProtocol())) {
-            validateProtocolConversion();
-        }
     }
     
     /**
@@ -173,35 +169,34 @@ public class RouteDefinition {
             }
             
             // 验证策略名称是否有效
-            String strategy = loadBalance.getStrategy().toUpperCase();
-            if (!isValidLoadBalanceStrategy(strategy)) {
-                throw new IllegalArgumentException("不支持的负载均衡策略: " + loadBalance.getStrategy());
+            try {
+                com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyEnum.fromCode(
+                        loadBalance.getStrategy());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("不支持的负载均衡策略: " + 
+                        loadBalance.getStrategy(), e);
             }
         }
     }
     
     /**
-     * 检查负载均衡策略是否有效
+     * 检查是否需要协议转换
      */
-    private boolean isValidLoadBalanceStrategy(String strategy) {
-        return "ROUND_ROBIN".equals(strategy) ||
-               "RANDOM".equals(strategy) ||
-               "WEIGHTED_ROUND_ROBIN".equals(strategy) ||
-               "LEAST_CONNECTIONS".equals(strategy) ||
-               "CONSISTENT_HASH".equals(strategy);
-    }
-    
-    /**
-     * 验证协议转换
-     */
-    private void validateProtocolConversion() {
-        String inboundType = supportProtocol.getType();
+    public boolean needsProtocolConversion(ServiceDefinition service) {
+        if (service == null) {
+            return false;
+        }
+        
+        String inboundType = protocol;
         String outboundType = service.getSupportProtocol().getType();
         
-        // 检查是否支持协议转换
-        if (!isSupportedProtocolConversion(inboundType, outboundType)) {
-            throw new IllegalArgumentException("不支持的协议转换: " + inboundType + " -> " + outboundType);
+        // 相同协议不需要转换
+        if (inboundType.equalsIgnoreCase(outboundType)) {
+            return false;
         }
+        
+        // 检查是否支持协议转换
+        return isSupportedProtocolConversion(inboundType, outboundType);
     }
     
     /**
@@ -225,46 +220,18 @@ public class RouteDefinition {
             return "TCP".equalsIgnoreCase(outbound);
         }
         
-        // 其他协议转换待实现
         return false;
-    }
-    
-    /**
-     * 检查是否需要协议转换
-     */
-    public boolean needsProtocolConversion() {
-        return supportProtocol.needsConversion(service.getSupportProtocol());
     }
     
     /**
      * 获取协议转换类型
      */
-    public String getProtocolConversionType() {
-        if (!needsProtocolConversion()) {
+    public String getProtocolConversionType(ServiceDefinition service) {
+        if (!needsProtocolConversion(service)) {
             return "NONE";
         }
         
-        return supportProtocol.getType().toUpperCase() + "_TO_" +
+        return protocol.toUpperCase() + "_TO_" + 
                service.getSupportProtocol().getType().toUpperCase();
     }
-    
-    /**
-     * 获取服务名称
-     */
-    public String getServiceName() {
-        if (service.isDiscoveryType()) {
-            return service.getName();
-        }
-        
-        // 从元数据获取服务名称
-        if (metadata != null) {
-            Object serviceName = metadata.get("service-name");
-            if (serviceName != null) {
-                return serviceName.toString();
-            }
-        }
-        
-        // 默认使用服务名称
-        return service.getName();
-    }
-} 
+}

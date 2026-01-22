@@ -30,7 +30,6 @@ import java.util.List;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Configuration
 public class SwaggerConfig {

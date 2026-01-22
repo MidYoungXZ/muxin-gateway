@@ -13,7 +13,6 @@ import org.apache.ibatis.annotations.Select;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Mapper
 public interface RoutePredicateMapper extends BaseMapper<GwRoutePredicate> {

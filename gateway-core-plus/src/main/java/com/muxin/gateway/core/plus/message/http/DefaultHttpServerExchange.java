@@ -97,7 +97,7 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     // ========== Netty HTTP请求适配器 ==========
 
     /**
- * 将Netty的FullHttpRequest适配为HttpRequestMessage接口
+     * 将Netty的FullHttpRequest适配为HttpRequestMessage接口
      */
     private static class NettyHttpRequestAdapter implements HttpRequestMessage {
 
@@ -232,7 +232,7 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     // ========== Netty HTTP响应适配器 ==========
 
     /**
- * 将Netty的FullHttpResponse适配为HttpResponseMessage接口
+     * 将Netty的FullHttpResponse适配为HttpResponseMessage接口
      */
     private static class NettyHttpResponseAdapter implements HttpResponseMessage {
 

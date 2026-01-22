@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Slf4j
 public class DiscoveryRouteService implements RouteService {

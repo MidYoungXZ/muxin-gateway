@@ -129,7 +129,7 @@ public interface ConnectionFactory {
     boolean isShutdown();
 
     /**
- * 连接创建异常
+     * 连接创建异常
      */
     class ConnectionCreationException extends RuntimeException {
 
@@ -164,7 +164,7 @@ public interface ConnectionFactory {
     }
 
     /**
- * 连接健康状态
+     * 连接健康状态
      */
     enum ConnectionHealthStatus {
         /**
@@ -186,7 +186,7 @@ public interface ConnectionFactory {
     }
 
     /**
- * 连接工厂配置
+     * 连接工厂配置
      */
     interface ConnectionFactoryConfig {
         
@@ -216,7 +216,7 @@ public interface ConnectionFactory {
     }
 
     /**
- * 连接工厂统计信息
+     * 连接工厂统计信息
      */
     interface ConnectionFactoryStats {
         

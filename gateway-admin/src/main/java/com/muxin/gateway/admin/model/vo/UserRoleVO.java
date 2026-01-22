@@ -27,7 +27,7 @@ public class UserRoleVO implements Serializable {
     private List<RoleInfo> roles;
     
     /**
- * 角色信息
+     * 角色信息
      */
     public static class RoleInfo implements Serializable {
         private Long roleId;

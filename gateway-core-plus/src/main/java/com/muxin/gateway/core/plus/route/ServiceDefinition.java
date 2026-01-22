@@ -6,12 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 服务定义配置类
+ * 服务定义配置类（v2.0）
  * 对应YAML配置中的service节点，统一服务相关配置
  * 
  * 支持两种服务类型：
@@ -19,9 +20,8 @@ import java.util.Map;
  * - DISCOVERY: 服务发现，从注册中心获取服务实例
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
-
  */
 @Data
 @Builder
@@ -35,7 +35,7 @@ public class ServiceDefinition {
      * 服务唯一标识
      */
     private String id;
-
+    
     /**
      * 服务显示名称
      */
@@ -49,9 +49,11 @@ public class ServiceDefinition {
     // ========== 协议配置 ==========
     
     /**
-     * 支持的协议配置
+     * 支持的协议类型列表
+     * 从 YAML 中的 supported-protocols 加载
+     * 例如: [HTTP, GRPC]
      */
-    private ProtocolDefinition supportProtocol;
+    private List<String> supportedProtocols;
     
     // ========== 地址配置（仅CONFIG类型需要）==========
     
@@ -64,6 +66,7 @@ public class ServiceDefinition {
     
     /**
      * 扩展配置参数
+     * 包含 health-check、registry、cache-expire-time 等
      */
     private Map<String, Object> config;
     
@@ -81,6 +84,47 @@ public class ServiceDefinition {
      */
     public boolean isDiscoveryType() {
         return type == ServiceType.DISCOVERY;
+    }
+    
+    // ========== 协议配置管理 ==========
+    
+    /**
+     * 获取支持的协议列表
+     */
+    public List<String> getSupportedProtocols() {
+        return supportedProtocols != null ? supportedProtocols : new ArrayList<>();
+    }
+    
+    /**
+     * 获取主要协议类型（第一个协议）
+     */
+    public String getPrimaryProtocol() {
+        if (supportedProtocols == null || supportedProtocols.isEmpty()) {
+            return "HTTP";
+        }
+        return supportedProtocols.get(0);
+    }
+    
+    /**
+     * 是否支持指定协议
+     */
+    public boolean supportsProtocol(String protocol) {
+        if (supportedProtocols == null || protocol == null) {
+            return false;
+        }
+        return supportedProtocols.stream()
+                .anyMatch(p -> p.equalsIgnoreCase(protocol));
+    }
+    
+    /**
+     * 获取协议定义（向后兼容）
+     */
+    public ProtocolDefinition getSupportProtocol() {
+        String primaryProtocol = getPrimaryProtocol();
+        return ProtocolDefinition.builder()
+                .type(primaryProtocol)
+                .version("1.0")
+                .build();
     }
     
     // ========== 地址管理（仅CONFIG类型）==========
@@ -129,8 +173,8 @@ public class ServiceDefinition {
         }
         
         throw new IllegalArgumentException(String.format(
-            "配置参数 %s 的类型不匹配，期望: %s, 实际: %s", 
-            key, type.getSimpleName(), value.getClass().getSimpleName()
+                "配置参数 %s 的类型不匹配，期望: %s, 实际: %s", 
+                key, type.getSimpleName(), value.getClass().getSimpleName()
         ));
     }
     
@@ -142,6 +186,26 @@ public class ServiceDefinition {
             config = new HashMap<>();
         }
         config.put(key, value);
+    }
+    
+    // ========== 健康检查配置 ==========
+    
+    /**
+     * 获取健康检查配置
+     */
+    public Map<String, Object> getHealthCheckConfig() {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> healthCheck = (Map<String, Object>) getConfigValue("health-check");
+        return healthCheck != null ? healthCheck : new HashMap<>();
+    }
+    
+    /**
+     * 健康检查是否启用
+     */
+    public boolean isHealthCheckEnabled() {
+        Map<String, Object> healthCheck = getHealthCheckConfig();
+        Object enabled = healthCheck.get("enabled");
+        return enabled != null && Boolean.parseBoolean(enabled.toString());
     }
     
     // ========== 配置验证 ==========
@@ -224,25 +288,17 @@ public class ServiceDefinition {
      * 验证协议配置
      */
     private void validateProtocolConfig() {
-        if (supportProtocol == null) {
-            throw new IllegalArgumentException("service.support-protocol不能为空");
-        }
-        
-        // 验证协议类型
-        if (supportProtocol.getType() == null || supportProtocol.getType().trim().isEmpty()) {
-            throw new IllegalArgumentException("协议类型不能为空");
-        }
-        
-        // 验证协议版本
-        if (supportProtocol.getVersion() == null || supportProtocol.getVersion().trim().isEmpty()) {
-            throw new IllegalArgumentException("协议版本不能为空");
+        if (supportedProtocols == null || supportedProtocols.isEmpty()) {
+            throw new IllegalArgumentException("service.supported-protocols不能为空");
         }
         
         // 验证协议类型是否支持
-        try {
-            supportProtocol.toProtocol();
-        } catch (Exception e) {
-            throw new IllegalArgumentException("不支持的协议类型: " + supportProtocol.getType(), e);
+        for (String protocol : supportedProtocols) {
+            try {
+                ProtocolType.fromCode(protocol);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("不支持的协议类型: " + protocol, e);
+            }
         }
     }
     
@@ -252,9 +308,9 @@ public class ServiceDefinition {
      * 转换为显示字符串
      */
     public String toDisplayString() {
-        return String.format("Service[id=%s, name=%s, type=%s, protocol=%s]",
-            id, name, type != null ? type.getCode() : "unknown", 
-            supportProtocol != null ? supportProtocol.getType() : "unknown");
+        return String.format("Service[id=%s, name=%s, type=%s, protocols=%s]",
+                id, name, type != null ? type.getCode() : "unknown",
+                getSupportedProtocols());
     }
     
     /**
@@ -264,10 +320,14 @@ public class ServiceDefinition {
         StringBuilder sb = new StringBuilder();
         sb.append("服务[").append(name).append("](").append(id).append(")");
         sb.append(" - 类型: ").append(type != null ? type.getDescription() : "未知");
-        sb.append(" - 协议: ").append(supportProtocol != null ? supportProtocol.getType() : "未知");
+        sb.append(" - 协议: ").append(getSupportedProtocols());
         
         if (isConfigType() && hasAddresses()) {
             sb.append(" - 地址数量: ").append(addresses.size());
+        }
+        
+        if (isHealthCheckEnabled()) {
+            sb.append(" - 健康检查: 启用");
         }
         
         return sb.toString();
@@ -275,35 +335,34 @@ public class ServiceDefinition {
     
     // ========== 构建器增强 ==========
     
-    public static class ServiceDefinitionBuilder {
-        
-        /**
-         * 创建CONFIG类型服务的构建器
-         */
-        public static ServiceDefinitionBuilder configService(String serviceId, String serviceName) {
-            return ServiceDefinition.builder()
+    /**
+     * 创建CONFIG类型服务的构建器
+     */
+    public static ServiceDefinitionBuilder configService(String serviceId, String serviceName) {
+        return ServiceDefinition.builder()
                 .id(serviceId)
                 .name(serviceName)
-                .type(ServiceType.CONFIG);
-        }
-        
-        /**
-         * 创建DISCOVERY类型服务的构建器
-         */
-        public static ServiceDefinitionBuilder discoveryService(String serviceId, String serviceName) {
-            return ServiceDefinition.builder()
+                .type(ServiceType.CONFIG)
+                .supportedProtocols(List.of("HTTP"));
+    }
+    
+    /**
+     * 创建DISCOVERY类型服务的构建器
+     */
+    public static ServiceDefinitionBuilder discoveryService(String serviceId, String serviceName) {
+        return ServiceDefinition.builder()
                 .id(serviceId)
                 .name(serviceName)
-                .type(ServiceType.DISCOVERY);
-        }
-        
-        /**
-         * 构建并验证配置
-         */
-        public ServiceDefinition buildAndValidate() {
-            ServiceDefinition definition = build();
-            definition.validate();
-            return definition;
-        }
+                .type(ServiceType.DISCOVERY)
+                .supportedProtocols(List.of("HTTP"));
+    }
+    
+    /**
+     * 构建并验证配置
+     */
+    public ServiceDefinition buildAndValidate() {
+        ServiceDefinition definition = build();
+        definition.validate();
+        return definition;
     }
 }

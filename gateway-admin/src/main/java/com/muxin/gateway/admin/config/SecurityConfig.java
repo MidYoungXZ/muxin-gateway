@@ -15,7 +15,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Configuration
 public class SecurityConfig {

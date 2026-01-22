@@ -19,7 +19,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
-
  */
 @Configuration
 @EnableScheduling
