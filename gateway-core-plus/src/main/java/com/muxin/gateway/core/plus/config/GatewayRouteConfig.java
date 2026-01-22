@@ -1,7 +1,12 @@
 package com.muxin.gateway.core.plus.config;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.muxin.gateway.core.plus.route.ServiceDefinition;
 import com.muxin.gateway.core.plus.route.RouteDefinition;
+import com.muxin.gateway.core.plus.route.TimeoutConfig;
+import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
+import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -85,6 +90,112 @@ public class GatewayRouteConfig {
     private CacheConfig cache;
     
     /**
+     * 缓存规则配置
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CacheConfig {
+        private boolean enabled;
+        private String provider;
+        private String defaultTtl;
+        private int maxSize;
+        private CacheRuleConfig routeCache;
+        private CacheRuleConfig authCache;
+    }
+    
+    /**
+     * 路由定义配置构建器
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RouteDefinitionBuilder {
+        
+        /**
+         * 路由ID
+         */
+        private String id;
+        
+        /**
+         * 路由名称
+         */
+        private String name;
+        
+        /**
+         * 路由描述
+         */
+        private String description;
+        
+        /**
+         * 路由优先级（数值越小优先级越高）
+         */
+        private int order;
+        
+        /**
+         * 是否启用
+         */
+        private boolean enabled;
+        
+        /**
+         * 协议类型
+         */
+        private String protocol;
+        
+        /**
+         * 服务引用（引用 services 中的服务ID）
+         */
+        private String serviceRef;
+        
+        /**
+         * 断言配置列表（AND关系）
+         */
+        private List<PredicateDefinition> predicates;
+        
+        /**
+         * 过滤器配置列表
+         */
+        private List<FilterDefinition> filters;
+        
+        /**
+         * 负载均衡配置（路由级别）
+         */
+        private LoadBalanceDefinition loadBalance;
+        
+        /**
+         * 超时配置
+         */
+        private TimeoutConfig timeouts;
+        
+        /**
+         * 路由元数据
+         */
+        private Map<String, Object> metadata;
+        
+        /**
+         * 构建RouteDefinition对象
+         */
+        public RouteDefinition build() {
+            RouteDefinition definition = new RouteDefinition();
+            definition.setId(this.id);
+            definition.setName(this.name);
+            definition.setDescription(this.description);
+            definition.setOrder(this.order);
+            definition.setEnabled(this.enabled);
+            definition.setProtocol(this.protocol);
+            definition.setServiceRef(this.serviceRef);
+            definition.setPredicates(this.predicates);
+            definition.setFilters(this.filters);
+            definition.setLoadBalance(this.loadBalance);
+            definition.setTimeouts(this.timeouts);
+            definition.setMetadata(this.metadata);
+            return definition;
+        }
+    }
+
+    /**
      * 功能域配置
      */
     @Data
@@ -97,7 +208,7 @@ public class GatewayRouteConfig {
         private ServerConfig servers;
         private ConnectionPoolConfig connectionPools;
     }
-    
+
     /**
      * 枚举配置
      */
@@ -197,9 +308,10 @@ public class GatewayRouteConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ConnectionPoolConfig {
+        @JsonProperty("default")
         private DefaultConnectionPoolConfig defaultConfig;
     }
-    
+
     /**
      * 默认连接池配置
      */
@@ -438,22 +550,6 @@ public class GatewayRouteConfig {
     public static class RateLimitRule {
         private int requestsPerSecond;
         private int burstCapacity;
-    }
-    
-    /**
-     * 缓存配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CacheConfig {
-        private boolean enabled;
-        private String provider;
-        private String defaultTtl;
-        private int maxSize;
-        private CacheRuleConfig routeCache;
-        private CacheRuleConfig authCache;
     }
     
     /**

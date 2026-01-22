@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
+import com.muxin.gateway.core.plus.config.GatewayRouteConfig;
 import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
@@ -76,17 +77,7 @@ public class GlobalRouteConfig {
         if (routeDefinition == null) {
             throw new IllegalArgumentException("路由配置不能为空");
         }
-        
-        // 创建合并后的配置
-        RouteDefinition.RouteDefinitionBuilder builder = RouteDefinition.builder()
-                .id(routeDefinition.getId())
-                .name(routeDefinition.getName())
-                .description(routeDefinition.getDescription())
-                .order(routeDefinition.getOrder())
-                .enabled(routeDefinition.isEnabled())
-                .supportProtocol(routeDefinition.getSupportProtocol())
-                .service(routeDefinition.getService());
-        
+
         // 合并过滤器：全局过滤器 + 路由过滤器
         List<FilterDefinition> mergedFilters = new ArrayList<>();
         if (enableGlobalFilters && globalFilters != null) {
@@ -95,8 +86,7 @@ public class GlobalRouteConfig {
         if (routeDefinition.getFilters() != null) {
             mergedFilters.addAll(routeDefinition.getFilters());
         }
-        builder.filters(mergedFilters);
-        
+
         // 合并断言器：全局断言器 + 路由断言器
         List<PredicateDefinition> mergedPredicates = new ArrayList<>();
         if (enableGlobalPredicates && globalPredicates != null) {
@@ -105,18 +95,15 @@ public class GlobalRouteConfig {
         if (routeDefinition.getPredicates() != null) {
             mergedPredicates.addAll(routeDefinition.getPredicates());
         }
-        builder.predicates(mergedPredicates);
-        
+
         // 合并超时配置：路由配置优先
-        TimeoutConfig timeouts = routeDefinition.getTimeouts() != null ? 
+        TimeoutConfig timeouts = routeDefinition.getTimeouts() != null ?
                 routeDefinition.getTimeouts() : defaultTimeouts;
-        builder.timeouts(timeouts);
-        
+
         // 合并负载均衡配置：路由级别的负载均衡优先，如果没有则使用默认配置
-        LoadBalanceDefinition loadBalance = routeDefinition.getLoadBalance() != null ? 
+        LoadBalanceDefinition loadBalance = routeDefinition.getLoadBalance() != null ?
                 routeDefinition.getLoadBalance() : defaultLoadBalance;
-        builder.loadBalance(loadBalance);
-        
+
         // 合并元数据
         Map<String, Object> mergedMetadata = routeDefinition.getMetadata();
         if (globalMetadata != null) {
@@ -129,9 +116,23 @@ public class GlobalRouteConfig {
                 mergedMetadata = finalMetadata;
             }
         }
-        builder.metadata(mergedMetadata);
-        
-        return builder.build();
+
+        // 创建合并后的路由定义
+        RouteDefinition mergedDefinition = new RouteDefinition();
+        mergedDefinition.setId(routeDefinition.getId());
+        mergedDefinition.setName(routeDefinition.getName());
+        mergedDefinition.setDescription(routeDefinition.getDescription());
+        mergedDefinition.setOrder(routeDefinition.getOrder());
+        mergedDefinition.setEnabled(routeDefinition.isEnabled());
+        mergedDefinition.setProtocol(routeDefinition.getProtocol());
+        mergedDefinition.setServiceRef(routeDefinition.getServiceRef());
+        mergedDefinition.setPredicates(mergedPredicates);
+        mergedDefinition.setFilters(mergedFilters);
+        mergedDefinition.setLoadBalance(loadBalance);
+        mergedDefinition.setTimeouts(timeouts);
+        mergedDefinition.setMetadata(mergedMetadata);
+
+        return mergedDefinition;
     }
     
     /**

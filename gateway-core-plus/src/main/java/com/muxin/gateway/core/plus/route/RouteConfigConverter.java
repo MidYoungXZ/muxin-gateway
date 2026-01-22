@@ -1,6 +1,5 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.message.Protocol;
 import com.muxin.gateway.core.plus.route.filter.*;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory;
@@ -48,10 +47,10 @@ public class RouteConfigConverter {
         this.filterFactories = new ConcurrentHashMap<>();
         this.predicateFactories = new ConcurrentHashMap<>();
         this.routeServiceFactories = new ConcurrentHashMap<>();
-        
+
         // 初始化工厂
         initializeFactories();
-        
+
         log.info("[RouteConfigConverter] 路由配置转换器创建完成");
     }
 
@@ -65,11 +64,11 @@ public class RouteConfigConverter {
             initFilterFactories();
             initPredicateFactories();
             initRouteServiceFactories();
-            
+
             initialized = true;
-            log.info("[RouteConfigConverter] 所有工厂初始化完成 - Filter: {}, Predicate: {}, RouteService: {}", 
+            log.info("[RouteConfigConverter] 所有工厂初始化完成 - Filter: {}, Predicate: {}, RouteService: {}",
                     filterFactories.size(), predicateFactories.size(), routeServiceFactories.size());
-                    
+
         } catch (Exception e) {
             log.error("[RouteConfigConverter] 工厂初始化失败", e);
             throw new RuntimeException("工厂初始化失败", e);
@@ -142,10 +141,10 @@ public class RouteConfigConverter {
         if (factory == null) {
             throw new IllegalArgumentException("FilterFactory不能为空");
         }
-        
+
         String filterName = factory.getSupportedFilterName();
         filterFactories.put(filterName, factory);
-        
+
         log.info("[RouteConfigConverter] 注册自定义FilterFactory: {}", filterName);
     }
 
@@ -156,10 +155,10 @@ public class RouteConfigConverter {
         if (factory == null) {
             throw new IllegalArgumentException("PredicateFactory不能为空");
         }
-        
+
         String predicateName = factory.getSupportedPredicateName();
         predicateFactories.put(predicateName, factory);
-        
+
         log.info("[RouteConfigConverter] 注册自定义PredicateFactory: {}", predicateName);
     }
 
@@ -170,10 +169,10 @@ public class RouteConfigConverter {
         if (factory == null) {
             throw new IllegalArgumentException("RouteServiceFactory不能为空");
         }
-        
+
         ServiceType serviceType = factory.getSupportedType();
         routeServiceFactories.put(serviceType, factory);
-        
+
         log.info("[RouteConfigConverter] 注册自定义RouteServiceFactory: {}", serviceType);
     }
 
@@ -182,17 +181,18 @@ public class RouteConfigConverter {
     /**
      * 将RouteDefinition转换为EnhancedRoute
      */
-    public Route convertToRoute(RouteDefinition config) {
+    public Route convertToRoute(RouteDefinition config, Map<String, ServiceDefinition> serviceMap) {
         if (config == null) {
             throw new IllegalArgumentException("路由配置不能为空");
         }
-        
+
         try {
             // 验证配置
             config.validate();
 
             // 转换协议
-            Protocol inboundProtocol = config.getSupportProtocol().toProtocol();
+            com.muxin.gateway.core.plus.message.ProtocolEnum inboundProtocol =
+                com.muxin.gateway.core.plus.message.ProtocolEnum.fromCode(config.getProtocol());
 
             // 转换断言（传入routeId，确保每个路由的Predicate独立）
             List<Predicate> predicates = convertPredicates(config.getId(), config.getPredicates());
@@ -200,12 +200,19 @@ public class RouteConfigConverter {
             // 转换过滤器（传入routeId，确保每个路由的Filter独立）
             List<Filter> filters = convertFilters(config.getId(), config.getFilters());
 
+            // 从serviceMap中获取服务定义
+            String serviceRef = config.getServiceRef();
+            ServiceDefinition serviceDefinition = serviceMap.get(serviceRef);
+            if (serviceDefinition == null) {
+                throw new IllegalArgumentException("服务定义不存在: " + serviceRef);
+            }
+
             // 转换路由目标
-            RouteService target = convertRouteTarget(config.getService());
+            RouteService target = convertRouteTarget(serviceDefinition);
 
             // 转换超时配置
             TimeoutConfig timeouts = convertTimeouts(config.getTimeouts());
-            
+
             // 创建负载均衡策略（支持null配置）
             LoadBalanceStrategy loadBalanceStrategy = LoadBalanceStrategyFactory.createStrategy(
                 config.getLoadBalance()  // 可能为null，工厂内部处理
@@ -219,17 +226,17 @@ public class RouteConfigConverter {
                     .order(config.getOrder())
                     .enabled(config.isEnabled())
                     .supportedProtocol(inboundProtocol)
+                    .service(target)
                     .predicates(predicates)
                     .filters(filters)
-                    .service(target)
                     .loadBalanceStrategy(loadBalanceStrategy)
                     .metadata(config.getMetadata())
                     .timeoutConfig(timeouts)
                     .build();
 
-            log.debug("[RouteConfigConverter] 成功转换路由: {} (策略: {})", 
+            log.debug("[RouteConfigConverter] 成功转换路由: {} (策略: {})",
                     config.getId(), loadBalanceStrategy.getStrategyName());
-            
+
             return route;
 
         } catch (Exception e) {
@@ -241,7 +248,7 @@ public class RouteConfigConverter {
     /**
      * 批量转换路由配置
      */
-    public List<Route> convertToRoutes(List<RouteDefinition> configs) {
+    public List<Route> convertToRoutes(List<RouteDefinition> configs, Map<String, ServiceDefinition> serviceMap) {
         if (configs == null || configs.isEmpty()) {
             log.warn("[RouteConfigConverter] 路由配置列表为空");
             return new ArrayList<>();
@@ -252,7 +259,7 @@ public class RouteConfigConverter {
 
         for (RouteDefinition config : configs) {
             try {
-                Route route = convertToRoute(config);
+                Route route = convertToRoute(config, serviceMap);
                 routes.add(route);
                 log.debug("[RouteConfigConverter] 成功转换路由: {}", config.getId());
             } catch (Exception e) {
@@ -262,9 +269,9 @@ public class RouteConfigConverter {
         }
 
         long totalTime = System.currentTimeMillis() - startTime;
-        log.info("[RouteConfigConverter] 批量路由转换完成，成功: {}, 失败: {}, 总耗时: {}ms", 
+        log.info("[RouteConfigConverter] 批量路由转换完成，成功: {}, 失败: {}, 总耗时: {}ms",
                 routes.size(), configs.size() - routes.size(), totalTime);
-        
+
         return routes;
     }
 
@@ -456,7 +463,7 @@ public class RouteConfigConverter {
 
     @Override
     public String toString() {
-        return String.format("RouteConfigConverter{initialized=%s, filters=%d, predicates=%d, services=%d}", 
+        return String.format("RouteConfigConverter{initialized=%s, filters=%d, predicates=%d, services=%d}",
                 initialized, filterFactories.size(), predicateFactories.size(), routeServiceFactories.size());
     }
-} 
+}

@@ -361,8 +361,7 @@ public class ServiceDefinition {
      * 构建并验证配置
      */
     public ServiceDefinition buildAndValidate() {
-        ServiceDefinition definition = build();
-        definition.validate();
-        return definition;
+        //todo
+        return null;
     }
 }

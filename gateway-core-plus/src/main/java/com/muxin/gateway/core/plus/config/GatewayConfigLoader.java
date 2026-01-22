@@ -1,9 +1,13 @@
 package com.muxin.gateway.core.plus.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.muxin.gateway.core.plus.route.RouteDefinition;
 import com.muxin.gateway.core.plus.route.ServiceDefinition;
 import lombok.extern.slf4j.Slf4j;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -25,21 +29,39 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class GatewayConfigLoader {
-    
+
     private static final String DEFAULT_CONFIG_FILE = "gateway-routes.yml";
-    private final Yaml yaml;
-    
+    private final ObjectMapper objectMapper;
+
     public GatewayConfigLoader() {
-        this.yaml = new Yaml();
+        this.objectMapper = createObjectMapper();
     }
-    
+
+    /**
+     * 创建支持kebab-case字段映射的ObjectMapper
+     */
+    private ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+        // 注册JavaTimeModule以支持Java 8时间类型
+        mapper.registerModule(new JavaTimeModule());
+
+        // 设置命名策略：支持kebab-case到camelCase的自动转换
+        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+
+        // 配置：如果JSON/YAML中有额外属性，不报错
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        return mapper;
+    }
+
     /**
      * 从默认配置文件加载配置
      */
     public GatewayRouteConfig loadConfig() {
         return loadConfig(DEFAULT_CONFIG_FILE);
     }
-    
+
     /**
      * 从指定配置文件加载配置
      */
@@ -49,33 +71,33 @@ public class GatewayConfigLoader {
                 log.warn("配置文件 {} 不存在，使用默认配置", configFile);
                 return createDefaultConfig();
             }
-            
-            GatewayRouteConfig config = yaml.load(inputStream);
-            
+
+            GatewayRouteConfig config = objectMapper.readValue(inputStream, GatewayRouteConfig.class);
+
             // 处理服务引用
             resolveServiceReferences(config);
-            
+
             validateConfig(config);
-            
-            log.info("成功加载配置文件: {}, 共 {} 个服务定义, {} 个路由配置", 
+
+            log.info("成功加载配置文件: {}, 共 {} 个服务定义, {} 个路由配置",
                     configFile,
                     config.getServices() != null ? config.getServices().size() : 0,
                     config.getRoutes() != null ? config.getRoutes().size() : 0);
-            
+
             return config;
-            
+
         } catch (Exception e) {
             log.error("加载配置文件失败: {}", configFile, e);
             throw new IllegalStateException("无法加载配置文件: " + configFile, e);
         }
     }
-    
+
     /**
      * 从字符串加载配置（用于测试）
      */
     public GatewayRouteConfig loadConfigFromString(String yamlContent) {
         try {
-            GatewayRouteConfig config = yaml.load(yamlContent);
+            GatewayRouteConfig config = objectMapper.readValue(yamlContent, GatewayRouteConfig.class);
             resolveServiceReferences(config);
             validateConfig(config);
             return config;
@@ -84,7 +106,7 @@ public class GatewayConfigLoader {
             throw new IllegalArgumentException("无效的YAML配置", e);
         }
     }
-    
+
     /**
      * 解析服务引用
      * 将 routes 中的 service-ref 解析为实际的服务定义
@@ -93,12 +115,12 @@ public class GatewayConfigLoader {
         if (config.getRoutes() == null || config.getRoutes().isEmpty()) {
             return;
         }
-        
+
         if (config.getServices() == null || config.getServices().isEmpty()) {
             log.warn("服务定义为空，但路由引用了服务");
             return;
         }
-        
+
         // 构建服务ID到服务定义的映射
         Map<String, ServiceDefinition> serviceMap = config.getServices().stream()
                 .collect(Collectors.toMap(
@@ -109,7 +131,7 @@ public class GatewayConfigLoader {
                             return existing;
                         }
                 ));
-        
+
         // 解析每个路由的服务引用
         for (RouteDefinition route : config.getRoutes()) {
             String serviceRef = route.getServiceRef();
@@ -123,14 +145,14 @@ public class GatewayConfigLoader {
                 log.debug("路由 {} 引用服务: {}", route.getId(), serviceRef);
             }
         }
-        
-        log.info("服务引用解析完成，共 {} 个服务定义，{} 个路由引用", 
-                serviceMap.size(), 
+
+        log.info("服务引用解析完成，共 {} 个服务定义，{} 个路由引用",
+                serviceMap.size(),
                 config.getRoutes().stream()
                         .filter(r -> r.getServiceRef() != null && !r.getServiceRef().trim().isEmpty())
                         .count());
     }
-    
+
     /**
      * 验证配置
      */
@@ -138,7 +160,7 @@ public class GatewayConfigLoader {
         if (config == null) {
             throw new IllegalArgumentException("配置不能为空");
         }
-        
+
         // 验证服务定义
         if (config.getServices() != null) {
             for (ServiceDefinition service : config.getServices()) {
@@ -150,7 +172,7 @@ public class GatewayConfigLoader {
                 }
             }
         }
-        
+
         // 验证路由配置
         if (config.getRoutes() != null) {
             for (RouteDefinition route : config.getRoutes()) {
@@ -162,23 +184,23 @@ public class GatewayConfigLoader {
                 }
             }
         }
-        
+
         log.debug("配置验证通过");
     }
-    
+
     /**
      * 创建默认配置
      */
     private GatewayRouteConfig createDefaultConfig() {
         log.info("创建默认配置");
-        
+
         return GatewayRouteConfig.builder()
                 .domains(createDefaultDomainsConfig())
                 .services(List.of())
                 .routes(List.of())
                 .build();
     }
-    
+
     /**
      * 创建默认功能域配置
      */
@@ -219,7 +241,7 @@ public class GatewayConfigLoader {
                         .build())
                 .build();
     }
-    
+
     /**
      * 获取服务定义映射
      * 供其他模块使用
@@ -228,11 +250,11 @@ public class GatewayConfigLoader {
         if (config.getServices() == null) {
             return new HashMap<>();
         }
-        
+
         return config.getServices().stream()
                 .collect(Collectors.toMap(ServiceDefinition::getId, s -> s));
     }
-    
+
     /**
      * 获取路由配置
      * 供其他模块使用
@@ -243,7 +265,7 @@ public class GatewayConfigLoader {
         }
         return config.getRoutes();
     }
-    
+
     /**
      * 重新加载配置
      */
@@ -251,7 +273,7 @@ public class GatewayConfigLoader {
         log.info("重新加载配置文件");
         return loadConfig();
     }
-    
+
     /**
      * 保存配置到文件（暂不实现）
      */

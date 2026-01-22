@@ -170,10 +170,10 @@ public class RouteDefinition {
             
             // 验证策略名称是否有效
             try {
-                com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyEnum.fromCode(
+                com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyType.fromCode(
                         loadBalance.getStrategy());
             } catch (Exception e) {
-                throw new IllegalArgumentException("不支持的负载均衡策略: " + 
+                throw new IllegalArgumentException("不支持的负载均衡策略: " +
                         loadBalance.getStrategy(), e);
             }
         }

@@ -73,11 +73,11 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     @Override
     public HttpResponseMessage setResponse(HttpResponseMessage response) {
-        if (response instanceof NettyHttpResponseAdapter httpResponseAdapter) {
+        if (response instanceof NettyHttpResponseAdapter) {
             // 如果是我们的适配器，直接使用底层对象
-            this.httpResponseAdapter = httpResponseAdapter;
-        } else if (response instanceof FullHttpResponse httpResponse) {
-            this.httpResponseAdapter = new NettyHttpResponseAdapter(httpResponse, new HashMap<>());
+            this.httpResponseAdapter = (NettyHttpResponseAdapter) response;
+        } else if (response instanceof FullHttpResponse) {
+            this.httpResponseAdapter = new NettyHttpResponseAdapter((FullHttpResponse) response, new HashMap<>());
         } else {
             throw new IllegalArgumentException("unknown response type: " + response.getClass());
         }
