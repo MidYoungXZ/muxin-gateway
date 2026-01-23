@@ -195,19 +195,58 @@ public class GatewayProcessor implements LifeCycle {
 
     /**
      * 设置响应到Exchange
+     * 将后端服务返回的响应消息设置到ServerExchange中
      */
     private void setResponseToExchange(RequestContext context, Message response) {
         try {
-            // 假设有可变的Exchange实现或通过其他方式设置响应
-            // 这里可能需要根据具体的ServerExchange实现来调整
+            if (response == null) {
+                log.warn("[GatewayProcessor] 后端响应为空，请求ID: {}", context.requestId());
+                throw new ProcessingException("后端响应为空", context.requestId());
+            }
 
-            // TODO: 根据实际的ServerExchange实现来设置响应
-            // 目前先记录日志，具体实现可能需要强制转换或其他方式
-            log.debug("[GatewayProcessor] 响应设置到Exchange: {}", context.requestId());
+            // 获取当前Exchange
+            ServerExchange<? extends Message, ? extends Message> exchange = context.exchange();
 
+            // 检查响应类型是否与Exchange兼容
+            if (!exchange.protocol().equals(response.protocol())) {
+                log.warn("[GatewayProcessor] 协议不匹配，Exchange协议: {}, 响应协议: {}, 请求ID: {}",
+                        exchange.protocol().type(), response.protocol().type(), context.requestId());
+                // 对于跨协议响应，可能需要协议转换，这里暂时记录警告
+                // TODO: 后续可以在这里集成协议转换器
+            }
+
+            // 调用Exchange的setResponse方法设置响应
+            // 注意：这里需要强制类型转换，因为ServerExchange是泛型接口
+            @SuppressWarnings("unchecked")
+            ServerExchange<Message, Message> messageExchange = (ServerExchange<Message, Message>) exchange;
+            messageExchange.setResponse(response);
+
+            log.debug("[GatewayProcessor] 响应设置到Exchange成功，请求ID: {}, 状态: {}",
+                    context.requestId(), getResponseStatus(response));
+
+        } catch (ClassCastException e) {
+            log.error("[GatewayProcessor] 响应类型转换失败，请求ID: {}", context.requestId(), e);
+            throw new ProcessingException("响应类型不兼容", context.requestId(), e);
         } catch (Exception e) {
-            log.error("[GatewayProcessor] 设置响应失败: {}", context.requestId(), e);
+            log.error("[GatewayProcessor] 设置响应失败，请求ID: {}", context.requestId(), e);
             throw new ProcessingException("设置响应失败", context.requestId(), e);
+        }
+    }
+
+    /**
+     * 获取响应状态（用于日志记录）
+     */
+    private String getResponseStatus(Message response) {
+        try {
+            // 如果是HTTP响应，尝试获取状态码
+            if (response instanceof com.muxin.gateway.core.plus.message.http.HttpResponseMessage) {
+                io.netty.handler.codec.http.HttpResponseStatus status =
+                        ((com.muxin.gateway.core.plus.message.http.HttpResponseMessage) response).status();
+                return String.valueOf(status.code());
+            }
+            return "UNKNOWN";
+        } catch (Exception e) {
+            return "UNKNOWN";
         }
     }
 

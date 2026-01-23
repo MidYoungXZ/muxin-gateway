@@ -77,15 +77,84 @@ public class DefaultRouteManager implements RouteManager {
 
     @Override
     public Route matchRoute(RequestContext context) {
+        // 状态检查
         if (!started || shutdown) {
             throw new IllegalStateException("路由管理器未启动或已关闭");
         }
-        try {
 
-            return null;
+        // 上下文空值检查
+        if (context == null || context.exchange() == null) {
+            log.warn("[DefaultRouteManager] 请求上下文或Exchange为空");
+            throw new IllegalArgumentException("请求上下文或Exchange不能为空");
+        }
+
+        try {
+            // 1. 获取协议类型（空协议检查）
+            String protocolType = context.exchange().protocol().type();
+            if (protocolType == null || protocolType.trim().isEmpty()) {
+                log.warn("[DefaultRouteManager] 请求协议类型为空，请求ID: {}",
+                        context.requestId());
+                throw new IllegalArgumentException("请求协议类型不能为空");
+            }
+
+            // 2. 从缓存获取该协议的路由列表（已按order排序，使用读锁）
+            List<Route> protocolRoutes = getRoutesByProtocol(protocolType);
+
+            if (protocolRoutes == null || protocolRoutes.isEmpty()) {
+                log.debug("[DefaultRouteManager] 未找到协议 {} 的路由配置，请求ID: {}",
+                        protocolType, context.requestId());
+                throw new IllegalStateException("未找到协议 " + protocolType + " 的路由配置，请检查路由配置");
+            }
+
+            // 3. 按优先级遍历，返回首个匹配的路由
+            for (Route route : protocolRoutes) {
+                // 快速跳过未启用的路由
+                if (!route.isEnabled()) {
+                    continue;
+                }
+
+                // 调用 Route.matches() 进行断言匹配
+                if (route.matches(context)) {
+                    log.debug("[DefaultRouteManager] 路由匹配成功: {} (优先级: {}) for 请求: {}",
+                            route.getId(), route.getOrder(), context.requestId());
+                    return route;
+                }
+            }
+
+            // 4. 无匹配路由 - 友好提示
+            log.warn("[DefaultRouteManager] 未找到匹配的路由，协议: {}, 请求ID: {}, 路径: {}",
+                    protocolType,
+                    context.requestId(),
+                    getRequestPath(context));
+
+            throw new IllegalStateException("未找到匹配的路由，协议: " + protocolType);
+
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            // 直接抛出业务异常
+            throw e;
         } catch (Exception e) {
-            log.error("[DefaultRouteManager] 路由匹配异常", e);
-            return null;
+            log.error("[DefaultRouteManager] 路由匹配异常，请求ID: {}", context.requestId(), e);
+            throw new RuntimeException("路由匹配失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取请求路径（用于日志）
+     */
+    private String getRequestPath(RequestContext context) {
+        try {
+            Object exchange = context.exchange();
+            // 尝试获取 HTTP 请求的路径
+            if (exchange instanceof com.muxin.gateway.core.plus.message.http.HttpServerExchange) {
+                com.muxin.gateway.core.plus.message.http.HttpRequestMessage request =
+                        ((com.muxin.gateway.core.plus.message.http.HttpServerExchange) exchange).request();
+                if (request != null) {
+                    return request.fullPath();
+                }
+            }
+            return "unknown";
+        } catch (Exception e) {
+            return "unknown";
         }
     }
 

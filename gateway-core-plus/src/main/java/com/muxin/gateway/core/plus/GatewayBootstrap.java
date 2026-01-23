@@ -2,17 +2,20 @@ package com.muxin.gateway.core.plus;
 
 import com.muxin.gateway.core.plus.common.LifeCycle;
 import com.muxin.gateway.core.plus.config.GatewayConfig;
+import com.muxin.gateway.core.plus.config.GatewayConfigLoader;
 import com.muxin.gateway.core.plus.config.GatewayCoreConfig;
+import com.muxin.gateway.core.plus.config.GatewayRouteConfig;
 import com.muxin.gateway.core.plus.config.RouteSystemConfig;
 import com.muxin.gateway.core.plus.config.ServerConfig;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.route.GlobalRouteConfig;
-import com.muxin.gateway.core.plus.route.RouteManager;
+import com.muxin.gateway.core.plus.route.*;
 import com.muxin.gateway.core.plus.route.service.InstanceManager;
 import com.muxin.gateway.core.plus.server.http.HttpServerConfig;
 import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
 
 /**
  * 网关引导类
@@ -34,6 +37,8 @@ public class GatewayBootstrap implements LifeCycle {
     // ========== 配置 ==========
     private GatewayConfig gatewayConfig;
     private GlobalRouteConfig globalRouteConfig;
+    private GatewayRouteConfig gatewayRouteConfig;  // 新增：YAML配置文件加载的配置
+    private RouteConfigConverter routeConfigConverter;  // 新增：配置转换器
 
     // ========== 核心组件 ==========
     private ConnectionPoolManager connectionPoolManager;
@@ -138,8 +143,30 @@ public class GatewayBootstrap implements LifeCycle {
     private void initConfigs() {
         log.debug("Initializing configurations...");
 
-        // 使用默认配置
+        // 1. 加载 YAML 配置文件
+        GatewayConfigLoader configLoader = new GatewayConfigLoader();
+        try {
+            this.gatewayRouteConfig = configLoader.loadConfig();
+            log.info("成功加载 gateway-routes.yml 配置文件");
+            log.info("配置文件包含 {} 个服务定义, {} 个路由配置",
+                    gatewayRouteConfig.getServices() != null ? gatewayRouteConfig.getServices().size() : 0,
+                    gatewayRouteConfig.getRoutes() != null ? gatewayRouteConfig.getRoutes().size() : 0);
+        } catch (Exception e) {
+            log.warn("加载 gateway-routes.yml 失败，将使用默认配置: {}", e.getMessage());
+            this.gatewayRouteConfig = null;
+        }
+
+        // 2. 初始化路由配置转换器
+        this.routeConfigConverter = new RouteConfigConverter();
+        log.debug("路由配置转换器初始化完成");
+
+        // 3. 从 YAML 配置中提取功能域配置
         GatewayCoreConfig coreConfig = GatewayCoreConfig.builder().build();
+        if (gatewayRouteConfig != null && gatewayRouteConfig.getDomains() != null) {
+            // 可以根据 YAML 配置调整 coreConfig
+            log.debug("使用 YAML 配置中的功能域配置");
+        }
+
         RouteSystemConfig routeSystemConfig = RouteSystemConfig.defaultConfig();
         ServerConfig serverConfig = ServerConfig.defaultConfig();
 
@@ -170,7 +197,63 @@ public class GatewayBootstrap implements LifeCycle {
         this.instanceManager = new com.muxin.gateway.core.plus.route.service.DefaultInstanceManager();
         instanceManager.init();
 
+        // 注册配置中的路由和服务
+        registerRoutesFromConfig();
+
         log.debug("Core components initialized");
+    }
+
+    /**
+     * 从配置文件注册路由和服务
+     */
+    private void registerRoutesFromConfig() {
+        if (gatewayRouteConfig == null) {
+            log.debug("无YAML配置，跳过路由注册");
+            return;
+        }
+
+        if (gatewayRouteConfig.getRoutes() == null || gatewayRouteConfig.getRoutes().isEmpty()) {
+            log.debug("配置文件中没有路由定义，跳过路由注册");
+            return;
+        }
+
+        if (gatewayRouteConfig.getServices() == null || gatewayRouteConfig.getServices().isEmpty()) {
+            log.warn("配置文件中没有服务定义，但路由引用了服务");
+            return;
+        }
+
+        try {
+            // 构建服务定义映射
+            java.util.Map<String,ServiceDefinition> serviceMap =
+                gatewayRouteConfig.getServices().stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                        ServiceDefinition::getId,
+                        service -> service,
+                        (existing, replacement) -> {
+                            log.warn("服务ID重复: {}，将使用第一个定义", existing.getId());
+                            return existing;
+                        }
+                    ));
+
+            // 使用 RouteConfigConverter 转换路由定义
+            java.util.List<Route> routes =
+                routeConfigConverter.convertToRoutes(gatewayRouteConfig.getRoutes(), serviceMap);
+
+            // 注册路由到 RouteManager
+            for (Route route : routes) {
+                if (route != null) {
+                    routeManager.insert(route);
+                    log.info("成功注册路由: {} - {} (优先级: {})",
+                            route.getId(), route.getName(), route.getOrder());
+                }
+            }
+
+            log.info("从配置文件注册了 {} 个路由", routes.size());
+
+        } catch (Exception e) {
+            log.error("注册路由配置失败", e);
+            throw new RuntimeException("注册路由配置失败", e);
+        }
     }
 
     private void initGatewayProcessor() {
@@ -293,6 +376,32 @@ public class GatewayBootstrap implements LifeCycle {
      */
     public InstanceManager getNodeManager() {
         return instanceManager;
+    }
+
+    /**
+     * 获取 YAML 配置
+     * 返回从 gateway-routes.yml 加载的完整配置
+     */
+    public GatewayRouteConfig getGatewayRouteConfig() {
+        return gatewayRouteConfig;
+    }
+
+    /**
+     * 获取服务定义列表
+     */
+    public List<ServiceDefinition> getServices() {
+        return gatewayRouteConfig != null && gatewayRouteConfig.getServices() != null
+                ? gatewayRouteConfig.getServices()
+                : List.of();
+    }
+
+    /**
+     * 获取路由定义列表
+     */
+    public List<RouteDefinition> getRouteDefinitions() {
+        return gatewayRouteConfig != null && gatewayRouteConfig.getRoutes() != null
+                ? gatewayRouteConfig.getRoutes()
+                : List.of();
     }
 
 } 

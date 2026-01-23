@@ -74,16 +74,30 @@ public class ConfigRouteService implements RouteService {
     
     @Override
     public EndpointAddress selectTarget(RequestContext context, LoadBalanceStrategy strategy) {
-        // 使用外部提供的负载均衡策略选择目标
+        // 1. 空地址检查
+        if (addresses == null || addresses.isEmpty()) {
+            log.error("[ConfigRouteService] 服务 {} 没有配置地址", serviceDefinition.getName());
+            throw new IllegalStateException("服务 " + serviceDefinition.getName() + " 没有配置可用地址");
+        }
+
+        // 2. 策略空值检查 - 降级到第一个地址
+        if (strategy == null) {
+            log.warn("[ConfigRouteService] 负载均衡策略为空，使用第一个地址: {}", addresses.get(0).toUri());
+            return addresses.get(0);
+        }
+
         try {
+            // 3. 正常选择
             EndpointAddress selected = strategy.select(addresses, context);
-            log.debug("选择目标地址: {} (策略: {})", selected.toUri(), strategy.getStrategyName());
+            log.debug("[ConfigRouteService] 选择目标: {} (策略: {}, 服务: {})",
+                    selected.toUri(), strategy.getStrategyName(), serviceDefinition.getName());
             return selected;
+
         } catch (Exception e) {
-            log.error("负载均衡选择失败，使用第一个地址作为降级", e);
-            EndpointAddress fallback = addresses.get(0);
-            log.warn("使用降级地址: {}", fallback.toUri());
-            return fallback;
+            // 4. 降级处理：使用第一个地址
+            log.warn("[ConfigRouteService] 负载均衡选择失败，使用第一个地址作为降级: {}, 错误: {}",
+                    addresses.get(0).toUri(), e.getMessage());
+            return addresses.get(0);
         }
     }
     

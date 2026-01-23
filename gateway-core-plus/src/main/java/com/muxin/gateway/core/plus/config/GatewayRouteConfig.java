@@ -348,7 +348,16 @@ public class GatewayRouteConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LoadBalanceStrategyConfig {
+        /**
+         * 策略实现类全限定名
+         * 使用 @JsonProperty 注解显式映射 YAML 中的 "class" 字段
+         */
+        @JsonProperty("class")
         private String className;
+
+        /**
+         * 策略配置参数
+         */
         private Map<String, Object> config;
     }
     
@@ -404,7 +413,13 @@ public class GatewayRouteConfig {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RegistryConfig {
+        /**
+         * 默认注册中心类型
+         * 使用 @JsonProperty 映射 YAML 中的 "default" 字段
+         */
+        @JsonProperty("default")
         private String defaultRegistry;
+
         private NacosConfig nacos;
         private EurekaConfig eureka;
         private ConsulConfig consul;

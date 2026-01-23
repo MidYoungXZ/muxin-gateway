@@ -92,25 +92,36 @@ public class DiscoveryRouteService implements RouteService {
     
     @Override
     public EndpointAddress selectTarget(RequestContext context, LoadBalanceStrategy strategy) {
+        // 1. 获取最新地址列表（触发缓存刷新）
+        List<EndpointAddress> addresses = getTargetAddresses();
+
+        // 2. 空地址检查
+        if (addresses == null || addresses.isEmpty()) {
+            String errorMsg = String.format("服务 %s 没有可用的实例（服务发现返回空列表）",
+                    serviceDefinition.getName());
+            log.error("[DiscoveryRouteService] {}", errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+
+        // 3. 策略空值检查 - 降级到第一个地址
+        if (strategy == null) {
+            log.warn("[DiscoveryRouteService] 负载均衡策略为空，使用第一个地址: {}",
+                    addresses.get(0).toUri());
+            return addresses.get(0);
+        }
+
         try {
-            // 获取最新的地址列表
-            List<EndpointAddress> addresses = getTargetAddresses();
-            
-            if (addresses.isEmpty()) {
-                throw new IllegalStateException("服务 " + serviceDefinition.getName() + " 没有可用的实例");
-            }
-            
-            // 使用外部提供的负载均衡策略选择地址
+            // 4. 正常选择
             EndpointAddress selected = strategy.select(addresses, context);
-            
-            log.debug("选择服务实例: {} -> {} (策略: {}, 可用实例: {})", 
+            log.debug("[DiscoveryRouteService] 选择实例: {} -> {} (策略: {}, 可用实例: {})",
                     serviceDefinition.getName(), selected.toUri(), strategy.getStrategyName(), addresses.size());
-            
             return selected;
-            
+
         } catch (Exception e) {
-            log.error("服务发现选择地址失败: {}", serviceDefinition.getName(), e);
-            throw new RuntimeException("服务发现选择地址失败: " + serviceDefinition.getName(), e);
+            // 5. 降级处理：使用第一个地址
+            log.warn("[DiscoveryRouteService] 负载均衡选择失败，使用第一个地址作为降级: {}, 错误: {}",
+                    addresses.get(0).toUri(), e.getMessage());
+            return addresses.get(0);
         }
     }
     
