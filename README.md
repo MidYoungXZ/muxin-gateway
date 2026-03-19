@@ -74,11 +74,17 @@ muxin-gateway/
 │   │   ├── connect/                   # 连接池管理 ✅
 │   │   ├── registry/                  # 注册中心接口 ✅
 │   │   ├── route/                     # 路由系统 ✅
-│   │   │   ├── filter/                # 过滤器实现（认证、日志）✅
+│   │   │   ├── DefaultRoute.java      # 默认路由实现（预缓存优化）✅
+│   │   │   ├── filter/                # 过滤器实现 ✅
+│   │   │   │   ├── DefaultFilterChain.java  # 责任链实现 ✅
+│   │   │   │   ├── PathRewriteFilter.java   # 路径重写过滤器 ✅
+│   │   │   │   ├── RequestIdFilter.java     # 请求ID过滤器 ✅
+│   │   │   │   ├── RequestLogFilter.java    # 日志过滤器 ✅
+│   │   │   │   └── MetricsFilter.java       # 指标过滤器 ✅
 │   │   │   ├── loadbalance/           # 负载均衡策略（4种）✅
 │   │   │   ├── predicate/             # 断言实现（路径、方法、头部）✅
 │   │   │   └── service/               # 服务实例管理 ✅
-│   │   └── protocol/message/         # 协议抽象和HTTP实现 ✅
+│   │   └── message/http/              # HTTP消息抽象 ✅
 │   └── src/main/resources/
 │       └── gateway-routes.yml         # 配置示例文件 ✅
 ├── gateway-main/       # 完整网关主程序（包含管理界面）✅
@@ -111,16 +117,14 @@ GatewayApplication         // 独立应用入口 ✅
 GatewayProcessor           // 核心请求处理器（优化线程模型）✅
 ├── 同步阶段（CPU密集型）
 │   ├── validateRequest()       // 请求验证
-│   ├── convertInboundProtocol() // 协议转换
 │   ├── matchRoute()            // 路由匹配
-│   ├── executePreFilters()     // 前置过滤器
+│   ├── executePreFilters()     // 前置过滤器（责任链模式）
 │   ├── selectTargetNode()      // 负载均衡
 │   └── acquireConnection()     // 连接获取
 └── 异步阶段（I/O密集型）
     ├── invokeBackendService()  // 后端调用
-    ├── executePostFilters()    // 后置过滤器
-    ├── convertOutboundProtocol() // 协议转换
-    └── sendResponseSync()      // 响应返回
+    ├── executePostFilters()    // 后置过滤器（责任链模式）
+    └── sendResponse()          // 响应返回
 ```
 
 #### 3. 网络服务层
@@ -136,17 +140,38 @@ NettyHttpServer            // HTTP服务器实现 ✅
 
 #### 4. 路由系统层
 ```java
-Route / EnhancedRoute      // 路由实现 ✅
+Route / DefaultRoute        // 路由实现 ✅
+├── 预缓存字段（构造时初始化）
+│   ├── preFilters              // PRE过滤器（已排序）
+│   ├── postFilters             // POST过滤器（已排序）
+│   ├── pathPredicate           // 路径断言（预提取）
+│   └── stripPrefixCount        // 前缀剥离数（预计算）
 ├── Predicate断言系统 ✅
-│   ├── HttpPathPredicate      // 路径匹配（Ant风格）✅
-│   ├── HttpMethodPredicate    // HTTP方法匹配 ✅
-│   └── HttpHeaderPredicate    // 请求头匹配 ✅
+│   ├── PathPredicate           // 路径匹配（Ant风格，支持stripPrefix）✅
+│   ├── MethodPredicate         // HTTP方法匹配 ✅
+│   └── HeaderPredicate         // 请求头匹配 ✅
 ├── Filter过滤器系统 ✅
-│   ├── HttpAuthFilter         // 认证过滤器（JWT/Basic/Token）✅
-│   └── HttpLoggingFilter      // 日志过滤器 ✅
-└── RouteTarget目标系统 ✅
-    ├── ConfigRouteTarget      // 静态配置目标 ✅
-    └── DiscoveryRouteTarget   // 服务发现目标 🚧
+│   ├── PathRewriteFilter       // 路径重写过滤器（剥离前缀）✅
+│   ├── RequestIdFilter         // 请求ID生成过滤器 ✅
+│   ├── RequestLogFilter        // 请求日志过滤器 ✅
+│   ├── MetricsFilter           // 指标收集过滤器 ✅
+│   └── AuthFilter              // 认证过滤器（JWT/Basic/Token）✅
+└── RouteService目标系统 ✅
+    ├── ConfigRouteService      // 静态配置目标 ✅
+    └── DiscoveryRouteService   // 服务发现目标 🚧
+```
+
+#### 5. 过滤器链层
+```java
+FilterChain                 // 过滤器链接口 ✅
+├── DefaultFilterChain          // 默认实现（真正的责任链）✅
+│   ├── doFilter(exchange)      // 触发下一个过滤器
+│   ├── hasNext()               // 是否有下一个
+│   └── reset()                 // 重置链（可重用）
+└── Filter执行流程
+    ├── Filter.filter(exchange, chain)
+    ├── 业务逻辑处理
+    └── chain.doFilter(exchange)  // 触发下一个
 ```
 
 #### 5. 负载均衡层
@@ -185,11 +210,14 @@ ConnectionPoolManager      // 连接池管理器接口 ✅
 - **单次线程切换**：从传统的10次线程切换优化到1次，减少90%开销
 - **CPU缓存友好**：同步阶段连续执行，提高缓存命中率
 - **异步I/O**：网络I/O操作完全异步，不阻塞主线程
-- **零拷贝**：使用Netty的零拷贝特性，减少内存拷贝
+- **请求零拷贝**：直接修改URI，避免请求复制
+- **过滤器预排序**：构造时排序，避免每次请求排序开销
+- **预提取优化**：PathPredicate和stripPrefixCount在构造时预计算
 
 #### 🏗️ 架构简化
-- **移除Manager层**：去除FilterManager、LoadBalanceManager等冗余抽象
-- **直接组件交互**：简化调用链，提高执行效率
+- **责任链模式**：真正的FilterChain实现，支持过滤器中断链
+- **单一职责**：核心处理器只负责路由，路径重写移至过滤器
+- **接口简洁**：Route接口只保留核心方法，业务方法移至实现类
 - **配置驱动**：通过Definition配置，Factory模式创建组件
 - **完全隔离**：每个路由配置完全独立，避免状态共享
 
@@ -209,11 +237,13 @@ ConnectionPoolManager      // 连接池管理器接口 ✅
 | **内存** | 512MB | 基础运行内存占用 |
 | **启动时间** | <3秒 | 冷启动时间 |
 | **线程切换** | 1次/请求 | 相比传统方案减少90% |
+| **请求复制** | 0次 | 直接修改URI，无内存复制 |
 
 ### 性能优化亮点
 - **90%线程切换减少**：从10次优化到1次
+- **100%请求复制减少**：直接修改URI，零内存分配
 - **CPU缓存友好**：连续CPU操作提高缓存命中率
-- **零拷贝网络I/O**：基于Netty的高性能传输
+- **过滤器预排序**：构造时排序，运行时O(1)获取
 - **智能连接池**：连接复用降低建立开销
 
 ## 💡 使用示例
@@ -252,12 +282,23 @@ routes:
 
 ### Java代码示例
 ```java
-// 创建自定义过滤器
+// 创建自定义过滤器（责任链模式）
 public class CustomFilter implements Filter {
     @Override
-    public void filter(RequestContext context, FilterChain chain) {
-        // 自定义逻辑
-        chain.filter(context);
+    public void filter(HttpServerExchange exchange, FilterChain chain) {
+        // 前置处理
+        System.out.println("请求处理前");
+        
+        // 触发下一个过滤器
+        chain.doFilter(exchange);
+        
+        // 后置处理
+        System.out.println("请求处理后");
+    }
+    
+    @Override
+    public FilterType getType() {
+        return FilterType.PRE;
     }
 }
 
@@ -322,6 +363,27 @@ public class CustomLoadBalancer implements LoadBalanceStrategy {
 - Axios 1.6.5 ✅
 
 ## 📝 版本更新
+
+### v2.5.0 (2025-03-19) - 架构优化与性能提升
+- 🔗 **FilterChain 重构**
+  - 实现真正的责任链模式，支持过滤器中断链
+  - 新增 `DefaultFilterChain` 实现，`Filter.doFilter()` 触发下一个过滤器
+  - 移除 `NoOpFilterChain`，简化过滤器执行逻辑
+- 🛣️ **Route 接口优化**
+  - 移除接口中的 `default` 业务方法，保持接口职责单一
+  - `DefaultRoute` 新增 `postFilters` 缓存，对称缓存 PRE/POST 过滤器
+  - 构造时预排序过滤器，避免每次请求排序开销
+- ⚡ **请求处理优化**
+  - 直接修改请求 URI，避免不必要的请求复制
+  - 移除 `DefaultHttpServerExchange.duplicateRequest()` 方法
+  - 减少 100% 的请求内存分配和 GC 压力
+- 🔧 **新增 PathRewriteFilter**
+  - 路径重写逻辑从核心处理器移至独立过滤器
+  - 支持通过配置动态启用/禁用
+  - 符合单一职责原则，核心逻辑更清晰
+- 🐛 **ByteBuf 引用计数修复**
+  - 修复响应发送时 `IllegalReferenceCountException` 问题
+  - 响应复制保证 ByteBuf 引用计数正确管理
 
 ### v2.4.0 (2025-01-24) - 架构重构与性能优化
 - 🏗️ **核心架构重构**
