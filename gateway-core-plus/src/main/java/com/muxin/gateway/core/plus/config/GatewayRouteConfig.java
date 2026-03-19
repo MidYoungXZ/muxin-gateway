@@ -35,11 +35,6 @@ public class GatewayRouteConfig {
     private DomainsConfig domains;
     
     /**
-     * 枚举定义
-     */
-    private EnumsConfig enums;
-    
-    /**
      * 服务定义（独立资源）
      */
     private List<ServiceDefinition> services;
@@ -53,11 +48,6 @@ public class GatewayRouteConfig {
      * 全局过滤器配置
      */
     private List<GlobalFilterConfig> globalFilters;
-    
-    /**
-     * 负载均衡策略配置
-     */
-    private Map<String, LoadBalanceStrategyConfig> loadBalanceStrategies;
     
     /**
      * 全局路由配置
@@ -210,21 +200,6 @@ public class GatewayRouteConfig {
     }
 
     /**
-     * 枚举配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class EnumsConfig {
-        private List<String> protocolType;
-        private List<String> filterType;
-        private List<String> loadBalanceStrategy;
-        private List<String> predicateType;
-        private List<String> httpMethod;
-    }
-    
-    /**
      * 核心配置
      */
     @Data
@@ -341,27 +316,6 @@ public class GatewayRouteConfig {
     }
     
     /**
-     * 负载均衡策略配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class LoadBalanceStrategyConfig {
-        /**
-         * 策略实现类全限定名
-         * 使用 @JsonProperty 注解显式映射 YAML 中的 "class" 字段
-         */
-        @JsonProperty("class")
-        private String className;
-
-        /**
-         * 策略配置参数
-         */
-        private Map<String, Object> config;
-    }
-    
-    /**
      * 全局路由配置
      */
     @Data
@@ -461,7 +415,21 @@ public class GatewayRouteConfig {
     @AllArgsConstructor
     public static class ConsulConfig {
         private String host;
-        private int port;
+        private String port;
+
+        public int getPortAsInt() {
+            if (port == null || port.isEmpty()) {
+                return 8500;
+            }
+            if (port.contains("${")) {
+                return 8500;
+            }
+            try {
+                return Integer.parseInt(port);
+            } catch (NumberFormatException e) {
+                return 8500;
+            }
+        }
     }
     
     /**

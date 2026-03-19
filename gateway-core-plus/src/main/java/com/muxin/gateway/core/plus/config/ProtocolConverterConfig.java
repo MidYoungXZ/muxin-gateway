@@ -3,8 +3,6 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 协议转换器配置
  * 
@@ -23,13 +21,13 @@ public class ProtocolConverterConfig {
     private int maxConvertersPerProtocol = 10;
     
     @Builder.Default
-    private Duration conversionTimeout = Duration.ofSeconds(5);
+    private Long conversionTimeout = 5000L;
     
     @Builder.Default
     private boolean enableConversionCache = false;
     
     @Builder.Default
-    private Duration conversionCacheExpiration = Duration.ofMinutes(5);
+    private Long conversionCacheExpiration = 300000L;
     
     @Builder.Default
     private int maxCacheSize = 1000;
@@ -50,7 +48,7 @@ public class ProtocolConverterConfig {
     private boolean strictValidation = false;
     
     @Builder.Default
-    private Duration converterWarmupTimeout = Duration.ofSeconds(10);
+    private Long converterWarmupTimeout = 10000L;
     
     public static ProtocolConverterConfig defaultConfig() {
         return ProtocolConverterConfig.builder().build();
@@ -58,16 +56,16 @@ public class ProtocolConverterConfig {
     
     public void validate() {
         if (maxConvertersPerProtocol <= 0) {
-            throw new IllegalArgumentException("maxConvertersPerProtocol必须大于0");
+            throw new IllegalArgumentException("maxConvertersPerProtocol 必须大于 0");
         }
-        if (conversionTimeout == null || conversionTimeout.isNegative()) {
-            throw new IllegalArgumentException("conversionTimeout必须大于0");
+        if (conversionTimeout == null || conversionTimeout < 0) {
+            throw new IllegalArgumentException("conversionTimeout 必须大于 0");
         }
         if (maxCacheSize < 0) {
-            throw new IllegalArgumentException("maxCacheSize不能小于0");
+            throw new IllegalArgumentException("maxCacheSize 不能小于 0");
         }
         if (fallbackConverterType == null || fallbackConverterType.trim().isEmpty()) {
-            throw new IllegalArgumentException("fallbackConverterType不能为空");
+            throw new IllegalArgumentException("fallbackConverterType 不能为空");
         }
     }
 }

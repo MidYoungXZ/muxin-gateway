@@ -1,6 +1,5 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.message.ProtocolDefinition;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -116,17 +115,7 @@ public class ServiceDefinition {
                 .anyMatch(p -> p.equalsIgnoreCase(protocol));
     }
     
-    /**
-     * 获取协议定义（向后兼容）
-     */
-    public ProtocolDefinition getSupportProtocol() {
-        String primaryProtocol = getPrimaryProtocol();
-        return ProtocolDefinition.builder()
-                .type(primaryProtocol)
-                .version("1.0")
-                .build();
-    }
-    
+
     // ========== 地址管理（仅CONFIG类型）==========
     
     /**
@@ -214,10 +203,8 @@ public class ServiceDefinition {
      * 验证配置的完整性和正确性
      */
     public void validate() {
-        // 基础字段验证
         validateBasicFields();
         
-        // 服务类型特定验证
         switch (type) {
             case CONFIG:
                 validateConfigTypeService();
@@ -229,7 +216,6 @@ public class ServiceDefinition {
                 throw new IllegalArgumentException("不支持的服务类型: " + type);
         }
         
-        // 协议配置验证
         validateProtocolConfig();
     }
     
@@ -291,13 +277,10 @@ public class ServiceDefinition {
         if (supportedProtocols == null || supportedProtocols.isEmpty()) {
             throw new IllegalArgumentException("service.supported-protocols不能为空");
         }
-        
-        // 验证协议类型是否支持
+
         for (String protocol : supportedProtocols) {
-            try {
-                ProtocolType.fromCode(protocol);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("不支持的协议类型: " + protocol, e);
+            if (!"HTTP".equalsIgnoreCase(protocol)) {
+                throw new IllegalArgumentException("不支持的协议类型: " + protocol + "，当前仅支持 HTTP");
             }
         }
     }
@@ -338,7 +321,7 @@ public class ServiceDefinition {
     /**
      * 创建CONFIG类型服务的构建器
      */
-    public static ServiceDefinitionBuilder configService(String serviceId, String serviceName) {
+    public static ServiceDefinition.ServiceDefinitionBuilder configService(String serviceId, String serviceName) {
         return ServiceDefinition.builder()
                 .id(serviceId)
                 .name(serviceName)
@@ -346,10 +329,7 @@ public class ServiceDefinition {
                 .supportedProtocols(List.of("HTTP"));
     }
     
-    /**
-     * 创建DISCOVERY类型服务的构建器
-     */
-    public static ServiceDefinitionBuilder discoveryService(String serviceId, String serviceName) {
+    public static ServiceDefinition.ServiceDefinitionBuilder discoveryService(String serviceId, String serviceName) {
         return ServiceDefinition.builder()
                 .id(serviceId)
                 .name(serviceName)
@@ -357,11 +337,7 @@ public class ServiceDefinition {
                 .supportedProtocols(List.of("HTTP"));
     }
     
-    /**
-     * 构建并验证配置
-     */
     public ServiceDefinition buildAndValidate() {
-        //todo
-        return null;
+        return this;
     }
 }

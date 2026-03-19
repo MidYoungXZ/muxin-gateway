@@ -1,6 +1,5 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.message.ProtocolDefinition;
 import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.plus.route.predicate.PredicateDefinition;
@@ -135,10 +134,6 @@ public class RouteDefinition {
             throw new IllegalArgumentException("路由名称不能为空");
         }
         
-        if (protocol == null || protocol.trim().isEmpty()) {
-            throw new IllegalArgumentException("协议类型不能为空");
-        }
-        
         if (serviceRef == null || serviceRef.trim().isEmpty()) {
             throw new IllegalArgumentException("服务引用（service-ref）不能为空");
         }
@@ -147,14 +142,6 @@ public class RouteDefinition {
             throw new IllegalArgumentException("断言配置不能为空");
         }
         
-        // 验证协议类型是否有效
-        try {
-            com.muxin.gateway.core.plus.route.ProtocolType.fromCode(protocol);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("不支持的协议类型: " + protocol, e);
-        }
-        
-        // 验证负载均衡配置
         validateLoadBalanceConfig();
     }
     
@@ -163,75 +150,14 @@ public class RouteDefinition {
      */
     private void validateLoadBalanceConfig() {
         if (loadBalance != null) {
-            // 验证策略名称不能为空
             if (loadBalance.getStrategy() == null || loadBalance.getStrategy().trim().isEmpty()) {
                 throw new IllegalArgumentException("负载均衡策略名称不能为空");
             }
             
-            // 验证策略名称是否有效
-            try {
-                com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyType.fromCode(
-                        loadBalance.getStrategy());
-            } catch (Exception e) {
-                throw new IllegalArgumentException("不支持的负载均衡策略: " +
-                        loadBalance.getStrategy(), e);
+            if (!com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory
+                    .isSupportedStrategy(loadBalance.getStrategy())) {
+                throw new IllegalArgumentException("不支持的负载均衡策略: " + loadBalance.getStrategy());
             }
         }
-    }
-    
-    /**
-     * 检查是否需要协议转换
-     */
-    public boolean needsProtocolConversion(ServiceDefinition service) {
-        if (service == null) {
-            return false;
-        }
-        
-        String inboundType = protocol;
-        String outboundType = service.getSupportProtocol().getType();
-        
-        // 相同协议不需要转换
-        if (inboundType.equalsIgnoreCase(outboundType)) {
-            return false;
-        }
-        
-        // 检查是否支持协议转换
-        return isSupportedProtocolConversion(inboundType, outboundType);
-    }
-    
-    /**
-     * 检查是否支持协议转换
-     */
-    private boolean isSupportedProtocolConversion(String inbound, String outbound) {
-        // 相同协议总是支持
-        if (inbound.equalsIgnoreCase(outbound)) {
-            return true;
-        }
-        
-        // HTTP可以转换为大部分协议
-        if ("HTTP".equalsIgnoreCase(inbound)) {
-            return "GRPC".equalsIgnoreCase(outbound) || 
-                   "TCP".equalsIgnoreCase(outbound) ||
-                   "WEBSOCKET".equalsIgnoreCase(outbound);
-        }
-        
-        // WebSocket可以转换为TCP
-        if ("WEBSOCKET".equalsIgnoreCase(inbound)) {
-            return "TCP".equalsIgnoreCase(outbound);
-        }
-        
-        return false;
-    }
-    
-    /**
-     * 获取协议转换类型
-     */
-    public String getProtocolConversionType(ServiceDefinition service) {
-        if (!needsProtocolConversion(service)) {
-            return "NONE";
-        }
-        
-        return protocol.toUpperCase() + "_TO_" + 
-               service.getSupportProtocol().getType().toUpperCase();
     }
 }

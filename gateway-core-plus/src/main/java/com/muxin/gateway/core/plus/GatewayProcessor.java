@@ -5,8 +5,8 @@ import com.muxin.gateway.core.plus.config.GatewayConfig;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.Connection;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.ServerExchange;
+import com.muxin.gateway.core.plus.message.http.HttpResponseMessage;
+import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.Route;
 import com.muxin.gateway.core.plus.route.RouteManager;
@@ -16,6 +16,9 @@ import com.muxin.gateway.core.plus.route.filter.FilterChain;
 import com.muxin.gateway.core.plus.route.filter.FilterType;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import com.muxin.gateway.core.plus.route.service.InstanceManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.FullHttpRequest;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Comparator;
@@ -24,29 +27,23 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 
 /**
- * 网关处理器 - 优雅版本
+ * 网关处理器 - HTTP简化版本
  * 同步执行准备工作，只在必要时进行一次线程切换
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
 @Slf4j
 public class GatewayProcessor implements LifeCycle {
 
-    // ========== 核心组件依赖 ==========
     protected final GatewayConfig config;
     protected final ConnectionPoolManager connectionPoolManager;
     protected final RouteManager routeManager;
     protected final InstanceManager instanceManager;
-
-    // ========== 线程池管理 ==========
     protected final ExecutorService businessExecutor;
-
-    // ========== 状态管理 ==========
     protected volatile boolean running = false;
 
     public GatewayProcessor(GatewayConfig config,
@@ -57,83 +54,84 @@ public class GatewayProcessor implements LifeCycle {
         this.connectionPoolManager = connectionPoolManager;
         this.routeManager = routeManager;
         this.instanceManager = instanceManager;
-
-        // 初始化业务线程池
-        this.businessExecutor = Executors.newFixedThreadPool(
-                16, // 默认业务线程池大小
-                r -> {
-                    Thread thread = new Thread(r, "gateway-business-" + System.nanoTime());
-                    thread.setDaemon(false);
-                    return thread;
-                }
-        );
-
+        this.businessExecutor = Executors.newFixedThreadPool(16, r -> {
+            Thread thread = new Thread(r, "gateway-business-" + System.nanoTime());
+            thread.setDaemon(false);
+            return thread;
+        });
         log.info("[GatewayProcessor] 网关处理器创建完成");
     }
 
-    /**
-     * 处理入站请求 - 真正优雅的版本
-     * 同步执行准备工作，只在必要时进行一次线程切换
-     */
     public final void processRequest(RequestContext context) {
         validateContext(context);
 
         try {
             log.debug("[GatewayProcessor] 开始处理请求: {}", context.requestId());
 
-            // 同步阶段：直接执行，无线程切换
             prepareRequest(context);
 
-            // 异步阶段：唯一的线程切换点
             invokeBackendService(context)
-                    .whenComplete((result, error)
-                            -> handleCompletion(context, result, error)
-                    );
+                    .whenComplete((result, error) -> handleCompletion(context, result, error));
         } catch (Exception e) {
             handleError(context, e);
             cleanupResources(context);
         }
     }
 
-    /**
-     * 同步准备请求 - 直接调用，无额外开销
-     */
     private void prepareRequest(RequestContext context) {
-        // 路由匹配
         Route route = routeManager.matchRoute(context);
-        requireNonNull(route, () -> new ProcessingException("路由匹配失败", context.requestId()));
+        if (route == null) {
+            throw new ProcessingException("路由匹配失败", context.requestId());
+        }
         context.setMatchedRoute(route);
         log.debug("[GatewayProcessor] 路由匹配成功: {} -> {}", context.requestId(), route.getId());
 
-        // 前置过滤器
+        int stripPrefixCount = 0;
+        for (com.muxin.gateway.core.plus.route.predicate.Predicate predicate : route.getPredicates()) {
+            if (predicate instanceof com.muxin.gateway.core.plus.route.predicate.PathPredicate) {
+                com.muxin.gateway.core.plus.route.predicate.PathPredicate pathPredicate = 
+                    (com.muxin.gateway.core.plus.route.predicate.PathPredicate) predicate;
+                if (pathPredicate.getStripPrefixCount() > 0) {
+                    stripPrefixCount = pathPredicate.getStripPrefixCount();
+                    context.exchange().setAttribute("stripPrefixCount", stripPrefixCount);
+                    String originalPath = context.exchange().request().fullPath();
+                    String strippedPath = pathPredicate.stripPrefix(originalPath);
+                    context.exchange().setAttribute("strippedPath", strippedPath);
+                    log.info("[GatewayProcessor] 路径前缀剥离: {} -> {} (剥离{}段)", 
+                        originalPath, strippedPath, stripPrefixCount);
+                }
+            }
+        }
+
         executeFilters(context, FilterType.PRE);
         log.debug("[GatewayProcessor] 前置过滤器执行完成: {}", context.requestId());
 
-        // 端点选择
         LoadBalanceStrategy strategy = route.getLoadBalanceStrategy();
         EndpointAddress endpoint = route.getService().selectTarget(context, strategy);
-        requireNonNull(endpoint, () -> new ProcessingException("端点选择失败", context.requestId()));
+        if (endpoint == null) {
+            throw new ProcessingException("端点选择失败", context.requestId());
+        }
         context.setSelectedEndpoint(endpoint);
-        log.debug("[GatewayProcessor] 端点选择成功: {} -> {} (策略: {})", 
+        log.debug("[GatewayProcessor] 端点选择成功: {} -> {} (策略: {})",
                 context.requestId(), endpoint.toUri(), strategy.getStrategyName());
 
-        // 连接获取
-        ClientConnection connection = connectionPoolManager.getClientConnection(endpoint, endpoint.getProtocol());
-        requireNonNull(connection, () -> new ProcessingException("连接获取失败", context.requestId()));
+        ClientConnection connection = connectionPoolManager.getClientConnection(endpoint);
+        if (connection == null) {
+            throw new ProcessingException("连接获取失败", context.requestId());
+        }
         context.setClientConnection(connection);
         log.debug("[GatewayProcessor] 连接获取成功: {}", context.requestId());
     }
 
-    /**
-     * 后端服务调用 - 唯一的异步操作
-     */
     private CompletableFuture<Void> invokeBackendService(RequestContext context) {
         log.debug("[GatewayProcessor] 开始后端调用: {}", context.requestId());
 
+        FullHttpRequest originalRequest = context.exchange().nettyRequest();
+        FullHttpRequest requestToSend = buildBackendRequest(context, originalRequest);
+
         return context.clientConnection()
-                .send(context.exchange().request())
+                .send(requestToSend)
                 .thenAccept(response -> {
-                    // 在I/O线程中执行后续处理
                     log.debug("[GatewayProcessor] 后端调用成功: {}", context.requestId());
                     setResponseToExchange(context, response);
                     executeFilters(context, FilterType.POST);
@@ -142,9 +140,29 @@ public class GatewayProcessor implements LifeCycle {
                 });
     }
 
-    /**
-     * 统一完成处理
-     */
+    private FullHttpRequest buildBackendRequest(RequestContext context, FullHttpRequest original) {
+        String strippedPath = (String) context.exchange().getAttribute("strippedPath");
+        if (strippedPath != null && !strippedPath.equals(original.uri())) {
+            log.info("[GatewayProcessor] 构建后端请求: {} -> {}", original.uri(), strippedPath);
+            ByteBuf content = original.content();
+            ByteBuf copiedContent = content != null && content.isReadable()
+                    ? Unpooled.copiedBuffer(content)
+                    : Unpooled.buffer(0);
+
+            FullHttpRequest modified = new io.netty.handler.codec.http.DefaultFullHttpRequest(
+                    original.protocolVersion(),
+                    original.method(),
+                    strippedPath,
+                    copiedContent,
+                    original.headers().copy(),
+                    original.trailingHeaders().copy()
+            );
+            modified.headers().set(io.netty.handler.codec.http.HttpHeaderNames.CONTENT_LENGTH, copiedContent.readableBytes());
+            return modified;
+        }
+        return original;
+    }
+
     private void handleCompletion(RequestContext context, Void result, Throwable error) {
         try {
             if (error != null) {
@@ -157,28 +175,12 @@ public class GatewayProcessor implements LifeCycle {
         }
     }
 
-    /**
-     * 验证上下文
-     */
     private void validateContext(RequestContext context) {
         Objects.requireNonNull(context, "RequestContext不能为空");
-        Objects.requireNonNull(context.exchange(), "ServerExchange不能为空");
-        Objects.requireNonNull(context.exchange().request(), "请求消息不能为空");
+        Objects.requireNonNull(context.exchange(), "HttpServerExchange不能为空");
+        Objects.requireNonNull(context.exchange().nettyRequest(), "请求消息不能为空");
     }
 
-    /**
-     * 需要时抛异常的工具方法
-     */
-    private static <T> T requireNonNull(T obj, Supplier<RuntimeException> exceptionSupplier) {
-        if (obj == null) {
-            throw exceptionSupplier.get();
-        }
-        return obj;
-    }
-
-    /**
-     * 统一过滤器执行
-     */
     private void executeFilters(RequestContext context, FilterType type) {
         context.getMatchedRoute().getFilters().stream()
                 .filter(f -> f.getType() == type && f.isEnabled())
@@ -193,83 +195,41 @@ public class GatewayProcessor implements LifeCycle {
                 });
     }
 
-    /**
-     * 设置响应到Exchange
-     * 将后端服务返回的响应消息设置到ServerExchange中
-     */
-    private void setResponseToExchange(RequestContext context, Message response) {
+    private void setResponseToExchange(RequestContext context, Object response) {
         try {
             if (response == null) {
                 log.warn("[GatewayProcessor] 后端响应为空，请求ID: {}", context.requestId());
                 throw new ProcessingException("后端响应为空", context.requestId());
             }
 
-            // 获取当前Exchange
-            ServerExchange<? extends Message, ? extends Message> exchange = context.exchange();
-
-            // 检查响应类型是否与Exchange兼容
-            if (!exchange.protocol().equals(response.protocol())) {
-                log.warn("[GatewayProcessor] 协议不匹配，Exchange协议: {}, 响应协议: {}, 请求ID: {}",
-                        exchange.protocol().type(), response.protocol().type(), context.requestId());
-                // 对于跨协议响应，可能需要协议转换，这里暂时记录警告
-                // TODO: 后续可以在这里集成协议转换器
+            HttpServerExchange exchange = context.exchange();
+            if (response instanceof HttpResponseMessage) {
+                exchange.setResponse((HttpResponseMessage) response);
+            } else if (response instanceof io.netty.handler.codec.http.FullHttpResponse) {
+                exchange.setNettyResponse((io.netty.handler.codec.http.FullHttpResponse) response);
+            } else {
+                throw new ProcessingException("未知的响应类型: " + response.getClass(), context.requestId());
             }
 
-            // 调用Exchange的setResponse方法设置响应
-            // 注意：这里需要强制类型转换，因为ServerExchange是泛型接口
-            @SuppressWarnings("unchecked")
-            ServerExchange<Message, Message> messageExchange = (ServerExchange<Message, Message>) exchange;
-            messageExchange.setResponse(response);
-
-            log.debug("[GatewayProcessor] 响应设置到Exchange成功，请求ID: {}, 状态: {}",
-                    context.requestId(), getResponseStatus(response));
-
-        } catch (ClassCastException e) {
-            log.error("[GatewayProcessor] 响应类型转换失败，请求ID: {}", context.requestId(), e);
-            throw new ProcessingException("响应类型不兼容", context.requestId(), e);
+            log.debug("[GatewayProcessor] 响应设置到Exchange成功，请求ID: {}", context.requestId());
         } catch (Exception e) {
             log.error("[GatewayProcessor] 设置响应失败，请求ID: {}", context.requestId(), e);
             throw new ProcessingException("设置响应失败", context.requestId(), e);
         }
     }
 
-    /**
-     * 获取响应状态（用于日志记录）
-     */
-    private String getResponseStatus(Message response) {
-        try {
-            // 如果是HTTP响应，尝试获取状态码
-            if (response instanceof com.muxin.gateway.core.plus.message.http.HttpResponseMessage) {
-                io.netty.handler.codec.http.HttpResponseStatus status =
-                        ((com.muxin.gateway.core.plus.message.http.HttpResponseMessage) response).status();
-                return String.valueOf(status.code());
-            }
-            return "UNKNOWN";
-        } catch (Exception e) {
-            return "UNKNOWN";
-        }
-    }
-
-    /**
-     * 发送响应
-     */
     private void sendResponse(RequestContext context) {
         Optional.ofNullable(context.serverConnection())
-                .ifPresent(conn -> conn.sendResponse(context.exchange().response())
+                .ifPresent(conn -> conn.sendResponse(context.exchange().nettyResponse())
                         .exceptionally(error -> {
                             log.error("[GatewayProcessor] 响应发送失败: {}", context.requestId(), error);
                             return null;
                         }));
     }
 
-    /**
-     * 优雅的错误处理
-     */
     private void handleError(RequestContext context, Throwable error) {
         log.error("[GatewayProcessor] 请求处理失败: {}", context.requestId(), error);
-
         context.setError(error);
-
         Optional.ofNullable(context.serverConnection())
                 .ifPresent(conn -> conn.sendError(error)
                         .exceptionally(sendError -> {
@@ -278,35 +238,24 @@ public class GatewayProcessor implements LifeCycle {
                         }));
     }
 
-    /**
-     * 优雅的资源清理
-     */
     private void cleanupResources(RequestContext context) {
         try {
             Optional.ofNullable(context.clientConnection())
                     .filter(Connection::isActive)
                     .ifPresent(ClientConnection::returnToPool);
-
             context.markComplete();
-
             log.debug("[GatewayProcessor] 资源清理完成: {}", context.requestId());
-
         } catch (Exception e) {
             log.warn("[GatewayProcessor] 资源清理异常: {}", context.requestId(), e);
         }
     }
 
-    // ========== 生命周期方法 ==========
-
     @Override
     public void init() {
         log.info("[GatewayProcessor] 初始化网关处理器组件");
-
-        // 初始化各个组件
         connectionPoolManager.init();
         routeManager.init();
         instanceManager.init();
-
         log.info("[GatewayProcessor] 网关处理器组件初始化完成");
     }
 
@@ -316,7 +265,6 @@ public class GatewayProcessor implements LifeCycle {
             return;
         }
         init();
-        // 启动各个组件
         connectionPoolManager.start();
         routeManager.start();
         instanceManager.start();
@@ -329,24 +277,15 @@ public class GatewayProcessor implements LifeCycle {
         if (!running) {
             return;
         }
-
         running = false;
         log.info("[GatewayProcessor] 开始关闭网关处理器");
-
-        // 关闭线程池
         businessExecutor.shutdown();
-
         instanceManager.shutdown();
         routeManager.shutdown();
         connectionPoolManager.shutdown();
         log.info("[GatewayProcessor] 网关处理器关闭完成");
     }
 
-    // ========== 内部类 ==========
-
-    /**
-     * 处理异常 - 携带请求ID便于追踪
-     */
     public static class ProcessingException extends RuntimeException {
         private final String requestId;
 
@@ -365,15 +304,11 @@ public class GatewayProcessor implements LifeCycle {
         }
     }
 
-    /**
-     * 空操作过滤器链 - 简化实现
-     */
     private static class NoOpFilterChain implements FilterChain {
         static final NoOpFilterChain INSTANCE = new NoOpFilterChain();
 
         @Override
-        public void filter(ServerExchange<? extends Message, ? extends Message> exchange, FilterChain chain) {
-            // 空实现 - 当前版本不需要链式调用
+        public void filter(HttpServerExchange exchange, FilterChain chain) {
         }
 
         @Override
@@ -383,7 +318,6 @@ public class GatewayProcessor implements LifeCycle {
 
         @Override
         public void addFilter(Filter filter) {
-            // 空实现
         }
 
         @Override
@@ -395,5 +329,9 @@ public class GatewayProcessor implements LifeCycle {
         public int getTotalCount() {
             return 0;
         }
+
+        @Override
+        public void doFilter(HttpServerExchange exchange) {
+        }
     }
-} 
+}

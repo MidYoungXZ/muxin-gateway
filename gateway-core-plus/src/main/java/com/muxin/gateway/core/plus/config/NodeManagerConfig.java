@@ -3,8 +3,6 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 节点管理器配置
  * 
@@ -20,28 +18,28 @@ public class NodeManagerConfig {
     private boolean enableServiceDiscovery = true;
     
     @Builder.Default
-    private Duration serviceDiscoveryInterval = Duration.ofSeconds(30);
+    private Long serviceDiscoveryInterval = 30000L;
     
     @Builder.Default
     private boolean enableHealthCheck = true;
     
     @Builder.Default
-    private Duration healthCheckInterval = Duration.ofSeconds(30);
+    private Long healthCheckInterval = 30000L;
     
     @Builder.Default
-    private Duration healthCheckTimeout = Duration.ofSeconds(5);
+    private Long healthCheckTimeout = 5000L;
     
     @Builder.Default
     private int maxFailureCount = 3;
     
     @Builder.Default
-    private Duration failureRecoveryTime = Duration.ofMinutes(1);
+    private Long failureRecoveryTime = 60000L;
     
     @Builder.Default
     private boolean enableNodeCache = true;
     
     @Builder.Default
-    private Duration nodeCacheExpiration = Duration.ofMinutes(10);
+    private Long nodeCacheExpiration = 600000L;
     
     @Builder.Default
     private int maxNodesPerService = 100;
@@ -50,33 +48,33 @@ public class NodeManagerConfig {
     private boolean enableNodeMetrics = true;
     
     @Builder.Default
-    private Duration nodeMetricsInterval = Duration.ofMinutes(1);
+    private Long nodeMetricsInterval = 60000L;
     
     @Builder.Default
     private boolean enableAutoDeregistration = true;
     
     @Builder.Default
-    private Duration autoDeregistrationDelay = Duration.ofMinutes(5);
+    private Long autoDeregistrationDelay = 300000L;
     
     public static NodeManagerConfig defaultConfig() {
         return NodeManagerConfig.builder().build();
     }
     
     public void validate() {
-        if (serviceDiscoveryInterval == null || serviceDiscoveryInterval.isNegative()) {
-            throw new IllegalArgumentException("serviceDiscoveryInterval必须大于0");
+        if (serviceDiscoveryInterval == null || serviceDiscoveryInterval < 0) {
+            throw new IllegalArgumentException("serviceDiscoveryInterval 必须大于 0");
         }
-        if (healthCheckInterval == null || healthCheckInterval.isNegative()) {
-            throw new IllegalArgumentException("healthCheckInterval必须大于0");
+        if (healthCheckInterval == null || healthCheckInterval < 0) {
+            throw new IllegalArgumentException("healthCheckInterval 必须大于 0");
         }
-        if (healthCheckTimeout == null || healthCheckTimeout.isNegative()) {
-            throw new IllegalArgumentException("healthCheckTimeout必须大于0");
+        if (healthCheckTimeout == null || healthCheckTimeout < 0) {
+            throw new IllegalArgumentException("healthCheckTimeout 必须大于 0");
         }
         if (maxFailureCount < 0) {
-            throw new IllegalArgumentException("maxFailureCount不能小于0");
+            throw new IllegalArgumentException("maxFailureCount 不能小于 0");
         }
         if (maxNodesPerService <= 0) {
-            throw new IllegalArgumentException("maxNodesPerService必须大于0");
+            throw new IllegalArgumentException("maxNodesPerService 必须大于 0");
         }
     }
 }

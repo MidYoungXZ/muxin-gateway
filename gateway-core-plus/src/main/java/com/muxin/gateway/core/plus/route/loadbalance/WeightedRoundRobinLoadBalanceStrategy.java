@@ -127,9 +127,9 @@ public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
      */
     private int getWeight(EndpointAddress address) {
         try {
-            Map<String, Object> protocolInfo = address.getProtocolSpecificInfo();
-            if (protocolInfo != null && protocolInfo.containsKey("weight")) {
-                Object weightObj = protocolInfo.get("weight");
+            Map<String, Object> metadata = address.getMetadata();
+            if (metadata != null && metadata.containsKey("weight")) {
+                Object weightObj = metadata.get("weight");
                 if (weightObj instanceof Number) {
                     return Math.max(1, ((Number) weightObj).intValue());
                 }

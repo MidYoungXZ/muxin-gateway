@@ -1,45 +1,24 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.message.Message;
-import com.muxin.gateway.core.plus.message.Protocol;
-import com.muxin.gateway.core.plus.message.ServerExchange;
+import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
 
 /**
- * 通用过滤器接口 - 支持多协议
+ * HTTP过滤器接口
+ * 简化版本：只支持HTTP协议
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
 public interface Filter {
 
-    /**
-     * 过滤器执行
-     */
-    void filter(ServerExchange<? extends Message, ? extends Message> exchange, FilterChain chain);
+    void filter(HttpServerExchange exchange, FilterChain chain);
 
-    /**
-     * 过滤器名称
-     */
     String getName();
 
-    /**
-     * 过滤器类型
-     */
     FilterType getType();
 
-    /**
-     * 执行顺序（数值越小优先级越高）
-     */
     int getOrder();
 
-    /**
-     * 是否启用
-     */
     boolean isEnabled();
-
-    /**
-     * 支持的协议
-     */
-    Protocol getSupportedProtocol();
-} 
+}

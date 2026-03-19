@@ -5,55 +5,51 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Duration;
-
-/**
- * 超时配置类
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TimeoutConfig {
     
-    /**
-     * 连接超时时间
-     */
-    private Duration connection;
+    public static final long DEFAULT_CONNECTION = 5000L;
+    public static final long DEFAULT_REQUEST = 30000L;
+    public static final long DEFAULT_TOTAL = 60000L;
+    public static final long DEFAULT_READ = 30000L;
+    public static final long DEFAULT_WRITE = 10000L;
+    public static final long DEFAULT_CIRCUIT_BREAKER = 60000L;
     
-    /**
-     * 请求超时时间
-     */
-    private Duration request;
+    private Long connection;
+    private Long request;
+    private Long total;
+    private Long read;
+    private Long write;
+    private Long circuitBreaker;
     
-    /**
-     * 总超时时间（包含重试）
-     */
-    private Duration total;
+    public Long getConnection() {
+        return connection;
+    }
     
-    /**
-     * 读取超时时间
-     */
-    private Duration read;
+    public Long getRequest() {
+        return request;
+    }
     
-    /**
-     * 写入超时时间
-     */
-    private Duration write;
+    public Long getTotal() {
+        return total;
+    }
     
-    /**
-     * 熔断器超时时间
-     */
-    private Duration circuitBreaker;
+    public Long getRead() {
+        return read;
+    }
     
-    /**
-     * 获取指定类型的超时时间
-     */
-    public Duration getTimeout(TimeoutType type) {
+    public Long getWrite() {
+        return write;
+    }
+    
+    public Long getCircuitBreaker() {
+        return circuitBreaker;
+    }
+    
+    public Long getTimeout(TimeoutType type) {
         switch (type) {
             case CONNECTION:
                 return connection;
@@ -72,10 +68,7 @@ public class TimeoutConfig {
         }
     }
     
-    /**
-     * 设置指定类型的超时时间
-     */
-    public void setTimeout(TimeoutType type, Duration timeout) {
+    public void setTimeout(TimeoutType type, Long timeout) {
         switch (type) {
             case CONNECTION:
                 this.connection = timeout;
@@ -98,32 +91,23 @@ public class TimeoutConfig {
         }
     }
     
-    /**
-     * 检查是否设置了指定类型的超时时间
-     */
     public boolean hasTimeout(TimeoutType type) {
         return getTimeout(type) != null;
     }
     
-    /**
-     * 获取超时时间，如果未设置则返回默认值
-     */
-    public Duration getTimeoutOrDefault(TimeoutType type, Duration defaultValue) {
-        Duration timeout = getTimeout(type);
+    public Long getTimeoutOrDefault(TimeoutType type, Long defaultValue) {
+        Long timeout = getTimeout(type);
         return timeout != null ? timeout : defaultValue;
     }
     
-    /**
-     * 创建默认超时配置
-     */
     public static TimeoutConfig defaultConfig() {
         return TimeoutConfig.builder()
-                .connection(Duration.ofSeconds(5))
-                .request(Duration.ofSeconds(30))
-                .total(Duration.ofSeconds(60))
-                .read(Duration.ofSeconds(30))
-                .write(Duration.ofSeconds(10))
-                .circuitBreaker(Duration.ofSeconds(60))
+                .connection(DEFAULT_CONNECTION)
+                .request(DEFAULT_REQUEST)
+                .total(DEFAULT_TOTAL)
+                .read(DEFAULT_READ)
+                .write(DEFAULT_WRITE)
+                .circuitBreaker(DEFAULT_CIRCUIT_BREAKER)
                 .build();
     }
-} 
+}

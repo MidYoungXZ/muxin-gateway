@@ -17,4 +17,14 @@ public interface RouteManager extends Repository<String, Route>, LifeCycle {
      */
     Route matchRoute(RequestContext context);
 
+    /**
+     * 设置默认路由
+     */
+    void setDefaultRoute(Route route);
+
+    /**
+     * 获取默认路由
+     */
+    Route getDefaultRoute();
+
 } 

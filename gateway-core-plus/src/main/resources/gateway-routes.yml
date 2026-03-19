@@ -1,12 +1,13 @@
 # ========================================
 # Muxin Gateway 路由配置文件
+# 仅支持 HTTP 协议
 # ========================================
 
 # ==================== 功能域配置 ====================
 domains:
   # 核心配置域
   core:
-    default-timeout: 30s
+    default-timeout: 30000
     max-request-size: 10MB
     max-response-size: 50MB
 
@@ -16,8 +17,8 @@ domains:
       core-size: 16
       max-size: 32
       queue-capacity: 1000
-      keep-alive: 60s
-
+      keep-alive: 60000
+  
   # 服务器配置域
   servers:
     http:
@@ -28,62 +29,16 @@ domains:
     management:
       port: 8081
       enabled: true
-
+  
   # 连接池配置域
   connection-pools:
     default:
       max-connections-per-host: 100
       max-idle-connections: 50
-      connection-timeout: 5s
-      idle-timeout: 60s
+      connection-timeout: 5000
+      idle-timeout: 60000
 
-# ==================== 枚举定义 ====================
-enums:
-  # 协议类型枚举
-  protocol-type:
-    - HTTP
-    - GRPC
-    - TCP
-    - WEBSOCKET
-
-  # 过滤器类型枚举
-  filter-type:
-    - REQUEST_ID
-    - CORS
-    - REQUEST_LOG
-    - AUTH
-    - METRICS
-    - REQUEST_SIZE_LIMIT
-    - RATE_LIMIT
-    - DEFAULT_RESPONSE
-
-  # 负载均衡策略枚举
-  load-balance-strategy:
-    - ROUND_ROBIN
-    - WEIGHTED_ROUND_ROBIN
-    - LEAST_CONNECTIONS
-    - CONSISTENT_HASH
-    - RANDOM
-
-  # 断言类型枚举
-  predicate-type:
-    - PATH
-    - METHOD
-    - HEADER
-    - QUERY
-    - IP
-
-  # HTTP方法枚举
-  http-method:
-    - GET
-    - POST
-    - PUT
-    - DELETE
-    - PATCH
-    - HEAD
-    - OPTIONS
-
-# ==================== 服务定义（独立资源） ====================
+# ==================== 服务定义（仅HTTP协议） ====================
 services:
   # 用户服务（CONFIG类型）
   - id: user-service-001
@@ -103,44 +58,32 @@ services:
           version: "v1.0"
     health-check:
       enabled: true
-      interval: 30s
-      timeout: 5s
+      interval: 30000
+      timeout: 5000
       path: "/health"
-
-  # 订单服务（DISCOVERY类型）
-  - id: order-service-002
+  
+  # 订单服务（CONFIG类型）
+  - id: order-service-001
     name: "order-service"
-    type: DISCOVERY
+    type: CONFIG
     supported-protocols: [HTTP]
-    config:
-      cache-expire-time: 30s
-      registry:
-        namespace: "production"
-        group: "order-group"
-        tags:
-          environment: "prod"
-          version: "v2.0"
+    addresses:
+      - uri: "http://order-service-1:8080"
+        weight: 100
+        metadata:
+          zone: "zone-a"
+      - uri: "http://order-service-2:8080"
+        weight: 100
+        metadata:
+          zone: "zone-b"
     health-check:
       enabled: true
-      interval: 60s
-      timeout: 10s
-
-  # 支付gRPC服务（DISCOVERY类型）
-  - id: payment-grpc-service-003
-    name: "payment-grpc-service"
-    type: DISCOVERY
-    supported-protocols: [GRPC]
-    config:
-      cache-expire-time: 60s
-      registry:
-        namespace: "production"
-        group: "payment-group"
-        tags:
-          protocol: "grpc"
-          version: "v1.0"
-
-  # 文件服务（CONFIG类型）
-  - id: file-service-005
+      interval: 30000
+      timeout: 5000
+      path: "/health"
+  
+  # 文件服务（CONFIG类型)
+  - id: file-service-001
     name: "file-storage-service"
     type: CONFIG
     supported-protocols: [HTTP]
@@ -157,30 +100,45 @@ services:
           capacity: "unlimited"
     health-check:
       enabled: true
-      interval: 30s
-      timeout: 10s
+      interval: 30000
+      timeout: 10000
       path: "/health"
-
-  # 库存服务（DISCOVERY类型）
-  - id: inventory-service-007
+  
+  # 库存服务（CONFIG类型）
+  - id: inventory-service-001
     name: "inventory-service"
-    type: DISCOVERY
+    type: CONFIG
     supported-protocols: [HTTP]
-    config:
-      cache-expire-time: 15s
-      registry:
-        namespace: "production"
-        group: "inventory-group"
-        tags:
-          priority: "high"
-          version: "v1.2"
+    addresses:
+      - uri: "http://inventory-service-1:8080"
+        weight: 100
+        metadata:
+          zone: "zone-a"
+      - uri: "http://inventory-service-2:8080"
+        weight: 100
+        metadata:
+          zone: "zone-b"
     health-check:
       enabled: true
-      interval: 30s
-      timeout: 5s
-
+      interval: 30000
+      timeout: 5000
+      path: "/health"
+  
+  # SDE管理服务（CONFIG类型）
+  - id: sde-admin-service-001
+    name: "sde-admin-service"
+    type: CONFIG
+    supported-protocols: [HTTP]
+    addresses:
+      - uri: "http://127.0.0.1:9180"
+        weight: 100
+        metadata:
+          environment: "local"
+    health-check:
+      enabled: false
+  
   # 默认服务（CONFIG类型）
-  - id: default-service-999
+  - id: default-service-001
     name: "default-handler-service"
     type: CONFIG
     supported-protocols: [HTTP]
@@ -193,36 +151,35 @@ services:
     health-check:
       enabled: false
 
-# ==================== 路由配置（引用服务） ====================
+# ==================== 路由配置（仅HTTP协议） ====================
 routes:
   # ========== 用户服务路由 ==========
-  - id: user-service-config
-    name: "用户服务-静态配置"
-    description: "用户管理相关API，使用静态地址配置"
+  - id: user-service-route
+    name: "用户服务"
+    description: "用户管理相关API"
     order: 100
     enabled: true
-
-    # 服务引用（独立定义）
+    
+    # 服务引用
     service-ref: user-service-001
-
-    # 协议配置（简化）
+    
+    # 协议配置
     protocol: HTTP
-
+    
     # 路由匹配断言
     predicates:
       - type: PATH
         config:
           pattern: "/api/users/**"
-          strip-prefix: 1
       - type: METHOD
         config:
           methods: [GET, POST, PUT, DELETE]
-
+    
     # 负载均衡配置
     load-balance:
       strategy: ROUND_ROBIN
-
-    # 过滤器配置（覆盖或追加全局）
+    
+    # 过滤器配置
     filters:
       - type: REQUEST_LOG
         order: 100
@@ -233,45 +190,44 @@ routes:
         config:
           auth-type: "JWT"
           secret-key: "${JWT_SECRET:muxin-gateway-secret}"
-
+    
     # 超时配置
     timeouts:
-      connection: 5s
-      request: 30s
-      total: 60s
-
+      connection: 5000
+      request: 30000
+      total: 60000
+    
     # 路由元数据
     metadata:
       business-domain: "user-management"
       service-version: "1.0.0"
-
+  
   # ========== 订单服务路由 ==========
-  - id: order-service-discovery
-    name: "订单服务-服务发现"
-    description: "订单管理API，使用服务发现"
+  - id: order-service-route
+    name: "订单服务"
+    description: "订单管理API"
     order: 200
     enabled: true
-
+    
     # 服务引用
-    service-ref: order-service-002
-
+    service-ref: order-service-001
+    
     # 协议配置
     protocol: HTTP
-
+    
     # 路由匹配断言
     predicates:
       - type: PATH
         config:
           pattern: "/api/orders/**"
-          strip-prefix: 1
       - type: METHOD
         config:
           methods: [GET, POST, PUT, DELETE]
-
+    
     # 负载均衡配置
     load-balance:
-      strategy: WEIGHTED_ROUND_ROBIN
-
+      strategy: ROUND_ROBIN
+    
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -280,79 +236,30 @@ routes:
       - type: AUTH
         order: 200
         enabled: true
-
+    
     # 超时配置
     timeouts:
-      connection: 3s
-      request: 20s
-      total: 40s
-
+      connection: 3000
+      request: 20000
+      total: 40000
+    
     # 路由元数据
     metadata:
       business-domain: "order-management"
-      registry-service-name: "order-service"
-
-  # ========== 支付服务路由（HTTP转gRPC）==========
-  - id: payment-service-grpc
-    name: "支付服务-HTTP转gRPC"
-    description: "HTTP请求自动转换为gRPC调用"
-    order: 300
-    enabled: true
-
-    # 服务引用
-    service-ref: payment-grpc-service-003
-
-    # 协议配置（入站HTTP，出站GRPC）
-    protocol: HTTP
-
-    # 路由匹配断言
-    predicates:
-      - type: PATH
-        config:
-          pattern: "/api/payments/**"
-          strip-prefix: 1
-
-    # 负载均衡配置
-    load-balance:
-      strategy: CONSISTENT_HASH
-      config:
-        hash-key: "user-id"
-        virtual-nodes: 160
-
-    # 过滤器配置
-    filters:
-      - type: REQUEST_LOG
-        order: 100
-        enabled: true
-      - type: AUTH
-        order: 200
-        enabled: true
-
-    # 超时配置
-    timeouts:
-      connection: 5s
-      request: 10s
-      total: 20s
-
-    # 路由元数据
-    metadata:
-      business-domain: "payment"
-      protocol-conversion: "HTTP_TO_GRPC"
-      registry-service-name: "payment-grpc-service"
-
+  
   # ========== 文件服务路由 ==========
-  - id: file-service-config
-    name: "文件服务-静态配置"
-    description: "文件上传下载，使用静态地址"
+  - id: file-service-route
+    name: "文件服务"
+    description: "文件上传下载"
     order: 500
     enabled: true
-
+    
     # 服务引用
-    service-ref: file-service-005
-
+    service-ref: file-service-001
+    
     # 协议配置
     protocol: HTTP
-
+    
     # 路由匹配断言
     predicates:
       - type: PATH
@@ -361,65 +268,57 @@ routes:
       - type: METHOD
         config:
           methods: [GET, POST, PUT, DELETE]
-
+    
     # 负载均衡配置
     load-balance:
       strategy: LEAST_CONNECTIONS
-
+    
     # 过滤器配置
     filters:
-      - type: REQUEST_SIZE_LIMIT
-        order: 50
-        enabled: true
-        config:
-          max-size: "100MB"
       - type: REQUEST_LOG
         order: 100
         enabled: true
-        config:
-          include-body: false
       - type: AUTH
         order: 200
         enabled: true
-
-    # 超时配置（文件上传需要更长时间）
+    
+    # 超时配置（文件上传需要更长时间)
     timeouts:
-      connection: 10s
-      request: 300s
-      total: 600s
-
+      connection: 10000
+      request: 300000
+      total: 600000
+    
     # 路由元数据
     metadata:
       business-domain: "file-storage"
       max-file-size: "100MB"
-
+  
   # ========== 库存服务路由 ==========
-  - id: inventory-service-discovery
-    name: "库存服务-服务发现"
-    description: "库存管理API，使用服务发现"
+  - id: inventory-service-route
+    name: "库存服务"
+    description: "库存管理API"
     order: 700
     enabled: true
-
+    
     # 服务引用
-    service-ref: inventory-service-007
-
+    service-ref: inventory-service-001
+    
     # 协议配置
     protocol: HTTP
-
+    
     # 路由匹配断言
     predicates:
       - type: PATH
         config:
           pattern: "/api/inventory/**"
-          strip-prefix: 1
       - type: METHOD
         config:
           methods: [GET, POST, PUT]
-
+    
     # 负载均衡配置
     load-balance:
       strategy: ROUND_ROBIN
-
+    
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
@@ -434,71 +333,95 @@ routes:
         config:
           requests-per-second: 100
           burst-capacity: 200
-
+    
     # 超时配置
     timeouts:
-      connection: 3s
-      request: 10s
-      total: 20s
-
+      connection: 3000
+      request: 10000
+      total: 20000
+    
     # 路由元数据
     metadata:
       business-domain: "inventory-management"
-      registry-service-name: "inventory-service"
-
+  
+  # ========== SDE管理服务路由 ==========
+  - id: sde-admin-route
+    name: "SDE管理服务"
+    description: "SDE管理事件订阅API"
+    order: 400
+    enabled: true
+    
+    # 服务引用
+    service-ref: sde-admin-service-001
+    
+    # 协议配置
+    protocol: HTTP
+    
+    # 路由匹配断言
+    predicates:
+      - type: PATH
+        config:
+          pattern: "/sde/**"
+          strip-prefix: 1
+    
+    # 负载均衡配置
+    load-balance:
+      strategy: ROUND_ROBIN
+    
+    # 过滤器配置
+    filters:
+      - type: REQUEST_LOG
+        order: 100
+        enabled: true
+      - type: CORS
+        order: 200
+        enabled: true
+    
+    # 超时配置
+    timeouts:
+      connection: 5000
+      request: 30000
+      total: 60000
+    
+    # 路由元数据
+    metadata:
+      business-domain: "sde-admin"
+  
   # ========== 默认兜底路由 ==========
   - id: default-fallback-route
     name: "默认兜底路由"
     description: "处理未匹配到其他路由的请求"
     order: 9999
     enabled: true
-
+    
     # 服务引用
-    service-ref: default-service-999
-
+    service-ref: default-service-001
+    
     # 协议配置
     protocol: HTTP
-
+    
     # 路由匹配断言
     predicates:
       - type: PATH
         config:
           pattern: "/**"
-
+    
     # 负载均衡配置
     load-balance:
       strategy: ROUND_ROBIN
-
+    
     # 过滤器配置
     filters:
       - type: REQUEST_LOG
         order: 100
         enabled: true
-      - type: DEFAULT_RESPONSE
-        order: 500
-        enabled: true
-        config:
-          status-code: 404
-          response-body: |
-            {
-              "error": "NOT_FOUND",
-              "message": "请求的资源不存在",
-              "timestamp": "${timestamp}",
-              "path": "${request.path}"
-            }
-          content-type: "application/json"
-
+    
     # 路由元数据
     metadata:
       business-domain: "system"
       route-type: "fallback"
 
 # ==================== 全局过滤器 ====================
-# 继承策略：
-# - filters: APPEND（追加到路由级）
-# - order: ROUTE_OVERRIDES（路由级覆盖全局）
-# - enabled: ROUTE_OVERRIDES（路由级覆盖全局）
-# - config: MERGE_DEEP（深度合并）
 global-filters:
   - type: REQUEST_ID
     order: 10
@@ -506,159 +429,68 @@ global-filters:
     config:
       header-name: "X-Request-ID"
       generate-if-missing: true
-
+  
   - type: CORS
     order: 20
     enabled: true
     config:
-      allowed-origins: [https://admin.muxin.com, https://api.muxin.com]
+      allowed-origins: ["*"]
       allowed-methods: [GET, POST, PUT, DELETE, OPTIONS]
       allowed-headers: ["*"]
       allow-credentials: true
       max-age: 3600
-
+  
   - type: METRICS
     order: 30
     enabled: true
     config:
       collect-request-metrics: true
       collect-response-metrics: true
-      histogram-buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
-
-# ==================== 负载均衡策略定义 ====================
-load-balance-strategies:
-  round-robin:
-    class: "com.muxin.gateway.core.plus.route.loadbalance.RoundRobinLoadBalanceStrategy"
-    config:
-      reset-period: 3600s
-
-  weighted-round-robin:
-    class: "com.muxin.gateway.core.plus.route.loadbalance.WeightedRoundRobinLoadBalanceStrategy"
-    config:
-      weight-attribute: "weight"
-      smooth-weighted: true
-
-  least-connections:
-    class: "com.muxin.gateway.core.plus.route.loadbalance.LeastConnectionsLoadBalanceStrategy"
-    config:
-      connection-count-header: "X-Connection-Count"
-
-  consistent-hash:
-    class: "com.muxin.gateway.core.plus.route.loadbalance.ConsistentHashLoadBalanceStrategy"
-    config:
-      hash-key: "client-ip"
-      virtual-nodes: 160
-
-  random:
-    class: "com.muxin.gateway.core.plus.route.loadbalance.RandomLoadBalanceStrategy"
-    config:
-      seed: "${RANDOM_SEED:0}"
 
 # ==================== 全局负载均衡默认配置 ====================
 global-route-config:
   default-load-balance:
     strategy: ROUND_ROBIN
     config:
-      reset-period: 3600s
-
-# ==================== 协议配置 ====================
-protocols:
-  http:
-    versions: ["1.1", "2.0"]
-    default-version: "1.1"
-    keep-alive: true
-    compression: true
-    max-header-size: 8192
-    max-chunk-size: 8192
-
-  websocket:
-    versions: ["13"]
-    max-frame-size: 65536
-    compression: true
-    heartbeat-interval: 30s
-
-  tcp:
-    keep-alive: true
-    tcp-no-delay: true
-    so-timeout: 30s
-
-  grpc:
-    versions: ["1.0"]
-    keep-alive: true
-    max-message-size: 4MB
-
-# ==================== 注册中心配置 ====================
-registries:
-  default: "nacos"
-
-  nacos:
-    server-addr: "${NACOS_ADDR:127.0.0.1:8848}"
-    namespace: "${NACOS_NAMESPACE:public}"
-    group: "${NACOS_GROUP:DEFAULT_GROUP}"
-    username: "${NACOS_USERNAME:nacos}"
-    password: "${NACOS_PASSWORD:nacos}"
-
-  eureka:
-    service-url: "${EUREKA_URL:http://127.0.0.1:8761/eureka}"
-    prefer-ip-address: true
-
-  consul:
-    host: "${CONSUL_HOST:127.0.0.1}"
-    port: "${CONSUL_PORT:8500}"
+      reset-period: 3600000
 
 # ==================== 监控配置 ====================
 monitoring:
   metrics:
     enabled: true
-    export-interval: 60s
+    export-interval: 60000
     tags:
       application: "muxin-gateway"
       environment: "${ENVIRONMENT:development}"
-
+  
   tracing:
-    enabled: true
+    enabled: false
     sampling-rate: 0.1
     trace-header: "X-Trace-ID"
     span-header: "X-Span-ID"
-
+  
   logging:
     level:
       root: INFO
       "com.muxin.gateway": DEBUG
-    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId},%X{spanId}] %logger{36} - %msg%n"
+    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # ==================== 安全配置 ====================
 security:
   jwt:
     secret: "${JWT_SECRET:muxin-gateway-secret-key-2024}"
-    expiration: 3600s
-    refresh-expiration: 86400s
+    expiration: 3600000
+    refresh-expiration: 86400000
     issuer: "muxin-gateway"
-
+  
   rate-limit:
     default:
       requests-per-second: 1000
       burst-capacity: 2000
-    by-ip:
-      requests-per-second: 100
-      burst-capacity: 200
-    by-user:
-      requests-per-second: 50
-      burst-capacity: 100
 
 # ==================== 缓存配置 ====================
 cache:
   enabled: true
   provider: "caffeine"
-  default-ttl: 300s
+  default-ttl: 300000
   max-size: 10000
-
-  route-cache:
-    enabled: true
-    ttl: 600s
-    max-size: 1000
-
-  auth-cache:
-    enabled: true
-    ttl: 1800s
-    max-size: 5000

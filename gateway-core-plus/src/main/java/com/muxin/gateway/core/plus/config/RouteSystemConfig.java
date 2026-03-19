@@ -3,11 +3,9 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 路由系统配置
- * 管理路由系统的全局配置参数，与route包下的RouteConfig（路由实例配置）区分
+ * 管理路由系统的全局配置参数，与 route 包下的 RouteConfig（路由实例配置）区分
  * 
  * @author muxin
  * @version 1.0.0
@@ -18,22 +16,22 @@ import java.time.Duration;
 public class RouteSystemConfig {
     
     @Builder.Default
-    private Duration defaultConnectionTimeout = Duration.ofSeconds(5);
+    private Long defaultConnectionTimeout = 5000L;
     
     @Builder.Default
-    private Duration defaultRequestTimeout = Duration.ofSeconds(30);
+    private Long defaultRequestTimeout = 30000L;
     
     @Builder.Default
-    private Duration defaultTotalTimeout = Duration.ofMinutes(2);
+    private Long defaultTotalTimeout = 120000L;
     
     @Builder.Default
-    private Duration defaultReadTimeout = Duration.ofSeconds(30);
+    private Long defaultReadTimeout = 30000L;
     
     @Builder.Default
-    private Duration defaultWriteTimeout = Duration.ofSeconds(30);
+    private Long defaultWriteTimeout = 30000L;
     
     @Builder.Default
-    private Duration defaultCircuitBreakerTimeout = Duration.ofSeconds(10);
+    private Long defaultCircuitBreakerTimeout = 10000L;
     
     @Builder.Default
     private boolean enableDefaultTimeouts = true;
@@ -45,13 +43,13 @@ public class RouteSystemConfig {
     private boolean enableRouteCache = true;
     
     @Builder.Default
-    private Duration routeCacheExpiration = Duration.ofMinutes(10);
+    private Long routeCacheExpiration = 600000L;
     
     @Builder.Default
     private boolean enableDynamicRouting = true;
     
     @Builder.Default
-    private Duration routeRefreshInterval = Duration.ofSeconds(30);
+    private Long routeRefreshInterval = 30000L;
     
     @Builder.Default
     private boolean enableRouteMetrics = true;
@@ -67,17 +65,17 @@ public class RouteSystemConfig {
     }
     
     public void validate() {
-        if (defaultConnectionTimeout == null || defaultConnectionTimeout.isNegative()) {
-            throw new IllegalArgumentException("defaultConnectionTimeout必须大于0");
+        if (defaultConnectionTimeout == null || defaultConnectionTimeout < 0) {
+            throw new IllegalArgumentException("defaultConnectionTimeout 必须大于 0");
         }
-        if (defaultRequestTimeout == null || defaultRequestTimeout.isNegative()) {
-            throw new IllegalArgumentException("defaultRequestTimeout必须大于0");
+        if (defaultRequestTimeout == null || defaultRequestTimeout < 0) {
+            throw new IllegalArgumentException("defaultRequestTimeout 必须大于 0");
         }
         if (maxRoutes <= 0) {
-            throw new IllegalArgumentException("maxRoutes必须大于0");
+            throw new IllegalArgumentException("maxRoutes 必须大于 0");
         }
-        if (routeCacheExpiration == null || routeCacheExpiration.isNegative()) {
-            throw new IllegalArgumentException("routeCacheExpiration必须大于0");
+        if (routeCacheExpiration == null || routeCacheExpiration < 0) {
+            throw new IllegalArgumentException("routeCacheExpiration 必须大于 0");
         }
     }
-} 
+}

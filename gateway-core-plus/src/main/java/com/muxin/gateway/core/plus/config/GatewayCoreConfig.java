@@ -3,8 +3,6 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 核心网关配置
  * 
@@ -26,7 +24,7 @@ public class GatewayCoreConfig {
     private int workerThreads = Runtime.getRuntime().availableProcessors();
     
     @Builder.Default
-    private Duration defaultTimeout = Duration.ofSeconds(30);
+    private Long defaultTimeout = 30000L;
     
     @Builder.Default
     private int maxRetries = 3;
@@ -41,7 +39,7 @@ public class GatewayCoreConfig {
     private boolean enableHealthCheck = true;
     
     @Builder.Default
-    private Duration healthCheckInterval = Duration.ofSeconds(30);
+    private Long healthCheckInterval = 30000L;
     
     @Builder.Default
     private String traceIdHeader = "X-Trace-Id";
@@ -55,16 +53,16 @@ public class GatewayCoreConfig {
     
     public void validate() {
         if (gatewayName == null || gatewayName.trim().isEmpty()) {
-            throw new IllegalArgumentException("gatewayName不能为空");
+            throw new IllegalArgumentException("gatewayName 不能为空");
         }
         if (workerThreads <= 0) {
-            throw new IllegalArgumentException("workerThreads必须大于0");
+            throw new IllegalArgumentException("workerThreads 必须大于 0");
         }
-        if (defaultTimeout == null || defaultTimeout.isNegative()) {
-            throw new IllegalArgumentException("defaultTimeout必须大于0");
+        if (defaultTimeout == null || defaultTimeout < 0) {
+            throw new IllegalArgumentException("defaultTimeout 必须大于 0");
         }
         if (maxRetries < 0) {
-            throw new IllegalArgumentException("maxRetries不能小于0");
+            throw new IllegalArgumentException("maxRetries 不能小于 0");
         }
     }
-} 
+}

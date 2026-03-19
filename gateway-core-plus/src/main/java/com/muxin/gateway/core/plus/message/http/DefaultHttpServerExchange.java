@@ -1,7 +1,5 @@
 package com.muxin.gateway.core.plus.message.http;
 
-import com.muxin.gateway.core.plus.message.MessageType;
-import com.muxin.gateway.core.plus.message.Protocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.*;
@@ -18,114 +16,140 @@ import java.util.Objects;
  * 将Netty的HTTP对象适配为网关的消息接口
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
 @Slf4j
 public class DefaultHttpServerExchange implements HttpServerExchange {
 
-    // ========== 核心字段 ==========
-    private final Protocol protocol;
     private final Map<String, Object> attributes;
+    private final NettyHttpRequestAdapter requestAdapter;
+    private volatile NettyHttpResponseAdapter responseAdapter;
 
-    private volatile NettyHttpRequestAdapter httpRequestAdapter;
-    private volatile NettyHttpResponseAdapter httpResponseAdapter;
-
-    // ========== 构造函数 ==========
-
-    /**
-     * 构造函数
-     *
-     * @param request  Netty HTTP请求对象
-     * @param protocol 协议信息
-     */
-    public DefaultHttpServerExchange(FullHttpRequest request, Protocol protocol) {
+    public DefaultHttpServerExchange(FullHttpRequest request) {
         Objects.requireNonNull(request, "HTTP请求不能为空");
-        Objects.requireNonNull(protocol, "协议信息不能为空");
-        this.protocol = protocol;
         this.attributes = new HashMap<>();
-        this.httpRequestAdapter = new NettyHttpRequestAdapter(request, new HashMap<>());
+        this.requestAdapter = new NettyHttpRequestAdapter(duplicateRequest(request));
         log.debug("创建HTTP服务器交换对象: {} {}", request.method(), request.uri());
     }
 
-    // ========== ServerExchange 接口实现 ==========
+    private static FullHttpRequest duplicateRequest(FullHttpRequest original) {
+        ByteBuf content = original.content();
+        ByteBuf duplicatedContent = content != null && content.isReadable()
+                ? Unpooled.copiedBuffer(content)
+                : Unpooled.buffer(0);
 
-    @Override
-    public Protocol protocol() {
-        return protocol;
+        FullHttpRequest duplicated = new DefaultFullHttpRequest(
+                original.protocolVersion(),
+                original.method(),
+                original.uri(),
+                duplicatedContent,
+                original.headers().copy(),
+                original.trailingHeaders().copy()
+        );
+
+        duplicated.headers().set(HttpHeaderNames.CONTENT_LENGTH, duplicatedContent.readableBytes());
+        return duplicated;
     }
 
     @Override
     public HttpRequestMessage request() {
-        return httpRequestAdapter;
-    }
-
-    @Override
-    public HttpRequestMessage setRequest(HttpRequestMessage request) {
-        // HTTP请求在服务器端是只读的，不支持修改
-        throw new UnsupportedOperationException("HTTP服务器端不支持修改请求");
+        return requestAdapter;
     }
 
     @Override
     public HttpResponseMessage response() {
-        return httpResponseAdapter;
+        return responseAdapter;
     }
 
     @Override
-    public HttpResponseMessage setResponse(HttpResponseMessage response) {
+    public void setResponse(HttpResponseMessage response) {
         if (response instanceof NettyHttpResponseAdapter) {
-            // 如果是我们的适配器，直接使用底层对象
-            this.httpResponseAdapter = (NettyHttpResponseAdapter) response;
-        } else if (response instanceof FullHttpResponse) {
-            this.httpResponseAdapter = new NettyHttpResponseAdapter((FullHttpResponse) response, new HashMap<>());
+            this.responseAdapter = (NettyHttpResponseAdapter) response;
         } else {
-            throw new IllegalArgumentException("unknown response type: " + response.getClass());
+            throw new IllegalArgumentException("不支持的响应类型: " + response.getClass());
         }
-        return response;
     }
 
-    // ========== AttributesHolder 接口实现 ==========
+    @Override
+    public FullHttpRequest nettyRequest() {
+        return requestAdapter.getNettyRequest();
+    }
 
     @Override
+    public FullHttpResponse nettyResponse() {
+        return responseAdapter != null ? responseAdapter.getNettyResponse() : null;
+    }
+
+    @Override
+    public void setNettyResponse(FullHttpResponse response) {
+        this.responseAdapter = new NettyHttpResponseAdapter(response);
+    }
+
+    @Override
+    public String getRequestBody() {
+        return requestAdapter.getBody();
+    }
+
+    @Override
+    public void setResponseBody(String body) {
+        if (responseAdapter != null) {
+                responseAdapter.setBody(body);
+            }
+    }
+
+    @Override
+    public String getResponseBody() {
+        return responseAdapter != null ? responseAdapter.getBody() : "";
+    }
+
+    @Override
+    public void setAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+
+    @Override
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    // ========== 内部方法 ==========
+    @Override
+    public String toString() {
+        return "DefaultHttpServerExchange{" +
+                "request=" + requestAdapter.method() + " " + requestAdapter.uri() +
+                ", hasResponse=" + (responseAdapter != null) +
+                '}';
+    }
 
-
-    // ========== Netty HTTP请求适配器 ==========
-
-    /**
-     * 将Netty的FullHttpRequest适配为HttpRequestMessage接口
-     */
     private static class NettyHttpRequestAdapter implements HttpRequestMessage {
 
         private final FullHttpRequest nettyRequest;
-        private final Map<String, Object> attributes;
         private final String requestId;
         private final ZonedDateTime timestamp;
 
-        public NettyHttpRequestAdapter(FullHttpRequest nettyRequest, Map<String, Object> attributes) {
-            this.nettyRequest = nettyRequest;
-            this.attributes = attributes;
-            this.requestId = generateRequestId();
-            this.timestamp = ZonedDateTime.now();
+        public NettyHttpRequestAdapter(FullHttpRequest nettyRequest) {
+                this.nettyRequest = nettyRequest;
+                this.requestId = System.currentTimeMillis() + "-" + System.nanoTime() % 10000;
+                this.timestamp = ZonedDateTime.now();
         }
 
         @Override
         public HttpMethod method() {
-            return nettyRequest.method();
+                return nettyRequest.method();
         }
 
         @Override
         public void setMethod(HttpMethod httpMethod) {
-            nettyRequest.setMethod(httpMethod);
+                nettyRequest.setMethod(httpMethod);
         }
 
         @Override
         public String uri() {
-            return nettyRequest.uri();
+                return nettyRequest.uri();
         }
 
         @Override
@@ -136,25 +160,25 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
         @Override
         public String requestId() {
-            return requestId;
+                return requestId;
         }
 
         @Override
         public boolean isKeepAlive() {
-            return HttpUtil.isKeepAlive(nettyRequest);
+                return HttpUtil.isKeepAlive(nettyRequest);
         }
 
         @Override
         public String param(CharSequence key) {
             QueryStringDecoder decoder = new QueryStringDecoder(nettyRequest.uri());
-            return decoder.parameters().getOrDefault(key.toString(), java.util.Collections.emptyList())
-                    .stream().findFirst().orElse(null);
+                return decoder.parameters().getOrDefault(key.toString(), java.util.Collections.emptyList())
+                        .stream().findFirst().orElse(null);
         }
 
         @Override
         public Map<String, String> params() {
             QueryStringDecoder decoder = new QueryStringDecoder(nettyRequest.uri());
-            Map<String, String> params = new java.util.HashMap<>();
+            Map<String, String> params = new HashMap<>();
             decoder.parameters().forEach((key, values) -> {
                 if (!values.isEmpty()) {
                     params.put(key, values.get(0));
@@ -170,254 +194,119 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
         @Override
         public HttpVersion protocolVersion() {
-            return nettyRequest.protocolVersion();
+                return nettyRequest.protocolVersion();
         }
 
         @Override
         public void setProtocolVersion(HttpVersion httpVersion) {
-            nettyRequest.setProtocolVersion(httpVersion);
+                nettyRequest.setProtocolVersion(httpVersion);
         }
 
         @Override
         public HttpHeaders headers() {
-            return nettyRequest.headers();
+                return nettyRequest.headers();
         }
 
         @Override
         public void header(CharSequence name, CharSequence value) {
-            nettyRequest.headers().set(name, value);
-        }
-
-        @Override
-        public MessageType messageType() {
-            return MessageType.REQUEST;
-        }
-
-        @Override
-        public Protocol protocol() {
-            // 根据HTTP版本创建协议对象
-            return createHttpProtocol(nettyRequest.protocolVersion());
+                nettyRequest.headers().set(name, value);
         }
 
         @Override
         public Map<String, Object> getAttributes() {
-            return attributes;
+                return new HashMap<>();
         }
 
-        /**
-         * 生成请求ID
-         */
-        private String generateRequestId() {
-            return System.currentTimeMillis() + "-" + System.nanoTime() % 10000;
-        }
-
-        /**
-         * 获取请求Body内容
-         */
         public String getBody() {
-            if (nettyRequest.content().isReadable()) {
-                return nettyRequest.content().toString(StandardCharsets.UTF_8);
-            }
-            return "";
+                if (nettyRequest.content().isReadable()) {
+                    return nettyRequest.content().toString(StandardCharsets.UTF_8);
+                }
+                return "";
         }
 
-        /**
-         * 获取Content-Type
-         */
         public String getContentType() {
-            return nettyRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
-        }
-    }
-
-    // ========== Netty HTTP响应适配器 ==========
-
-    /**
-     * 将Netty的FullHttpResponse适配为HttpResponseMessage接口
-     */
-    private static class NettyHttpResponseAdapter implements HttpResponseMessage {
-
-        private final FullHttpResponse nettyResponse;
-        private final Map<String, Object> attributes;
-
-        public NettyHttpResponseAdapter(FullHttpResponse nettyResponse, Map<String, Object> attributes) {
-            this.nettyResponse = nettyResponse;
-            this.attributes = attributes;
-        }
-
-        @Override
-        public HttpResponseStatus status() {
-            return nettyResponse.status();
-        }
-
-        @Override
-        public void setStatus(HttpResponseStatus httpResponseStatus) {
-            nettyResponse.setStatus(httpResponseStatus);
-        }
-
-        @Override
-        public HttpResponseMessage keepAlive(boolean keepAlive) {
-            if (keepAlive) {
-                nettyResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-            } else {
-                nettyResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+                return nettyRequest.headers().get(HttpHeaderNames.CONTENT_TYPE);
             }
-            return this;
-        }
 
-        @Override
-        public HttpVersion protocolVersion() {
-            return nettyResponse.protocolVersion();
-        }
-
-        @Override
-        public void setProtocolVersion(HttpVersion httpVersion) {
-            nettyResponse.setProtocolVersion(httpVersion);
-        }
-
-        @Override
-        public HttpHeaders headers() {
-            return nettyResponse.headers();
-        }
-
-        @Override
-        public void header(CharSequence name, CharSequence value) {
-            nettyResponse.headers().set(name, value);
-        }
-
-        @Override
-        public MessageType messageType() {
-            return MessageType.RESPONSE;
-        }
-
-        @Override
-        public Protocol protocol() {
-            return createHttpProtocol(nettyResponse.protocolVersion());
-        }
-
-        @Override
-        public Map<String, Object> getAttributes() {
-            return attributes;
-        }
-
-        /**
-         * 设置响应Body
-         */
-        public void setBody(String body) {
-            ByteBuf content = Unpooled.copiedBuffer(body, StandardCharsets.UTF_8);
-            nettyResponse.content().clear().writeBytes(content);
-            nettyResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
-        }
-
-        /**
-         * 获取响应Body
-         */
-        public String getBody() {
-            if (nettyResponse.content().isReadable()) {
-                return nettyResponse.content().toString(StandardCharsets.UTF_8);
+        FullHttpRequest getNettyRequest() {
+                return nettyRequest;
             }
-            return "";
         }
 
-        /**
-         * 获取底层Netty响应对象（内部使用）
-         */
-        FullHttpResponse getNettyResponse() {
-            return nettyResponse;
-        }
-    }
+        private static class NettyHttpResponseAdapter implements HttpResponseMessage {
 
-    // ========== 工具方法 ==========
+            private final FullHttpResponse nettyResponse;
+            private final Map<String, Object> attributes;
 
-    /**
-     * 根据HTTP版本创建协议对象
-     */
-    private static Protocol createHttpProtocol(HttpVersion version) {
-        return new Protocol() {
-            @Override
-            public String type() {
-                return "HTTP";
+            public NettyHttpResponseAdapter(FullHttpResponse nettyResponse) {
+                this(nettyResponse, new HashMap<>());
+            }
+
+            public NettyHttpResponseAdapter(FullHttpResponse nettyResponse, Map<String, Object> attributes) {
+                this.nettyResponse = nettyResponse;
+                this.attributes = attributes;
             }
 
             @Override
-            public String getVersion() {
-                return version.text();
+            public HttpResponseStatus status() {
+                return nettyResponse.status();
             }
 
             @Override
-            public boolean isConnectionOriented() {
-                return true;
+            public void setStatus(HttpResponseStatus httpResponseStatus) {
+                nettyResponse.setStatus(httpResponseStatus);
             }
 
             @Override
-            public boolean isRequestResponseBased() {
-                return true;
+            public HttpResponseMessage keepAlive(boolean keepAlive) {
+                if (keepAlive) {
+                    nettyResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+                } else {
+                    nettyResponse.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+                }
+                return this;
             }
 
             @Override
-            public boolean isStreamingSupported() {
-                return false;
+            public HttpVersion protocolVersion() {
+                return nettyResponse.protocolVersion();
             }
-        };
-    }
 
-    /**
-     * 设置响应Body内容
-     *
-     * @param body 响应体字符串
-     */
-    public void setResponseBody(String body) {
-        HttpResponseMessage response = response();
-        if (httpResponseAdapter != null) {
-            httpResponseAdapter.setBody(body);
+            @Override
+            public void setProtocolVersion(HttpVersion httpVersion) {
+                nettyResponse.setProtocolVersion(httpVersion);
+            }
+
+            @Override
+            public HttpHeaders headers() {
+                return nettyResponse.headers();
+            }
+
+            @Override
+            public void header(CharSequence name, CharSequence value) {
+                nettyResponse.headers().set(name, value);
+            }
+
+            @Override
+            public Map<String, Object> getAttributes() {
+                return attributes;
+            }
+
+            public void setBody(String body) {
+                ByteBuf content = Unpooled.copiedBuffer(body, StandardCharsets.UTF_8);
+                nettyResponse.content().clear().writeBytes(content);
+                nettyResponse.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+            }
+
+            public String getBody() {
+                if (nettyResponse.content().isReadable()) {
+                    return nettyResponse.content().toString(StandardCharsets.UTF_8);
+                }
+                return "";
+            }
+
+            FullHttpResponse getNettyResponse() {
+                return nettyResponse;
+            }
         }
     }
-
-    /**
-     * 获取响应Body内容
-     *
-     * @return 响应体字符串
-     */
-    public String getResponseBody() {
-        HttpResponseMessage response = response();
-        if (httpResponseAdapter != null) {
-            return httpResponseAdapter.getBody();
-        }
-        return "";
-    }
-
-    /**
-     * 获取请求Body内容
-     *
-     * @return 请求体字符串
-     */
-    public String getRequestBody() {
-        HttpRequestMessage request = request();
-        if (httpRequestAdapter != null) {
-            return httpRequestAdapter.getBody();
-        }
-        return "";
-    }
-
-    /**
-     * 获取请求Content-Type
-     *
-     * @return Content-Type头的值
-     */
-    public String getRequestContentType() {
-        HttpRequestMessage request = request();
-        if (httpRequestAdapter != null) {
-            return httpRequestAdapter.getContentType();
-        }
-        return null;
-    }
-
-    @Override
-    public String toString() {
-        return "DefaultHttpServerExchange{" +
-                "protocol=" + protocol +
-                ", attributes=" + attributes +
-                ", httpRequestAdapter=" + httpRequestAdapter +
-                ", httpResponseAdapter=" + httpResponseAdapter +
-                '}';
-    }
-}

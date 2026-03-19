@@ -1,7 +1,7 @@
 package com.muxin.gateway.core.plus.server.http;
 
 import com.muxin.gateway.core.plus.GatewayProcessor;
-import com.muxin.gateway.core.plus.message.ProtocolEnum;
+import com.muxin.gateway.core.plus.connect.netty.NettyServerConnection;
 import com.muxin.gateway.core.plus.message.http.DefaultHttpServerExchange;
 import com.muxin.gateway.core.plus.route.DefaultRequestContext;
 import io.netty.bootstrap.ServerBootstrap;
@@ -241,12 +241,14 @@ public class NettyHttpServer {
 
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
-            // 存储请求到Channel属性中，用于后续判断Keep-Alive
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             try {
-                //todo context具体实现
-                DefaultHttpServerExchange exchange = new DefaultHttpServerExchange(request, ProtocolEnum.HTTP);
-                DefaultRequestContext context = new DefaultRequestContext(exchange, null);
+                DefaultHttpServerExchange exchange = new DefaultHttpServerExchange(request);
+                DefaultRequestContext context = new DefaultRequestContext(exchange);
+                
+                NettyServerConnection serverConnection = new NettyServerConnection(ctx.channel());
+                context.setServerConnection(serverConnection);
+                
                 gatewayProcessor.processRequest(context);
             } catch (Exception e) {
                 log.error("[SimpleHttpServerHandler] 处理请求异常", e);

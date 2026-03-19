@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.message.http;
 
-import com.muxin.gateway.core.plus.message.Message;
+import com.muxin.gateway.core.plus.common.AttributesHolder;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpVersion;
 
@@ -9,10 +9,10 @@ import io.netty.handler.codec.http.HttpVersion;
  * 定义HTTP协议消息的基本接口，包含HTTP版本和请求头
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
-public interface HttpMessage extends Message {
+public interface HttpMessage extends AttributesHolder {
 
     HttpVersion protocolVersion();
 

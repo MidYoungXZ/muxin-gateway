@@ -3,8 +3,6 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 负载均衡配置
  * 
@@ -26,19 +24,19 @@ public class LoadBalanceConfig {
     private String stickySessionKey = "sessionId";
     
     @Builder.Default
-    private Duration stickySessionExpiration = Duration.ofMinutes(30);
+    private Long stickySessionExpiration = 1800000L;
     
     @Builder.Default
     private boolean enableHealthCheck = true;
     
     @Builder.Default
-    private Duration healthCheckInterval = Duration.ofSeconds(30);
+    private Long healthCheckInterval = 30000L;
     
     @Builder.Default
     private int maxFailureCount = 3;
     
     @Builder.Default
-    private Duration failureRecoveryTime = Duration.ofMinutes(1);
+    private Long failureRecoveryTime = 60000L;
     
     @Builder.Default
     private boolean enableNodeWeighting = false;
@@ -50,7 +48,7 @@ public class LoadBalanceConfig {
     private boolean enableDynamicWeighting = false;
     
     @Builder.Default
-    private Duration weightingUpdateInterval = Duration.ofMinutes(5);
+    private Long weightingUpdateInterval = 300000L;
     
     public static LoadBalanceConfig defaultConfig() {
         return LoadBalanceConfig.builder().build();
@@ -58,16 +56,16 @@ public class LoadBalanceConfig {
     
     public void validate() {
         if (defaultStrategy == null || defaultStrategy.trim().isEmpty()) {
-            throw new IllegalArgumentException("defaultStrategy不能为空");
+            throw new IllegalArgumentException("defaultStrategy 不能为空");
         }
         if (maxFailureCount < 0) {
-            throw new IllegalArgumentException("maxFailureCount不能小于0");
+            throw new IllegalArgumentException("maxFailureCount 不能小于 0");
         }
         if (defaultNodeWeight <= 0) {
-            throw new IllegalArgumentException("defaultNodeWeight必须大于0");
+            throw new IllegalArgumentException("defaultNodeWeight 必须大于 0");
         }
-        if (healthCheckInterval == null || healthCheckInterval.isNegative()) {
-            throw new IllegalArgumentException("healthCheckInterval必须大于0");
+        if (healthCheckInterval == null || healthCheckInterval < 0) {
+            throw new IllegalArgumentException("healthCheckInterval 必须大于 0");
         }
     }
 }

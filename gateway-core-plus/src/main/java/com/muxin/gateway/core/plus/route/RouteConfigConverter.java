@@ -6,7 +6,6 @@ import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory;
 import com.muxin.gateway.core.plus.route.predicate.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,7 +37,8 @@ public class RouteConfigConverter {
      */
     private final Map<ServiceType, RouteServiceFactory> routeServiceFactories;
 
-
+    // ========== 全局配置 ==========
+    private List<FilterDefinition> globalFilters = new ArrayList<>();
 
     // ========== 状态管理 ==========
     private volatile boolean initialized = false;
@@ -79,7 +79,12 @@ public class RouteConfigConverter {
      * 初始化FilterFactory映射
      */
     private void initFilterFactories() {
-        // TODO: 后续可以注册更多内置FilterFactory
+        registerFilterFactory(new RequestIdFilter.Factory());
+        registerFilterFactory(new CorsFilter.Factory());
+        registerFilterFactory(new RequestLogFilter.Factory());
+        registerFilterFactory(new AuthFilter.Factory());
+        registerFilterFactory(new MetricsFilter.Factory());
+        registerFilterFactory(new RateLimitFilter.Factory());
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 
@@ -87,7 +92,8 @@ public class RouteConfigConverter {
      * 初始化PredicateFactory映射
      */
     private void initPredicateFactories() {
-        // TODO: 后续可以注册更多内置PredicateFactory
+        registerPredicateFactory(new PathPredicateFactory());
+        registerPredicateFactory(new MethodPredicateFactory());
         log.info("[RouteConfigConverter] PredicateFactory初始化完成，支持的Predicate类型: {}", predicateFactories.keySet());
     }
 
@@ -190,15 +196,14 @@ public class RouteConfigConverter {
             // 验证配置
             config.validate();
 
-            // 转换协议
-            com.muxin.gateway.core.plus.message.ProtocolEnum inboundProtocol =
-                com.muxin.gateway.core.plus.message.ProtocolEnum.fromCode(config.getProtocol());
-
             // 转换断言（传入routeId，确保每个路由的Predicate独立）
             List<Predicate> predicates = convertPredicates(config.getId(), config.getPredicates());
 
             // 转换过滤器（传入routeId，确保每个路由的Filter独立）
-            List<Filter> filters = convertFilters(config.getId(), config.getFilters());
+            List<Filter> routeFilters = convertFilters(config.getId(), config.getFilters());
+
+            // 合并全局过滤器和路由级过滤器
+            List<Filter> filters = mergeFilters(routeFilters);
 
             // 从serviceMap中获取服务定义
             String serviceRef = config.getServiceRef();
@@ -225,7 +230,6 @@ public class RouteConfigConverter {
                     .description(config.getDescription())
                     .order(config.getOrder())
                     .enabled(config.isEnabled())
-                    .supportedProtocol(inboundProtocol)
                     .service(target)
                     .predicates(predicates)
                     .filters(filters)
@@ -404,42 +408,50 @@ public class RouteConfigConverter {
         return config;
     }
 
-    /**
-     * 解析时间字符串为Duration
-     */
-    private Duration parseDuration(String durationStr) {
-        if (durationStr == null || durationStr.trim().isEmpty()) {
-            return null;
-        }
+    // ========== 全局过滤器配置 ==========
 
-        try {
-            // 支持简单的时间格式解析，如: "30s", "5m", "1h"
-            String trimmed = durationStr.trim().toLowerCase();
-
-            if (trimmed.endsWith("s")) {
-                long seconds = Long.parseLong(trimmed.substring(0, trimmed.length() - 1));
-                return Duration.ofSeconds(seconds);
-            } else if (trimmed.endsWith("m")) {
-                long minutes = Long.parseLong(trimmed.substring(0, trimmed.length() - 1));
-                return Duration.ofMinutes(minutes);
-            } else if (trimmed.endsWith("h")) {
-                long hours = Long.parseLong(trimmed.substring(0, trimmed.length() - 1));
-                return Duration.ofHours(hours);
-            } else if (trimmed.endsWith("ms")) {
-                long millis = Long.parseLong(trimmed.substring(0, trimmed.length() - 2));
-                return Duration.ofMillis(millis);
-            } else {
-                // 默认按秒解析
-                long seconds = Long.parseLong(trimmed);
-                return Duration.ofSeconds(seconds);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("[RouteConfigConverter] 无法解析时间格式: {}, 使用默认值", durationStr);
-            return null;
+    public void setGlobalFilters(List<FilterDefinition> globalFilters) {
+        if (globalFilters != null) {
+            this.globalFilters = new ArrayList<>(globalFilters);
+            log.info("[RouteConfigConverter] 设置全局过滤器: {} 个", globalFilters.size());
         }
     }
 
+    public List<FilterDefinition> getGlobalFilters() {
+        return new ArrayList<>(globalFilters);
+    }
 
+    /**
+     * 合并全局过滤器和路由级过滤器
+     * 全局过滤器按照 order 排序，路由级过滤器追加到其后
+     */
+    private List<Filter> mergeFilters(List<Filter> routeFilters) {
+        List<Filter> allFilters = new ArrayList<>();
+
+        for (FilterDefinition globalDef : globalFilters) {
+            if (globalDef.isEnabled()) {
+                FilterFactory factory = filterFactories.get(globalDef.getType());
+                if (factory != null) {
+                    try {
+                        Filter filter = factory.createFilter(globalDef);
+                        allFilters.add(filter);
+                    } catch (Exception e) {
+                        log.warn("[RouteConfigConverter] 创建全局过滤器失败: {} - {}",
+                                globalDef.getType(), e.getMessage());
+                    }
+                } else {
+                    log.warn("[RouteConfigConverter] 全局过滤器类型不支持: {}", globalDef.getType());
+                }
+            }
+        }
+
+        if (routeFilters != null) {
+            allFilters.addAll(routeFilters);
+        }
+
+        allFilters.sort(Comparator.comparingInt(Filter::getOrder));
+        return allFilters;
+    }
 
     // ========== 状态查询方法 ==========
 

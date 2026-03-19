@@ -1,24 +1,25 @@
 package com.muxin.gateway.core.plus.message;
 
 import com.muxin.gateway.core.plus.common.AttributesHolder;
+import com.muxin.gateway.core.plus.message.http.HttpRequestMessage;
+import com.muxin.gateway.core.plus.message.http.HttpResponseMessage;
 
 /**
- * 服务器交换接口
- * 定义服务器端请求和响应的交换上下文，用于在网关处理过程中传递数据
+ * HTTP交换接口
+ * 定义HTTP请求和响应的交换上下文，用于在网关处理过程中传递数据
+ * 節化版本：只支持HTTP协议，移除泛型设计
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
-public interface ServerExchange<Req extends Message, Res extends Message> extends AttributesHolder {
+public interface ServerExchange extends AttributesHolder {
 
-    Protocol protocol();
+    HttpRequestMessage request();
 
-    Req request();
+    HttpRequestMessage setRequest(HttpRequestMessage request);
 
-    Req setRequest(Req request);
+    HttpResponseMessage response();
 
-    Res response();
-
-    Res setResponse(Res response);
+    HttpResponseMessage setResponse(HttpResponseMessage response);
 }

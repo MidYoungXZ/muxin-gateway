@@ -3,8 +3,6 @@ package com.muxin.gateway.core.plus.config;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.Duration;
-
 /**
  * 过滤器配置
  * 
@@ -26,7 +24,7 @@ public class FilterConfig {
     private int maxFiltersPerRoute = 50;
     
     @Builder.Default
-    private Duration defaultFilterTimeout = Duration.ofSeconds(5);
+    private Long defaultFilterTimeout = 5000L;
     
     @Builder.Default
     private boolean enableFilterMetrics = true;
@@ -52,13 +50,13 @@ public class FilterConfig {
     
     public void validate() {
         if (maxFiltersPerRoute <= 0) {
-            throw new IllegalArgumentException("maxFiltersPerRoute必须大于0");
+            throw new IllegalArgumentException("maxFiltersPerRoute 必须大于 0");
         }
-        if (defaultFilterTimeout == null || defaultFilterTimeout.isNegative()) {
-            throw new IllegalArgumentException("defaultFilterTimeout必须大于0");
+        if (defaultFilterTimeout == null || defaultFilterTimeout < 0) {
+            throw new IllegalArgumentException("defaultFilterTimeout 必须大于 0");
         }
         if (asyncFilterThreads <= 0) {
-            throw new IllegalArgumentException("asyncFilterThreads必须大于0");
+            throw new IllegalArgumentException("asyncFilterThreads 必须大于 0");
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.muxin.gateway.spring.boot.starter;
 
 import com.muxin.gateway.core.plus.config.*;
-import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
+import com.muxin.gateway.core.plus.connect.netty.NettyPoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -28,9 +28,9 @@ public class GatewaySpringProperties {
     private GatewayCoreConfig core = GatewayCoreConfig.builder().build();
     
     /**
-     * 连接池配置 - 直接复用 ConnectionPoolConfig
+     * 连接池配置 - 直接复用 NettyPoolConfig
      */
-    private ConnectionPoolConfig connectionPool = ConnectionPoolConfig.defaultConfig();
+    private NettyPoolConfig connectionPool = NettyPoolConfig.defaultConfig();
     
     /**
      * 路由系统配置 - 直接复用 RouteSystemConfig

@@ -7,9 +7,15 @@ import com.muxin.gateway.core.plus.config.GatewayCoreConfig;
 import com.muxin.gateway.core.plus.config.GatewayRouteConfig;
 import com.muxin.gateway.core.plus.config.RouteSystemConfig;
 import com.muxin.gateway.core.plus.config.ServerConfig;
-import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
 import com.muxin.gateway.core.plus.connect.ConnectionPoolManager;
+import com.muxin.gateway.core.plus.connect.netty.NettyConnectionPoolManager;
+import com.muxin.gateway.core.plus.connect.netty.NettyPoolConfig;
 import com.muxin.gateway.core.plus.route.*;
+import com.muxin.gateway.core.plus.route.filter.Filter;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory;
+import com.muxin.gateway.core.plus.route.predicate.PathPredicate;
+import com.muxin.gateway.core.plus.route.predicate.Predicate;
 import com.muxin.gateway.core.plus.route.service.InstanceManager;
 import com.muxin.gateway.core.plus.server.http.HttpServerConfig;
 import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
@@ -184,9 +190,8 @@ public class GatewayBootstrap implements LifeCycle {
     private void initCoreComponents() {
         log.debug("Initializing core components...");
 
-        // 连接池管理器
-        ConnectionPoolConfig poolConfig = ConnectionPoolConfig.defaultConfig();
-        this.connectionPoolManager = new com.muxin.gateway.core.plus.connect.DefaultConnectionPoolManager(poolConfig);
+        NettyPoolConfig poolConfig = NettyPoolConfig.defaultConfig();
+        this.connectionPoolManager = new NettyConnectionPoolManager(poolConfig);
         connectionPoolManager.init();
 
         // 路由管理器（使用增强版本，支持全局配置）
@@ -207,53 +212,112 @@ public class GatewayBootstrap implements LifeCycle {
      * 从配置文件注册路由和服务
      */
     private void registerRoutesFromConfig() {
-        if (gatewayRouteConfig == null) {
-            log.debug("无YAML配置，跳过路由注册");
-            return;
-        }
+        boolean hasRoutes = false;
 
-        if (gatewayRouteConfig.getRoutes() == null || gatewayRouteConfig.getRoutes().isEmpty()) {
-            log.debug("配置文件中没有路由定义，跳过路由注册");
-            return;
-        }
+        if (gatewayRouteConfig != null && gatewayRouteConfig.getRoutes() != null && !gatewayRouteConfig.getRoutes().isEmpty()) {
+            if (gatewayRouteConfig.getServices() == null || gatewayRouteConfig.getServices().isEmpty()) {
+                log.warn("配置文件中没有服务定义，但路由引用了服务");
+            } else {
+                try {
+                    java.util.Map<String,ServiceDefinition> serviceMap =
+                        gatewayRouteConfig.getServices().stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                ServiceDefinition::getId,
+                                service -> service,
+                                (existing, replacement) -> {
+                                    log.warn("服务ID重复: {}，将使用第一个定义", existing.getId());
+                                    return existing;
+                                }
+                            ));
 
-        if (gatewayRouteConfig.getServices() == null || gatewayRouteConfig.getServices().isEmpty()) {
-            log.warn("配置文件中没有服务定义，但路由引用了服务");
-            return;
-        }
+                    if (gatewayRouteConfig.getGlobalFilters() != null && !gatewayRouteConfig.getGlobalFilters().isEmpty()) {
+                        java.util.List<com.muxin.gateway.core.plus.route.filter.FilterDefinition> globalFilters =
+                            gatewayRouteConfig.getGlobalFilters().stream()
+                                .map(gfc -> com.muxin.gateway.core.plus.route.filter.FilterDefinition.builder()
+                                    .type(gfc.getType())
+                                    .order(gfc.getOrder())
+                                    .enabled(gfc.isEnabled())
+                                    .config(gfc.getConfig())
+                                    .build())
+                                .toList();
+                        routeConfigConverter.setGlobalFilters(globalFilters);
+                        log.info("已加载全局过滤器配置: {} 个", globalFilters.size());
+                    }
 
-        try {
-            // 构建服务定义映射
-            java.util.Map<String,ServiceDefinition> serviceMap =
-                gatewayRouteConfig.getServices().stream()
-                    .collect(java.util.stream.Collectors.toMap(
-                        ServiceDefinition::getId,
-                        service -> service,
-                        (existing, replacement) -> {
-                            log.warn("服务ID重复: {}，将使用第一个定义", existing.getId());
-                            return existing;
+                    java.util.List<Route> routes =
+                        routeConfigConverter.convertToRoutes(gatewayRouteConfig.getRoutes(), serviceMap);
+
+                    for (Route route : routes) {
+                        if (route != null) {
+                            routeManager.insert(route);
+                            log.info("成功注册路由: {} - {} (优先级: {})",
+                                    route.getId(), route.getName(), route.getOrder());
                         }
-                    ));
+                    }
 
-            // 使用 RouteConfigConverter 转换路由定义
-            java.util.List<Route> routes =
-                routeConfigConverter.convertToRoutes(gatewayRouteConfig.getRoutes(), serviceMap);
+                    log.info("从配置文件注册了 {} 个路由", routes.size());
+                    hasRoutes = !routes.isEmpty();
 
-            // 注册路由到 RouteManager
-            for (Route route : routes) {
-                if (route != null) {
-                    routeManager.insert(route);
-                    log.info("成功注册路由: {} - {} (优先级: {})",
-                            route.getId(), route.getName(), route.getOrder());
+                } catch (Exception e) {
+                    log.error("注册路由配置失败", e);
+                    throw new RuntimeException("注册路由配置失败", e);
                 }
             }
-
-            log.info("从配置文件注册了 {} 个路由", routes.size());
-
-        } catch (Exception e) {
-            log.error("注册路由配置失败", e);
-            throw new RuntimeException("注册路由配置失败", e);
         }
+
+        if (!hasRoutes) {
+            log.info("配置文件中没有路由定义，创建默认兜底路由");
+            Route defaultRoute = createDefaultFallbackRoute();
+            routeManager.insert(defaultRoute);
+            routeManager.setDefaultRoute(defaultRoute);
+            log.info("默认兜底路由已创建: {}", defaultRoute.getId());
+        }
+
+        if (routeManager.getDefaultRoute() == null) {
+            log.info("未设置默认路由，创建默认兜底路由");
+            Route defaultRoute = createDefaultFallbackRoute();
+            routeManager.setDefaultRoute(defaultRoute);
+        }
+    }
+
+    /**
+     * 创建默认兜底路由
+     */
+    private Route createDefaultFallbackRoute() {
+        ServiceDefinition defaultService = ServiceDefinition.builder()
+                .id("default-service")
+                .name("default-service")
+                .type(ServiceType.CONFIG)
+                .supportedProtocols(java.util.List.of("HTTP"))
+                .addresses(java.util.List.of(
+                        com.muxin.gateway.core.plus.route.AddressDefinition.builder()
+                                .uri("http://127.0.0.1:8080")
+                                .weight(100)
+                                .build()
+                ))
+                .build();
+
+        RouteService defaultRouteService = new ConfigRouteService(
+                defaultService,
+                java.util.List.of(new com.muxin.gateway.core.plus.route.service.HttpEndpointAddress("127.0.0.1", 8080)),
+                null
+        );
+
+        Predicate pathPredicate = new PathPredicate("/**");
+
+        LoadBalanceStrategy loadBalanceStrategy = LoadBalanceStrategyFactory.createStrategy(null);
+
+        return DefaultRoute.builder()
+                .id("default-fallback-route")
+                .name("默认兜底路由")
+                .description("处理未匹配到其他路由的请求")
+                .order(Integer.MAX_VALUE)
+                .enabled(true)
+                .predicates(java.util.List.of(pathPredicate))
+                .filters(java.util.Collections.emptyList())
+                .service(defaultRouteService)
+                .loadBalanceStrategy(loadBalanceStrategy)
+                .build();
     }
 
     private void initGatewayProcessor() {

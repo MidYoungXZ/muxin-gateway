@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.config;
 
-import com.muxin.gateway.core.plus.connect.ConnectionPoolConfig;
+import com.muxin.gateway.core.plus.connect.netty.NettyPoolConfig;
 import lombok.Builder;
 import lombok.Data;
 
@@ -9,7 +9,7 @@ import lombok.Data;
  * 整合所有组件的配置信息
  *
  * @author muxin
- * @version 1.0.0
+ * @version 2.0.0
  * @since 1.0.0
  */
 @Data
@@ -22,7 +22,7 @@ public class GatewayConfig {
 
     // ========== 各组件配置 ==========
     @Builder.Default
-    private ConnectionPoolConfig connectionPoolConfig = ConnectionPoolConfig.defaultConfig();
+    private NettyPoolConfig connectionPoolConfig = NettyPoolConfig.defaultConfig();
 
     @Builder.Default
     private RouteSystemConfig routeConfig = RouteSystemConfig.defaultConfig();
@@ -59,9 +59,9 @@ public class GatewayConfig {
                         .enableMetrics(true)
                         .workerThreads(4)
                         .build())
-                .connectionPoolConfig(ConnectionPoolConfig.builder()
-                        .maxConnectionsPerTarget(5)
-                        .minConnectionsPerTarget(1)
+                .connectionPoolConfig(NettyPoolConfig.builder()
+                        .maxConnections(5)
+                        .minConnections(1)
                         .enableWarmup(false)
                         .build())
                 .serverConfig(ServerConfig.builder()
@@ -81,9 +81,9 @@ public class GatewayConfig {
                         .enableMetrics(true)
                         .workerThreads(Runtime.getRuntime().availableProcessors() * 2)
                         .build())
-                .connectionPoolConfig(ConnectionPoolConfig.builder()
-                        .maxConnectionsPerTarget(20)
-                        .minConnectionsPerTarget(5)
+                .connectionPoolConfig(NettyPoolConfig.builder()
+                        .maxConnections(20)
+                        .minConnections(5)
                         .enableWarmup(true)
                         .enableHealthCheck(true)
                         .build())
@@ -120,6 +120,5 @@ public class GatewayConfig {
         filterConfig.validate();
         loadBalanceConfig.validate();
         nodeManagerConfig.validate();
-        protocolConverterConfig.validate();
     }
-} 
+}
