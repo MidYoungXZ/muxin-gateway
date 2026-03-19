@@ -7,7 +7,7 @@
 
     <parent>
         <groupId>com.muxin.gateway</groupId>
-        <artifactId>muxin-gateway-plus</artifactId>
+        <artifactId>muxin-gateway</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 

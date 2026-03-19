@@ -1,0 +1,52 @@
+package com.muxin.gateway.core.plus.route;
+
+import com.muxin.gateway.core.plus.common.AttributesHolder;
+import com.muxin.gateway.core.plus.connect.ClientConnection;
+import com.muxin.gateway.core.plus.connect.ServerConnection;
+import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.route.service.EndpointAddress;
+
+import java.util.Map;
+
+/**
+ * HTTP请求上下文
+ * 简化版本：只支持HTTP协议，移除协议无关抽象
+ *
+ * @author muxin
+ * @version 2.0.0
+ * @since 1.0.0
+ */
+public interface RequestContext extends AttributesHolder {
+
+    String requestId();
+
+    HttpServerExchange exchange();
+
+    ServerConnection serverConnection();
+
+    void setServerConnection(ServerConnection connection);
+
+    ClientConnection clientConnection();
+
+    void setClientConnection(ClientConnection connection);
+
+    Route getMatchedRoute();
+
+    void setMatchedRoute(Route route);
+
+    EndpointAddress getSelectedEndpoint();
+
+    void setSelectedEndpoint(EndpointAddress instance);
+
+    long getStartTime();
+
+    void markComplete();
+
+    boolean isCompleted();
+
+    Throwable getError();
+
+    void setError(Throwable error);
+
+    boolean hasError();
+}

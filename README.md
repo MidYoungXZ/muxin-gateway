@@ -1,14 +1,14 @@
-# Muxin Gateway（cursor升级版）
+# Muxin Gateway
 
-一个基于 Netty 的高性能、协议无关的 API 网关系统。包含轻量级核心模块（Gateway Core Plus）和完整的管理系统。
+一个基于 Netty 的高性能、协议无关的 API 网关系统。包含轻量级核心模块（Gateway Core）和完整的管理系统。
 
 ## 🚀 快速开始
 
 ### 1. 启动轻量级网关（推荐）
 
 ```bash
-# 使用 Gateway Core Plus - 轻量级、高性能
-cd gateway-core-plus
+# 使用 Gateway Core - 轻量级、高性能
+cd gateway-core
 mvn clean compile
 java -cp "target/classes:target/dependency/*" \
      com.muxin.gateway.core.plus.GatewayApplication
@@ -18,9 +18,9 @@ java -cp "target/classes:target/dependency/*" \
 
 ```bash
 # 启动网关主程序（包含管理界面）
-cd gateway
+cd gateway-main
 mvn clean package
-java -jar target/gateway-1.0-SNAPSHOT.jar
+java -jar target/gateway-main-1.0-SNAPSHOT.jar
 ```
 
 ### 3. 访问管理界面
@@ -33,7 +33,7 @@ java -jar target/gateway-1.0-SNAPSHOT.jar
 
 ## ✨ 核心功能
 
-### 🚀 Gateway Core Plus（轻量级核心）
+### 🚀 Gateway Core（轻量级核心）
 - 🎯 **独立运行** ✅ - 不依赖Spring Boot，可独立Java应用运行
 - 🔄 **HTTP网关** ✅ - 完整的HTTP/1.1协议支持和转发
 - 🛣️ **智能路由** ✅ - 路径、方法、头部断言匹配（支持Ant风格通配符）
@@ -65,7 +65,7 @@ java -jar target/gateway-1.0-SNAPSHOT.jar
 
 ```
 muxin-gateway/
-├── gateway-core-plus/    # 🚀 轻量级核心模块（推荐使用）
+├── gateway-core/       # 🚀 轻量级核心模块（推荐使用）
 │   ├── src/main/java/com/muxin/gateway/core/plus/
 │   │   ├── GatewayApplication.java     # 独立应用入口 ✅
 │   │   ├── GatewayBootstrap.java       # 引导器和生命周期管理 ✅
@@ -78,15 +78,15 @@ muxin-gateway/
 │   │   │   ├── loadbalance/           # 负载均衡策略（4种）✅
 │   │   │   ├── predicate/             # 断言实现（路径、方法、头部）✅
 │   │   │   └── service/               # 服务实例管理 ✅
-│   │   └── protocol/message/          # 协议抽象和HTTP实现 ✅
+│   │   └── protocol/message/         # 协议抽象和HTTP实现 ✅
 │   └── src/main/resources/
 │       └── gateway-routes.yml         # 配置示例文件 ✅
-├── gateway/              # 完整网关主程序（包含管理界面）✅
-├── gateway-admin/        # 后端管理API模块 ✅
-├── gateway-admin-ui/     # 前端管理界面（Vue3 + Element Plus）✅
-├── gateway-registry/     # 注册中心模块 ✅
-└── doc/                  # 项目文档 ✅
-    ├── gateway-core-plus实现说明文档.md  # Core Plus详细说明 ✅
+├── gateway-main/       # 完整网关主程序（包含管理界面）✅
+├── gateway-admin/      # 后端管理API模块 ✅
+├── gateway-admin-ui/   # 前端管理界面（Vue3 + Element Plus）✅
+├── gateway-registry/   # 注册中心模块 ✅
+└── doc/                # 项目文档 ✅
+    ├── gateway-core实现说明文档.md     # Core 详细说明 ✅
     ├── 协议无关网关架构设计文档.md        # 整体架构设计 ✅
     ├── HTTP网关实现说明.md              # HTTP网关实现说明 ✅
     └── 架构重构变更日志.md              # 重构过程记录 ✅
@@ -94,7 +94,7 @@ muxin-gateway/
 
 ## 🏗️ 架构设计
 
-### Gateway Core Plus 核心架构
+### Gateway Core 核心架构
 
 #### 1. 应用启动层
 ```java
@@ -201,7 +201,7 @@ ConnectionPoolManager      // 连接池管理器接口 ✅
 
 ## 📈 性能指标
 
-### Gateway Core Plus 基准测试
+### Gateway Core 基准测试
 | 指标 | 数值 | 说明 |
 |------|------|------|
 | **QPS** | 10,000+ | 单机并发处理能力 |
@@ -297,13 +297,13 @@ public class CustomLoadBalancer implements LoadBalanceStrategy {
 ## 📚 文档导航
 
 ### 设计文档
-- **前端设计文档** → [前端设计文档](./doc/前端设计文档.md) - 前端架构、功能设计、交互设计
-- **后端设计文档** → [后端设计文档](./doc/后端设计文档.md) - 后端架构、核心功能实现
-- **数据库设计文档** → [数据库设计文档](./doc/数据库设计文档.md) - 数据库表结构、索引设计、数据字典
-- **接口设计文档** → [接口设计文档](./doc/接口设计文档.md) - RESTful API 接口规范、请求响应格式
+- **前端设计文档** → [前端设计文档](gateway-admin/doc/前端设计文档.md) - 前端架构、功能设计、交互设计
+- **后端设计文档** → [后端设计文档](gateway-admin/doc/后端设计文档.md) - 后端架构、核心功能实现
+- **数据库设计文档** → [数据库设计文档](gateway-admin/doc/数据库设计文档.md) - 数据库表结构、索引设计、数据字典
+- **接口设计文档** → [接口设计文档](gateway-admin/doc/接口设计文档.md) - RESTful API 接口规范、请求响应格式
 
 ### 快速链接
-- **配置示例** → [完整配置示例](./gateway-core-plus/src/main/resources/gateway-routes.yml)
+- **配置示例** → [完整配置示例](./gateway-core/src/main/resources/gateway-routes.yml)
 - **🔒 向后兼容**：现有代码无缝迁移 ✅
 
 ## 🛠️ 技术栈
