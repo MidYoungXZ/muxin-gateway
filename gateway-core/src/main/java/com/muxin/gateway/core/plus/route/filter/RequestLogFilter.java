@@ -52,7 +52,7 @@ public class RequestLogFilter extends AbstractFilter {
         }
 
         try {
-            chain.filter(exchange, chain);
+            chain.doFilter(exchange);
         } finally {
             long duration = System.currentTimeMillis() - startTime;
             String statusInfo;

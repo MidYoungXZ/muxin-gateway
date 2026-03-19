@@ -32,7 +32,7 @@ public class MetricsFilter extends AbstractFilter {
         totalRequests.incrementAndGet();
 
         try {
-            chain.filter(exchange, chain);
+            chain.doFilter(exchange);
             totalResponses.incrementAndGet();
         } catch (Exception e) {
             totalErrors.incrementAndGet();

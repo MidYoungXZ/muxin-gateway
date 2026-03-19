@@ -370,11 +370,11 @@ routes:
     
     # 过滤器配置
     filters:
+      - type: PATH_REWRITE
+        order: 50
+        enabled: true
       - type: REQUEST_LOG
         order: 100
-        enabled: true
-      - type: CORS
-        order: 200
         enabled: true
     
     # 超时配置

@@ -1,20 +1,21 @@
 package com.muxin.gateway.core.plus.route;
 
-import com.muxin.gateway.core.plus.route.predicate.Predicate;
 import com.muxin.gateway.core.plus.route.filter.Filter;
+import com.muxin.gateway.core.plus.route.filter.FilterType;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
+import com.muxin.gateway.core.plus.route.predicate.PathPredicate;
+import com.muxin.gateway.core.plus.route.predicate.Predicate;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
-@Data
-@Builder
+@Getter
 public class DefaultRoute implements Route {
 
     private final String id;
@@ -29,7 +30,12 @@ public class DefaultRoute implements Route {
     private final Map<String, Object> metadata;
     private final TimeoutConfig timeoutConfig;
 
-    public DefaultRoute(String id, String name, String description, int order, boolean enabled,
+    private final List<Filter> preFilters;
+    private final List<Filter> postFilters;
+    private final PathPredicate pathPredicate;
+    private final int stripPrefixCount;
+
+    private DefaultRoute(String id, String name, String description, int order, boolean enabled,
                         List<Predicate> predicates, List<Filter> filters,
                         RouteService service, LoadBalanceStrategy loadBalanceStrategy,
                         Map<String, Object> metadata, TimeoutConfig timeoutConfig) {
@@ -45,7 +51,37 @@ public class DefaultRoute implements Route {
         this.metadata = metadata != null ? metadata : Collections.emptyMap();
         this.timeoutConfig = timeoutConfig;
 
-        log.debug("创建路由: {} (策略: {})", id, loadBalanceStrategy.getStrategyName());
+        this.preFilters = initFilters(FilterType.PRE);
+        this.postFilters = initFilters(FilterType.POST);
+        this.pathPredicate = findPathPredicate();
+        this.stripPrefixCount = this.pathPredicate != null ? this.pathPredicate.getStripPrefixCount() : 0;
+
+        log.debug("创建路由: {} (策略: {}, preFilters: {}, postFilters: {})",
+                id, loadBalanceStrategy.getStrategyName(), preFilters.size(), postFilters.size());
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private List<Filter> initFilters(FilterType type) {
+        return filters.stream()
+                .filter(f -> f.getType() == type && f.isEnabled())
+                .sorted(Comparator.comparingInt(Filter::getOrder))
+                .toList();
+    }
+
+    private PathPredicate findPathPredicate() {
+        for (Predicate p : predicates) {
+            if (p instanceof PathPredicate) {
+                return (PathPredicate) p;
+            }
+        }
+        return null;
+    }
+
+    public boolean hasStripPrefix() {
+        return stripPrefixCount > 0;
     }
 
     @Override
@@ -105,5 +141,79 @@ public class DefaultRoute implements Route {
                 && service != null
                 && loadBalanceStrategy != null
                 && !predicates.isEmpty();
+    }
+
+    public static class Builder {
+        private String id;
+        private String name;
+        private String description;
+        private int order;
+        private boolean enabled;
+        private List<Predicate> predicates;
+        private List<Filter> filters;
+        private RouteService service;
+        private LoadBalanceStrategy loadBalanceStrategy;
+        private Map<String, Object> metadata;
+        private TimeoutConfig timeoutConfig;
+
+        public Builder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public Builder order(int order) {
+            this.order = order;
+            return this;
+        }
+
+        public Builder enabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        public Builder predicates(List<Predicate> predicates) {
+            this.predicates = predicates;
+            return this;
+        }
+
+        public Builder filters(List<Filter> filters) {
+            this.filters = filters;
+            return this;
+        }
+
+        public Builder service(RouteService service) {
+            this.service = service;
+            return this;
+        }
+
+        public Builder loadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
+            this.loadBalanceStrategy = loadBalanceStrategy;
+            return this;
+        }
+
+        public Builder metadata(Map<String, Object> metadata) {
+            this.metadata = metadata;
+            return this;
+        }
+
+        public Builder timeoutConfig(TimeoutConfig timeoutConfig) {
+            this.timeoutConfig = timeoutConfig;
+            return this;
+        }
+
+        public DefaultRoute build() {
+            return new DefaultRoute(id, name, description, order, enabled,
+                    predicates, filters, service, loadBalanceStrategy, metadata, timeoutConfig);
+        }
     }
 }

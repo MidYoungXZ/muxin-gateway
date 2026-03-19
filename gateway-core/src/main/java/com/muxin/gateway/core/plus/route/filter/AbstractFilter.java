@@ -28,7 +28,7 @@ public abstract class AbstractFilter implements Filter {
     @Override
     public void filter(HttpServerExchange exchange, FilterChain chain) {
         if (!enabled) {
-            chain.filter(exchange, chain);
+            chain.doFilter(exchange);
             return;
         }
         doFilter(exchange, chain);

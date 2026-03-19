@@ -3,7 +3,9 @@ package com.muxin.gateway.core.plus.route.loadbalance;
 import com.muxin.gateway.core.plus.route.RequestContext;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -90,8 +92,8 @@ public abstract class LoadBalanceStrategy {
      * 获取策略配置
      * @return 策略配置Map
      */
-    protected java.util.Map<String, Object> getConfig() {
-        return definition != null ? definition.getConfig() : java.util.Collections.emptyMap();
+    protected Map<String, Object> getConfig() {
+        return definition != null ? definition.getConfig() : Collections.emptyMap();
     }
     
     /**

@@ -12,16 +12,22 @@ import com.muxin.gateway.core.plus.connect.netty.NettyConnectionPoolManager;
 import com.muxin.gateway.core.plus.connect.netty.NettyPoolConfig;
 import com.muxin.gateway.core.plus.route.*;
 import com.muxin.gateway.core.plus.route.filter.Filter;
+import com.muxin.gateway.core.plus.route.filter.FilterDefinition;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategyFactory;
 import com.muxin.gateway.core.plus.route.predicate.PathPredicate;
 import com.muxin.gateway.core.plus.route.predicate.Predicate;
+import com.muxin.gateway.core.plus.route.service.DefaultInstanceManager;
+import com.muxin.gateway.core.plus.route.service.HttpEndpointAddress;
 import com.muxin.gateway.core.plus.route.service.InstanceManager;
 import com.muxin.gateway.core.plus.server.http.HttpServerConfig;
 import com.muxin.gateway.core.plus.server.http.NettyHttpServer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 网关引导类
@@ -195,11 +201,11 @@ public class GatewayBootstrap implements LifeCycle {
         connectionPoolManager.init();
 
         // 路由管理器（使用增强版本，支持全局配置）
-        this.routeManager = new com.muxin.gateway.core.plus.route.DefaultRouteManager();
+        this.routeManager = new DefaultRouteManager();
         routeManager.init();
 
         // 节点管理器
-        this.instanceManager = new com.muxin.gateway.core.plus.route.service.DefaultInstanceManager();
+        this.instanceManager = new DefaultInstanceManager();
         instanceManager.init();
 
         // 注册配置中的路由和服务
@@ -219,9 +225,9 @@ public class GatewayBootstrap implements LifeCycle {
                 log.warn("配置文件中没有服务定义，但路由引用了服务");
             } else {
                 try {
-                    java.util.Map<String,ServiceDefinition> serviceMap =
+                    Map<String,ServiceDefinition> serviceMap =
                         gatewayRouteConfig.getServices().stream()
-                            .collect(java.util.stream.Collectors.toMap(
+                            .collect(Collectors.toMap(
                                 ServiceDefinition::getId,
                                 service -> service,
                                 (existing, replacement) -> {
@@ -231,9 +237,9 @@ public class GatewayBootstrap implements LifeCycle {
                             ));
 
                     if (gatewayRouteConfig.getGlobalFilters() != null && !gatewayRouteConfig.getGlobalFilters().isEmpty()) {
-                        java.util.List<com.muxin.gateway.core.plus.route.filter.FilterDefinition> globalFilters =
+                        List<FilterDefinition> globalFilters =
                             gatewayRouteConfig.getGlobalFilters().stream()
-                                .map(gfc -> com.muxin.gateway.core.plus.route.filter.FilterDefinition.builder()
+                                .map(gfc -> FilterDefinition.builder()
                                     .type(gfc.getType())
                                     .order(gfc.getOrder())
                                     .enabled(gfc.isEnabled())
@@ -244,7 +250,7 @@ public class GatewayBootstrap implements LifeCycle {
                         log.info("已加载全局过滤器配置: {} 个", globalFilters.size());
                     }
 
-                    java.util.List<Route> routes =
+                    List<Route> routes =
                         routeConfigConverter.convertToRoutes(gatewayRouteConfig.getRoutes(), serviceMap);
 
                     for (Route route : routes) {
@@ -288,9 +294,9 @@ public class GatewayBootstrap implements LifeCycle {
                 .id("default-service")
                 .name("default-service")
                 .type(ServiceType.CONFIG)
-                .supportedProtocols(java.util.List.of("HTTP"))
-                .addresses(java.util.List.of(
-                        com.muxin.gateway.core.plus.route.AddressDefinition.builder()
+                .supportedProtocols(List.of("HTTP"))
+                .addresses(List.of(
+                        AddressDefinition.builder()
                                 .uri("http://127.0.0.1:8080")
                                 .weight(100)
                                 .build()
@@ -299,7 +305,7 @@ public class GatewayBootstrap implements LifeCycle {
 
         RouteService defaultRouteService = new ConfigRouteService(
                 defaultService,
-                java.util.List.of(new com.muxin.gateway.core.plus.route.service.HttpEndpointAddress("127.0.0.1", 8080)),
+                List.of(new HttpEndpointAddress("127.0.0.1", 8080)),
                 null
         );
 
@@ -313,8 +319,8 @@ public class GatewayBootstrap implements LifeCycle {
                 .description("处理未匹配到其他路由的请求")
                 .order(Integer.MAX_VALUE)
                 .enabled(true)
-                .predicates(java.util.List.of(pathPredicate))
-                .filters(java.util.Collections.emptyList())
+                .predicates(List.of(pathPredicate))
+                .filters(Collections.emptyList())
                 .service(defaultRouteService)
                 .loadBalanceStrategy(loadBalanceStrategy)
                 .build();

@@ -80,12 +80,9 @@ public class RouteConfigConverter {
      */
     private void initFilterFactories() {
         registerFilterFactory(new RequestIdFilter.Factory());
-        registerFilterFactory(new CorsFilter.Factory());
-        registerFilterFactory(new CorsPostFilter.Factory());
         registerFilterFactory(new RequestLogFilter.Factory());
-        registerFilterFactory(new AuthFilter.Factory());
         registerFilterFactory(new MetricsFilter.Factory());
-        registerFilterFactory(new RateLimitFilter.Factory());
+        registerFilterFactory(new PathRewriteFilter.Factory());
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 

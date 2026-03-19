@@ -14,6 +14,7 @@ import java.util.Objects;
 /**
  * HTTP服务器交换对象的默认实现
  * 将Netty的HTTP对象适配为网关的消息接口
+ * 优化：直接使用原始请求，避免不必要的复制
  *
  * @author muxin
  * @version 2.0.0
@@ -29,27 +30,8 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     public DefaultHttpServerExchange(FullHttpRequest request) {
         Objects.requireNonNull(request, "HTTP请求不能为空");
         this.attributes = new HashMap<>();
-        this.requestAdapter = new NettyHttpRequestAdapter(duplicateRequest(request));
+        this.requestAdapter = new NettyHttpRequestAdapter(request);
         log.debug("创建HTTP服务器交换对象: {} {}", request.method(), request.uri());
-    }
-
-    private static FullHttpRequest duplicateRequest(FullHttpRequest original) {
-        ByteBuf content = original.content();
-        ByteBuf duplicatedContent = content != null && content.isReadable()
-                ? Unpooled.copiedBuffer(content)
-                : Unpooled.buffer(0);
-
-        FullHttpRequest duplicated = new DefaultFullHttpRequest(
-                original.protocolVersion(),
-                original.method(),
-                original.uri(),
-                duplicatedContent,
-                original.headers().copy(),
-                original.trailingHeaders().copy()
-        );
-
-        duplicated.headers().set(HttpHeaderNames.CONTENT_LENGTH, duplicatedContent.readableBytes());
-        return duplicated;
     }
 
     @Override

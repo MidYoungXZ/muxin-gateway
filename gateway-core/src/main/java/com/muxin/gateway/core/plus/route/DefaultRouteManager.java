@@ -1,7 +1,6 @@
 package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.route.filter.Filter;
-import com.muxin.gateway.core.plus.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.plus.route.predicate.Predicate;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +36,7 @@ public class DefaultRouteManager implements RouteManager {
 
         for (Route route : routes) {
             if (route.matches(context)) {
+                context.setMatchedRoute(route);
                 log.debug("[DefaultRouteManager] 匹配路由: {} -> {}", context.requestId(), route.getId());
                 return route;
             }

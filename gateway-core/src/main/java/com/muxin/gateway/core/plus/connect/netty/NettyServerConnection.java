@@ -1,5 +1,6 @@
 package com.muxin.gateway.core.plus.connect.netty;
 
+import com.muxin.gateway.core.plus.GatewayProcessor;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -53,11 +54,26 @@ public class NettyServerConnection implements ServerConnection {
         try {
             boolean keepAlive = HttpUtil.isKeepAlive(response);
 
-            FullHttpResponse responseToSend = duplicateResponse(response);
+            ByteBuf content = response.content();
+            ByteBuf retainedContent = content != null && content.isReadable()
+                    ? Unpooled.copiedBuffer(content)
+                    : Unpooled.buffer(0);
+
+            FullHttpResponse responseToSend = new DefaultFullHttpResponse(
+                    response.protocolVersion(),
+                    response.status(),
+                    retainedContent,
+                    response.headers().copy(),
+                    response.trailingHeaders().copy()
+            );
+
+            responseToSend.headers().set(HttpHeaderNames.CONTENT_LENGTH, retainedContent.readableBytes());
 
             channel.writeAndFlush(responseToSend).addListener((ChannelFutureListener) channelFuture -> {
                 if (channelFuture.isSuccess()) {
-                    log.debug("[NettyServerConnection] 响应发送成功: {}, keepAlive={}", connectionId, keepAlive);
+                    if (log.isDebugEnabled()) {
+                        log.debug("[NettyServerConnection] 响应发送成功: {}, keepAlive={}", connectionId, keepAlive);
+                    }
                     future.complete(null);
 
                     if (!keepAlive) {
@@ -76,25 +92,6 @@ public class NettyServerConnection implements ServerConnection {
         }
 
         return future;
-    }
-
-    private FullHttpResponse duplicateResponse(FullHttpResponse original) {
-        ByteBuf content = original.content();
-        ByteBuf duplicatedContent = content != null && content.isReadable()
-                ? Unpooled.copiedBuffer(content)
-                : Unpooled.buffer(0);
-
-        FullHttpResponse duplicated = new DefaultFullHttpResponse(
-                original.protocolVersion(),
-                original.status(),
-                duplicatedContent,
-                original.headers().copy(),
-                original.trailingHeaders().copy()
-        );
-
-        duplicated.headers().set(HttpHeaderNames.CONTENT_LENGTH, duplicatedContent.readableBytes());
-
-        return duplicated;
     }
 
     @Override
@@ -148,7 +145,7 @@ public class NettyServerConnection implements ServerConnection {
     }
 
     private int determineStatusCode(Throwable error) {
-        if (error instanceof com.muxin.gateway.core.plus.GatewayProcessor.ProcessingException) {
+        if (error instanceof GatewayProcessor.ProcessingException) {
             return 500;
         }
         if (error instanceof IllegalArgumentException) {

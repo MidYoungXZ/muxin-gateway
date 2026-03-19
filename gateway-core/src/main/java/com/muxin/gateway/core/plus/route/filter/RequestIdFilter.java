@@ -47,7 +47,7 @@ public class RequestIdFilter extends AbstractFilter {
         }
 
         exchange.request().header("X-Request-ID", requestId);
-        chain.filter(exchange, chain);
+        chain.doFilter(exchange);
     }
 
     private String generateRequestId() {
