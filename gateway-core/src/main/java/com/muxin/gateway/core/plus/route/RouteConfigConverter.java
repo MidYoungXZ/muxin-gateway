@@ -81,6 +81,7 @@ public class RouteConfigConverter {
     private void initFilterFactories() {
         registerFilterFactory(new RequestIdFilter.Factory());
         registerFilterFactory(new CorsFilter.Factory());
+        registerFilterFactory(new CorsPostFilter.Factory());
         registerFilterFactory(new RequestLogFilter.Factory());
         registerFilterFactory(new AuthFilter.Factory());
         registerFilterFactory(new MetricsFilter.Factory());

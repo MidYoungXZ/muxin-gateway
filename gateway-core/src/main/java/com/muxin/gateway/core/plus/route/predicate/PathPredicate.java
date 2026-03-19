@@ -119,21 +119,16 @@ public class PathPredicate implements Predicate {
         String[] segments = path.split("/");
         StringBuilder result = new StringBuilder();
         int count = 0;
-        for (int i = 0; i < segments.length; i++) {
-            if (segments[i].isEmpty()) {
-                result.append("/");
-            } else {
-                count++;
-                if (count > stripPrefixCount) {
-                    result.append("/").append(segments[i]);
-                }
+        for (String segment : segments) {
+            if (segment.isEmpty()) {
+                continue;
+            }
+            count++;
+            if (count > stripPrefixCount) {
+                result.append("/").append(segment);
             }
         }
-        String stripped = result.toString();
-        if (stripped.isEmpty()) {
-            return "/";
-        }
-        return stripped;
+        return result.length() == 0 ? "/" : result.toString();
     }
 
     @Override

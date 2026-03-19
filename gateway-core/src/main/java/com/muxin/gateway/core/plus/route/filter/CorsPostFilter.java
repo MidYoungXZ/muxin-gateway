@@ -2,15 +2,14 @@ package com.muxin.gateway.core.plus.route.filter;
 
 import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class CorsFilter extends AbstractFilter {
+public class CorsPostFilter extends AbstractFilter {
 
-    public static final String TYPE = "CORS";
+    public static final String TYPE = "CORS_POST";
 
     private Set<String> allowedOrigins;
     private Set<String> allowedMethods;
@@ -18,7 +17,7 @@ public class CorsFilter extends AbstractFilter {
     private boolean allowCredentials;
     private int maxAge;
 
-    public CorsFilter() {
+    public CorsPostFilter() {
         this.allowedOrigins = new HashSet<>(Arrays.asList("*"));
         this.allowedMethods = new HashSet<>(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         this.allowedHeaders = new HashSet<>(Arrays.asList("*"));
@@ -26,7 +25,7 @@ public class CorsFilter extends AbstractFilter {
         this.maxAge = 3600;
     }
 
-    public CorsFilter(FilterDefinition definition) {
+    public CorsPostFilter(FilterDefinition definition) {
         this.name = TYPE;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
@@ -58,37 +57,26 @@ public class CorsFilter extends AbstractFilter {
 
     @Override
     protected void doFilter(HttpServerExchange exchange, FilterChain chain) {
-        String method = exchange.request().method().name();
-
-        if ("OPTIONS".equalsIgnoreCase(method)) {
-            HttpHeaders headers = exchange.request().headers();
-            String origin = headers.get(HttpHeaderNames.ORIGIN);
-            if (origin == null) {
-                origin = headers.get(HttpHeaderNames.REFERER);
-            }
-
-            if (origin != null && isOriginAllowed(origin)) {
-                exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), origin);
-                if (allowCredentials) {
-                    exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS.toString(), "true");
-                }
-                exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_MAX_AGE.toString(), String.valueOf(maxAge));
-            }
-
-            if (!allowedOrigins.isEmpty() && !allowedOrigins.contains("*")) {
-                String allowedMethodsStr = String.join(", ", allowedMethods);
-                exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS.toString(), allowedMethodsStr);
-
-                if (!allowedHeaders.isEmpty() && !allowedHeaders.contains("*")) {
-                    String allowedHeadersStr = String.join(", ", allowedHeaders);
-                    exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_HEADERS.toString(), allowedHeadersStr);
-                }
-            }
-            exchange.response().setStatus(io.netty.handler.codec.http.HttpResponseStatus.OK);
-            logDebug("CORS preflight handled for origin: {}", origin);
+        if (exchange.response() == null) {
+            logDebug("CORS POST: no response available");
+            chain.filter(exchange, chain);
             return;
         }
 
+        io.netty.handler.codec.http.HttpHeaders headers = exchange.request().headers();
+        String origin = headers.get(HttpHeaderNames.ORIGIN);
+        if (origin == null) {
+            origin = headers.get(HttpHeaderNames.REFERER);
+        }
+
+        if (origin != null && isOriginAllowed(origin)) {
+            exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN.toString(), origin);
+            if (allowCredentials) {
+                exchange.response().header(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS.toString(), "true");
+            }
+        }
+
+        logDebug("CORS headers added for origin: {}", origin);
         chain.filter(exchange, chain);
     }
 
@@ -101,14 +89,14 @@ public class CorsFilter extends AbstractFilter {
 
     @Override
     public FilterType getType() {
-        return FilterType.PRE;
+        return FilterType.POST;
     }
 
     public static class Factory implements FilterFactory {
 
         @Override
         public Filter createFilter(FilterDefinition definition) {
-            return new CorsFilter(definition);
+            return new CorsPostFilter(definition);
         }
 
         @Override
