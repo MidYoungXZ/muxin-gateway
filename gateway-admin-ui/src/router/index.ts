@@ -20,32 +20,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '首页', icon: 'House' }
       },
       {
-        path: '/monitor',
-        name: 'Monitor',
-        redirect: '/monitor/realtime',
-        meta: { title: '监控大屏', icon: 'Monitor' },
-        children: [
-          {
-            path: '/monitor/realtime',
-            name: 'RealtimeStats',
-            component: () => import('@/views/monitor/realtime/index.vue'),
-            meta: { title: '实时请求统计' }
-          },
-          {
-            path: '/monitor/routes',
-            name: 'RouteMonitor',
-            component: () => import('@/views/monitor/routes/index.vue'),
-            meta: { title: '路由调用监控' }
-          },
-          {
-            path: '/monitor/filters',
-            name: 'FilterMonitor',
-            component: () => import('@/views/monitor/filters/index.vue'),
-            meta: { title: '过滤器命中监控' }
-          }
-        ]
-      },
-      {
         path: '/routes',
         name: 'Routes',
         redirect: '/routes/list',
@@ -58,22 +32,16 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '路由列表' }
           },
           {
-            path: '/routes/test',
-            name: 'RouteTest',
-            component: () => import('@/views/routes/test/index.vue'),
-            meta: { title: '路由测试工具' }
-          },
-          {
             path: '/routes/nodes',
             name: 'NodeManage',
             component: () => import('@/views/routes/nodes/index.vue'),
-            meta: { title: '节点管理' }
+            meta: { title: '服务节点' }
           },
           {
             path: '/routes/loadbalance',
             name: 'LoadBalance',
             component: () => import('@/views/routes/loadbalance/index.vue'),
-            meta: { title: '负载均衡配置' }
+            meta: { title: '负载均衡' }
           },
           {
             path: '/routes/filters',
@@ -86,26 +54,6 @@ const routes: RouteRecordRaw[] = [
             name: 'PredicateManage',
             component: () => import('@/views/routes/predicates/index.vue'),
             meta: { title: '断言管理' }
-          }
-        ]
-      },
-      {
-        path: '/auth',
-        name: 'Auth',
-        redirect: '/auth/api-permission',
-        meta: { title: '鉴权规则', icon: 'Lock' },
-        children: [
-          {
-            path: '/auth/api-permission',
-            name: 'ApiPermission',
-            component: () => import('@/views/auth/api-permission/index.vue'),
-            meta: { title: 'API权限控制' }
-          },
-          {
-            path: '/auth/whitelist',
-            name: 'Whitelist',
-            component: () => import('@/views/auth/whitelist/index.vue'),
-            meta: { title: '白名单配置' }
           }
         ]
       },
@@ -162,35 +110,29 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
 router.beforeEach(async (to, from, next) => {
   const { useUserStore } = await import('@/stores/user')
   const userStore = useUserStore()
   
-  // 初始化用户信息
   if (!userStore.isLoggedIn) {
     await userStore.init()
   }
   
-  // 白名单路由（无需登录）
   const whiteList = ['/login']
   
   if (userStore.isLoggedIn) {
     if (to.path === '/login') {
-      // 已登录用户访问登录页，重定向到首页
       next({ path: '/' })
     } else {
       next()
     }
   } else {
     if (whiteList.includes(to.path)) {
-      // 在白名单中，直接进入
       next()
     } else {
-      // 未登录且不在白名单中，重定向到登录页
       next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
     }
   }
 })
 
-export default router 
+export default router

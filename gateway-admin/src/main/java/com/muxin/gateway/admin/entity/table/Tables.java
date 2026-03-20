@@ -35,11 +35,6 @@ public final class Tables {
     public static final GwRoutePredicateTableDef GW_ROUTE_PREDICATE = GwRoutePredicateTableDef.GW_ROUTE_PREDICATE;
     
     /**
-     * 监控指标表
-     */
-    public static final GwMetricsTableDef GW_METRICS = GwMetricsTableDef.GW_METRICS;
-    
-    /**
      * 用户表
      */
     public static final SysUserTableDef SYS_USER = SysUserTableDef.SYS_USER;

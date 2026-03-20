@@ -1,24 +1,26 @@
-import { useUserStore } from '@/stores/user'
+import { useMenuStore } from '@/stores/menu'
 
 const permission = {
   mounted(el: any, binding: any) {
-    const userStore = useUserStore()
+    const menuStore = useMenuStore()
     const { value } = binding
     
     if (value) {
-      const hasPermission = userStore.hasPermission(value)
+      const permissions = Array.isArray(value) ? value : [value]
+      const hasPermission = menuStore.hasAnyPermissions(permissions)
       if (!hasPermission) {
-        el.style.display = 'none'
+        el.parentNode?.removeChild(el)
       }
     }
   },
   
   updated(el: any, binding: any) {
-    const userStore = useUserStore()
+    const menuStore = useMenuStore()
     const { value } = binding
     
     if (value) {
-      const hasPermission = userStore.hasPermission(value)
+      const permissions = Array.isArray(value) ? value : [value]
+      const hasPermission = menuStore.hasAnyPermissions(permissions)
       if (!hasPermission) {
         el.style.display = 'none'
       } else {
@@ -28,4 +30,4 @@ const permission = {
   }
 }
 
-export default permission 
+export default permission

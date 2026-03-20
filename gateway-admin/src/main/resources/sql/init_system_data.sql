@@ -31,82 +31,91 @@ INSERT INTO sys_dept (id, parent_id, dept_name, dept_code, ancestors, order_num,
 
 -- 一级菜单（目录）
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order, visible, status, create_time, update_time, create_by, update_by, deleted) VALUES
-(1, 0, '系统管理', 'menu.system', 'M', '/system', '', '', 'Setting', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2, 0, '网关管理', 'menu.gateway', 'M', '/gateway', '', '', 'Connection', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(3, 0, '监控管理', 'menu.monitor', 'M', '/monitor', '', '', 'Monitor', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0);
+(1, 0, '路由管理', 'menu.routes', 'M', '/routes', '', '', 'Connection', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2, 0, '系统管理', 'menu.system', 'M', '/system', '', '', 'Setting', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0);
 
 -- 二级菜单（页面）
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order, visible, status, create_time, update_time, create_by, update_by, deleted) VALUES
+-- 路由管理子菜单
+(100, 1, '路由列表', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(101, 1, '服务节点', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'SetUp', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(102, 1, '负载均衡', 'menu.routes.loadbalance', 'C', '/routes/loadbalance', 'routes/loadbalance/index', 'route:loadbalance:list', 'DataLine', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
 -- 系统管理子菜单
-(100, 1, '用户管理', 'menu.system.user', 'C', '/system/users', 'system/users/index', 'system:user:list', 'User', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(101, 1, '角色管理', 'menu.system.role', 'C', '/system/roles', 'system/roles/index', 'system:role:list', 'UserFilled', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(102, 1, '权限管理', 'menu.system.permission', 'C', '/system/permissions', 'system/permissions/index', 'system:menu:list', 'Menu', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(103, 1, '部门管理', 'menu.system.dept', 'C', '/system/departments', 'system/departments/index', 'system:dept:list', 'OfficeBuilding', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 网关管理子菜单
-(200, 2, '路由管理', 'menu.gateway.route', 'C', '/gateway/routes', 'gateway/routes/index', 'gateway:route:list', 'Connection', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(201, 2, '服务管理', 'menu.gateway.service', 'C', '/gateway/services', 'gateway/services/index', 'gateway:service:list', 'SetUp', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(202, 2, '过滤器管理', 'menu.gateway.filter', 'C', '/gateway/filters', 'gateway/filters/index', 'gateway:filter:list', 'Filter', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(203, 2, '限流配置', 'menu.gateway.limit', 'C', '/gateway/rate-limits', 'gateway/rate-limits/index', 'gateway:limit:list', 'Timer', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 监控管理子菜单
-(300, 3, '系统监控', 'menu.monitor.system', 'C', '/monitor/system', 'monitor/system/index', 'monitor:system:view', 'Monitor', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(301, 3, '接口监控', 'menu.monitor.api', 'C', '/monitor/api', 'monitor/api/index', 'monitor:api:view', 'DataAnalysis', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(302, 3, '日志管理', 'menu.monitor.log', 'C', '/monitor/logs', 'monitor/logs/index', 'monitor:log:view', 'Document', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0);
+(200, 2, '用户管理', 'menu.system.user', 'C', '/system/users', 'system/users/index', 'system:user:list', 'User', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(201, 2, '角色管理', 'menu.system.role', 'C', '/system/roles', 'system/roles/index', 'system:role:list', 'UserFilled', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(202, 2, '部门管理', 'menu.system.dept', 'C', '/system/departments', 'system/departments/index', 'system:dept:list', 'OfficeBuilding', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(203, 2, '权限管理', 'menu.system.permission', 'C', '/system/permissions', 'system/permissions/index', 'system:menu:list', 'Menu', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(204, 2, '操作日志', 'menu.system.log', 'C', '/system/operation-logs', 'system/operation-logs/index', 'system:log:list', 'Document', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(205, 2, '系统配置', 'menu.system.config', 'C', '/system/config', 'system/config/index', 'system:config:list', 'Tools', 6, 1, 1, NOW(), NOW(), 'system', 'system', 0);
 
 -- 三级菜单（按钮权限）
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order, visible, status, create_time, update_time, create_by, update_by, deleted) VALUES
--- 用户管理按钮
-(1001, 100, '用户查看', '', 'F', '', '', 'system:user:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1002, 100, '用户新增', '', 'F', '', '', 'system:user:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1003, 100, '用户修改', '', 'F', '', '', 'system:user:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1004, 100, '用户删除', '', 'F', '', '', 'system:user:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1005, 100, '用户导出', '', 'F', '', '', 'system:user:export', '', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1006, 100, '用户导入', '', 'F', '', '', 'system:user:import', '', 6, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1007, 100, '重置密码', '', 'F', '', '', 'system:user:resetPwd', '', 7, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+-- 路由列表按钮
+(1001, 100, '路由查看', '', 'F', '', '', 'route:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1002, 100, '路由新增', '', 'F', '', '', 'route:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1003, 100, '路由修改', '', 'F', '', '', 'route:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1004, 100, '路由删除', '', 'F', '', '', 'route:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
--- 角色管理按钮
-(1101, 101, '角色查看', '', 'F', '', '', 'system:role:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1102, 101, '角色新增', '', 'F', '', '', 'system:role:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1103, 101, '角色修改', '', 'F', '', '', 'system:role:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1104, 101, '角色删除', '', 'F', '', '', 'system:role:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1105, 101, '分配权限', '', 'F', '', '', 'system:role:auth', '', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+-- 服务节点按钮
+(1011, 101, '节点查看', '', 'F', '', '', 'route:node:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1012, 101, '节点新增', '', 'F', '', '', 'route:node:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1013, 101, '节点修改', '', 'F', '', '', 'route:node:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1014, 101, '节点删除', '', 'F', '', '', 'route:node:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
--- 权限管理按钮
-(1201, 102, '权限查看', '', 'F', '', '', 'system:menu:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1202, 102, '权限新增', '', 'F', '', '', 'system:menu:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1203, 102, '权限修改', '', 'F', '', '', 'system:menu:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1204, 102, '权限删除', '', 'F', '', '', 'system:menu:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 部门管理按钮
-(1301, 103, '部门查看', '', 'F', '', '', 'system:dept:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1302, 103, '部门新增', '', 'F', '', '', 'system:dept:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1303, 103, '部门修改', '', 'F', '', '', 'system:dept:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1304, 103, '部门删除', '', 'F', '', '', 'system:dept:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 路由管理按钮
-(2001, 200, '路由查看', '', 'F', '', '', 'gateway:route:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2002, 200, '路由新增', '', 'F', '', '', 'gateway:route:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2003, 200, '路由修改', '', 'F', '', '', 'gateway:route:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2004, 200, '路由删除', '', 'F', '', '', 'gateway:route:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 服务管理按钮
-(2101, 201, '服务查看', '', 'F', '', '', 'gateway:service:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2102, 201, '服务新增', '', 'F', '', '', 'gateway:service:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2103, 201, '服务修改', '', 'F', '', '', 'gateway:service:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2104, 201, '服务删除', '', 'F', '', '', 'gateway:service:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+-- 负载均衡按钮
+(1021, 102, '配置查看', '', 'F', '', '', 'route:loadbalance:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1022, 102, '配置新增', '', 'F', '', '', 'route:loadbalance:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1023, 102, '配置修改', '', 'F', '', '', 'route:loadbalance:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1024, 102, '配置删除', '', 'F', '', '', 'route:loadbalance:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 过滤器管理按钮
-(2201, 202, '过滤器查看', '', 'F', '', '', 'gateway:filter:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2202, 202, '过滤器新增', '', 'F', '', '', 'gateway:filter:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2203, 202, '过滤器修改', '', 'F', '', '', 'gateway:filter:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2204, 202, '过滤器删除', '', 'F', '', '', 'gateway:filter:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1031, 103, '过滤器查看', '', 'F', '', '', 'route:filter:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1032, 103, '过滤器新增', '', 'F', '', '', 'route:filter:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1033, 103, '过滤器修改', '', 'F', '', '', 'route:filter:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1034, 103, '过滤器删除', '', 'F', '', '', 'route:filter:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
--- 限流配置按钮
-(2301, 203, '限流查看', '', 'F', '', '', 'gateway:limit:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2302, 203, '限流新增', '', 'F', '', '', 'gateway:limit:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2303, 203, '限流修改', '', 'F', '', '', 'gateway:limit:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2304, 203, '限流删除', '', 'F', '', '', 'gateway:limit:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0);
+-- 断言管理按钮
+(1041, 104, '断言查看', '', 'F', '', '', 'route:predicate:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1042, 104, '断言新增', '', 'F', '', '', 'route:predicate:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1043, 104, '断言修改', '', 'F', '', '', 'route:predicate:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1044, 104, '断言删除', '', 'F', '', '', 'route:predicate:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 用户管理按钮
+(2001, 200, '用户查看', '', 'F', '', '', 'system:user:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2002, 200, '用户新增', '', 'F', '', '', 'system:user:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2003, 200, '用户修改', '', 'F', '', '', 'system:user:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2004, 200, '用户删除', '', 'F', '', '', 'system:user:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2005, 200, '重置密码', '', 'F', '', '', 'system:user:resetPwd', '', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 角色管理按钮
+(2011, 201, '角色查看', '', 'F', '', '', 'system:role:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2012, 201, '角色新增', '', 'F', '', '', 'system:role:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2013, 201, '角色修改', '', 'F', '', '', 'system:role:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2014, 201, '角色删除', '', 'F', '', '', 'system:role:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2015, 201, '分配权限', '', 'F', '', '', 'system:role:auth', '', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 部门管理按钮
+(2021, 202, '部门查看', '', 'F', '', '', 'system:dept:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2022, 202, '部门新增', '', 'F', '', '', 'system:dept:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2023, 202, '部门修改', '', 'F', '', '', 'system:dept:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2024, 202, '部门删除', '', 'F', '', '', 'system:dept:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 权限管理按钮
+(2031, 203, '权限查看', '', 'F', '', '', 'system:menu:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2032, 203, '权限新增', '', 'F', '', '', 'system:menu:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2033, 203, '权限修改', '', 'F', '', '', 'system:menu:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2034, 203, '权限删除', '', 'F', '', '', 'system:menu:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 操作日志按钮
+(2041, 204, '日志查看', '', 'F', '', '', 'system:log:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2042, 204, '日志删除', '', 'F', '', '', 'system:log:delete', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+
+-- 系统配置按钮
+(2051, 205, '配置查看', '', 'F', '', '', 'system:config:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2052, 205, '配置修改', '', 'F', '', '', 'system:config:update', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0);
 
 -- ========================================
 -- 3. 角色权限分配
@@ -119,29 +128,23 @@ SELECT 1, id FROM sys_menu WHERE deleted = 0;
 -- 系统管理员（系统管理相关权限）
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 -- 系统管理目录及其所有子权限
-(2, 1), -- 系统管理目录
-(2, 100), (2, 1001), (2, 1002), (2, 1003), (2, 1004), (2, 1005), (2, 1006), (2, 1007), -- 用户管理
-(2, 101), (2, 1101), (2, 1102), (2, 1103), (2, 1104), (2, 1105), -- 角色管理
-(2, 102), (2, 1201), (2, 1202), (2, 1203), (2, 1204), -- 权限管理
-(2, 103), (2, 1301), (2, 1302), (2, 1303), (2, 1304), -- 部门管理
--- 监控管理
-(2, 3), (2, 300), (2, 301), (2, 302);
+(2, 2),
+(2, 200), (2, 2001), (2, 2002), (2, 2003), (2, 2004), (2, 2005),
+(2, 201), (2, 2011), (2, 2012), (2, 2013), (2, 2014), (2, 2015),
+(2, 202), (2, 2021), (2, 2022), (2, 2023), (2, 2024),
+(2, 203), (2, 2031), (2, 2032), (2, 2033), (2, 2034),
+(2, 204), (2, 2041), (2, 2042),
+(2, 205), (2, 2051), (2, 2052);
 
--- 网关管理员（网关管理相关权限）
+-- 路由管理员（路由管理相关权限）
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
--- 网关管理目录及其所有子权限
-(3, 2), -- 网关管理目录
-(3, 200), (3, 2001), (3, 2002), (3, 2003), (3, 2004), -- 路由管理
-(3, 201), (3, 2101), (3, 2102), (3, 2103), (3, 2104), -- 服务管理
-(3, 202), (3, 2201), (3, 2202), (3, 2203), (3, 2204), -- 过滤器管理
-(3, 203), (3, 2301), (3, 2302), (3, 2303), (3, 2304), -- 限流配置
--- 监控管理（只读）
-(3, 3), (3, 300), (3, 301), (3, 302);
-
--- 普通用户（基础查看权限）
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES
--- 监控查看
-(4, 3), (4, 300), (4, 301), (4, 302);
+-- 路由管理目录及其所有子权限
+(3, 1),
+(3, 100), (3, 1001), (3, 1002), (3, 1003), (3, 1004),
+(3, 101), (3, 1011), (3, 1012), (3, 1013), (3, 1014),
+(3, 102), (3, 1021), (3, 1022), (3, 1023), (3, 1024),
+(3, 103), (3, 1031), (3, 1032), (3, 1033), (3, 1034),
+(3, 104), (3, 1041), (3, 1042), (3, 1043), (3, 1044);
 
 -- ========================================
 -- 输出统计信息
@@ -166,5 +169,7 @@ FROM sys_role_menu;
 -- 已创建：
 -- - 10个部门（含总公司及各业务部门）
 -- - 完整的三级菜单权限结构
+--   - 路由管理：路由列表、服务节点、负载均衡、过滤器管理、断言管理
+--   - 系统管理：用户管理、角色管理、部门管理、权限管理、操作日志、系统配置
 -- - 角色权限分配
--- ======================================== 
+-- ========================================
