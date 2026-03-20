@@ -1,0 +1,86 @@
+# =====================================================
+# Muxin Gateway Nacos Registry Configuration Example
+# =====================================================
+
+# Nacos Registry Configuration
+muxin:
+  gateway:
+    registry:
+      nacos:
+        # Enable Nacos registry
+        enabled: true
+        
+        # Nacos server address (required)
+        server-addr: 127.0.0.1:8848
+        
+        # Namespace (optional, default: empty = public namespace)
+        namespace: ""
+        
+        # Group (optional, default: DEFAULT_GROUP)
+        group: DEFAULT_GROUP
+        
+        # Authentication (optional)
+        username: nacos
+        password: nacos
+        
+        # Access key for Alibaba Cloud Nacos (optional)
+        # access-key: your-access-key
+        # secret-key: your-secret-key
+        
+        # Cluster name (optional)
+        # cluster-name: DEFAULT
+        
+        # Register gateway itself to Nacos
+        register-enabled: true
+        
+        # Service name for gateway registration
+        service-id: muxin-gateway
+        service-name: muxin-gateway
+        
+        # Gateway port (default: server.port)
+        # port: 8080
+        
+        # Gateway IP (optional, auto-detected if not specified)
+        # ip: 192.168.1.100
+        
+        # Instance weight (default: 1.0)
+        weight: 1.0
+        
+        # Whether instance is ephemeral (default: true)
+        ephemeral: true
+        
+        # Service metadata
+        service-metadata:
+          version: 1.0.0
+          env: dev
+
+# =====================================================
+# Gateway Routes Configuration with Discovery Service
+# =====================================================
+# See gateway-routes.yml for route configuration
+# 
+# Example route using DISCOVERY type:
+#
+# services:
+#   - id: user-service
+#     name: user-service
+#     type: DISCOVERY
+#     supported-protocols:
+#       - HTTP
+#     config:
+#       cache-expire-time: 30000
+#
+# routes:
+#   - id: user-route
+#     name: User Service Route
+#     service-ref: user-service
+#     predicates:
+#       - type: PATH
+#         config:
+#           pattern: /api/users/**
+#     filters:
+#       - type: PATH_REWRITE
+#         config:
+#           pattern: /api/users/(?<segment>.*)
+#           replacement: /${segment}
+# =====================================================

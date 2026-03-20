@@ -81,7 +81,7 @@ servers:
 services:
   - id: service-unique-id          # 唯一标识符 (必需)
     name: "service-display-name"  # 显示名称 (必需)
-    type: CONFIG                   # 类型: CONFIG (静态) 或 DISCOVERY (动态)
+    type: STATIC                   # 类型: STATIC (静态) 或 DISCOVERY (动态)
     supported-protocols: [HTTP]   # 支持的协议列表
     addresses:                    # 服务地址列表 (CONFIG 类型)
       - uri: "http://host:port"   # 服务地址 (必需)
@@ -140,7 +140,7 @@ services:
 services:
   - id: order-service-001
     name: "order-service"
-    type: CONFIG
+    type: STATIC
     addresses:
       - uri: "http://order-v1:8080"   # 权重 100，占比 50%
         weight: 100
