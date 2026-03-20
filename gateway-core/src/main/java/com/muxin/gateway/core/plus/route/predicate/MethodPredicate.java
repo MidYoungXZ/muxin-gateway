@@ -1,10 +1,9 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class MethodPredicate implements Predicate {
@@ -107,12 +106,12 @@ public class MethodPredicate implements Predicate {
 
     @Override
     public boolean test(HttpServerExchange exchange) {
-        if (exchange == null || exchange.request() == null) {
-            log.warn("[MethodPredicate] exchange或request为空");
+        if (exchange == null) {
+            log.warn("[MethodPredicate] exchange为空");
             return false;
         }
 
-        String requestMethod = exchange.request().method().name();
+        String requestMethod = exchange.method();
         if (requestMethod == null) {
             log.warn("[MethodPredicate] 请求方法为空");
             return false;

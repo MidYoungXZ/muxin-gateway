@@ -145,9 +145,6 @@ public class NettyServerConnection implements ServerConnection {
     }
 
     private int determineStatusCode(Throwable error) {
-        if (error instanceof GatewayProcessor.ProcessingException) {
-            return 500;
-        }
         if (error instanceof IllegalArgumentException) {
             return 400;
         }

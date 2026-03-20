@@ -3,10 +3,8 @@ package com.muxin.gateway.core.plus.route;
 import com.muxin.gateway.core.plus.common.AttributesHolder;
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
-
-import java.util.Map;
 
 /**
  * HTTP请求上下文

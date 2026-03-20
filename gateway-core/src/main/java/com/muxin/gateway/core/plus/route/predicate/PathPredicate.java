@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -67,12 +67,12 @@ public class PathPredicate implements Predicate {
 
     @Override
     public boolean test(HttpServerExchange exchange) {
-        if (exchange == null || exchange.request() == null) {
-            log.warn("[PathPredicate] exchange或request为空");
+        if (exchange == null) {
+            log.warn("[PathPredicate] exchange为空");
             return false;
         }
 
-        String path = exchange.request().fullPath();
+        String path = exchange.fullPath();
         if (path == null) {
             log.warn("[PathPredicate] 请求路径为空");
             return false;

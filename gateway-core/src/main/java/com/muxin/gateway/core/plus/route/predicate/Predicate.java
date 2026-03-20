@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.predicate;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 
 import java.util.Map;
 

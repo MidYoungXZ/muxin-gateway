@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import com.muxin.gateway.core.plus.route.DefaultRoute;
 import com.muxin.gateway.core.plus.route.Route;
 import com.muxin.gateway.core.plus.route.predicate.PathPredicate;
@@ -55,7 +55,7 @@ public class PathRewriteFilter implements Filter {
             int stripPrefixCount = defaultRoute.getStripPrefixCount();
             if (stripPrefixCount > 0) {
                 PathPredicate pathPredicate = defaultRoute.getPathPredicate();
-                String originalPath = exchange.request().fullPath();
+                String originalPath = exchange.fullPath();
                 String strippedPath = pathPredicate.stripPrefix(originalPath);
 
                 exchange.setAttribute("stripPrefixCount", stripPrefixCount);

@@ -110,4 +110,20 @@ public class TimeoutConfig {
                 .circuitBreaker(DEFAULT_CIRCUIT_BREAKER)
                 .build();
     }
+
+    public static long getDefault(TimeoutType type) {
+        return switch (type) {
+            case CONNECTION -> DEFAULT_CONNECTION;
+            case REQUEST -> DEFAULT_REQUEST;
+            case TOTAL -> DEFAULT_TOTAL;
+            case READ -> DEFAULT_READ;
+            case WRITE -> DEFAULT_WRITE;
+            case CIRCUIT_BREAKER -> DEFAULT_CIRCUIT_BREAKER;
+        };
+    }
+
+    public long get(TimeoutType type) {
+        Long value = getTimeout(type);
+        return value != null ? value : getDefault(type);
+    }
 }

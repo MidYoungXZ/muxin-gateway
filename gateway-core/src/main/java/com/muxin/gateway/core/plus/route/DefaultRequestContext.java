@@ -2,7 +2,7 @@ package com.muxin.gateway.core.plus.route;
 
 import com.muxin.gateway.core.plus.connect.ClientConnection;
 import com.muxin.gateway.core.plus.connect.ServerConnection;
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import com.muxin.gateway.core.plus.route.service.EndpointAddress;
 import lombok.extern.slf4j.Slf4j;
 

@@ -2,7 +2,7 @@ package com.muxin.gateway.core.plus.server.http;
 
 import com.muxin.gateway.core.plus.GatewayProcessor;
 import com.muxin.gateway.core.plus.connect.netty.NettyServerConnection;
-import com.muxin.gateway.core.plus.message.http.DefaultHttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.DefaultHttpServerExchange;
 import com.muxin.gateway.core.plus.route.DefaultRequestContext;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;

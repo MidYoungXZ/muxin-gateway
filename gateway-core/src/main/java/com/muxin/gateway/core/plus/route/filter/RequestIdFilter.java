@@ -1,8 +1,6 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaderValues;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 
 import java.util.UUID;
 
@@ -34,19 +32,19 @@ public class RequestIdFilter extends AbstractFilter {
 
     @Override
     protected void doFilter(HttpServerExchange exchange, FilterChain chain) {
-        String requestId = exchange.request().headers().get(headerName);
+        String requestId = exchange.header(headerName);
 
         if (requestId == null || requestId.isEmpty()) {
             if (generateIfMissing) {
                 requestId = generateRequestId();
-                exchange.request().header(headerName, requestId);
+                exchange.header(headerName, requestId);
                 logDebug("Generated request ID: {}", requestId);
             }
         } else {
             logDebug("Using existing request ID: {}", requestId);
         }
 
-        exchange.request().header("X-Request-ID", requestId);
+        exchange.header("X-Request-ID", requestId);
         chain.doFilter(exchange);
     }
 

@@ -33,34 +33,7 @@ public interface Route {
 
     void validate();
 
-    Long getConnectionTimeout();
-
-    Long getRequestTimeout();
-
-    Long getTotalTimeout();
-
-    Long getReadTimeout();
-
-    Long getWriteTimeout();
-
-    default boolean isTimeoutEnabled() {
-        return true;
-    }
-
-    default Long getTimeout(TimeoutType type) {
-        switch (type) {
-            case CONNECTION:
-                return getConnectionTimeout();
-            case REQUEST:
-                return getRequestTimeout();
-            case TOTAL:
-                return getTotalTimeout();
-            case READ:
-                return getReadTimeout();
-            case WRITE:
-                return getWriteTimeout();
-            default:
-                return null;
-        }
+    default long getTimeout(TimeoutType type) {
+        return TimeoutConfig.getDefault(type);
     }
 }

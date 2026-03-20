@@ -1,6 +1,6 @@
 package com.muxin.gateway.core.plus.route.filter;
 
-import com.muxin.gateway.core.plus.message.http.HttpServerExchange;
+import com.muxin.gateway.core.plus.exchange.HttpServerExchange;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,9 +33,9 @@ public class RequestLogFilter extends AbstractFilter {
     protected void doFilter(HttpServerExchange exchange, FilterChain chain) {
         long startTime = System.currentTimeMillis();
 
-        String method = exchange.request().method().name();
-        String path = exchange.request().uri();
-        String requestId = exchange.request().requestId();
+        String method = exchange.method();
+        String path = exchange.uri();
+        String requestId = exchange.requestId();
 
         logInfo(">> {} {} {}", requestId, method, path);
 
@@ -56,8 +56,8 @@ public class RequestLogFilter extends AbstractFilter {
         } finally {
             long duration = System.currentTimeMillis() - startTime;
             String statusInfo;
-            if (exchange.response() != null && exchange.response().status() != null) {
-                int statusCode = exchange.response().status().code();
+            if (exchange.hasResponse() && exchange.status() != null) {
+                int statusCode = exchange.status().code();
                 statusInfo = statusCode + " (" + duration + "ms)";
             } else {
                 statusInfo = "no-response (" + duration + "ms)";
@@ -67,7 +67,7 @@ public class RequestLogFilter extends AbstractFilter {
     }
 
     private void logHeaders(HttpServerExchange exchange) {
-        io.netty.handler.codec.http.HttpHeaders headers = exchange.request().headers();
+        io.netty.handler.codec.http.HttpHeaders headers = exchange.headers();
         for (String name : headers.names()) {
             logInfo(">> {}: {}", name, headers.get(name));
         }
