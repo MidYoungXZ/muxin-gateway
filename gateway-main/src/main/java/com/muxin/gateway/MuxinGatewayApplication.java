@@ -1,7 +1,7 @@
 package com.muxin.gateway;
 
 import com.muxin.gateway.admin.GatewayAdminAutoConfiguration;
-import com.muxin.gateway.core.plus.GatewayBootstrap;
+import com.muxin.gateway.core.GatewayBootstrap;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

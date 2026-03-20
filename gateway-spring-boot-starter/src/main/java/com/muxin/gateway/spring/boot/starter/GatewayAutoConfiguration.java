@@ -1,7 +1,7 @@
 package com.muxin.gateway.spring.boot.starter;
 
-import com.muxin.gateway.core.plus.GatewayBootstrap;
-import com.muxin.gateway.core.plus.config.GatewayConfig;
+import com.muxin.gateway.core.GatewayBootstrap;
+import com.muxin.gateway.core.config.GatewayConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

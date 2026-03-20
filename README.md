@@ -11,7 +11,7 @@
 cd gateway-core
 mvn clean compile
 java -cp "target/classes:target/dependency/*" \
-     com.muxin.gateway.core.plus.GatewayApplication
+     com.muxin.gateway.core.GatewayApplication
 ```
 
 ### 2. 启动完整网关系统

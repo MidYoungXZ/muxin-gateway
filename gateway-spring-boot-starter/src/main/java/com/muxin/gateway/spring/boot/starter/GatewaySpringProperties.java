@@ -1,7 +1,7 @@
 package com.muxin.gateway.spring.boot.starter;
 
-import com.muxin.gateway.core.plus.config.*;
-import com.muxin.gateway.core.plus.connect.netty.NettyPoolConfig;
+import com.muxin.gateway.core.config.*;
+import com.muxin.gateway.core.connect.netty.NettyPoolConfig;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
