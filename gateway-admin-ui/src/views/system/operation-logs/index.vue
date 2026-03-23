@@ -277,22 +277,21 @@ const loadData = async () => {
       pageSize: pagination.pageSize
     }
     
-    console.log('📊 [OPERATION_LOG] 加载数据，参数:', params)
-    
     const response = await operationLogApi.getOperationLogs(params)
     
-    if (response.code === 200) {
-      tableData.value = response.data.data || []
-      pagination.total = response.data.total || 0
-      console.log('✅ [OPERATION_LOG] 数据加载成功，共', response.data.total, '条记录')
-      console.log('📊 [OPERATION_LOG] 表格数据:', tableData.value)
+    if (response && response.data) {
+      const pageData = response.data
+      tableData.value = pageData.data || []
+      pagination.total = pageData.total || 0
     } else {
-      console.error('❌ [OPERATION_LOG] 数据加载失败:', response.message)
-      ElMessage.error(response.message || '数据加载失败')
+      tableData.value = []
+      pagination.total = 0
     }
   } catch (error) {
-    console.error('❌ [OPERATION_LOG] 数据加载异常:', error)
-    ElMessage.error('数据加载失败，请重试')
+    console.error('数据加载失败:', error)
+    ElMessage.error('数据加载失败')
+    tableData.value = []
+    pagination.total = 0
   } finally {
     loading.value = false
   }
@@ -336,7 +335,7 @@ const handleSelectionChange = (selection: OperationLog[]) => {
 const handleViewDetail = async (row: OperationLog) => {
   try {
     const response = await operationLogApi.getOperationLogDetail(row.id)
-    if (response.code === 200) {
+    if (response && response.data) {
       currentLog.value = response.data
       detailDialogVisible.value = true
     }

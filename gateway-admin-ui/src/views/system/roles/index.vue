@@ -311,85 +311,28 @@ const rules: FormRules = {
 const loadRoleList = async () => {
   try {
     loading.value = true
-    console.log('🔄 开始加载角色列表...')
     
     const queryParams = {
       ...searchForm,
-      page: pagination.page,
-      size: pagination.size
+      pageNum: pagination.page,
+      pageSize: pagination.size
     }
     
-    console.log('📤 发送请求参数:', queryParams)
     const response = await roleApi.list(queryParams)
-    console.log('📨 API响应完整结构:', JSON.stringify(response, null, 2))
-    
-    // 多种数据格式兼容处理
-    let roleData: Role[] = []
-    let totalCount = 0
     
     if (response && response.data) {
-      const responseData = response.data
-      console.log('📊 response.data类型:', typeof responseData, '是否为数组:', Array.isArray(responseData))
-      
-      // 处理分页数据格式: { data: [...], total: ... }
-      if (responseData.data && Array.isArray(responseData.data)) {
-        roleData = responseData.data
-        totalCount = responseData.total || responseData.data.length
-        console.log('✅ 分页格式数据解析成功')
-      }
-      // 处理直接数组格式: [...]
-      else if (Array.isArray(responseData)) {
-        roleData = responseData
-        totalCount = responseData.length
-        console.log('✅ 直接数组格式数据解析成功')
-      }
-      else {
-        console.warn('⚠️ 无法识别的数据格式:', responseData)
-      }
-    }
-    
-    roleList.value = roleData
-    total.value = totalCount
-    
-    console.log('✅ 角色列表加载完成:', roleList.value.length, '条记录，总计:', total.value)
-    
-  } catch (error) {
-    console.error('❌ 加载角色列表失败:', error)
-    
-    if (error instanceof Error) {
-      ElMessage.error(`加载角色列表失败: ${error.message}`)
+      const pageData = response.data
+      roleList.value = pageData.data || []
+      total.value = pageData.total || 0
     } else {
-      ElMessage.error('加载角色列表失败: 未知错误')
+      roleList.value = []
+      total.value = 0
     }
-    
-    // 如果API失败，显示模拟数据用于测试UI
-    const mockRoles: Role[] = [
-      {
-        id: 1,
-        roleCode: 'ADMIN',
-        roleName: '系统管理员',
-        description: '拥有系统所有权限',
-        status: 1,
-        userCount: 2,
-        createTime: '2024-01-01 10:00:00',
-        updateTime: '2024-01-01 10:00:00'
-      },
-      {
-        id: 2,
-        roleCode: 'USER',
-        roleName: '普通用户',
-        description: '基础用户权限',
-        status: 1,
-        userCount: 15,
-        createTime: '2024-01-02 10:00:00',
-        updateTime: '2024-01-02 10:00:00'
-      }
-    ]
-    
-    roleList.value = mockRoles
-    total.value = mockRoles.length
-    console.log('🔄 使用模拟数据进行界面测试:', mockRoles.length, '条记录')
-    ElMessage.warning('后端服务异常，当前显示模拟数据仅供界面测试')
+  } catch (error) {
+    console.error('加载角色列表失败:', error)
+    ElMessage.error('加载角色列表失败')
+    roleList.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

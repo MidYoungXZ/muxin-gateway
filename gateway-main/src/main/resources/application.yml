@@ -2,53 +2,23 @@ spring:
   application:
     name: muxin-gateway
   profiles:
-    active: mysql # 使用MySQL数据库
+    active: sqlite
   mvc:
-    # 静态路径匹配模式，明确排除API路径
     static-path-pattern: /static/**
   web:
     resources:
-      # 静态资源缓存配置
       cache:
         cachecontrol:
-          # JS和CSS文件缓存7天
           max-age: 604800
           must-revalidate: true
-      # 静态资源处理链配置
       chain:
         strategy:
           content:
             enabled: true
-            # 只对明确的静态资源路径启用内容策略，明确排除API路径
             paths: /static/**, /assets/**, /css/**, /js/**, /images/**, /favicon.ico, /index.html, /*.html, /*.css, /*.js, /*.png, /*.jpg, /*.gif, /*.ico, /*.svg
         cache: true
         compressed: true
-      # 静态资源映射路径
       static-locations: classpath:/static/
-  datasource:
-    url: jdbc:mysql://10.100.1.45:3306/muxin_gateway?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
-# MyBatis-Flex配置
-mybatis-flex:
-  # 打印SQL
-  print-sql: true
-  # 逻辑删除配置
-  logic-delete-column: deleted
-  logic-delete-value: 1
-  logic-not-delete-value: 0
-  # 配置文件位置
-  mapper-locations: classpath*:mapper/**/*.xml
-  # 配置别名包
-  type-aliases-package: com.muxin.gateway.admin.entity
-  # 全局配置
-  global-config:
-    # 打印banner
-    print-banner: false
-    # 开启审计
-    audit-enable: true
 
 # Sa-Token配置
 sa-token:

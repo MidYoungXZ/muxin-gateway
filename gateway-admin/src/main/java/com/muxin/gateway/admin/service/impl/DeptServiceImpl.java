@@ -319,9 +319,14 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
                 DeptTreeVO node = new DeptTreeVO();
                 node.setId(dept.getId());
                 node.setDeptName(dept.getDeptName());
+                node.setDeptCode(dept.getDeptCode());
                 node.setParentId(dept.getParentId());
-                node.setSort(dept.getOrderNum());
+                node.setOrderNum(dept.getOrderNum());
+                node.setLeader(dept.getLeader());
+                node.setPhone(dept.getPhone());
+                node.setEmail(dept.getEmail());
                 node.setStatus(dept.getStatus());
+                node.setCreateTime(dept.getCreateTime() != null ? dept.getCreateTime().toString() : null);
                 
                 // 递归查找子节点
                 List<DeptTreeVO> children = buildTree(deptList, dept.getId());

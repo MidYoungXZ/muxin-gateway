@@ -98,10 +98,4 @@ public class SysOperationLog {
      * 操作时间
      */
     private LocalDateTime operateTime;
-    
-    /**
-     * 是否删除：0-否，1-是
-     */
-    @Column(isLogicDelete = true)
-    private Integer deleted;
 } 

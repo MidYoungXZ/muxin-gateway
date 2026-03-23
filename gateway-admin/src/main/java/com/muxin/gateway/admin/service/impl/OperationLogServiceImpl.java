@@ -27,15 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
-
-/**
- * 操作日志服务实现
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,10 +35,8 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     @Override
     public PageVO<OperationLogVO> pageQuery(OperationLogQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .where("deleted = 0")
                 .orderBy("operate_time DESC");
         
-        // 添加查询条件
         if (StringUtils.hasText(query.getModule())) {
             wrapper.and("module LIKE CONCAT('%', ?, '%')", query.getModule());
         }
@@ -68,7 +57,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
                     query.getKeyword(), query.getKeyword(), query.getKeyword());
         }
         
-        // 时间范围查询
         if (StringUtils.hasText(query.getStartTime())) {
             wrapper.and("operate_time >= ?", LocalDateTime.parse(query.getStartTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         }
@@ -96,7 +84,7 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     @Override
     public OperationLogVO getLogDetail(Long id) {
         SysOperationLog log = getById(id);
-        if (log == null || log.getDeleted() == 1) {
+        if (log == null) {
             throw new RuntimeException("操作日志不存在");
         }
         return convertToVO(log);
@@ -117,9 +105,7 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
             opLog.setDuration(duration);
             opLog.setStatus(status);
             opLog.setOperateTime(LocalDateTime.now());
-            opLog.setDeleted(0);
             
-            // 获取当前用户信息
             try {
                 if (StpUtil.isLogin()) {
                     opLog.setOperatorId(StpUtil.getLoginIdAsLong());
@@ -129,7 +115,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
                 opLog.setOperator("系统");
             }
             
-            // 获取请求信息
             try {
                 ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
                 if (attributes != null) {
@@ -159,26 +144,13 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         if (ids == null || ids.isEmpty()) {
             return;
         }
-        
-        // 批量逻辑删除
-        for (Long id : ids) {
-            SysOperationLog log = getById(id);
-            if (log != null) {
-                log.setDeleted(1);
-                updateById(log);
-            }
-        }
+        removeByIds(ids);
     }
     
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void clearAll() {
-        QueryWrapper wrapper = QueryWrapper.create().where("deleted = 0");
-        List<SysOperationLog> logs = list(wrapper);
-        for (SysOperationLog log : logs) {
-            log.setDeleted(1);
-            updateById(log);
-        }
+        remove(new QueryWrapper());
     }
     
     @Override
@@ -194,18 +166,14 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     public Map<String, Object> getLogStats() {
         Map<String, Object> stats = new HashMap<>();
         
-        long totalCount = count(QueryWrapper.create().where("deleted = 0"));
+        long totalCount = count();
         stats.put("totalCount", totalCount);
         
         LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-        long todayCount = count(QueryWrapper.create()
-                .where("deleted = 0")
-                .and("operate_time >= ?", todayStart));
+        long todayCount = count(QueryWrapper.create().and("operate_time >= ?", todayStart));
         stats.put("todayCount", todayCount);
         
-        long successCount = count(QueryWrapper.create()
-                .where("deleted = 0")
-                .and("status = ?", 1));
+        long successCount = count(QueryWrapper.create().and("status = ?", 1));
         double successRate = totalCount > 0 ? (double) successCount / totalCount * 100 : 0;
         stats.put("successRate", Math.round(successRate * 100.0) / 100.0);
         
@@ -231,9 +199,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         return oldLogs.size();
     }
     
-    /**
-     * 获取客户端IP地址
-     */
     private String getClientIpAddr(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
@@ -254,9 +219,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         return ip;
     }
     
-    /**
-     * 获取浏览器信息
-     */
     private String getBrowser(String userAgent) {
         if (userAgent == null) return "未知";
         
@@ -269,9 +231,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         return "其他";
     }
     
-    /**
-     * 获取操作系统信息
-     */
     private String getOs(String userAgent) {
         if (userAgent == null) return "未知";
         
@@ -284,9 +243,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         return "其他";
     }
     
-    /**
-     * 转换为VO
-     */
     private OperationLogVO convertToVO(SysOperationLog log) {
         OperationLogVO vo = new OperationLogVO();
         BeanUtils.copyProperties(log, vo);

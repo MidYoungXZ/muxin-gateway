@@ -93,7 +93,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="160" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button 
               type="primary" 
@@ -102,6 +102,14 @@
               @click="handleEdit(row)"
             >
               编辑
+            </el-button>
+            <el-button 
+              type="warning" 
+              size="small" 
+              link
+              @click="handleAssignRoles(row)"
+            >
+              分配角色
             </el-button>
             <el-button 
               type="primary" 
@@ -237,6 +245,14 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 角色分配对话框 -->
+    <RoleAssignDialog
+      v-model="roleDialogVisible"
+      :user-data="currentUser"
+      :role-list="roleList"
+      @success="loadUserList"
+    />
   </div>
 </template>
 
@@ -245,26 +261,28 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { userApi, type User, type UserQueryParams } from '@/api/users'
+import { roleApi, type Role } from '@/api/roles'
+import RoleAssignDialog from './components/RoleAssignDialog.vue'
 
-// 数据定义
 const loading = ref(false)
 const formLoading = ref(false)
 const userList = ref<User[]>([])
 const total = ref(0)
 const selectedUsers = ref<User[]>([])
 
-// 表单和对话框
 const formDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 
-// 搜索表单
+const roleDialogVisible = ref(false)
+const currentUser = ref<Partial<User>>({})
+const roleList = ref<Role[]>([])
+
 const searchForm = reactive<UserQueryParams>({
   username: '',
   nickname: '',
   status: undefined
 })
 
-// 用户表单
 const form = reactive({
   id: undefined as number | undefined,
   username: '',
@@ -324,132 +342,28 @@ const rules: FormRules = {
 const loadUserList = async () => {
   try {
     loading.value = true
-    console.log('🔄 开始加载用户列表...')
     
     const queryParams = {
       ...searchForm,
-      page: pagination.page,
-      size: pagination.size
+      pageNum: pagination.page,
+      pageSize: pagination.size
     }
     
-    console.log('📤 发送请求参数:', queryParams)
     const response = await userApi.list(queryParams)
-    console.log('📨 API响应完整结构:', JSON.stringify(response, null, 2))
     
-    // 多种数据格式兼容处理
-    let userData: User[] = []
-    let totalCount = 0
-    
-    if (response) {
-      console.log('📊 响应数据类型:', typeof response, 'data属性存在:', !!response.data)
-      
-      if (response.data) {
-        const responseData = response.data
-        console.log('📊 response.data类型:', typeof responseData, '是否为数组:', Array.isArray(responseData))
-        
-        // 处理分页数据格式: { data: [...], total: ... }
-        if (responseData.data && Array.isArray(responseData.data)) {
-          userData = responseData.data
-          totalCount = responseData.total || responseData.data.length
-          console.log('✅ 分页格式数据解析成功')
-        }
-        // 处理直接数组格式: [...]
-        else if (Array.isArray(responseData)) {
-          userData = responseData
-          totalCount = responseData.length
-          console.log('✅ 直接数组格式数据解析成功')
-        }
-        // 处理Spring Boot分页格式: { content: [...], totalElements: ... }
-        else if (responseData.content && Array.isArray(responseData.content)) {
-          userData = responseData.content
-          totalCount = responseData.totalElements || responseData.content.length
-          console.log('✅ Spring Boot分页格式数据解析成功')
-        }
-        // 处理单个对象格式（可能是单条记录）
-        else if (responseData.id) {
-          userData = [responseData as User]
-          totalCount = 1
-          console.log('✅ 单个对象格式数据解析成功')
-        }
-        else {
-          console.warn('⚠️ 无法识别的数据格式:', responseData)
-          console.log('📊 responseData详细信息:', {
-            type: typeof responseData,
-            isArray: Array.isArray(responseData),
-            keys: Object.keys(responseData || {}),
-            value: responseData
-          })
-        }
-      } else {
-        console.error('❌ response.data 为空或未定义')
-      }
+    if (response && response.data) {
+      const pageData = response.data
+      userList.value = pageData.data || []
+      total.value = pageData.total || 0
     } else {
-      console.error('❌ API响应为空或未定义')
+      userList.value = []
+      total.value = 0
     }
-    
-    userList.value = userData
-    total.value = totalCount
-    
-    console.log('✅ 用户列表加载完成:', userList.value.length, '条记录，总计:', total.value)
-    
-    if (userData.length > 0) {
-      console.log('📄 第一条用户数据示例:', JSON.stringify(userData[0], null, 2))
-    }
-    
   } catch (error) {
-    console.error('❌ 加载用户列表失败:', error)
-    
-    // 详细错误信息
-    if (error instanceof Error) {
-      console.error('错误详情:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      })
-      ElMessage.error(`加载用户列表失败: ${error.message}`)
-    } else {
-      console.error('未知错误类型:', error)
-      ElMessage.error('加载用户列表失败: 未知错误')
-    }
-    
-    // 如果API失败，显示模拟数据用于测试UI
-    const mockUsers: User[] = [
-      {
-        id: 1,
-        username: 'admin',
-        nickname: '管理员',
-        email: 'admin@example.com',
-        mobile: '13800138000',
-        deptName: '管理部门',
-        status: 1,
-        createTime: '2024-01-01 10:00:00'
-      },
-      {
-        id: 2,
-        username: 'user1',
-        nickname: '普通用户1',
-        email: 'user1@example.com',
-        mobile: '13800138001',
-        deptName: '技术部门',
-        status: 1,
-        createTime: '2024-01-02 10:00:00'
-      },
-      {
-        id: 3,
-        username: 'user2',
-        nickname: '普通用户2',
-        email: 'user2@example.com',
-        mobile: '13800138002',
-        deptName: '市场部门',
-        status: 0,
-        createTime: '2024-01-03 10:00:00'
-      }
-    ]
-    
-    userList.value = mockUsers
-    total.value = mockUsers.length
-    console.log('🔄 使用模拟数据进行界面测试:', mockUsers.length, '条记录')
-    ElMessage.warning('后端服务异常，当前显示模拟数据仅供界面测试')
+    console.error('加载用户列表失败:', error)
+    ElMessage.error('加载用户列表失败')
+    userList.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -631,6 +545,25 @@ const handleSubmit = async () => {
 const handleCloseDialog = () => {
   formRef.value?.resetFields()
   formDialogVisible.value = false
+}
+
+// 加载角色列表
+const loadRoleList = async () => {
+  try {
+    const response = await roleApi.listAll()
+    if (response && response.data) {
+      roleList.value = response.data
+    }
+  } catch (error) {
+    console.error('加载角色列表失败:', error)
+  }
+}
+
+// 分配角色
+const handleAssignRoles = async (user: User) => {
+  currentUser.value = user
+  await loadRoleList()
+  roleDialogVisible.value = true
 }
 
 // 初始化

@@ -65,7 +65,7 @@
       <el-table
         ref="menuTableRef"
         v-loading="loading"
-        :data="menuTableData"
+        :data="filteredMenuData"
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         :default-expand-all="false"
@@ -422,8 +422,38 @@ const countMenus = (menus: Menu[]): number => {
   return count
 }
 
+const filteredMenuData = computed(() => {
+  if (!searchForm.menuName && !searchForm.menuType && searchForm.status === undefined) {
+    return menuTableData.value
+  }
+  return filterMenuTree(menuTableData.value)
+})
+
+const filterMenuTree = (menus: Menu[]): Menu[] => {
+  return menus.reduce((result: Menu[], menu) => {
+    const nameMatch = !searchForm.menuName || menu.menuName.includes(searchForm.menuName)
+    const typeMatch = !searchForm.menuType || menu.menuType === searchForm.menuType
+    const statusMatch = searchForm.status === undefined || menu.status === searchForm.status
+    
+    if (nameMatch && typeMatch && statusMatch) {
+      result.push({
+        ...menu,
+        children: menu.children ? filterMenuTree(menu.children) : undefined
+      })
+    } else if (menu.children && menu.children.length > 0) {
+      const filteredChildren = filterMenuTree(menu.children)
+      if (filteredChildren.length > 0) {
+        result.push({
+          ...menu,
+          children: filteredChildren
+        })
+      }
+    }
+    return result
+  }, [])
+}
+
 const handleSearch = () => {
-  ElMessage.info('搜索功能开发中...')
 }
 
 const handleReset = () => {
@@ -436,11 +466,31 @@ const handleReset = () => {
 }
 
 const expandAll = () => {
-  // TODO: 实现展开全部
+  const allIds = getAllMenuIds(menuTableData.value)
+  allIds.forEach(id => {
+    menuTableRef.value?.toggleRowExpansion({ id }, true)
+  })
 }
 
 const collapseAll = () => {
-  // TODO: 实现收起全部
+  const allIds = getAllMenuIds(menuTableData.value)
+  allIds.forEach(id => {
+    menuTableRef.value?.toggleRowExpansion({ id }, false)
+  })
+}
+
+const getAllMenuIds = (menus: Menu[]): number[] => {
+  const ids: number[] = []
+  const traverse = (list: Menu[]) => {
+    list.forEach(menu => {
+      ids.push(menu.id)
+      if (menu.children && menu.children.length > 0) {
+        traverse(menu.children)
+      }
+    })
+  }
+  traverse(menus)
+  return ids
 }
 
 const handleAdd = () => {

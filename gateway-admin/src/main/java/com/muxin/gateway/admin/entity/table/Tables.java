@@ -64,6 +64,11 @@ public final class Tables {
      */
     public static final SysDeptTableDef SYS_DEPT = SysDeptTableDef.SYS_DEPT;
     
+    /**
+     * 系统配置表
+     */
+    public static final SysConfigTableDef SYS_CONFIG = SysConfigTableDef.SYS_CONFIG;
+    
     private Tables() {
         // 私有构造函数，防止实例化
     }
