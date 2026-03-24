@@ -2,9 +2,8 @@ package com.muxin.gateway.admin.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -15,13 +14,12 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "spring.profiles.active", havingValue = "sqlite")
-public class SqliteInitializer implements ApplicationRunner {
+public class SqliteInitializer implements SmartLifecycle {
 
     @Value("${spring.datasource.url}")
     private String datasourceUrl;
@@ -29,13 +27,41 @@ public class SqliteInitializer implements ApplicationRunner {
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
 
+    private final AtomicBoolean running = new AtomicBoolean(false);
+
     public SqliteInitializer(DataSource dataSource, JdbcTemplate jdbcTemplate) {
         this.dataSource = dataSource;
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
-    public void run(ApplicationArguments args) {
+    public void start() {
+        if (running.compareAndSet(false, true)) {
+            initializeDatabaseIfNeeded();
+        }
+    }
+
+    @Override
+    public void stop() {
+        running.set(false);
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
+    }
+
+    @Override
+    public int getPhase() {
+        return Integer.MIN_VALUE;
+    }
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    private void initializeDatabaseIfNeeded() {
         String dbPath = extractDbPath();
         if (dbPath == null) {
             log.warn("Cannot extract database path from URL: {}", datasourceUrl);

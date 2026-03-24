@@ -33,11 +33,35 @@ export interface ServiceNode {
   lastCheckResult?: number
 }
 
-export interface ServiceCreateRequest {
-  serviceName: string
+export interface ServiceNodeDTO {
   nodeName?: string
   address?: string
   port?: number
+  weight?: number
+  maxFails?: number
+  failTimeout?: number
+  backup?: boolean
+  healthCheckEnabled?: boolean
+  healthCheckInterval?: number
+  healthCheckTimeout?: number
+  healthCheckPath?: string
+  healthCheckExpectedStatus?: number[]
+}
+
+export interface DiscoveryConfig {
+  registryType: string
+  serverAddr: string
+  namespace?: string
+  username?: string
+  password?: string
+  group?: string
+}
+
+export interface ServiceCreateRequest {
+  serviceName: string
+  createMode: string
+  nodes?: ServiceNodeDTO[]
+  discoveryConfig?: DiscoveryConfig
 }
 
 export interface ServiceNodeCreateRequest {
@@ -78,6 +102,39 @@ export interface PageResult<T> {
   pageNum: number
   pageSize: number
   totalPages: number
+}
+
+export interface RouteSimple {
+  id: number
+  routeId: string
+  routeName: string
+  enabled: boolean
+}
+
+export interface DiscoveryTestResult {
+  success: boolean
+  message: string
+  serviceNames?: string[]
+}
+
+export interface DiscoveredNode {
+  instanceId: string
+  address: string
+  port: number
+  weight: number
+  healthy: boolean
+  enabled: boolean
+  metadata?: Record<string, string>
+}
+
+export interface DiscoveryRequest {
+  registryType: string
+  serverAddr: string
+  serviceName: string
+  namespace?: string
+  username?: string
+  password?: string
+  group?: string
 }
 
 export const nodesApi = {
@@ -158,6 +215,36 @@ export const nodesApi = {
   createService(data: ServiceCreateRequest) {
     return request<{ data: number }>({
       url: '/api/nodes/services',
+      method: 'post',
+      data
+    })
+  },
+
+  getServiceRoutes(serviceName: string) {
+    return request<{ data: RouteSimple[] }>({
+      url: `/api/nodes/services/${serviceName}/routes`,
+      method: 'get'
+    })
+  },
+
+  deleteService(serviceName: string) {
+    return request<{ data: void }>({
+      url: `/api/nodes/services/${serviceName}`,
+      method: 'delete'
+    })
+  },
+
+  testDiscoveryConnection(config: DiscoveryConfig) {
+    return request<{ data: DiscoveryTestResult }>({
+      url: '/api/nodes/discovery/test',
+      method: 'post',
+      data: config
+    })
+  },
+
+  discoverNodes(data: DiscoveryRequest) {
+    return request<{ data: DiscoveredNode[] }>({
+      url: '/api/nodes/discovery/discover',
       method: 'post',
       data
     })

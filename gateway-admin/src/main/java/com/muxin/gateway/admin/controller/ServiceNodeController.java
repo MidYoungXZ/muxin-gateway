@@ -2,10 +2,15 @@ package com.muxin.gateway.admin.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.muxin.gateway.admin.model.Result;
+import com.muxin.gateway.admin.model.dto.DiscoveryConfigDTO;
+import com.muxin.gateway.admin.model.dto.DiscoveryRequestDTO;
 import com.muxin.gateway.admin.model.dto.ServiceCreateDTO;
 import com.muxin.gateway.admin.model.dto.ServiceNodeCreateDTO;
 import com.muxin.gateway.admin.model.dto.ServiceNodeUpdateDTO;
+import com.muxin.gateway.admin.model.vo.DiscoveredNodeVO;
+import com.muxin.gateway.admin.model.vo.DiscoveryTestResultVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
+import com.muxin.gateway.admin.model.vo.RouteSimpleVO;
 import com.muxin.gateway.admin.model.vo.ServiceNodeVO;
 import com.muxin.gateway.admin.model.vo.ServiceStatsVO;
 import com.muxin.gateway.admin.service.ServiceNodeService;
@@ -16,13 +21,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import java.util.List;
 
-/**
- * 服务节点管理控制器
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/nodes")
@@ -103,5 +101,30 @@ public class ServiceNodeController {
     @SaCheckPermission("route:node:create")
     public Result<Long> createService(@RequestBody @Valid ServiceCreateDTO dto) {
         return Result.success(serviceNodeService.createService(dto));
+    }
+    
+    @GetMapping("/services/{serviceName}/routes")
+    @SaCheckPermission("route:node:list")
+    public Result<List<RouteSimpleVO>> getServiceRoutes(@PathVariable String serviceName) {
+        return Result.success(serviceNodeService.getRoutesByServiceName(serviceName));
+    }
+    
+    @DeleteMapping("/services/{serviceName}")
+    @SaCheckPermission("route:node:delete")
+    public Result<Void> deleteService(@PathVariable String serviceName) {
+        serviceNodeService.deleteService(serviceName);
+        return Result.success();
+    }
+    
+    @PostMapping("/discovery/test")
+    @SaCheckPermission("route:node:create")
+    public Result<DiscoveryTestResultVO> testDiscoveryConnection(@RequestBody @Valid DiscoveryConfigDTO config) {
+        return Result.success(serviceNodeService.testDiscoveryConnection(config));
+    }
+    
+    @PostMapping("/discovery/discover")
+    @SaCheckPermission("route:node:create")
+    public Result<List<DiscoveredNodeVO>> discoverNodes(@RequestBody @Valid DiscoveryRequestDTO dto) {
+        return Result.success(serviceNodeService.discoverNodes(dto));
     }
 }

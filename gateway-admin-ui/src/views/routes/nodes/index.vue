@@ -105,26 +105,28 @@
                 </el-table-column>
                 <el-table-column label="操作" width="200" fixed="right">
                   <template #default="{ row: node }">
-                    <el-button type="primary" size="small" link @click="handleEditNode(node)">
-                      编辑
-                    </el-button>
-                    <el-dropdown @command="(cmd: string) => handleNodeCommand(cmd, node)">
-                      <el-button type="primary" size="small" link>
-                        状态<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                    <div class="node-actions">
+                      <el-button type="primary" size="small" link @click="handleEditNode(node)">
+                        编辑
                       </el-button>
-                      <template #dropdown>
-                        <el-dropdown-menu>
-                          <el-dropdown-item command="enable" :disabled="node.status === 1">启用</el-dropdown-item>
-                          <el-dropdown-item command="disable" :disabled="node.status === 0">禁用</el-dropdown-item>
-                          <el-dropdown-item command="maintenance" :disabled="node.status === 2">维护中</el-dropdown-item>
-                        </el-dropdown-menu>
-                      </template>
-                    </el-dropdown>
-                    <el-popconfirm title="确定要删除该节点吗？" @confirm="handleDeleteNode(node)">
-                      <template #reference>
-                        <el-button type="danger" size="small" link>删除</el-button>
-                      </template>
-                    </el-popconfirm>
+                      <el-dropdown @command="(cmd: string) => handleNodeCommand(cmd, node)">
+                        <el-button type="primary" size="small" link>
+                          状态<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                        </el-button>
+                        <template #dropdown>
+                          <el-dropdown-menu>
+                            <el-dropdown-item command="enable" :disabled="node.status === 1">启用</el-dropdown-item>
+                            <el-dropdown-item command="disable" :disabled="node.status === 0">禁用</el-dropdown-item>
+                            <el-dropdown-item command="maintenance" :disabled="node.status === 2">维护中</el-dropdown-item>
+                          </el-dropdown-menu>
+                        </template>
+                      </el-dropdown>
+                      <el-popconfirm title="确定要删除该节点吗？" @confirm="handleDeleteNode(node)">
+                        <template #reference>
+                          <el-button type="danger" size="small" link>删除</el-button>
+                        </template>
+                      </el-popconfirm>
+                    </div>
                   </template>
                 </el-table-column>
               </el-table>
@@ -177,10 +179,13 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" link @click="handleAddNode(row.serviceName)">
               添加节点
+            </el-button>
+            <el-button type="danger" size="small" link @click="handleDeleteService(row)">
+              删除服务
             </el-button>
           </template>
         </el-table-column>
@@ -306,7 +311,7 @@
     <el-dialog
       v-model="serviceDialogVisible"
       title="新增服务"
-      width="500px"
+      width="800px"
       :close-on-click-modal="false"
       @close="handleCloseServiceDialog"
     >
@@ -314,31 +319,129 @@
         ref="serviceFormRef"
         :model="serviceForm"
         :rules="serviceRules"
-        label-width="100px"
+        label-width="120px"
       >
         <el-form-item label="服务名称" prop="serviceName">
           <el-input v-model="serviceForm.serviceName" placeholder="请输入服务名称，如 user-service" />
         </el-form-item>
-        <el-divider content-position="left">首个节点配置（可选）</el-divider>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="节点名称">
-              <el-input v-model="serviceForm.nodeName" placeholder="留空则自动生成" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="端口">
-              <el-input-number v-model="serviceForm.port" :min="1" :max="65535" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="16">
-            <el-form-item label="节点地址">
-              <el-input v-model="serviceForm.address" placeholder="留空则使用 127.0.0.1" />
-            </el-form-item>
-          </el-col>
-        </el-row>
+        
+        <el-form-item label="创建方式" prop="createMode">
+          <el-radio-group v-model="serviceForm.createMode">
+            <el-radio value="MANUAL">手动输入</el-radio>
+            <el-radio value="DISCOVERY">注册中心发现</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <template v-if="serviceForm.createMode === 'MANUAL'">
+          <el-divider content-position="left">节点配置（可添加多个节点，或一个不添加）</el-divider>
+          
+          <div v-for="(node, index) in serviceForm.nodes" :key="index" class="node-item">
+            <el-card shadow="never">
+              <template #header>
+                <div class="node-item-header">
+                  <span>节点 {{ index + 1 }}</span>
+                  <el-button type="danger" size="small" link @click="removeNode(index)">删除</el-button>
+                </div>
+              </template>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="节点名称">
+                    <el-input v-model="node.nodeName" placeholder="留空则自动生成" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="端口">
+                    <el-input-number v-model="node.port" :min="1" :max="65535" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="16">
+                  <el-form-item label="节点地址">
+                    <el-input v-model="node.address" placeholder="留空则使用 127.0.0.1" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="权重">
+                    <el-input-number v-model="node.weight" :min="1" :max="100" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-card>
+          </div>
+          
+          <el-button type="primary" plain @click="addNode" style="margin-top: 10px;">
+            <el-icon><Plus /></el-icon>
+            添加节点
+          </el-button>
+        </template>
+
+        <template v-else-if="serviceForm.createMode === 'DISCOVERY'">
+          <el-divider content-position="left">注册中心配置</el-divider>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="注册中心类型">
+                <el-select v-model="serviceForm.discoveryConfig.registryType" style="width: 100%">
+                  <el-option value="NACOS" label="Nacos" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="注册中心地址" prop="discoveryConfig.serverAddr">
+                <el-input v-model="serviceForm.discoveryConfig.serverAddr" placeholder="如: 127.0.0.1:8848" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="命名空间">
+                <el-input v-model="serviceForm.discoveryConfig.namespace" placeholder="可选" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="分组">
+                <el-input v-model="serviceForm.discoveryConfig.group" placeholder="默认: DEFAULT_GROUP" />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="用户名">
+                <el-input v-model="serviceForm.discoveryConfig.username" placeholder="可选" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="密码">
+                <el-input v-model="serviceForm.discoveryConfig.password" type="password" placeholder="可选" show-password />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          
+          <el-form-item>
+            <el-button type="primary" :loading="testLoading" @click="handleTestDiscovery">
+              检测服务
+            </el-button>
+          </el-form-item>
+          
+          <template v-if="discoveredNodes.length > 0">
+            <el-divider content-position="left">发现的节点（只读）</el-divider>
+            <el-table :data="discoveredNodes" stripe size="small">
+              <el-table-column prop="address" label="地址" />
+              <el-table-column prop="port" label="端口" width="100" />
+              <el-table-column prop="weight" label="权重" width="80" />
+              <el-table-column label="健康状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.healthy ? 'success' : 'danger'" size="small">
+                    {{ row.healthy ? '健康' : '不健康' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </template>
+        </template>
       </el-form>
       <template #footer>
         <el-button @click="handleCloseServiceDialog">取消</el-button>
@@ -350,13 +453,27 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { nodesApi, type ServiceStats, type ServiceNode, type ServiceNodeCreateRequest } from '@/api/nodes'
+import { 
+  nodesApi, 
+  type ServiceStats, 
+  type ServiceNode, 
+  type ServiceNodeCreateRequest,
+  type ServiceCreateRequest,
+  type ServiceNodeDTO,
+  type DiscoveryConfig,
+  type DiscoveredNode,
+  type RouteSimple
+} from '@/api/nodes'
+
+const router = useRouter()
 
 const loading = ref(false)
 const formLoading = ref(false)
 const serviceFormLoading = ref(false)
+const testLoading = ref(false)
 const serviceStats = ref<ServiceStats[]>([])
 const expandLoading = ref<Record<string, boolean>>({})
 const expandedNodes = ref<Record<string, { data: ServiceNode[], total: number }>>({})
@@ -367,22 +484,43 @@ const serviceDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 const serviceFormRef = ref<FormInstance>()
 const isEdit = ref(false)
+const discoveredNodes = ref<DiscoveredNode[]>([])
 
 const searchForm = reactive({
   serviceName: ''
 })
 
-const serviceForm = reactive({
-  serviceName: '',
+const emptyNode: ServiceNodeDTO = {
   nodeName: '',
   address: '',
-  port: 8080
+  port: 8080,
+  weight: 100
+}
+
+const serviceForm = reactive({
+  serviceName: '',
+  createMode: 'MANUAL',
+  nodes: [{ ...emptyNode }] as ServiceNodeDTO[],
+  discoveryConfig: {
+    registryType: 'NACOS',
+    serverAddr: '',
+    namespace: '',
+    username: '',
+    password: '',
+    group: ''
+  } as DiscoveryConfig
 })
 
 const serviceRules: FormRules = {
   serviceName: [
     { required: true, message: '请输入服务名称', trigger: 'blur' },
     { max: 100, message: '服务名称长度不能超过100', trigger: 'blur' }
+  ],
+  createMode: [
+    { required: true, message: '请选择创建方式', trigger: 'change' }
+  ],
+  'discoveryConfig.serverAddr': [
+    { required: true, message: '请输入注册中心地址', trigger: 'blur' }
   ]
 }
 
@@ -619,11 +757,66 @@ const handleCloseDialog = () => {
 const handleAddService = () => {
   Object.assign(serviceForm, {
     serviceName: '',
-    nodeName: '',
-    address: '',
-    port: 8080
+    createMode: 'MANUAL',
+    nodes: [{ ...emptyNode }],
+    discoveryConfig: {
+      registryType: 'NACOS',
+      serverAddr: '',
+      namespace: '',
+      username: '',
+      password: '',
+      group: ''
+    }
   })
+  discoveredNodes.value = []
   serviceDialogVisible.value = true
+}
+
+const addNode = () => {
+  serviceForm.nodes.push({ ...emptyNode })
+}
+
+const removeNode = (index: number) => {
+  serviceForm.nodes.splice(index, 1)
+}
+
+const handleTestDiscovery = async () => {
+  if (!serviceForm.discoveryConfig.serverAddr) {
+    ElMessage.warning('请输入注册中心地址')
+    return
+  }
+  
+  try {
+    testLoading.value = true
+    
+    const testResult = await nodesApi.testDiscoveryConnection(serviceForm.discoveryConfig)
+    
+    if (testResult?.data?.success) {
+      const discoverResult = await nodesApi.discoverNodes({
+        registryType: serviceForm.discoveryConfig.registryType,
+        serverAddr: serviceForm.discoveryConfig.serverAddr,
+        serviceName: serviceForm.serviceName,
+        namespace: serviceForm.discoveryConfig.namespace,
+        username: serviceForm.discoveryConfig.username,
+        password: serviceForm.discoveryConfig.password,
+        group: serviceForm.discoveryConfig.group
+      })
+      
+      if (discoverResult?.data && discoverResult.data.length > 0) {
+        discoveredNodes.value = discoverResult.data
+        ElMessage.success(`发现 ${discoverResult.data.length} 个节点`)
+      } else {
+        discoveredNodes.value = []
+        ElMessage.warning('未发现任何节点')
+      }
+    } else {
+      ElMessage.error(testResult?.data?.message || '连接失败')
+    }
+  } catch (error) {
+    ElMessage.error('检测失败：' + (error as Error).message)
+  } finally {
+    testLoading.value = false
+  }
 }
 
 const handleServiceSubmit = async () => {
@@ -633,12 +826,18 @@ const handleServiceSubmit = async () => {
     await serviceFormRef.value.validate()
     serviceFormLoading.value = true
     
-    await nodesApi.createService({
+    const request: ServiceCreateRequest = {
       serviceName: serviceForm.serviceName,
-      nodeName: serviceForm.nodeName || undefined,
-      address: serviceForm.address || undefined,
-      port: serviceForm.port
-    })
+      createMode: serviceForm.createMode
+    }
+    
+    if (serviceForm.createMode === 'MANUAL') {
+      request.nodes = serviceForm.nodes.length > 0 ? serviceForm.nodes : undefined
+    } else {
+      request.discoveryConfig = serviceForm.discoveryConfig
+    }
+    
+    await nodesApi.createService(request)
     ElMessage.success('创建服务成功')
     handleCloseServiceDialog()
     loadServiceStats()
@@ -652,6 +851,53 @@ const handleServiceSubmit = async () => {
 const handleCloseServiceDialog = () => {
   serviceFormRef.value?.resetFields()
   serviceDialogVisible.value = false
+  discoveredNodes.value = []
+}
+
+const handleDeleteService = async (row: ServiceStats) => {
+  try {
+    const response = await nodesApi.getServiceRoutes(row.serviceName)
+    const routes = response?.data || []
+    
+    if (routes.length > 0) {
+      const routeList = routes.map(r => `• ${r.routeName} (${r.routeId})`).join('\n')
+      await ElMessageBox.confirm(
+        `该服务被以下路由引用，无法删除：\n\n${routeList}\n\n请先修改或删除相关路由。`,
+        '服务被引用',
+        {
+          confirmButtonText: '查看路由',
+          cancelButtonText: '关闭',
+          type: 'warning',
+          distinguishCancelAndClose: true
+        }
+      )
+      if (routes.length === 1) {
+        router.push(`/routes/list?id=${routes[0].id}`)
+      } else {
+        router.push('/routes/list')
+      }
+      return
+    }
+    
+    await ElMessageBox.confirm(
+      `确定要删除服务 "${row.serviceName}" 吗？\n这将删除该服务下的所有节点（共 ${row.totalNodes} 个）。`,
+      '删除确认',
+      {
+        confirmButtonText: '确定删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    await nodesApi.deleteService(row.serviceName)
+    ElMessage.success('删除服务成功')
+    loadServiceStats()
+  } catch (error: unknown) {
+    const err = error as { message?: string }
+    if (err.message !== 'cancel' && err.message !== 'close') {
+      ElMessage.error('删除服务失败：' + (err.message || '未知错误'))
+    }
+  }
 }
 
 onMounted(() => {
@@ -754,6 +1000,22 @@ onMounted(() => {
   
   .text-muted {
     color: var(--el-text-color-secondary);
+  }
+  
+  .node-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .node-item {
+    margin-bottom: 12px;
+    
+    .node-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
   }
 }
 </style>

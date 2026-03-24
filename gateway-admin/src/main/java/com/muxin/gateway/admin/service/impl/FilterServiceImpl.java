@@ -296,9 +296,16 @@ public class FilterServiceImpl extends ServiceImpl<FilterMapper, GwFilter> imple
                         .id(((Number) map.get("id")).longValue())
                         .routeId((String) map.get("routeId"))
                         .routeName((String) map.get("routeName"))
-                        .enabled((Boolean) map.get("enabled"))
+                        .enabled(toBoolean(map.get("enabled")))
                         .build())
                 .collect(Collectors.toList());
+    }
+    
+    private Boolean toBoolean(Object value) {
+        if (value == null) return true;
+        if (value instanceof Boolean) return (Boolean) value;
+        if (value instanceof Number) return ((Number) value).intValue() != 0;
+        return Boolean.parseBoolean(value.toString());
     }
     
     private void updateStatus(Long id, Boolean enabled) {

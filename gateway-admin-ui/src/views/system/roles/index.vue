@@ -224,12 +224,29 @@
         <el-tree
           ref="menuTreeRef"
           :data="menuTreeData"
-          :props="{ children: 'children', label: 'title' }"
+          :props="{ children: 'children', label: 'menuName' }"
           node-key="id"
           show-checkbox
           default-expand-all
           :default-checked-keys="selectedMenuIds"
-        />
+        >
+          <template #default="{ node, data }">
+            <span class="menu-tree-node">
+              <el-icon v-if="data.menuType === 'M'" style="color: #409EFF;"><Folder /></el-icon>
+              <el-icon v-else-if="data.menuType === 'C'" style="color: #67C23A;"><Document /></el-icon>
+              <el-icon v-else-if="data.menuType === 'F'" style="color: #E6A23C;"><Key /></el-icon>
+              <span style="margin-left: 6px;">{{ data.menuName }}</span>
+              <el-tag 
+                v-if="data.menuType" 
+                size="small" 
+                :type="data.menuType === 'M' ? 'primary' : data.menuType === 'C' ? 'success' : 'warning'"
+                style="margin-left: 8px;"
+              >
+                {{ data.menuType === 'M' ? '目录' : data.menuType === 'C' ? '菜单' : '按钮' }}
+              </el-tag>
+            </span>
+          </template>
+        </el-tree>
       </div>
 
       <template #footer>
@@ -246,7 +263,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { Plus, Delete, Search, Refresh, Edit, Setting } from '@element-plus/icons-vue'
+import { Plus, Delete, Search, Refresh, Edit, Setting, Folder, Document, Key } from '@element-plus/icons-vue'
 import { roleApi, type Role, type RoleQueryParams } from '@/api/roles'
 import { menuApi } from '@/api/menus'
 
@@ -640,6 +657,12 @@ onMounted(() => {
       margin: 0 0 16px 0;
       font-size: 16px;
       font-weight: 600;
+    }
+    
+    .menu-tree-node {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
     }
   }
 }

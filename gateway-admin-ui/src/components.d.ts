@@ -11,6 +11,7 @@ declare module 'vue' {
     Bell: typeof import('@element-plus/icons-vue')['Bell']
     Cpu: typeof import('@element-plus/icons-vue')['Cpu']
     Delete: typeof import('@element-plus/icons-vue')['Delete']
+    Document: typeof import('@element-plus/icons-vue')['Document']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']

@@ -7,25 +7,21 @@
 
 -- 1. 内置断言
 INSERT INTO gw_predicate (predicate_name, predicate_type, description, config, is_system, enabled) VALUES
-('路径前缀匹配', 'Path', '匹配指定的路径前缀', '{"pattern": "/api/**"}', 1, 1),
-('请求方法匹配', 'Method', '匹配HTTP请求方法', '{"methods": ["GET", "POST"]}', 1, 1),
-('请求头匹配', 'Header', '匹配请求头', '{"name": "X-Request-Id", "regexp": ".*"}', 1, 1),
-('查询参数匹配', 'Query', '匹配查询参数', '{"param": "token"}', 1, 1),
-('Cookie匹配', 'Cookie', '匹配Cookie', '{"name": "sessionId", "regexp": ".*"}', 1, 1),
-('主机名匹配', 'Host', '匹配主机名', '{"patterns": ["*.example.com"]}', 1, 1),
-('远程地址匹配', 'RemoteAddr', '匹配客户端IP地址', '{"sources": ["192.168.1.0/24"]}', 1, 1),
-('时间范围匹配', 'Between', '匹配时间范围', '{"datetime1": "2024-01-01T00:00:00", "datetime2": "2024-12-31T23:59:59"}', 1, 1);
+('路径前缀匹配', 'PATH', '匹配指定的路径前缀', '{"pattern": "/api/**"}', 1, 1),
+('请求方法匹配', 'METHOD', '匹配HTTP请求方法', '{"methods": ["GET", "POST"]}', 1, 1),
+('请求头匹配', 'HEADER', '匹配请求头', '{"name": "X-Request-Id", "regexp": ".*"}', 1, 1),
+('查询参数匹配', 'QUERY', '匹配查询参数', '{"param": "token"}', 1, 1),
+('Cookie匹配', 'COOKIE', '匹配Cookie', '{"name": "sessionId", "regexp": ".*"}', 1, 1),
+('主机名匹配', 'HOST', '匹配主机名', '{"patterns": ["*.example.com"]}', 1, 1),
+('远程地址匹配', 'REMOTE_ADDR', '匹配客户端IP地址', '{"sources": ["192.168.1.0/24"]}', 1, 1),
+('时间范围匹配', 'BETWEEN', '匹配时间范围', '{"datetime1": "2024-01-01T00:00:00", "datetime2": "2024-12-31T23:59:59"}', 1, 1);
 
 -- 2. 内置过滤器
 INSERT INTO gw_filter (filter_name, filter_type, description, config, "order", is_system, enabled) VALUES
-('添加请求头', 'AddRequestHeader', '添加请求头过滤器', '{"name": "X-Request-From", "value": "gateway"}', 1, 1, 1),
-('添加响应头', 'AddResponseHeader', '添加响应头过滤器', '{"name": "X-Response-From", "value": "gateway"}', 2, 1, 1),
-('移除请求头', 'RemoveRequestHeader', '移除请求头过滤器', '{"name": "X-Internal-Header"}', 3, 1, 1),
-('移除响应头', 'RemoveResponseHeader', '移除响应头过滤器', '{"name": "X-Internal-Response"}', 4, 1, 1),
-('路径重写', 'RewritePath', '重写请求路径', '{"regexp": "/api/v1/(?<segment>.*)", "replacement": "/${segment}"}', 5, 1, 1),
-('限流', 'RequestRateLimiter', '请求限流过滤器', '{"replenishRate": 10, "burstCapacity": 20}', 6, 1, 1),
-('熔断', 'CircuitBreaker', '熔断器过滤器', '{"name": "myCircuitBreaker", "fallbackUri": "/fallback"}', 7, 1, 1),
-('重试', 'Retry', '重试过滤器', '{"retries": 3, "statuses": ["BAD_GATEWAY"], "methods": ["GET", "POST"]}', 8, 1, 1);
+('请求ID', 'REQUEST_ID', '生成请求ID过滤器', '{"header-name": "X-Request-ID", "generate-if-missing": true}', 10, 1, 1),
+('请求日志', 'REQUEST_LOG', '请求日志过滤器', '{"include-headers": true, "include-body": false}', 20, 1, 1),
+('指标收集', 'METRICS', '指标收集过滤器', '{"collect-request-metrics": true}', 30, 1, 1),
+('路径重写', 'PATH_REWRITE', '路径重写过滤器', '{}', 50, 1, 1);
 
 -- 3. 内置路由模板
 INSERT INTO gw_route_template (template_name, description, category, config, variables, is_system, enabled) VALUES
@@ -120,10 +116,28 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (3, 1041), (3, 1042), (3, 1043), (3, 1044);
 
 -- 10. 示例路由
-INSERT INTO gw_route (route_id, route_name, description, uri, metadata, "order", enabled) VALUES
-('user-service', '用户服务路由', '转发到用户服务的所有请求', 'http://localhost:8081', '{"service": "user", "version": "1.0"}', 1, 1),
-('order-service', '订单服务路由', '转发到订单服务的所有请求', 'http://localhost:8082', '{"service": "order", "version": "1.0"}', 2, 1),
-('product-service', '商品服务路由', '转发到商品服务的所有请求', 'http://localhost:8083', '{"service": "product", "version": "1.0"}', 3, 1);
+INSERT INTO gw_route (id, route_id, route_name, description, uri, metadata, "order", enabled) VALUES
+(1, 'user-service', '用户服务路由', '转发到用户服务的所有请求', 'lb://user-service', '{"service": "user", "version": "1.0"}', 1, 1),
+(2, 'order-service', '订单服务路由', '转发到订单服务的所有请求', 'lb://order-service', '{"service": "order", "version": "1.0"}', 2, 1),
+(3, 'product-service', '商品服务路由', '转发到商品服务的所有请求', 'lb://payment-service', '{"service": "product", "version": "1.0"}', 3, 1);
+
+-- 10.1 路由-断言关联
+INSERT INTO gw_route_predicate (route_id, predicate_id, sort_order) VALUES
+(1, 1, 1),
+(1, 2, 2),
+(2, 1, 1),
+(2, 2, 2),
+(3, 1, 1),
+(3, 2, 2);
+
+-- 10.2 路由-过滤器关联
+INSERT INTO gw_route_filter (route_id, filter_id, sort_order) VALUES
+(1, 1, 1),
+(1, 2, 2),
+(2, 1, 1),
+(2, 2, 2),
+(3, 1, 1),
+(3, 2, 2);
 
 -- 11. 系统配置数据
 INSERT INTO sys_config (config_key, config_value, config_name, description, status) VALUES

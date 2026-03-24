@@ -4,24 +4,22 @@ import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
-/**
- * 服务创建DTO
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Data
 public class ServiceCreateDTO {
+    
+    public static final String MODE_MANUAL = "MANUAL";
+    public static final String MODE_DISCOVERY = "DISCOVERY";
     
     @NotBlank(message = "服务名称不能为空")
     @Size(max = 100, message = "服务名称长度不能超过100")
     private String serviceName;
     
-    private String nodeName;
+    @NotBlank(message = "创建模式不能为空")
+    private String createMode;
     
-    private String address;
+    private List<ServiceNodeDTO> nodes;
     
-    private Integer port;
+    private DiscoveryConfigDTO discoveryConfig;
 }

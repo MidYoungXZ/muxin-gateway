@@ -1,5 +1,6 @@
 package com.muxin.gateway.config.provider;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
     private static final String SOURCE = "DATABASE";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final RouteMapper routeMapper;
     private final RoutePredicateMapper routePredicateMapper;
@@ -139,8 +141,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
         for (Map<String, Object> map : predicateMaps) {
             String predicateType = (String) map.get("predicateType");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> config = (Map<String, Object>) map.get("config");
+            Map<String, Object> config = parseConfig(map.get("config"));
 
             PredicateDefinition predicate = PredicateDefinition.builder()
                     .type(predicateType)
@@ -158,8 +159,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
         for (Map<String, Object> map : filterMaps) {
             String filterType = (String) map.get("filterType");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> config = (Map<String, Object>) map.get("config");
+            Map<String, Object> config = parseConfig(map.get("config"));
             Object orderObj = map.get("order");
             int order = orderObj instanceof Number ? ((Number) orderObj).intValue() : 0;
 
@@ -173,6 +173,25 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
         }
 
         return filters;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseConfig(Object configObj) {
+        if (configObj == null) {
+            return new HashMap<>();
+        }
+        if (configObj instanceof Map) {
+            return (Map<String, Object>) configObj;
+        }
+        if (configObj instanceof String) {
+            try {
+                return OBJECT_MAPPER.readValue((String) configObj, Map.class);
+            } catch (Exception e) {
+                log.warn("Failed to parse config JSON: {}", configObj, e);
+                return new HashMap<>();
+            }
+        }
+        return new HashMap<>();
     }
 
     private void notifyListeners(ConfigChangedEvent event) {

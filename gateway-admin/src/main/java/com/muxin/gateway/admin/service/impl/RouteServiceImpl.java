@@ -1,5 +1,6 @@
 package com.muxin.gateway.admin.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.muxin.gateway.admin.entity.GwRoute;
@@ -32,6 +33,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,9 +43,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implements RouteService {
     
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    
     private final RouteMapper routeMapper;
     private final RoutePredicateMapper routePredicateMapper;
     private final RouteFilterMapper routeFilterMapper;
+    private final com.muxin.gateway.admin.service.ConfigRefreshService configRefreshService;
     
     @Override
     public PageVO<RouteVO> pageQuery(RouteQueryDTO query) {
@@ -105,10 +110,8 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createRoute(RouteCreateDTO dto) {
-        // 1. 验证路由ID唯一性
         checkRouteIdUnique(dto.getRouteId());
         
-        // 2. 创建路由基本信息
         GwRoute route = new GwRoute();
         route.setRouteId(dto.getRouteId());
         route.setRouteName(dto.getRouteName());
@@ -123,13 +126,14 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         save(route);
         
-        // 3. 保存路由断言关联
         saveRoutePredicates(route.getId(), dto.getPredicateIds());
         
-// 4. 保存路由过滤器关联
         if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
             saveRouteFilters(route.getId(), dto.getFilterIds());
         }
+        
+        configRefreshService.refreshRoutes();
+        log.info("[RouteService] 路由创建成功，已同步到 gateway-core: {}", dto.getRouteId());
         
         return route.getId();
     }
@@ -137,13 +141,11 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateRoute(Long id, RouteUpdateDTO dto) {
-        // 1. 获取原路由信息
         GwRoute oldRoute = getById(id);
         if (oldRoute == null || oldRoute.getDeleted()) {
             throw new BusinessException("路由不存在");
         }
         
-        // 2. 更新路由基本信息
         GwRoute route = new GwRoute();
         route.setId(id);
         route.setRouteName(dto.getRouteName());
@@ -157,15 +159,16 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         updateById(route);
         
-        // 3. 更新断言关联（先删除再添加）
         routePredicateMapper.deleteByRouteId(id);
         saveRoutePredicates(id, dto.getPredicateIds());
         
-        // 4. 更新过滤器关联（先删除再添加）
         routeFilterMapper.deleteByRouteId(id);
         if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
             saveRouteFilters(id, dto.getFilterIds());
         }
+        
+        configRefreshService.refreshRoutes();
+        log.info("[RouteService] 路由更新成功，已同步到 gateway-core: {}", oldRoute.getRouteId());
     }
     
     @Override
@@ -176,10 +179,15 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             throw new BusinessException("路由不存在");
         }
         
+        String routeId = route.getRouteId();
+        
         routePredicateMapper.deleteByRouteId(id);
         routeFilterMapper.deleteByRouteId(id);
         
         removeById(id);
+        
+        configRefreshService.refreshRoutes();
+        log.info("[RouteService] 路由删除成功，已同步到 gateway-core: {}", routeId);
     }
     
     @Override
@@ -190,8 +198,16 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         }
         
         for (Long id : ids) {
-            deleteRoute(id);
+            GwRoute route = getById(id);
+            if (route != null && !route.getDeleted()) {
+                routePredicateMapper.deleteByRouteId(id);
+                routeFilterMapper.deleteByRouteId(id);
+                removeById(id);
+            }
         }
+        
+        configRefreshService.refreshRoutes();
+        log.info("[RouteService] 批量删除路由成功，已同步到 gateway-core，数量: {}", ids.size());
     }
     
     @Override
@@ -280,6 +296,9 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         route.setEnabled(enabled);
         updateById(route);
+        
+        configRefreshService.refreshRoutes();
+        log.info("[RouteService] 路由状态更新成功，已同步到 gateway-core: {} -> enabled={}", route.getRouteId(), enabled);
     }
     
     /**
@@ -315,7 +334,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
                     vo.setId(((Number) map.get("id")).longValue());
                     vo.setPredicateName((String) map.get("predicateName"));
                     vo.setPredicateType((String) map.get("predicateType"));
-                    vo.setConfig((Map<String, Object>) map.get("config"));
+                    vo.setConfig(parseConfig(map.get("config")));
                     
                     Arrays.stream(PredicateType.values())
                             .filter(t -> t.getType().equals(vo.getPredicateType()))
@@ -335,10 +354,29 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
                     vo.setId(((Number) map.get("id")).longValue());
                     vo.setFilterName((String) map.get("filterName"));
                     vo.setFilterType((String) map.get("filterType"));
-                    vo.setConfig((Map<String, Object>) map.get("config"));
+                    vo.setConfig(parseConfig(map.get("config")));
                     
                     return vo;
                 })
                 .collect(Collectors.toList());
+    }
+    
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseConfig(Object configObj) {
+        if (configObj == null) {
+            return new HashMap<>();
+        }
+        if (configObj instanceof Map) {
+            return (Map<String, Object>) configObj;
+        }
+        if (configObj instanceof String) {
+            try {
+                return OBJECT_MAPPER.readValue((String) configObj, Map.class);
+            } catch (Exception e) {
+                log.warn("Failed to parse config JSON: {}", configObj, e);
+                return new HashMap<>();
+            }
+        }
+        return new HashMap<>();
     }
 }
