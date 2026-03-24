@@ -11,9 +11,12 @@
     </parent>
 
     <artifactId>gateway-cloud</artifactId>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>Gateway Cloud</name>
     <description>网关云服务模块 - 包含注册中心、配置中心等功能</description>
+    <modules>
+        <module>gateway-cloud-discovery</module>
+    </modules>
 
     <dependencies>
         <dependency>

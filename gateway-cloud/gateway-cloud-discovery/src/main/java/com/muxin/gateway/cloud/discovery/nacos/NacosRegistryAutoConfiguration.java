@@ -1,4 +1,4 @@
-package com.muxin.gateway.cloud.registry.nacos;
+package com.muxin.gateway.cloud.discovery.nacos;
 
 import com.muxin.gateway.core.service.ServiceRegistry;
 import lombok.extern.slf4j.Slf4j;

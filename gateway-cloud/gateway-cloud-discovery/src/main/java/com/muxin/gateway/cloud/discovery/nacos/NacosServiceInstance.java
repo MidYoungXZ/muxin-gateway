@@ -1,4 +1,4 @@
-package com.muxin.gateway.cloud.registry.nacos;
+package com.muxin.gateway.cloud.discovery.nacos;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.muxin.gateway.core.service.InstanceSource;

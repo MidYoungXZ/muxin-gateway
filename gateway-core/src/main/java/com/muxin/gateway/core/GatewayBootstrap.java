@@ -58,10 +58,20 @@ public class GatewayBootstrap implements LifeCycle {
 
     // ========== 服务器 ==========
     private NettyHttpServer httpServer;
+    private int serverPort = 8080;
+    private HttpServerConfig httpServerConfig;
 
     // ========== 状态管理 ==========
     private volatile boolean initialized = false;
     private volatile boolean running = false;
+
+    public void setServerPort(int port) {
+        this.serverPort = port;
+    }
+
+    public void setHttpServerConfig(HttpServerConfig config) {
+        this.httpServerConfig = config;
+    }
 
     @Override
     public void init() {
@@ -344,14 +354,14 @@ public class GatewayBootstrap implements LifeCycle {
     private void initServers() {
         log.debug("Initializing servers...");
 
-        // HTTP服务器配置
-        HttpServerConfig httpConfig = HttpServerConfig.builder()
-                .build();
+        HttpServerConfig httpConfig = this.httpServerConfig;
+        if (httpConfig == null) {
+            httpConfig = HttpServerConfig.builder().build();
+        }
 
-        // 创建HTTP服务器
-        this.httpServer = new NettyHttpServer(8080, httpConfig, gatewayProcessor);
+        this.httpServer = new NettyHttpServer(serverPort, httpConfig, gatewayProcessor);
 
-        log.debug("Servers initialized");
+        log.debug("Servers initialized on port {}", serverPort);
     }
 
     // ========== 启动方法 ==========
@@ -375,9 +385,8 @@ public class GatewayBootstrap implements LifeCycle {
     private void startServers() {
         log.debug("Starting servers...");
 
-        // 启动HTTP服务器
         httpServer.start();
-        log.info("HTTP server started on port 8080");
+        log.info("HTTP server started on port {}", serverPort);
 
         log.debug("Servers started");
     }

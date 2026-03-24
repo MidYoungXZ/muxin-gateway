@@ -1,4 +1,4 @@
-package com.muxin.gateway.cloud.registry.nacos;
+package com.muxin.gateway.cloud.discovery.nacos;
 
 import lombok.Data;
 

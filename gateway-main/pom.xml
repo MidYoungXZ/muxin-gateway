@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>com.muxin.gateway</groupId>
-            <artifactId>gateway-cloud</artifactId>
+            <artifactId>gateway-cloud-discovery</artifactId>
         </dependency>
         <dependency>
             <groupId>com.muxin.gateway</groupId>

@@ -19,7 +19,7 @@
     <description>Muxin Gateway - Lightweight API Gateway</description>
 
     <modules>
-        <module>muxin-gateway-bom</module>
+        <module>gateway-bom</module>
         <module>gateway-core</module>
         <module>gateway-main</module>
         <module>gateway-cloud</module>
@@ -37,7 +37,7 @@
             <!-- BOM for external dependencies -->
             <dependency>
                 <groupId>com.muxin.gateway</groupId>
-                <artifactId>muxin-gateway-bom</artifactId>
+                <artifactId>gateway-bom</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -56,7 +56,7 @@
             </dependency>
             <dependency>
                 <groupId>com.muxin.gateway</groupId>
-                <artifactId>gateway-cloud</artifactId>
+                <artifactId>gateway-cloud-discovery</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
