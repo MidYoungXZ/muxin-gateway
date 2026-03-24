@@ -178,27 +178,6 @@ export interface AuthRule {
   updateTime?: string
 }
 
-// 路由模板类型
-export interface RouteTemplate {
-  id?: number
-  templateName: string
-  description?: string
-  category?: string
-  config: Partial<RouteConfig>
-  variables: {
-    name: string
-    type: 'string' | 'number' | 'boolean'
-    defaultValue: any
-    required: boolean
-    description: string
-  }[]
-  isSystem: boolean
-  usageCount: number
-  createTime?: string
-  updateTime?: string
-  createBy?: string
-}
-
 // 系统管理相关类型
 export interface Role {
   id?: number

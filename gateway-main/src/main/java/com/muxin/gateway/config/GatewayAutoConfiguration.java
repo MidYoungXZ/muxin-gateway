@@ -1,9 +1,12 @@
 package com.muxin.gateway.config;
 
 import com.muxin.gateway.core.GatewayBootstrap;
+import com.muxin.gateway.core.config.provider.RouteConfigProvider;
+import com.muxin.gateway.core.config.provider.ServiceConfigProvider;
 import com.muxin.gateway.core.server.HttpServerConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +19,12 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class GatewayAutoConfiguration {
 
+    @Autowired(required = false)
+    private RouteConfigProvider routeConfigProvider;
+
+    @Autowired(required = false)
+    private ServiceConfigProvider serviceConfigProvider;
+
     @Bean
     public GatewayBootstrap gatewayBootstrap(GatewayProperties gatewayProperties) {
         log.info("[GatewayAutoConfiguration] Creating GatewayBootstrap bean");
@@ -26,6 +35,16 @@ public class GatewayAutoConfiguration {
         GatewayBootstrapWrapper bootstrap = new GatewayBootstrapWrapper();
         bootstrap.setServerPort(serverProps.getPort());
         bootstrap.setHttpServerConfig(httpConfig);
+
+        if (routeConfigProvider != null) {
+            bootstrap.setRouteConfigProvider(routeConfigProvider);
+            log.info("[GatewayAutoConfiguration] RouteConfigProvider: {}", routeConfigProvider.getSource());
+        }
+
+        if (serviceConfigProvider != null) {
+            bootstrap.setServiceConfigProvider(serviceConfigProvider);
+            log.info("[GatewayAutoConfiguration] ServiceConfigProvider: {}", serviceConfigProvider.getSource());
+        }
 
         return bootstrap;
     }

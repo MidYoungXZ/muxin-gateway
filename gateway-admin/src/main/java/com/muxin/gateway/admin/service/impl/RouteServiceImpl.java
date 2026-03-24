@@ -126,13 +126,10 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         // 3. 保存路由断言关联
         saveRoutePredicates(route.getId(), dto.getPredicateIds());
         
-        // 4. 保存路由过滤器关联
+// 4. 保存路由过滤器关联
         if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
             saveRouteFilters(route.getId(), dto.getFilterIds());
         }
-        
-        // 5. 发布配置变更事件
-        // TODO: publishRouteChangeEvent(route, OperationType.CREATE);
         
         return route.getId();
     }
@@ -169,9 +166,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
             saveRouteFilters(id, dto.getFilterIds());
         }
-        
-        // 5. 发布配置变更事件
-        // TODO: publishRouteChangeEvent(route, OperationType.UPDATE);
     }
     
     @Override
@@ -286,9 +280,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         route.setEnabled(enabled);
         updateById(route);
-        
-        // 发布配置变更事件
-        // TODO: publishRouteChangeEvent(route, OperationType.UPDATE);
     }
     
     /**

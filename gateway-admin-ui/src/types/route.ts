@@ -75,66 +75,6 @@ export interface LoadBalanceConfig {
   }
 }
 
-export interface RouteTemplate {
-  id: number
-  name: string
-  description: string
-  category: string
-  config: {
-    predicates: RoutePredicate[]
-    filters: RouteFilter[]
-    metadata: Record<string, any>
-  }
-  variables: {
-    name: string
-    type: 'string' | 'number' | 'boolean'
-    defaultValue: any
-    required: boolean
-    description: string
-  }[]
-  isSystem: boolean
-  usageCount: number
-}
-
-// 新增：路由模板相关类型
-export interface RouteTemplateCreateRequest {
-  templateName: string
-  description?: string
-  category?: string
-  config: TemplateConfig
-  variables?: TemplateVariable[]
-}
-
-export interface RouteTemplateUpdateRequest {
-  templateName?: string
-  description?: string
-  category?: string
-  config?: TemplateConfig
-  variables?: TemplateVariable[]
-  enabled?: boolean
-}
-
-export interface TemplateConfig {
-  predicates: Array<{
-    type: string
-    args: Record<string, any>
-  }>
-  filters: Array<{
-    type: string
-    args: Record<string, any>
-  }>
-  metadata?: Record<string, any>
-}
-
-export interface TemplateVariable {
-  name: string
-  type: 'string' | 'number' | 'boolean'
-  defaultValue?: any
-  required: boolean
-  description: string
-}
-
-// 新增：服务节点相关类型
 export interface ServiceNode {
   id: number
   nodeId: string

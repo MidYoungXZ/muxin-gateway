@@ -26,14 +26,4 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan(basePackages = "com.muxin.gateway.admin.mapper")
 public class GatewayAdminAutoConfiguration {
 
-    // TODO: 实现基于数据库的路由定义仓库
-    // @Bean
-    // @Primary
-    // public RouteDefinitionRepository dbRouteDefinitionRepository(GatewayProperties gatewayProperties,
-    //                                                              AdminProperties adminProperties,
-    //                                                              GatewayRouteService gatewayRouteService) {
-    //     return new DbRouteDefinitionRepository(gatewayProperties, adminProperties, gatewayRouteService);
-    // }
-
-
 } 

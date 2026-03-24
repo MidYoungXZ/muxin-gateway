@@ -7,6 +7,10 @@ import com.muxin.gateway.core.config.GatewayCoreConfig;
 import com.muxin.gateway.core.config.GatewayRouteConfig;
 import com.muxin.gateway.core.config.RouteSystemConfig;
 import com.muxin.gateway.core.config.ServerConfig;
+import com.muxin.gateway.core.config.provider.ConfigChangedEvent;
+import com.muxin.gateway.core.config.provider.ConfigChangeListener;
+import com.muxin.gateway.core.config.provider.RouteConfigProvider;
+import com.muxin.gateway.core.config.provider.ServiceConfigProvider;
 import com.muxin.gateway.core.connect.ConnectionPoolManager;
 import com.muxin.gateway.core.connect.netty.NettyConnectionPoolManager;
 import com.muxin.gateway.core.connect.netty.NettyPoolConfig;
@@ -47,8 +51,10 @@ public class GatewayBootstrap implements LifeCycle {
     // ========== 配置 ==========
     private GatewayConfig gatewayConfig;
     private GlobalRouteConfig globalRouteConfig;
-    private GatewayRouteConfig gatewayRouteConfig;  // 新增：YAML配置文件加载的配置
-    private RouteConfigConverter routeConfigConverter;  // 新增：配置转换器
+    private GatewayRouteConfig gatewayRouteConfig;
+    private RouteConfigConverter routeConfigConverter;
+    private RouteConfigProvider routeConfigProvider;
+    private ServiceConfigProvider serviceConfigProvider;
 
     // ========== 核心组件 ==========
     private ConnectionPoolManager connectionPoolManager;
@@ -71,6 +77,14 @@ public class GatewayBootstrap implements LifeCycle {
 
     public void setHttpServerConfig(HttpServerConfig config) {
         this.httpServerConfig = config;
+    }
+
+    public void setRouteConfigProvider(RouteConfigProvider routeConfigProvider) {
+        this.routeConfigProvider = routeConfigProvider;
+    }
+
+    public void setServiceConfigProvider(ServiceConfigProvider serviceConfigProvider) {
+        this.serviceConfigProvider = serviceConfigProvider;
     }
 
     @Override
@@ -163,39 +177,17 @@ public class GatewayBootstrap implements LifeCycle {
     private void initConfigs() {
         log.debug("Initializing configurations...");
 
-        // 1. 加载 YAML 配置文件
-        GatewayConfigLoader configLoader = new GatewayConfigLoader();
-        try {
-            this.gatewayRouteConfig = configLoader.loadConfig();
-            log.info("成功加载 gateway-routes.yml 配置文件");
-            log.info("配置文件包含 {} 个服务定义, {} 个路由配置",
-                    gatewayRouteConfig.getServices() != null ? gatewayRouteConfig.getServices().size() : 0,
-                    gatewayRouteConfig.getRoutes() != null ? gatewayRouteConfig.getRoutes().size() : 0);
-        } catch (Exception e) {
-            log.warn("加载 gateway-routes.yml 失败，将使用默认配置: {}", e.getMessage());
-            this.gatewayRouteConfig = null;
-        }
-
-        // 2. 初始化路由配置转换器
         this.routeConfigConverter = new RouteConfigConverter();
         log.debug("路由配置转换器初始化完成");
 
-        // 3. 从 YAML 配置中提取功能域配置
         GatewayCoreConfig coreConfig = GatewayCoreConfig.builder().build();
-        if (gatewayRouteConfig != null && gatewayRouteConfig.getDomains() != null) {
-            // 可以根据 YAML 配置调整 coreConfig
-            log.debug("使用 YAML 配置中的功能域配置");
-        }
-
         RouteSystemConfig routeSystemConfig = RouteSystemConfig.defaultConfig();
         ServerConfig serverConfig = ServerConfig.defaultConfig();
 
-        // 创建主配置
         this.gatewayConfig = GatewayConfig.builder()
                 .coreConfig(coreConfig)
                 .build();
 
-        // 创建全局路由配置
         this.globalRouteConfig = GlobalRouteConfig.defaultConfig();
 
         log.debug("Configurations initialized");
@@ -233,7 +225,57 @@ public class GatewayBootstrap implements LifeCycle {
     private void registerRoutesFromConfig() {
         boolean hasRoutes = false;
 
-        if (gatewayRouteConfig != null && gatewayRouteConfig.getRoutes() != null && !gatewayRouteConfig.getRoutes().isEmpty()) {
+        if (routeConfigProvider != null && serviceConfigProvider != null) {
+            try {
+                List<ServiceDefinition> services = serviceConfigProvider.getServices();
+                Map<String, ServiceDefinition> serviceMap = services.stream()
+                        .collect(Collectors.toMap(
+                                ServiceDefinition::getId,
+                                service -> service,
+                                (existing, replacement) -> {
+                                    log.warn("服务ID重复: {}，将使用第一个定义", existing.getId());
+                                    return existing;
+                                }
+                        ));
+
+                List<RouteDefinition> routeDefinitions = routeConfigProvider.getRoutes();
+
+                List<Route> routes = routeConfigConverter.convertToRoutes(routeDefinitions, serviceMap);
+
+                for (Route route : routes) {
+                    if (route != null) {
+                        routeManager.insert(route);
+                        log.info("成功注册路由: {} - {} (优先级: {})",
+                                route.getId(), route.getName(), route.getOrder());
+                    }
+                }
+
+                log.info("从 {} 注册了 {} 个路由", routeConfigProvider.getSource(), routes.size());
+                hasRoutes = !routes.isEmpty();
+
+                routeConfigProvider.addChangeListener(new ConfigChangeListener() {
+                    @Override
+                    public void onRouteConfigChanged(ConfigChangedEvent event) {
+                        if (log.isInfoEnabled()) {
+                            log.info("Route config changed: {}, refreshing routes", event.getChangeType());
+                        }
+                        refreshRoutes();
+                    }
+
+                    @Override
+                    public void onServiceConfigChanged(ConfigChangedEvent event) {
+                        if (log.isInfoEnabled()) {
+                            log.info("Service config changed: {}, refreshing routes", event.getChangeType());
+                        }
+                        refreshRoutes();
+                    }
+                });
+
+            } catch (Exception e) {
+                log.error("注册路由配置失败", e);
+                throw new RuntimeException("注册路由配置失败", e);
+            }
+        } else if (gatewayRouteConfig != null && gatewayRouteConfig.getRoutes() != null && !gatewayRouteConfig.getRoutes().isEmpty()) {
             if (gatewayRouteConfig.getServices() == null || gatewayRouteConfig.getServices().isEmpty()) {
                 log.warn("配置文件中没有服务定义，但路由引用了服务");
             } else {
@@ -296,6 +338,32 @@ public class GatewayBootstrap implements LifeCycle {
             log.info("未设置默认路由，创建默认兜底路由");
             Route defaultRoute = createDefaultFallbackRoute();
             routeManager.setDefaultRoute(defaultRoute);
+        }
+    }
+
+    private void refreshRoutes() {
+        try {
+            if (routeConfigProvider == null || serviceConfigProvider == null) {
+                return;
+            }
+
+            List<ServiceDefinition> services = serviceConfigProvider.getServices();
+            Map<String, ServiceDefinition> serviceMap = services.stream()
+                    .collect(Collectors.toMap(ServiceDefinition::getId, s -> s));
+
+            List<RouteDefinition> routeDefinitions = routeConfigProvider.getRoutes();
+            List<Route> routes = routeConfigConverter.convertToRoutes(routeDefinitions, serviceMap);
+
+            routeManager.clear();
+            for (Route route : routes) {
+                if (route != null) {
+                    routeManager.insert(route);
+                }
+            }
+
+            log.info("Routes refreshed: {} routes loaded from {}", routes.size(), routeConfigProvider.getSource());
+        } catch (Exception e) {
+            log.error("Failed to refresh routes", e);
         }
     }
 

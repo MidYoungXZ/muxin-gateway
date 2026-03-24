@@ -36,9 +36,9 @@ public interface RouteFilterMapper extends BaseMapper<GwRouteFilter> {
             "ORDER BY r.create_time DESC")
     List<Map<String, Object>> findRoutesByFilterId(@Param("filterId") Long filterId);
     
-    @Select("SELECT f.id, f.filter_name as filterName, f.filter_type as filterType, f.config, rf.sort_order as sortOrder " +
+    @Select("SELECT f.id, f.filter_name as filterName, f.filter_type as filterType, f.config, f.`order`, rf.sort_order as sortOrder " +
             "FROM gw_filter f " +
-            "INNER JOIN gw_route_filter rf ON f.id = rf.filter_id,om " +
+            "INNER JOIN gw_route_filter rf ON f.id = rf.filter_id " +
             "WHERE rf.route_id = #{routeId} AND f.deleted = 0 " +
             "ORDER BY rf.sort_order ASC")
     List<Map<String, Object>> findFiltersByRouteId(@Param("routeId") Long routeId);

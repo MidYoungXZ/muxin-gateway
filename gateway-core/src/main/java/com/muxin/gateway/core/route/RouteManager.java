@@ -27,4 +27,9 @@ public interface RouteManager extends Repository<String, Route>, LifeCycle {
      */
     Route getDefaultRoute();
 
+    /**
+     * 清空所有路由
+     */
+    void clear();
+
 } 

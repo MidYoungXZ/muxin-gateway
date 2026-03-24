@@ -9,6 +9,7 @@ import com.muxin.gateway.admin.model.dto.RouteUpdateDTO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.RouteTestResultVO;
 import com.muxin.gateway.admin.model.vo.RouteVO;
+import com.muxin.gateway.admin.service.ConfigRefreshService;
 import com.muxin.gateway.admin.service.RouteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import java.util.List;
 public class RouteController {
     
     private final RouteService routeService;
+    private final ConfigRefreshService configRefreshService;
     
     @GetMapping
     @SaCheckPermission("route:list")
@@ -89,5 +91,26 @@ public class RouteController {
     @SaCheckPermission("route:list")
     public Result<List<String>> getServiceNames() {
         return Result.success(routeService.getServiceNames());
+    }
+
+    @PostMapping("/apply")
+    @SaCheckPermission("route:update")
+    public Result<String> applyConfig() {
+        configRefreshService.refreshAll();
+        return Result.success("Configuration applied successfully. Source: " + configRefreshService.getConfigSource());
+    }
+
+    @PostMapping("/refresh-routes")
+    @SaCheckPermission("route:update")
+    public Result<String> refreshRoutes() {
+        configRefreshService.refreshRoutes();
+        return Result.success("Routes refreshed successfully");
+    }
+
+    @PostMapping("/refresh-services")
+    @SaCheckPermission("route:update")
+    public Result<String> refreshServices() {
+        configRefreshService.refreshServices();
+        return Result.success("Services refreshed successfully");
     }
 } 

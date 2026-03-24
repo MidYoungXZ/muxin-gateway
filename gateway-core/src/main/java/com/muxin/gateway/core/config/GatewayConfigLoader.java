@@ -275,10 +275,12 @@ public class GatewayConfigLoader {
     }
 
     /**
-     * 保存配置到文件（暂不实现）
+     * 保存配置到文件
+     * 注意：当前架构下，配置保存功能不需要实现
+     * - gateway-main 使用数据库存储配置
+     * - gateway-core 单独运行时使用 YAML 配置文件，通常通过文件系统直接编辑
      */
     public void saveConfig(GatewayRouteConfig config, String configFile) {
-        // TODO: 实现配置保存功能
-        throw new UnsupportedOperationException("配置保存功能暂未实现");
+        throw new UnsupportedOperationException("配置保存功能暂未实现，请直接编辑 YAML 配置文件");
     }
 }

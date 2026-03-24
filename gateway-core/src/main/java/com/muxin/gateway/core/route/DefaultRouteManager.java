@@ -100,6 +100,16 @@ public class DefaultRouteManager implements RouteManager {
         return defaultRoute.get();
     }
 
+    @Override
+    public void clear() {
+        routes.clear();
+        services.clear();
+        sortedRoutes = Collections.emptyList();
+        if (log.isDebugEnabled()) {
+            log.debug("[DefaultRouteManager] All routes cleared");
+        }
+    }
+
     public int getRouteCount() {
         return routes.size();
     }
