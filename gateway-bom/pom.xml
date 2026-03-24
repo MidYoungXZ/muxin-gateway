@@ -9,7 +9,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>Gateway BOM</name>
+    <name>gateway-bom</name>
     <description>Bill of Materials for Muxin Gateway - Centralized Dependency Management</description>
 
     <properties>
