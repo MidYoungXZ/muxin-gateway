@@ -145,28 +145,89 @@
       <el-main class="layout-main">
         <!-- 页面标签栏 -->
         <div class="page-tabs">
-          <el-tabs
-            v-model="activeTab"
-            type="card"
-            closable
-            @tab-remove="removeTab"
-            @tab-click="handleTabClick"
-          >
-            <el-tab-pane
+          <div class="tabs-wrapper">
+            <div
               v-for="tab in openTabs"
               :key="tab.name"
-              :label="tab.title"
-              :name="tab.name"
-            />
-          </el-tabs>
+              class="tab-item"
+              :class="{ active: activeTab === tab.name }"
+              @click="handleTabItemClick(tab)"
+              @contextmenu.prevent="openContextMenu($event, tab)"
+            >
+              <span class="tab-title">{{ tab.title }}</span>
+              <el-icon
+                v-if="openTabs.length > 1"
+                class="tab-close"
+                @click.stop="removeTab(tab.name)"
+              >
+                <Close />
+              </el-icon>
+            </div>
+          </div>
         </div>
+        
+        <!-- 右键菜单 -->
+        <teleport to="body">
+          <div
+            v-if="contextMenuVisible"
+            class="context-menu"
+            :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }"
+          >
+            <div class="context-menu-item" @click="refreshTab">
+              <el-icon><RefreshRight /></el-icon>
+              <span>刷新当前页面</span>
+            </div>
+            <div
+              v-if="openTabs.length > 1"
+              class="context-menu-item"
+              @click="closeCurrentTab"
+            >
+              <el-icon><Close /></el-icon>
+              <span>关闭当前标签</span>
+            </div>
+            <div class="context-menu-divider"></div>
+            <div
+              v-if="openTabs.length > 1"
+              class="context-menu-item"
+              @click="closeOtherTabs"
+            >
+              <el-icon><FolderRemove /></el-icon>
+              <span>关闭其他标签</span>
+            </div>
+            <div
+              v-if="currentTabIndex > 0"
+              class="context-menu-item"
+              @click="closeLeftTabs"
+            >
+              <el-icon><Back /></el-icon>
+              <span>关闭左侧标签</span>
+            </div>
+            <div
+              v-if="currentTabIndex < openTabs.length - 1"
+              class="context-menu-item"
+              @click="closeRightTabs"
+            >
+              <el-icon><Right /></el-icon>
+              <span>关闭右侧标签</span>
+            </div>
+            <div class="context-menu-divider"></div>
+            <div
+              v-if="openTabs.length > 1"
+              class="context-menu-item"
+              @click="closeAllTabs"
+            >
+              <el-icon><CircleClose /></el-icon>
+              <span>关闭所有标签</span>
+            </div>
+          </div>
+        </teleport>
         
         <!-- 路由视图 -->
         <div class="content-wrapper">
           <router-view v-slot="{ Component }">
             <transition name="page" mode="out-in">
               <keep-alive :include="cachedViews">
-                <component :is="Component" />
+                <component :is="Component" :key="routerViewKey" />
               </keep-alive>
             </transition>
           </router-view>
@@ -233,6 +294,12 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+interface TabItem {
+  name: string
+  title: string
+  path: string
+}
+
 // 响应式数据
 const isCollapse = ref(false)
 const cachedViews = ref<string[]>([])
@@ -243,9 +310,16 @@ const isFullscreen = ref(false)
 const unreadNotifications = ref(5)
 const activeNotificationTab = ref('all')
 const activeTab = ref('Dashboard')
-const openTabs = ref([
+const openTabs = ref<TabItem[]>([
   { name: 'Dashboard', title: '首页', path: '/dashboard' }
 ])
+
+// 右键菜单相关
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const currentContextMenuTab = ref<TabItem | null>(null)
+const routerViewKey = ref(0)
 
 // 计算属性
 const activeMenu = computed(() => route.path)
@@ -254,6 +328,12 @@ const menuRoutes = computed(() => {
   const routes = mainRoute?.children || []
   console.log('🧭 菜单路由:', routes)
   return routes
+})
+
+// 当前右键菜单标签的索引
+const currentTabIndex = computed(() => {
+  if (!currentContextMenuTab.value) return -1
+  return openTabs.value.findIndex(tab => tab.name === currentContextMenuTab.value?.name)
 })
 
 // 搜索建议
@@ -446,6 +526,82 @@ const removeTab = (targetName: string) => {
   }
 }
 
+// 标签页点击
+const handleTabItemClick = (tab: TabItem) => {
+  activeTab.value = tab.name
+  router.push(tab.path)
+}
+
+// 打开右键菜单
+const openContextMenu = (e: MouseEvent, tab: TabItem) => {
+  currentContextMenuTab.value = tab
+  contextMenuX.value = e.clientX
+  contextMenuY.value = e.clientY
+  contextMenuVisible.value = true
+}
+
+// 关闭右键菜单
+const closeContextMenu = () => {
+  contextMenuVisible.value = false
+  currentContextMenuTab.value = null
+}
+
+// 刷新当前页面
+const refreshTab = () => {
+  closeContextMenu()
+  routerViewKey.value++
+}
+
+// 关闭当前标签
+const closeCurrentTab = () => {
+  if (currentContextMenuTab.value) {
+    removeTab(currentContextMenuTab.value.name)
+  }
+  closeContextMenu()
+}
+
+// 关闭其他标签
+const closeOtherTabs = () => {
+  if (currentContextMenuTab.value) {
+    openTabs.value = openTabs.value.filter(
+      tab => tab.name === currentContextMenuTab.value?.name
+    )
+    activeTab.value = currentContextMenuTab.value.name
+    router.push(currentContextMenuTab.value.path)
+  }
+  closeContextMenu()
+}
+
+// 关闭左侧标签
+const closeLeftTabs = () => {
+  if (currentContextMenuTab.value) {
+    const index = openTabs.value.findIndex(tab => tab.name === currentContextMenuTab.value?.name)
+    if (index > 0) {
+      openTabs.value = openTabs.value.slice(index)
+    }
+  }
+  closeContextMenu()
+}
+
+// 关闭右侧标签
+const closeRightTabs = () => {
+  if (currentContextMenuTab.value) {
+    const index = openTabs.value.findIndex(tab => tab.name === currentContextMenuTab.value?.name)
+    if (index < openTabs.value.length - 1) {
+      openTabs.value = openTabs.value.slice(0, index + 1)
+    }
+  }
+  closeContextMenu()
+}
+
+// 关闭所有标签
+const closeAllTabs = () => {
+  openTabs.value = [{ name: 'Dashboard', title: '首页', path: '/dashboard' }]
+  activeTab.value = 'Dashboard'
+  router.push('/dashboard')
+  closeContextMenu()
+}
+
 const handleTabClick = (tab: any) => {
   console.log('🔥 点击标签页:', tab)
   const tabInfo = openTabs.value.find(t => t.name === tab.props.name)
@@ -532,11 +688,14 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 }
 
-// 点击外部关闭搜索面板
+// 点击外部关闭搜索面板和右键菜单
 const handleClickOutside = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (!target.closest('.global-search')) {
     showSearchPanel.value = false
+  }
+  if (!target.closest('.context-menu') && !target.closest('.tab-item')) {
+    closeContextMenu()
   }
 }
 
@@ -711,8 +870,18 @@ onUnmounted(() => {
               margin-right: 0;
             }
             
+            .menu-title {
+              display: none;
+            }
+            
             &:hover {
               transform: none;
+            }
+          }
+          
+          :deep(.el-sub-menu) {
+            .el-sub-menu__icon-arrow {
+              display: none;
             }
           }
         }
@@ -938,36 +1107,50 @@ onUnmounted(() => {
     .page-tabs {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border-primary);
-      padding: 0 var(--space-6);
+      padding: 0 var(--space-4);
       
-      :deep(.el-tabs) {
-        .el-tabs__header {
-          margin: 0;
-          border: none;
+      .tabs-wrapper {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1);
+        height: 40px;
+        overflow-x: auto;
+        
+        &::-webkit-scrollbar {
+          height: 0;
+        }
+        
+        .tab-item {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-1) var(--space-3);
+          border-radius: var(--radius-md);
+          color: var(--text-secondary);
+          font-size: var(--text-sm);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+          white-space: nowrap;
+          user-select: none;
           
-          .el-tabs__nav-wrap {
-            &::after {
-              display: none;
-            }
+          &:hover {
+            color: var(--primary-color);
+            background: var(--primary-50);
           }
           
-          .el-tabs__item {
-            color: var(--text-secondary);
-            border: 1px solid transparent;
-            border-bottom: none;
-            border-radius: var(--radius-md) var(--radius-md) 0 0;
-            transition: all var(--transition-fast);
+          &.active {
+            color: var(--primary-color);
+            background: var(--primary-100);
+            font-weight: var(--font-medium);
+          }
+          
+          .tab-close {
+            font-size: 12px;
+            opacity: 0.6;
+            transition: opacity var(--transition-fast);
             
             &:hover {
-              color: var(--primary-color);
-              background: var(--primary-50);
-            }
-            
-            &.is-active {
-              color: var(--primary-color);
-              background: var(--bg-secondary);
-              border-color: var(--border-primary);
-              border-bottom: 1px solid var(--bg-secondary);
+              opacity: 1;
             }
           }
         }
@@ -995,6 +1178,44 @@ onUnmounted(() => {
         transform: translateY(-20px);
       }
     }
+  }
+}
+
+// 右键菜单
+.context-menu {
+  position: fixed;
+  background: var(--card-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1);
+  min-width: 160px;
+  z-index: 3000;
+  
+  .context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    
+    &:hover {
+      background: var(--primary-50);
+      color: var(--primary-color);
+    }
+    
+    .el-icon {
+      font-size: 14px;
+    }
+  }
+  
+  .context-menu-divider {
+    height: 1px;
+    background: var(--border-primary);
+    margin: var(--space-1) 0;
   }
 }
 

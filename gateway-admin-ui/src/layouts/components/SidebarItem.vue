@@ -8,7 +8,9 @@
       <el-icon v-if="icon">
         <component :is="icon" />
       </el-icon>
-      <template #title>{{ item.meta?.title || item.name }}</template>
+      <template #title>
+        <span class="menu-title">{{ item.meta?.title || item.name }}</span>
+      </template>
     </el-menu-item>
     
     <!-- 有子菜单 -->
@@ -17,7 +19,7 @@
         <el-icon v-if="icon">
           <component :is="icon" />
         </el-icon>
-        <span>{{ item.meta?.title || item.name }}</span>
+        <span class="menu-title">{{ item.meta?.title || item.name }}</span>
       </template>
       <sidebar-item
         v-for="child in visibleChildren"
@@ -93,4 +95,11 @@ const resolvePath = (routePath?: string) => {
 const isExternal = (path: string) => {
   return /^(https?:|mailto:|tel:)/.test(path)
 }
-</script> 
+</script>
+
+<style lang="scss" scoped>
+.menu-title {
+  white-space: nowrap;
+  overflow: hidden;
+}
+</style> 

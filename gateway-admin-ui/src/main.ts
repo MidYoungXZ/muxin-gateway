@@ -38,7 +38,10 @@ import {
   InfoFilled,
   SuccessFilled,
   CircleClose,
-  QuestionFilled
+  QuestionFilled,
+  FolderRemove,
+  Back,
+  Right
 } from '@element-plus/icons-vue'
 
 // 全局样式
@@ -79,7 +82,10 @@ const icons = {
   InfoFilled,
   SuccessFilled,
   CircleClose,
-  QuestionFilled
+  QuestionFilled,
+  FolderRemove,
+  Back,
+  Right
 }
 
 // 注册图标
@@ -99,9 +105,9 @@ app.use(router)
 // 注册自定义指令
 app.directive('permission', permission)
 
-// 强制应用亮色主题
-document.documentElement.className = 'light'
-document.documentElement.style.colorScheme = 'light'
+// 初始化主题
+import { initTheme } from '@/composables/useTheme'
+initTheme()
 
 // 初始化用户状态
 import { useUserStore } from '@/stores/user'
@@ -112,7 +118,7 @@ userStore.init()
 if (import.meta.env.DEV) {
   console.log('🚀 Muxin Gateway 管理系统启动完成')
   console.log('📊 当前环境:', import.meta.env.MODE)
-  console.log('🎨 主题模式: 亮色主题')
+  console.log('🎨 主题模式:', localStorage.getItem('theme') || 'light')
 }
 
 app.mount('#app') 

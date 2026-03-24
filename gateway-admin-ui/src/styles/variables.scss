@@ -133,15 +133,15 @@
   --radius-3xl: 24px;
   --radius-full: 9999px;
   
-  // 阴影系统 - 更丰富的层次
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.10);
-  --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.12);
-  --shadow-2xl: 0 16px 32px rgba(0, 0, 0, 0.14);
-  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.37);
+  // 阴影系统 - 扁平化设计（无阴影）
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+  --shadow-inner: none;
+  --shadow-glass: none;
   
   // 动画时长系统
   --duration-75: 75ms;
@@ -203,12 +203,12 @@
   --border-error: var(--error-color);
   --border-success: var(--success-color);
   
-  // 卡片背景
+  // 卡片背景 - 扁平化设计
   --card-bg: #ffffff;
   --card-hover-bg: var(--gray-25);
   --card-border: var(--gray-200);
-  --card-shadow: var(--shadow-sm);
-  --card-hover-shadow: var(--shadow-md);
+  --card-shadow: none;
+  --card-hover-shadow: none;
   
   // 表单元素
   --input-bg: #ffffff;
@@ -226,13 +226,13 @@
 
 // 暗色主题类
 .dark {
-  // 背景色
-  --bg-primary: var(--gray-950);
-  --bg-secondary: var(--gray-900);
-  --bg-tertiary: var(--gray-800);
-  --bg-quaternary: var(--gray-700);
+  // 背景色 - 使用 #111827 纯黑灰
+  --bg-primary: #111827;
+  --bg-secondary: #1f2937;
+  --bg-tertiary: #374151;
+  --bg-quaternary: #4b5563;
   --bg-inverse: var(--gray-50);
-  --bg-glass: rgba(17, 24, 39, 0.8);
+  --bg-glass: rgba(17, 24, 39, 0.9);
   --bg-overlay: rgba(0, 0, 0, 0.7);
   
   // 文字颜色
@@ -245,28 +245,28 @@
   --text-placeholder: var(--gray-500);
   
   // 边框颜色
-  --border-primary: var(--gray-700);
-  --border-secondary: var(--gray-600);
-  --border-hover: var(--gray-500);
+  --border-primary: #374151;
+  --border-secondary: #4b5563;
+  --border-hover: #6b7280;
   --border-active: var(--primary-light);
   --border-focus: var(--primary-light);
   --border-error: var(--error-color);
   --border-success: var(--success-color);
   
-  // 卡片背景
-  --card-bg: var(--gray-900);
-  --card-hover-bg: var(--gray-800);
-  --card-border: var(--gray-700);
-  --card-shadow: var(--shadow-lg);
-  --card-hover-shadow: var(--shadow-xl);
+  // 卡片背景 - 扁平化设计
+  --card-bg: #1f2937;
+  --card-hover-bg: #374151;
+  --card-border: #374151;
+  --card-shadow: none;
+  --card-hover-shadow: none;
   
   // 表单元素
-  --input-bg: var(--gray-800);
-  --input-border: var(--gray-600);
-  --input-hover-border: var(--gray-500);
+  --input-bg: #1f2937;
+  --input-border: #374151;
+  --input-hover-border: #4b5563;
   --input-focus-border: var(--primary-light);
-  --input-disabled-bg: var(--gray-700);
-  --input-disabled-border: var(--gray-600);
+  --input-disabled-bg: #111827;
+  --input-disabled-border: #374151;
   
   // 暗色主题下的主题色调整
   --primary-color: var(--primary-500);

@@ -113,7 +113,7 @@ a {
   background: var(--bg-secondary);
 }
 
-// Element Plus 主题覆盖 - 现代化设计
+// Element Plus 主题覆盖 - 扁平化设计
 .el-button {
   font-weight: var(--font-medium);
   border-radius: var(--radius-md);
@@ -123,18 +123,14 @@ a {
     background: var(--primary-color);
     border-color: var(--primary-color);
     color: white;
-    box-shadow: var(--shadow-sm);
     
     &:hover {
       background: var(--primary-dark);
       border-color: var(--primary-dark);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
     }
     
     &:active {
-      transform: translateY(0);
-      box-shadow: var(--shadow-sm);
+      background: var(--primary-darker);
     }
   }
   
@@ -170,13 +166,7 @@ a {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
-  
-  &:hover {
-    box-shadow: var(--card-hover-shadow);
-    transform: translateY(-2px);
-  }
   
   .el-card__header {
     background: var(--bg-secondary);
@@ -198,16 +188,13 @@ a {
     border: 1px solid var(--input-border);
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
-    box-shadow: var(--shadow-xs);
     
     &:hover {
       border-color: var(--input-hover-border);
-      box-shadow: var(--shadow-sm);
     }
     
     &.is-focus {
       border-color: var(--input-focus-border);
-      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
   }
   
@@ -232,7 +219,6 @@ a {
   color: var(--text-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
   
   th.el-table__cell {
     background: var(--bg-secondary);
@@ -294,7 +280,6 @@ a {
   background: var(--card-bg);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
   padding: var(--space-2);
   
   .el-dropdown-menu__item {
@@ -339,7 +324,6 @@ a {
   background: var(--card-bg) !important;
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-lg) !important;
   color: var(--text-primary) !important;
   
   .el-message__content {
@@ -351,7 +335,6 @@ a {
   background: var(--card-bg) !important;
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-xl) !important;
   
   .el-notification__title {
     color: var(--text-primary) !important;
@@ -504,18 +487,16 @@ a {
   background: var(--card-bg);
   padding: var(--space-6);
   border-radius: var(--radius-lg);
-  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
   margin-bottom: var(--space-6);
 }
 
-// 现代化卡片组件
+// 现代化卡片组件 - 扁平化设计
 .modern-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   padding: var(--space-6);
-  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
@@ -533,9 +514,6 @@ a {
   }
   
   &:hover {
-    box-shadow: var(--card-hover-shadow);
-    transform: translateY(-4px);
-    
     &::before {
       opacity: 1;
     }
@@ -548,7 +526,7 @@ a {
   }
 }
 
-// 统计卡片（重新设计）
+// 统计卡片（重新设计）- 扁平化设计
 .stats-card {
   @extend .modern-card;
   
@@ -568,7 +546,7 @@ a {
     justify-content: center;
     font-size: var(--text-xl);
     color: white;
-    background: var(--gradient-primary);
+    background: var(--primary-color);
   }
   
   .stats-value {
