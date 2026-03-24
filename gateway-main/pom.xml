@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>com.muxin.gateway</groupId>
-            <artifactId>gateway-registry-nacos</artifactId>
+            <artifactId>gateway-cloud</artifactId>
         </dependency>
         <dependency>
             <groupId>com.muxin.gateway</groupId>

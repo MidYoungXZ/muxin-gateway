@@ -38,6 +38,8 @@ sa-token:
   is-log: false
   # jwt密钥
   jwt-secret-key: muxin-gateway-jwt-secret-key-2024
+  # 是否开启权限前缀匹配
+  is-match-prefix: true
 
 # Spring MVC Web服务器配置
 server:

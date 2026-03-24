@@ -38,12 +38,6 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '服务节点' }
           },
           {
-            path: '/routes/loadbalance',
-            name: 'LoadBalance',
-            component: () => import('@/views/routes/loadbalance/index.vue'),
-            meta: { title: '负载均衡' }
-          },
-          {
             path: '/routes/filters',
             name: 'FilterManage',
             component: () => import('@/views/routes/filters/index.vue'),

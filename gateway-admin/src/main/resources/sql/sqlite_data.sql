@@ -70,9 +70,8 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order, visible, status) VALUES
 (100, 1, '路由列表', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1),
 (101, 1, '服务节点', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'SetUp', 2, 1, 1),
-(102, 1, '负载均衡', 'menu.routes.loadbalance', 'C', '/routes/loadbalance', 'routes/loadbalance/index', 'route:loadbalance:list', 'DataLine', 3, 1, 1),
-(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 4, 1, 1),
-(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 5, 1, 1),
+(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 3, 1, 1),
+(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 4, 1, 1),
 (200, 2, '用户管理', 'menu.system.user', 'C', '/system/users', 'system/users/index', 'system:user:list', 'User', 1, 1, 1),
 (201, 2, '角色管理', 'menu.system.role', 'C', '/system/roles', 'system/roles/index', 'system:role:list', 'UserFilled', 2, 1, 1),
 (202, 2, '部门管理', 'menu.system.dept', 'C', '/system/departments', 'system/departments/index', 'system:dept:list', 'OfficeBuilding', 3, 1, 1),
@@ -86,10 +85,22 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 (1002, 100, '路由新增', '', 'F', '', '', 'route:create', '', 2, 1, 1),
 (1003, 100, '路由修改', '', 'F', '', '', 'route:update', '', 3, 1, 1),
 (1004, 100, '路由删除', '', 'F', '', '', 'route:delete', '', 4, 1, 1),
+(1011, 101, '节点查看', '', 'F', '', '', 'route:node:list', '', 1, 1, 1),
+(1012, 101, '节点新增', '', 'F', '', '', 'route:node:create', '', 2, 1, 1),
+(1013, 101, '节点修改', '', 'F', '', '', 'route:node:update', '', 3, 1, 1),
+(1014, 101, '节点删除', '', 'F', '', '', 'route:node:delete', '', 4, 1, 1),
 (2001, 200, '用户查看', '', 'F', '', '', 'system:user:view', '', 1, 1, 1),
 (2002, 200, '用户新增', '', 'F', '', '', 'system:user:create', '', 2, 1, 1),
 (2003, 200, '用户修改', '', 'F', '', '', 'system:user:update', '', 3, 1, 1),
-(2004, 200, '用户删除', '', 'F', '', '', 'system:user:delete', '', 4, 1, 1);
+(2004, 200, '用户删除', '', 'F', '', '', 'system:user:delete', '', 4, 1, 1),
+(1031, 103, '过滤器查看', '', 'F', '', '', 'route:filter:view', '', 1, 1, 1),
+(1032, 103, '过滤器新增', '', 'F', '', '', 'route:filter:create', '', 2, 1, 1),
+(1033, 103, '过滤器修改', '', 'F', '', '', 'route:filter:update', '', 3, 1, 1),
+(1034, 103, '过滤器删除', '', 'F', '', '', 'route:filter:delete', '', 4, 1, 1),
+(1041, 104, '断言查看', '', 'F', '', '', 'route:predicate:view', '', 1, 1, 1),
+(1042, 104, '断言新增', '', 'F', '', '', 'route:predicate:create', '', 2, 1, 1),
+(1043, 104, '断言修改', '', 'F', '', '', 'route:predicate:update', '', 3, 1, 1),
+(1044, 104, '断言删除', '', 'F', '', '', 'route:predicate:delete', '', 4, 1, 1);
 
 -- 9. 角色菜单关联 - 超级管理员拥有所有权限
 INSERT INTO sys_role_menu (role_id, menu_id) 
@@ -102,8 +113,11 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 
 -- 路由管理员权限
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES
-(3, 1), (3, 100), (3, 101), (3, 102), (3, 103), (3, 104),
-(3, 1001), (3, 1002), (3, 1003), (3, 1004);
+(3, 1), (3, 100), (3, 101), (3, 103), (3, 104),
+(3, 1001), (3, 1002), (3, 1003), (3, 1004),
+(3, 1011), (3, 1012), (3, 1013), (3, 1014),
+(3, 1031), (3, 1032), (3, 1033), (3, 1034),
+(3, 1041), (3, 1042), (3, 1043), (3, 1044);
 
 -- 10. 示例路由
 INSERT INTO gw_route (route_id, route_name, description, uri, metadata, "order", enabled) VALUES
@@ -123,3 +137,33 @@ INSERT INTO sys_config (config_key, config_value, config_name, description, stat
 ('password.strength.check', 'false', '密码强度检查', '是否检查密码强度', 1),
 ('upload.max.size', '10485760', '上传文件大小限制', '上传文件最大字节数(默认10MB)', 1),
 ('upload.allowed.types', 'jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx', '允许上传的文件类型', '允许上传的文件扩展名', 1);
+
+-- 12. 服务节点测试数据
+
+-- user-service 服务
+INSERT INTO gw_service_node (node_id, service_name, node_name, address, port, weight, max_fails, fail_timeout, backup, health_check_enabled, health_check_interval, health_check_timeout, health_check_path, health_check_expected_status, status, last_check_result, deleted) VALUES
+('user-service-node-1', 'user-service', '用户服务节点1', '192.168.1.10', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0),
+('user-service-node-2', 'user-service', '用户服务节点2', '192.168.1.11', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0),
+('user-service-node-3', 'user-service', '用户服务节点3', '192.168.1.12', 8080, 50, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 0, 0),
+('user-service-node-4', 'user-service', '用户服务节点4(备份)', '192.168.1.13', 8080, 100, 3, 30, 1, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0);
+
+-- order-service 服务
+INSERT INTO gw_service_node (node_id, service_name, node_name, address, port, weight, max_fails, fail_timeout, backup, health_check_enabled, health_check_interval, health_check_timeout, health_check_path, health_check_expected_status, status, last_check_result, deleted) VALUES
+('order-service-node-1', 'order-service', '订单服务节点1', '192.168.2.10', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0),
+('order-service-node-2', 'order-service', '订单服务节点2', '192.168.2.11', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0),
+('order-service-node-3', 'order-service', '订单服务节点3', '192.168.2.12', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0);
+
+-- payment-service 服务
+INSERT INTO gw_service_node (node_id, service_name, node_name, address, port, weight, max_fails, fail_timeout, backup, health_check_enabled, health_check_interval, health_check_timeout, health_check_path, health_check_expected_status, status, last_check_result, deleted) VALUES
+('payment-service-node-1', 'payment-service', '支付服务节点1', '192.168.3.10', 8080, 100, 3, 30, 0, 1, 30, 5, '/actuator/health', '[200]', 1, 1, 0),
+('payment-service-node-2', 'payment-service', '支付服务节点2', '192.168.3.11', 8080, 100, 3, 30, 0, 1, 30, 5, '/actuator/health', '[200]', 1, 1, 0);
+
+-- inventory-service 服务
+INSERT INTO gw_service_node (node_id, service_name, node_name, address, port, weight, max_fails, fail_timeout, backup, health_check_enabled, health_check_interval, health_check_timeout, health_check_path, health_check_expected_status, status, last_check_result, deleted) VALUES
+('inventory-service-node-1', 'inventory-service', '库存服务节点1', '192.168.4.10', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 1, 0),
+('inventory-service-node-2', 'inventory-service', '库存服务节点2', '192.168.4.11', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 1, 0, 0),
+('inventory-service-node-3', 'inventory-service', '库存服务节点3', '192.168.4.12', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200, 201]', 0, NULL, 0);
+
+-- notification-service 服务
+INSERT INTO gw_service_node (node_id, service_name, node_name, address, port, weight, max_fails, fail_timeout, backup, health_check_enabled, health_check_interval, health_check_timeout, health_check_path, health_check_expected_status, status, last_check_result, deleted) VALUES
+('notification-service-node-1', 'notification-service', '通知服务节点1', '192.168.5.10', 8080, 100, 3, 30, 0, 1, 30, 5, '/health', '[200]', 2, 1, 0);

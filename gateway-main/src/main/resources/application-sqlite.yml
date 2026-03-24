@@ -1,24 +1,16 @@
 # SQLite Configuration
-# Using in-memory SQLite database for development and testing
+# Using file-based SQLite database for persistent storage
 
 spring:
   datasource:
-    url: 'jdbc:sqlite::memory:'
+    url: 'jdbc:sqlite:${user.dir}/data/muxin-gateway.db'
     driver-class-name: org.sqlite.JDBC
-    # SQLite connection pool settings
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:sql/sqlite_schema.sql
-      data-locations: classpath:sql/sqlite_data.sql
-      continue-on-error: false
 
 # MyBatis-Flex配置
 mybatis-flex:
@@ -31,7 +23,6 @@ mybatis-flex:
   global-config:
     print-banner: false
     audit-enable: true
-  # SQLite兼容配置
   configuration:
     jdbc-type-for-null: NULL
     default-executor-type: REUSE

@@ -8,6 +8,7 @@ import com.muxin.gateway.admin.model.dto.PredicateUpdateDTO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.PredicateTypeVO;
 import com.muxin.gateway.admin.model.vo.PredicateVO;
+import com.muxin.gateway.admin.model.vo.RouteSimpleVO;
 
 import java.util.List;
 
@@ -64,4 +65,19 @@ public interface PredicateService extends IService<GwPredicate> {
      * 获取断言类型列表
      */
     List<PredicateTypeVO> getPredicateTypes();
+
+    /**
+     * 启用断言
+     */
+    void enablePredicate(Long id);
+
+    /**
+     * 禁用断言
+     */
+    void disablePredicate(Long id);
+
+    /**
+     * 获取断言使用的路由列表
+     */
+    List<RouteSimpleVO> getUsedRoutes(Long id);
 } 

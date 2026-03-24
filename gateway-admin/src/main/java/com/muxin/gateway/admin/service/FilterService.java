@@ -6,6 +6,7 @@ import com.muxin.gateway.admin.model.dto.FilterUpdateDTO;
 import com.muxin.gateway.admin.model.vo.FilterTypeVO;
 import com.muxin.gateway.admin.model.vo.FilterVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
+import com.muxin.gateway.admin.model.vo.RouteSimpleVO;
 
 import java.util.List;
 
@@ -72,4 +73,9 @@ public interface FilterService {
      * 获取过滤器类型列表
      */
     List<FilterTypeVO> getFilterTypes();
+
+    /**
+     * 获取过滤器使用的路由列表
+     */
+    List<RouteSimpleVO> getUsedRoutes(Long id);
 } 

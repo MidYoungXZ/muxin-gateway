@@ -1,99 +1,161 @@
 import request from '@/utils/request'
-import type { PageParams, PageResult } from '@/types/common'
+
+export interface Predicate {
+  id: number
+  predicateName: string
+  predicateType: string
+  predicateTypeDesc?: string
+  description?: string
+  config?: Record<string, any>
+  isSystem: boolean
+  enabled: boolean
+  usageCount?: number
+  createTime: string
+  updateTime?: string
+}
+
+export interface PredicateQueryParams {
+  predicateName?: string
+  predicateType?: string
+  enabled?: boolean
+  isSystem?: boolean
+  pageNum?: number
+  pageSize?: number
+}
+
+export interface PredicateCreateRequest {
+  predicateName: string
+  predicateType: string
+  description?: string
+  config: Record<string, any>
+  enabled?: boolean
+}
+
+export interface PredicateUpdateRequest {
+  predicateName: string
+  description?: string
+  config: Record<string, any>
+  enabled?: boolean
+}
+
+export interface PredicateType {
+  type: string
+  name: string
+  description: string
+  configFields: ConfigField[]
+}
+
+export interface ConfigField {
+  field: string
+  label: string
+  type: string
+  required: boolean
+  defaultValue?: any
+  placeholder?: string
+  description?: string
+}
+
+export interface RouteSimple {
+  id: number
+  routeId: string
+  routeName: string
+  enabled: boolean
+}
+
+export interface PageResult<T> {
+  data: T[]
+  total: number
+  pageNum: number
+  pageSize: number
+  totalPages: number
+}
 
 export const predicatesApi = {
-  // 获取断言列表
-  getPredicates(params: PageParams & {
-    routeId?: number
-    type?: string
-  }) {
-    console.log('🚀 [PREDICATES] 获取断言列表: /api/predicates', params)
-    return request({
+  list(params: PredicateQueryParams) {
+    return request<{ data: PageResult<Predicate> }>({
       url: '/api/predicates',
       method: 'get',
       params
     })
   },
 
-  // 获取断言详情
-  getPredicate(id: number) {
-    console.log('🚀 [PREDICATES] 获取断言详情: /api/predicates/' + id)
-    return request({
+  getAvailable() {
+    return request<{ data: Predicate[] }>({
+      url: '/api/predicates/available',
+      method: 'get'
+    })
+  },
+
+  getByType(type: string) {
+    return request<{ data: Predicate[] }>({
+      url: `/api/predicates/type/${type}`,
+      method: 'get'
+    })
+  },
+
+  detail(id: number) {
+    return request<{ data: Predicate }>({
       url: `/api/predicates/${id}`,
       method: 'get'
     })
   },
 
-  // 创建断言
-  createPredicate(data: {
-    routeId: number
-    type: string
-    name: string
-    config: any
-    enabled?: boolean
-  }) {
-    console.log('🚀 [PREDICATES] 创建断言: /api/predicates', data)
-    return request({
+  create(data: PredicateCreateRequest) {
+    return request<{ data: number }>({
       url: '/api/predicates',
       method: 'post',
       data
     })
   },
 
-  // 更新断言
-  updatePredicate(id: number, data: any) {
-    console.log('🚀 [PREDICATES] 更新断言: /api/predicates/' + id, data)
-    return request({
+  update(id: number, data: PredicateUpdateRequest) {
+    return request<{ data: void }>({
       url: `/api/predicates/${id}`,
       method: 'put',
       data
     })
   },
 
-  // 删除断言
-  deletePredicate(id: number) {
-    console.log('🚀 [PREDICATES] 删除断言: /api/predicates/' + id)
-    return request({
+  delete(id: number) {
+    return request<{ data: void }>({
       url: `/api/predicates/${id}`,
       method: 'delete'
     })
   },
 
-  // 批量删除断言
   batchDelete(ids: number[]) {
-    console.log('🚀 [PREDICATES] 批量删除断言: /api/predicates/batch', ids)
-    return request({
+    return request<{ data: void }>({
       url: '/api/predicates/batch',
       method: 'delete',
       data: ids
     })
   },
 
-  // 切换断言状态
-  togglePredicate(id: number, enabled: boolean) {
-    console.log(`🚀 [PREDICATES] 切换断言状态: /api/predicates/${id}`, { enabled })
-    return request({
-      url: `/api/predicates/${id}`,
-      method: 'put',
-      data: { enabled }
+  enable(id: number) {
+    return request<{ data: void }>({
+      url: `/api/predicates/${id}/enable`,
+      method: 'post'
     })
   },
 
-  // 获取所有可用的断言类型
-  getPredicateTypes() {
-    console.log('🚀 [PREDICATES] 获取断言类型: /api/predicates/types')
-    return request({
+  disable(id: number) {
+    return request<{ data: void }>({
+      url: `/api/predicates/${id}/disable`,
+      method: 'post'
+    })
+  },
+
+  getTypes() {
+    return request<{ data: PredicateType[] }>({
       url: '/api/predicates/types',
       method: 'get'
     })
   },
 
-  // 获取路由的断言列表（在路由管理中使用）
-  getRoutePredicates(routeId: number) {
-    console.log('🚀 [PREDICATES] 获取路由断言列表: /api/routes/' + routeId + '/predicates')
-    return request({
-      url: `/api/routes/${routeId}/predicates`,
+  getUsedRoutes(id: number) {
+    return request<{ data: RouteSimple[] }>({
+      url: `/api/predicates/${id}/routes`,
       method: 'get'
     })
   }
-} 
+}

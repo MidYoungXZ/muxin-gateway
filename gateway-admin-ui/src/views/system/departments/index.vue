@@ -26,7 +26,7 @@
           />
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>
@@ -50,13 +50,10 @@
           </span>
         </div>
         <div class="tree-controls">
-          <el-button text @click="expandAll">
-            <el-icon><CaretBottom /></el-icon>
-            展开全部
-          </el-button>
-          <el-button text @click="collapseAll">
-            <el-icon><CaretRight /></el-icon>
-            收起全部
+          <el-button text @click="toggleExpandAll">
+            <el-icon v-if="isAllExpanded"><CaretBottom /></el-icon>
+            <el-icon v-else><CaretRight /></el-icon>
+            {{ isAllExpanded ? '收起全部' : '展开全部' }}
           </el-button>
         </div>
       </div>
@@ -246,7 +243,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, Delete, Search, Refresh, Edit, OfficeBuilding, CaretBottom, CaretRight } from '@element-plus/icons-vue'
@@ -256,6 +253,7 @@ const loading = ref(false)
 const formLoading = ref(false)
 const deptTreeData = ref<Department[]>([])
 const deptCount = ref(0)
+const isAllExpanded = ref(true)
 
 const formDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -340,15 +338,18 @@ const loadDeptTree = async () => {
     if (response && response.data) {
       deptTreeData.value = response.data
       deptCount.value = countDepts(response.data)
+      isAllExpanded.value = true
     } else {
       deptTreeData.value = []
       deptCount.value = 0
+      isAllExpanded.value = true
     }
   } catch (error) {
     console.error('加载部门树失败:', error)
     ElMessage.error('加载部门树失败')
     deptTreeData.value = []
     deptCount.value = 0
+    isAllExpanded.value = true
   } finally {
     loading.value = false
   }
@@ -377,13 +378,26 @@ const handleReset = () => {
   searchForm.status = undefined
 }
 
-const expandAll = () => {
+const toggleExpandAll = async () => {
+  await nextTick()
   const keys = getAllNodeKeys(deptTreeData.value)
-  deptTreeRef.value?.setExpandedKeys(keys)
-}
-
-const collapseAll = () => {
-  deptTreeRef.value?.setExpandedKeys([])
+  if (isAllExpanded.value) {
+    keys.forEach(key => {
+      const node = deptTreeRef.value?.store?.nodesMap?.[key]
+      if (node) {
+        node.expanded = false
+      }
+    })
+    isAllExpanded.value = false
+  } else {
+    keys.forEach(key => {
+      const node = deptTreeRef.value?.store?.nodesMap?.[key]
+      if (node) {
+        node.expanded = true
+      }
+    })
+    isAllExpanded.value = true
+  }
 }
 
 const getAllNodeKeys = (nodes: Department[]): number[] => {

@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 过滤器类型VO
  *
@@ -35,4 +37,16 @@ public class FilterTypeVO {
      * 配置模板
      */
     private Object configTemplate;
+
+    /**
+     * 配置字段定义
+     */
+    private List<ConfigFieldVO> configFields;
+
+    public FilterTypeVO(String value, String label, String description, Object configTemplate) {
+        this.value = value;
+        this.label = label;
+        this.description = description;
+        this.configTemplate = configTemplate;
+    }
 } 

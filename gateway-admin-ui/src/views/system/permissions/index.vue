@@ -26,14 +26,14 @@
           />
         </el-form-item>
         <el-form-item label="权限类型">
-          <el-select v-model="searchForm.menuType" placeholder="请选择类型" clearable>
+          <el-select v-model="searchForm.menuType" placeholder="请选择类型" clearable style="width: 120px">
             <el-option label="目录" value="M" />
             <el-option label="菜单" value="C" />
             <el-option label="按钮" value="F" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>

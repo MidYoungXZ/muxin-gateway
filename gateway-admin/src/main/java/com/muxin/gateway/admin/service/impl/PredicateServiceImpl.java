@@ -14,6 +14,7 @@ import com.muxin.gateway.admin.model.dto.PredicateUpdateDTO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.PredicateTypeVO;
 import com.muxin.gateway.admin.model.vo.PredicateVO;
+import com.muxin.gateway.admin.model.vo.RouteSimpleVO;
 import com.muxin.gateway.admin.service.PredicateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,13 +43,11 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
     
     @Override
     public PageVO<PredicateVO> pageQuery(PredicateQueryDTO query) {
-        // 构建查询条件
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(GW_PREDICATE)
                 .where(GW_PREDICATE.DELETED.eq(false));
         
-        // 动态条件
         if (StringUtils.hasText(query.getPredicateName())) {
             wrapper.and(GW_PREDICATE.PREDICATE_NAME.like("%" + query.getPredicateName() + "%"));
         }
@@ -65,16 +64,13 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
             wrapper.and(GW_PREDICATE.IS_SYSTEM.eq(query.getIsSystem()));
         }
         
-        // 排序
         wrapper.orderBy(GW_PREDICATE.PREDICATE_TYPE.asc(), 
                        GW_PREDICATE.CREATE_TIME.desc());
         
-        // 分页查询
         com.mybatisflex.core.paginate.Page<GwPredicate> page = page(
                 new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
                 wrapper);
         
-        // 转换为VO
         List<PredicateVO> voList = page.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
@@ -134,13 +130,9 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createPredicate(PredicateCreateDTO dto) {
-        // 1. 验证断言类型
         validatePredicateType(dto.getPredicateType());
-        
-        // 2. 验证配置格式
         validatePredicateConfig(dto.getPredicateType(), dto.getConfig());
         
-        // 3. 创建断言
         GwPredicate predicate = new GwPredicate();
         predicate.setPredicateName(dto.getPredicateName());
         predicate.setPredicateType(dto.getPredicateType());
@@ -158,21 +150,17 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePredicate(Long id, PredicateUpdateDTO dto) {
-        // 1. 获取原断言
         GwPredicate predicate = getById(id);
         if (predicate == null || predicate.getDeleted()) {
             throw new BusinessException("断言不存在");
         }
         
-        // 2. 系统内置断言不允许修改
         if (Boolean.TRUE.equals(predicate.getIsSystem())) {
             throw new BusinessException("系统内置断言不允许修改");
         }
         
-        // 3. 验证配置格式
         validatePredicateConfig(predicate.getPredicateType(), dto.getConfig());
         
-        // 4. 更新断言
         predicate.setPredicateName(dto.getPredicateName());
         predicate.setDescription(dto.getDescription());
         predicate.setConfig(dto.getConfig());
@@ -184,24 +172,20 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deletePredicate(Long id) {
-        // 1. 获取断言
         GwPredicate predicate = getById(id);
         if (predicate == null || predicate.getDeleted()) {
             throw new BusinessException("断言不存在");
         }
         
-        // 2. 系统内置断言不允许删除
         if (Boolean.TRUE.equals(predicate.getIsSystem())) {
             throw new BusinessException("系统内置断言不允许删除");
         }
         
-        // 3. 检查是否被使用
         long usageCount = routePredicateMapper.countByPredicateId(id);
         if (usageCount > 0) {
             throw new BusinessException("断言正在被" + usageCount + "个路由使用，无法删除");
         }
         
-        // 4. 逻辑删除
         removeById(id);
     }
     
@@ -212,7 +196,6 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
             return;
         }
         
-        // 批量检查
         for (Long id : ids) {
             GwPredicate predicate = getById(id);
             if (predicate != null && !predicate.getDeleted()) {
@@ -227,7 +210,6 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
             }
         }
         
-        // 批量删除
         removeByIds(ids);
     }
     
@@ -242,10 +224,47 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
                         .build())
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void enablePredicate(Long id) {
+        GwPredicate predicate = getById(id);
+        if (predicate == null || predicate.getDeleted()) {
+            throw new BusinessException("断言不存在");
+        }
+        predicate.setEnabled(true);
+        updateById(predicate);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void disablePredicate(Long id) {
+        GwPredicate predicate = getById(id);
+        if (predicate == null || predicate.getDeleted()) {
+            throw new BusinessException("断言不存在");
+        }
+        predicate.setEnabled(false);
+        updateById(predicate);
+    }
+
+    @Override
+    public List<RouteSimpleVO> getUsedRoutes(Long id) {
+        GwPredicate predicate = getById(id);
+        if (predicate == null || predicate.getDeleted()) {
+            throw new BusinessException("断言不存在");
+        }
+        
+        List<Map<String, Object>> routes = routePredicateMapper.findRoutesByPredicateId(id);
+        return routes.stream()
+                .map(map -> RouteSimpleVO.builder()
+                        .id(((Number) map.get("id")).longValue())
+                        .routeId((String) map.get("routeId"))
+                        .routeName((String) map.get("routeName"))
+                        .enabled((Boolean) map.get("enabled"))
+                        .build())
+                .collect(Collectors.toList());
+    }
     
-    /**
-     * 验证断言类型
-     */
     private void validatePredicateType(String type) {
         boolean valid = Arrays.stream(PredicateType.values())
                 .anyMatch(t -> t.getType().equals(type));
@@ -255,20 +274,12 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
         }
     }
     
-    /**
-     * 验证断言配置
-     */
     private void validatePredicateConfig(String type, Map<String, Object> config) {
         if (config == null || config.isEmpty()) {
             throw new BusinessException("断言配置不能为空");
         }
-        
-        // TODO: 根据不同的断言类型验证配置格式
     }
     
-    /**
-     * 转换为VO
-     */
     private PredicateVO convertToVO(GwPredicate predicate) {
         PredicateVO vo = new PredicateVO();
         vo.setId(predicate.getId());
@@ -281,14 +292,13 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
         vo.setCreateTime(predicate.getCreateTime());
         vo.setUpdateTime(predicate.getUpdateTime());
         
-        // 设置类型描述
         Arrays.stream(PredicateType.values())
                 .filter(t -> t.getType().equals(predicate.getPredicateType()))
                 .findFirst()
                 .ifPresent(t -> vo.setPredicateTypeDesc(t.getName()));
         
-        // TODO: 设置使用次数
-        vo.setUsageCount(0);
+        long usageCount = routePredicateMapper.countByPredicateId(predicate.getId());
+        vo.setUsageCount((int) usageCount);
         
         return vo;
     }

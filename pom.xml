@@ -22,10 +22,8 @@
         <module>muxin-gateway-bom</module>
         <module>gateway-core</module>
         <module>gateway-main</module>
-        <module>gateway-registry</module>
+        <module>gateway-cloud</module>
         <module>gateway-admin</module>
-        <module>gateway-config</module>
-        <module>gateway-spring-boot-starter</module>
     </modules>
 
     <properties>
@@ -58,7 +56,7 @@
             </dependency>
             <dependency>
                 <groupId>com.muxin.gateway</groupId>
-                <artifactId>gateway-registry-nacos</artifactId>
+                <artifactId>gateway-cloud</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

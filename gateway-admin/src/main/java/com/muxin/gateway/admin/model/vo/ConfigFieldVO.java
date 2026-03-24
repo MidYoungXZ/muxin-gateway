@@ -18,7 +18,7 @@ public class ConfigFieldVO {
     
     private String label;
     
-    private String type;  // string/number/boolean/array/datetime
+    private String type;
     
     private boolean required;
     

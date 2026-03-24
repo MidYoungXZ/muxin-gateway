@@ -6,6 +6,7 @@ import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.entity.GwRouteFilter;
 import com.muxin.gateway.admin.entity.GwRoutePredicate;
 import static com.muxin.gateway.admin.entity.table.GwRouteTableDef.GW_ROUTE;
+import com.muxin.gateway.admin.enums.PredicateType;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.RouteFilterMapper;
 import com.muxin.gateway.admin.mapper.RouteMapper;
@@ -15,6 +16,8 @@ import com.muxin.gateway.admin.model.dto.RouteQueryDTO;
 import com.muxin.gateway.admin.model.dto.RouteTestDTO;
 import com.muxin.gateway.admin.model.dto.RouteUpdateDTO;
 import com.muxin.gateway.admin.model.vo.PageVO;
+import com.muxin.gateway.admin.model.vo.PredicateVO;
+import com.muxin.gateway.admin.model.vo.FilterVO;
 import com.muxin.gateway.admin.model.vo.RouteTestResultVO;
 import com.muxin.gateway.admin.model.vo.RouteVO;
 import com.muxin.gateway.admin.service.RouteService;
@@ -26,17 +29,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 路由服务实现
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -97,8 +96,10 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             throw new BusinessException("路由不存在");
         }
         
-        // TODO: 加载关联的断言和过滤器
-        return convertToVO(route);
+        RouteVO vo = convertToVO(route);
+        vo.setPredicates(loadPredicates(id));
+        vo.setFilters(loadFilters(id));
+        return vo;
     }
     
     @Override
@@ -181,11 +182,22 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             throw new BusinessException("路由不存在");
         }
         
-        // 逻辑删除
-        removeById(id);
+        routePredicateMapper.deleteByRouteId(id);
+        routeFilterMapper.deleteByRouteId(id);
         
-        // 发布配置变更事件
-        // TODO: publishRouteChangeEvent(route, OperationType.DELETE);
+        removeById(id);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void batchDelete(List<Long> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return;
+        }
+        
+        for (Long id : ids) {
+            deleteRoute(id);
+        }
     }
     
     @Override
@@ -200,11 +212,15 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     
     @Override
     public RouteTestResultVO testRoute(RouteTestDTO dto) {
-        // TODO: 实现路由测试逻辑
         return RouteTestResultVO.builder()
                 .matched(false)
                 .errorMessage("路由测试功能尚未实现")
                 .build();
+    }
+    
+    @Override
+    public List<String> getServiceNames() {
+        return routeMapper.findAllServiceNames();
     }
     
     /**
@@ -231,16 +247,12 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             return;
         }
         
-        List<GwRoutePredicate> routePredicates = new ArrayList<>();
         for (int i = 0; i < predicateIds.size(); i++) {
             GwRoutePredicate rp = new GwRoutePredicate();
             rp.setRouteId(routeId);
             rp.setPredicateId(predicateIds.get(i));
             rp.setSortOrder(i);
-            routePredicates.add(rp);
-        }
-        
-        for (GwRoutePredicate rp : routePredicates) {
+            rp.setCreateTime(LocalDateTime.now());
             routePredicateMapper.insert(rp);
         }
     }
@@ -253,16 +265,12 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             return;
         }
         
-        List<GwRouteFilter> routeFilters = new ArrayList<>();
         for (int i = 0; i < filterIds.size(); i++) {
             GwRouteFilter rf = new GwRouteFilter();
             rf.setRouteId(routeId);
             rf.setFilterId(filterIds.get(i));
             rf.setSortOrder(i);
-            routeFilters.add(rf);
-        }
-        
-        for (GwRouteFilter rf : routeFilters) {
+            rf.setCreateTime(LocalDateTime.now());
             routeFilterMapper.insert(rf);
         }
     }
@@ -305,8 +313,41 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         vo.setCreateBy(route.getCreateBy());
         vo.setUpdateBy(route.getUpdateBy());
         
-        // TODO: 加载关联的断言和过滤器
-        
         return vo;
+    }
+    
+    private List<PredicateVO> loadPredicates(Long routeId) {
+        List<Map<String, Object>> predicates = routePredicateMapper.findPredicatesByRouteId(routeId);
+        return predicates.stream()
+                .map(map -> {
+                    PredicateVO vo = new PredicateVO();
+                    vo.setId(((Number) map.get("id")).longValue());
+                    vo.setPredicateName((String) map.get("predicateName"));
+                    vo.setPredicateType((String) map.get("predicateType"));
+                    vo.setConfig((Map<String, Object>) map.get("config"));
+                    
+                    Arrays.stream(PredicateType.values())
+                            .filter(t -> t.getType().equals(vo.getPredicateType()))
+                            .findFirst()
+                            .ifPresent(t -> vo.setPredicateTypeDesc(t.getName()));
+                    
+                    return vo;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    private List<FilterVO> loadFilters(Long routeId) {
+        List<Map<String, Object>> filters = routeFilterMapper.findFiltersByRouteId(routeId);
+        return filters.stream()
+                .map(map -> {
+                    FilterVO vo = new FilterVO();
+                    vo.setId(((Number) map.get("id")).longValue());
+                    vo.setFilterName((String) map.get("filterName"));
+                    vo.setFilterType((String) map.get("filterType"));
+                    vo.setConfig((Map<String, Object>) map.get("config"));
+                    
+                    return vo;
+                })
+                .collect(Collectors.toList());
     }
 }

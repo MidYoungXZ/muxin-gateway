@@ -13,7 +13,6 @@
       </div>
     </div>
 
-    <!-- 搜索条件 -->
     <el-card class="search-card">
       <el-form :model="searchForm" :inline="true" label-width="80px">
         <el-form-item label="过滤器名">
@@ -21,11 +20,12 @@
             v-model="searchForm.filterName" 
             placeholder="请输入过滤器名称"
             clearable
+            style="width: 200px"
             @keyup.enter="handleSearch"
           />
         </el-form-item>
         <el-form-item label="过滤器类型">
-          <el-select v-model="searchForm.filterType" placeholder="请选择类型" clearable>
+          <el-select v-model="searchForm.filterType" placeholder="请选择类型" clearable style="width: 150px">
             <el-option 
               v-for="type in filterTypes" 
               :key="type.value" 
@@ -35,13 +35,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.enabled" placeholder="请选择状态" clearable>
+          <el-select v-model="searchForm.enabled" placeholder="请选择状态" clearable style="width: 120px">
             <el-option label="启用" :value="true" />
             <el-option label="禁用" :value="false" />
           </el-select>
         </el-form-item>
-        <el-form-item label="过滤器来源">
-          <el-select v-model="searchForm.isSystem" placeholder="请选择来源" clearable>
+        <el-form-item label="来源">
+          <el-select v-model="searchForm.isSystem" placeholder="请选择来源" clearable style="width: 120px">
             <el-option label="系统内置" :value="true" />
             <el-option label="自定义" :value="false" />
           </el-select>
@@ -59,7 +59,6 @@
       </el-form>
     </el-card>
 
-    <!-- 过滤器列表 -->
     <el-card class="table-card">
       <div class="table-header">
         <div class="table-actions">
@@ -70,10 +69,6 @@
           >
             <el-icon><Delete /></el-icon>
             批量删除
-          </el-button>
-          <el-button @click="loadFilterTypes">
-            <el-icon><RefreshRight /></el-icon>
-            刷新类型
           </el-button>
         </div>
         <div class="table-info">
@@ -90,15 +85,14 @@
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="filterName" label="过滤器名称" min-width="160" />
-        <el-table-column prop="filterType" label="类型" width="150">
+        <el-table-column prop="filterType" label="类型" width="120">
           <template #default="{ row }">
             <el-tag :type="getFilterTypeTagType(row.filterType)">
               {{ getFilterTypeLabel(row.filterType) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="order" label="排序" width="80" />
+        <el-table-column prop="description" label="描述" min-width="180" show-overflow-tooltip />
         <el-table-column label="配置" width="100">
           <template #default="{ row }">
             <el-button 
@@ -111,6 +105,7 @@
             </el-button>
           </template>
         </el-table-column>
+        <el-table-column prop="order" label="排序" width="80" />
         <el-table-column label="来源" width="100">
           <template #default="{ row }">
             <el-tag :type="row.isSystem ? 'info' : 'success'">
@@ -126,9 +121,20 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="usageCount" label="使用次数" width="100" />
+        <el-table-column label="使用路由" width="100">
+          <template #default="{ row }">
+            <el-button 
+              type="primary" 
+              size="small" 
+              link
+              @click="handleViewRoutes(row)"
+            >
+              {{ row.usageCount || 0 }} 个
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="160" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button 
               type="primary" 
@@ -179,11 +185,10 @@
       </div>
     </el-card>
 
-    <!-- 过滤器表单对话框 -->
     <el-dialog
       v-model="formDialogVisible"
       :title="isEdit ? '编辑过滤器' : '新增过滤器'"
-      width="800px"
+      width="700px"
       :close-on-click-modal="false"
       @close="handleCloseDialog"
     >
@@ -218,7 +223,7 @@
                   :value="type.value"
                 >
                   <span>{{ type.label }}</span>
-                  <span style="color: var(--el-text-color-secondary); font-size: 12px">
+                  <span style="color: var(--el-text-color-secondary); font-size: 12px; margin-left: 8px">
                     {{ type.description }}
                   </span>
                 </el-option>
@@ -251,55 +256,49 @@
           </el-col>
         </el-row>
 
-        <!-- 动态配置表单 -->
-        <el-form-item label="配置参数">
+        <el-form-item label="配置参数" prop="config">
           <div class="config-container">
             <div v-if="!form.filterType" class="config-placeholder">
               请先选择过滤器类型
             </div>
-            <div v-else-if="configTemplate" class="config-form">
-              <div v-for="(value, key) in configTemplate" :key="key" class="config-item">
-                <label>{{ key }}:</label>
-                <el-input 
-                  v-if="typeof value === 'string'"
-                  v-model="form.config[key]"
-                  :placeholder="`请输入${key}`"
-                />
-                <el-input-number 
-                  v-else-if="typeof value === 'number'"
-                  v-model="form.config[key]"
-                  :placeholder="`请输入${key}`"
-                  style="width: 100%"
-                />
-                <el-select 
-                  v-else-if="Array.isArray(value)"
-                  v-model="form.config[key]"
-                  multiple
-                  :placeholder="`请选择${key}`"
-                  style="width: 100%"
-                >
-                  <el-option 
-                    v-for="item in value" 
-                    :key="item" 
-                    :label="item" 
-                    :value="item" 
-                  />
-                </el-select>
-                <el-input 
-                  v-else
-                  v-model="form.config[key]"
-                  :placeholder="`请输入${key}`"
-                />
-              </div>
-            </div>
-            <div v-else class="config-json">
-              <el-input
-                v-model="configJson"
-                type="textarea"
-                placeholder="请输入JSON格式的配置"
-                :rows="8"
-                @blur="handleConfigJsonChange"
-              />
+            <div v-else class="config-form">
+              <template v-for="field in currentConfigFields" :key="field.field">
+                <div class="config-item">
+                  <label>
+                    {{ field.label }}
+                    <span v-if="field.required" class="required-mark">*</span>
+                  </label>
+                  <div class="config-input">
+                    <template v-if="field.type === 'array'">
+                      <el-select
+                        v-model="form.config[field.field]"
+                        multiple
+                        filterable
+                        allow-create
+                        default-first-option
+                        :placeholder="field.placeholder || `请输入${field.label}`"
+                        style="width: 100%"
+                      />
+                    </template>
+                    <template v-else-if="field.type === 'number'">
+                      <el-input-number
+                        v-model="form.config[field.field]"
+                        :placeholder="field.placeholder || `请输入${field.label}`"
+                        style="width: 100%"
+                      />
+                    </template>
+                    <template v-else>
+                      <el-input
+                        v-model="form.config[field.field]"
+                        :placeholder="field.placeholder || `请输入${field.label}`"
+                      />
+                    </template>
+                  </div>
+                  <div v-if="field.description" class="config-desc">
+                    {{ field.description }}
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </el-form-item>
@@ -313,11 +312,10 @@
       </template>
     </el-dialog>
 
-    <!-- 配置查看对话框 -->
     <el-dialog
       v-model="configDialogVisible"
       title="过滤器配置"
-      width="600px"
+      width="500px"
     >
       <el-descriptions :column="1" border>
         <el-descriptions-item label="过滤器名称">
@@ -329,35 +327,74 @@
         <el-descriptions-item label="描述">
           {{ currentFilter?.description || '无' }}
         </el-descriptions-item>
+        <el-descriptions-item label="排序">
+          {{ currentFilter?.order }}
+        </el-descriptions-item>
         <el-descriptions-item label="配置参数">
           <pre class="config-json-display">{{ formatConfig(currentFilter?.config) }}</pre>
         </el-descriptions-item>
       </el-descriptions>
+    </el-dialog>
+
+    <el-dialog
+      v-model="routesDialogVisible"
+      title="使用路由"
+      width="600px"
+    >
+      <el-table :data="usedRoutes" v-loading="routesLoading" stripe>
+        <el-table-column prop="routeId" label="路由ID" width="150" />
+        <el-table-column prop="routeName" label="路由名称" min-width="150" />
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.enabled ? 'success' : 'danger'">
+              {{ row.enabled ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
+          <template #default="{ row }">
+            <el-button 
+              type="primary" 
+              size="small" 
+              link
+              @click="handleGoToRoute(row)"
+            >
+              查看
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div v-if="!usedRoutes.length && !routesLoading" class="empty-routes">
+        暂无路由使用此过滤器
+      </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { filtersApi, type Filter, type FilterQueryParams, type FilterType } from '@/api/filters'
+import { filtersApi, type Filter, type FilterQueryParams, type FilterType, type RouteSimple } from '@/api/filters'
 
-// 数据定义
+const router = useRouter()
+
 const loading = ref(false)
 const formLoading = ref(false)
+const routesLoading = ref(false)
 const filterList = ref<Filter[]>([])
 const total = ref(0)
 const selectedFilters = ref<Filter[]>([])
 const filterTypes = ref<FilterType[]>([])
 
-// 表单和对话框
 const formDialogVisible = ref(false)
 const configDialogVisible = ref(false)
+const routesDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 const currentFilter = ref<Filter>()
+const usedRoutes = ref<RouteSimple[]>([])
 
-// 搜索表单
 const searchForm = reactive<FilterQueryParams>({
   filterName: '',
   filterType: '',
@@ -365,7 +402,6 @@ const searchForm = reactive<FilterQueryParams>({
   isSystem: undefined
 })
 
-// 过滤器表单
 const form = reactive({
   id: undefined as number | undefined,
   filterName: '',
@@ -375,29 +411,23 @@ const form = reactive({
   order: 1
 })
 
-// 分页
 const pagination = reactive({
   page: 1,
   size: 20
 })
 
-// 配置JSON字符串
-const configJson = ref('')
-
-// 计算属性
 const isEdit = computed(() => !!form.id)
 
 const hasSystemFilters = computed(() => 
-  selectedFilters.value.some(filter => filter.isSystem)
+  selectedFilters.value.some(f => f.isSystem)
 )
 
-const configTemplate = computed(() => {
-  if (!form.filterType) return null
+const currentConfigFields = computed(() => {
+  if (!form.filterType) return []
   const type = filterTypes.value.find(t => t.value === form.filterType)
-  return type?.configTemplate
+  return type?.configFields || []
 })
 
-// 表单验证规则
 const rules: FormRules = {
   filterName: [
     { required: true, message: '请输入过滤器名称', trigger: 'blur' },
@@ -409,169 +439,95 @@ const rules: FormRules = {
   order: [
     { required: true, message: '请输入排序', trigger: 'blur' },
     { type: 'number', min: 1, max: 999, message: '排序范围1-999', trigger: 'blur' }
+  ],
+  config: [
+    { 
+      validator: (_rule, _value, callback) => {
+        if (!form.filterType) {
+          callback(new Error('请先选择过滤器类型'))
+          return
+        }
+        const requiredFields = currentConfigFields.value.filter(f => f.required)
+        for (const field of requiredFields) {
+          const val = form.config[field.field]
+          if (val === undefined || val === null || val === '' || 
+              (Array.isArray(val) && val.length === 0)) {
+            callback(new Error(`${field.label}不能为空`))
+            return
+          }
+        }
+        callback()
+      },
+      trigger: 'change'
+    }
   ]
 }
 
-// 加载过滤器列表
 const loadFilterList = async () => {
   try {
     loading.value = true
-    console.log('🔄 开始加载过滤器列表...')
-    
     const queryParams = {
       ...searchForm,
-      page: pagination.page,
-      size: pagination.size
+      pageNum: pagination.page,
+      pageSize: pagination.size
     }
-    
-    console.log('📤 发送请求参数:', queryParams)
     const response = await filtersApi.list(queryParams)
-    console.log('📨 API响应:', response)
-    
     if (response && response.data) {
       const responseData = response.data
-      
-      if (Array.isArray(responseData.data)) {
+      if (responseData.data && Array.isArray(responseData.data.data)) {
+        filterList.value = responseData.data.data
+        total.value = responseData.data.total
+      } else if (Array.isArray(responseData.data)) {
         filterList.value = responseData.data
-        total.value = responseData.total || responseData.data.length
-        console.log('✅ 过滤器列表加载成功:', filterList.value.length, '条记录，总计:', total.value)
-      } else if (Array.isArray(responseData)) {
-        // 如果直接返回数组
-        filterList.value = responseData
-        total.value = responseData.length
-        console.log('✅ 过滤器列表加载成功（直接数组）:', filterList.value.length, '条记录')
+        total.value = responseData.data.length
       } else {
-        console.warn('⚠️ 后端返回的数据格式不正确:', responseData)
         filterList.value = []
         total.value = 0
       }
-    } else {
-      console.error('❌ API响应数据为空或格式错误:', response)
-      filterList.value = []
-      total.value = 0
     }
   } catch (error) {
-    console.error('❌ 加载过滤器列表失败:', error)
     ElMessage.error('加载过滤器列表失败：' + (error as Error).message)
-    
-    // 如果API失败，显示模拟数据
-    const mockFilters: Filter[] = [
-      {
-        id: 1,
-        filterName: '添加请求头',
-        filterType: 'AddRequestHeader',
-        description: '向请求添加自定义头部',
-        config: { name: 'X-Request-From', value: 'gateway' },
-        order: 1,
-        isSystem: true,
-        enabled: true,
-        usageCount: 5,
-        createTime: '2024-01-01 10:00:00'
-      },
-      {
-        id: 2,
-        filterName: '路径重写',
-        filterType: 'RewritePath',
-        description: '重写请求路径',
-        config: { regexp: '/api/v1/(?<segment>.*)', replacement: '/${segment}' },
-        order: 2,
-        isSystem: false,
-        enabled: true,
-        usageCount: 3,
-        createTime: '2024-01-02 10:00:00'
-      },
-      {
-        id: 3,
-        filterName: '请求限流',
-        filterType: 'RequestRateLimiter',
-        description: '限制请求速率',
-        config: { replenishRate: 10, burstCapacity: 20 },
-        order: 3,
-        isSystem: false,
-        enabled: false,
-        usageCount: 1,
-        createTime: '2024-01-03 10:00:00'
-      }
-    ]
-    
-    filterList.value = mockFilters
-    total.value = mockFilters.length
-    console.log('🔄 使用模拟数据:', mockFilters.length, '条记录')
   } finally {
     loading.value = false
   }
 }
 
-// 加载过滤器类型
 const loadFilterTypes = async () => {
   try {
-    console.log('🔄 开始加载过滤器类型...')
     const response = await filtersApi.getTypes()
-    
     if (response && response.data) {
       filterTypes.value = response.data
-      console.log('✅ 过滤器类型加载成功:', filterTypes.value.length, '种类型')
     }
   } catch (error) {
-    console.error('❌ 加载过滤器类型失败:', error)
-    ElMessage.error('加载过滤器类型失败：' + (error as Error).message)
-    
-    // 使用模拟数据
-    filterTypes.value = [
-      {
-        value: 'AddRequestHeader',
-        label: '添加请求头',
-        description: '向请求中添加Header',
-        configTemplate: { name: 'X-Request-From', value: 'gateway' }
-      },
-      {
-        value: 'AddResponseHeader',
-        label: '添加响应头',
-        description: '向响应中添加Header',
-        configTemplate: { name: 'X-Response-From', value: 'gateway' }
-      },
-      {
-        value: 'RewritePath',
-        label: '路径重写',
-        description: '重写请求路径',
-        configTemplate: { regexp: '/api/v1/(?<segment>.*)', replacement: '/${segment}' }
-      },
-      {
-        value: 'RequestRateLimiter',
-        label: '请求限流',
-        description: '限制请求速率',
-        configTemplate: { replenishRate: 10, burstCapacity: 20 }
-      }
-    ]
+    ElMessage.error('加载过滤器类型失败')
   }
 }
 
-// 获取过滤器类型标签样式
 const getFilterTypeTagType = (type: string) => {
   const typeMap: Record<string, string> = {
     'AddRequestHeader': 'primary',
     'AddResponseHeader': 'success',
-    'RewritePath': 'warning',
-    'RequestRateLimiter': 'danger',
-    'CircuitBreaker': 'info'
+    'RemoveRequestHeader': 'warning',
+    'RemoveResponseHeader': 'info',
+    'RewritePath': 'danger',
+    'RequestRateLimiter': 'warning',
+    'CircuitBreaker': 'info',
+    'Retry': ''
   }
-  return typeMap[type] || 'default'
+  return typeMap[type] || ''
 }
 
-// 获取过滤器类型标签文本
 const getFilterTypeLabel = (type?: string) => {
   if (!type) return ''
   const typeObj = filterTypes.value.find(t => t.value === type)
   return typeObj?.label || type
 }
 
-// 搜索
 const handleSearch = () => {
   pagination.page = 1
   loadFilterList()
 }
 
-// 重置搜索
 const handleReset = () => {
   Object.assign(searchForm, {
     filterName: '',
@@ -582,7 +538,6 @@ const handleReset = () => {
   handleSearch()
 }
 
-// 新增过滤器
 const handleAdd = () => {
   Object.assign(form, {
     id: undefined,
@@ -592,11 +547,9 @@ const handleAdd = () => {
     config: {},
     order: 1
   })
-  configJson.value = ''
   formDialogVisible.value = true
 }
 
-// 编辑过滤器
 const handleEdit = (filter: Filter) => {
   Object.assign(form, {
     id: filter.id,
@@ -606,11 +559,9 @@ const handleEdit = (filter: Filter) => {
     config: { ...filter.config } || {},
     order: filter.order
   })
-  configJson.value = JSON.stringify(filter.config || {}, null, 2)
   formDialogVisible.value = true
 }
 
-// 复制过滤器
 const handleCopy = (filter: Filter) => {
   Object.assign(form, {
     id: undefined,
@@ -620,11 +571,9 @@ const handleCopy = (filter: Filter) => {
     config: { ...filter.config } || {},
     order: filter.order + 1
   })
-  configJson.value = JSON.stringify(filter.config || {}, null, 2)
   formDialogVisible.value = true
 }
 
-// 删除过滤器
 const handleDelete = async (filter: Filter) => {
   try {
     await filtersApi.delete(filter.id)
@@ -635,14 +584,12 @@ const handleDelete = async (filter: Filter) => {
   }
 }
 
-// 批量删除
 const handleBatchDelete = async () => {
   try {
     await ElMessageBox.confirm('确定要删除选中的过滤器吗？', '批量删除', {
       type: 'warning'
     })
-    
-    const ids = selectedFilters.value.map(filter => filter.id)
+    const ids = selectedFilters.value.map(f => f.id)
     await filtersApi.batchDelete(ids)
     ElMessage.success('批量删除成功')
     loadFilterList()
@@ -654,7 +601,6 @@ const handleBatchDelete = async () => {
   }
 }
 
-// 状态变更
 const handleStatusChange = async (filter: Filter) => {
   try {
     if (filter.enabled) {
@@ -666,23 +612,39 @@ const handleStatusChange = async (filter: Filter) => {
     }
   } catch (error) {
     ElMessage.error('状态更新失败')
-    // 恢复原状态
     filter.enabled = !filter.enabled
   }
 }
 
-// 查看配置
 const handleViewConfig = (filter: Filter) => {
   currentFilter.value = filter
   configDialogVisible.value = true
 }
 
-// 选择变更
+const handleViewRoutes = async (filter: Filter) => {
+  currentFilter.value = filter
+  routesDialogVisible.value = true
+  routesLoading.value = true
+  try {
+    const response = await filtersApi.getUsedRoutes(filter.id)
+    if (response && response.data) {
+      usedRoutes.value = response.data
+    }
+  } catch (error) {
+    usedRoutes.value = []
+  } finally {
+    routesLoading.value = false
+  }
+}
+
+const handleGoToRoute = (route: RouteSimple) => {
+  router.push(`/routes/list?id=${route.id}`)
+}
+
 const handleSelectionChange = (selection: Filter[]) => {
   selectedFilters.value = selection
 }
 
-// 分页变更
 const handleSizeChange = () => {
   pagination.page = 1
   loadFilterList()
@@ -692,33 +654,22 @@ const handleCurrentChange = () => {
   loadFilterList()
 }
 
-// 过滤器类型变更
 const handleTypeChange = () => {
   form.config = {}
-  if (configTemplate.value) {
-    form.config = { ...configTemplate.value }
-    configJson.value = JSON.stringify(configTemplate.value, null, 2)
-  } else {
-    configJson.value = '{}'
+  for (const field of currentConfigFields.value) {
+    if (field.defaultValue !== undefined) {
+      form.config[field.field] = field.defaultValue
+    } else if (field.type === 'array') {
+      form.config[field.field] = []
+    }
   }
 }
 
-// 配置JSON变更
-const handleConfigJsonChange = () => {
-  try {
-    form.config = JSON.parse(configJson.value || '{}')
-  } catch (error) {
-    ElMessage.error('JSON格式不正确')
-  }
-}
-
-// 格式化配置显示
 const formatConfig = (config?: Record<string, any>) => {
   if (!config) return '{}'
   return JSON.stringify(config, null, 2)
 }
 
-// 表单提交
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -728,39 +679,36 @@ const handleSubmit = async () => {
 
     const submitData = {
       filterName: form.filterName,
-      filterType: form.filterType,
       description: form.description,
       config: form.config,
       order: form.order
     }
 
     if (isEdit.value && form.id) {
-      console.log('📤 更新过滤器:', form.id, submitData)
       await filtersApi.update(form.id, submitData)
       ElMessage.success('更新成功')
     } else {
-      console.log('📤 创建过滤器:', submitData)
-      await filtersApi.create(submitData)
+      await filtersApi.create({
+        ...submitData,
+        filterType: form.filterType
+      })
       ElMessage.success('创建成功')
     }
 
     handleCloseDialog()
     loadFilterList()
   } catch (error) {
-    console.error('❌ 提交失败:', error)
     ElMessage.error('操作失败：' + (error as Error).message)
   } finally {
     formLoading.value = false
   }
 }
 
-// 关闭对话框
 const handleCloseDialog = () => {
   formRef.value?.resetFields()
   formDialogVisible.value = false
 }
 
-// 初始化
 onMounted(() => {
   loadFilterTypes()
   loadFilterList()
@@ -788,12 +736,6 @@ onMounted(() => {
         font-size: 14px;
       }
     }
-    
-    .header-right {
-      .el-button + .el-button {
-        margin-left: 12px;
-      }
-    }
   }
   
   .search-card {
@@ -806,12 +748,6 @@ onMounted(() => {
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
-      
-      .table-actions {
-        .el-button + .el-button {
-          margin-left: 8px;
-        }
-      }
       
       .table-info {
         color: var(--text-secondary);
@@ -830,6 +766,7 @@ onMounted(() => {
     border-radius: 4px;
     padding: 16px;
     background-color: var(--el-bg-color-page);
+    width: 100%;
 
     .config-placeholder {
       color: var(--el-text-color-secondary);
@@ -839,27 +776,29 @@ onMounted(() => {
 
     .config-form {
       .config-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 16px;
 
         label {
-          min-width: 120px;
-          margin-right: 12px;
+          display: block;
+          margin-bottom: 8px;
           font-weight: 500;
+          font-size: 14px;
+
+          .required-mark {
+            color: var(--el-color-danger);
+            margin-left: 4px;
+          }
         }
 
-        .el-input,
-        .el-input-number,
-        .el-select {
-          flex: 1;
+        .config-input {
+          width: 100%;
         }
-      }
-    }
 
-    .config-json {
-      .el-textarea {
-        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        .config-desc {
+          margin-top: 4px;
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+        }
       }
     }
   }
@@ -877,5 +816,11 @@ onMounted(() => {
     white-space: pre-wrap;
     word-break: break-all;
   }
+
+  .empty-routes {
+    text-align: center;
+    padding: 40px;
+    color: var(--el-text-color-secondary);
+  }
 }
-</style> 
+</style>

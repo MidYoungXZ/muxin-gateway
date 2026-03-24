@@ -52,3 +52,9 @@ node_modules/
 *.static/*
 static/
 target/
+
+# SQLite database files
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
