@@ -129,15 +129,8 @@
             </el-button>
           </el-badge>
           
-          <!-- 全屏切换 -->
-          <el-button text class="header-action-btn" @click="toggleFullscreen">
-            <el-icon>
-              <component :is="isFullscreen ? 'Aim' : 'FullScreen'" />
-            </el-icon>
-          </el-button>
-          
           <!-- 主题切换 -->
-          <theme-toggle class="theme-toggle" />
+          <theme-toggle />
         </div>
       </el-header>
       
@@ -308,7 +301,6 @@ const cachedViews = ref<string[]>([])
 const searchQuery = ref('')
 const showSearchPanel = ref(false)
 const showNotifications = ref(false)
-const isFullscreen = ref(false)
 const unreadNotifications = ref(5)
 const activeNotificationTab = ref('all')
 const activeTab = ref('Dashboard')
@@ -430,16 +422,6 @@ const handleSuggestionClick = (suggestion: any) => {
   router.push(suggestion.path)
   showSearchPanel.value = false
   searchQuery.value = ''
-}
-
-const toggleFullscreen = () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen()
-    isFullscreen.value = true
-  } else {
-    document.exitFullscreen()
-    isFullscreen.value = false
-  }
 }
 
 const markAsRead = (id: number) => {
@@ -670,7 +652,7 @@ onUnmounted(() => {
   
   // 现代化侧边栏
   .layout-aside {
-    background: var(--card-bg);
+    background: var(--bg-sidebar);
     border-right: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
     transition: width var(--transition-base);
@@ -684,14 +666,19 @@ onUnmounted(() => {
     }
     
     .logo-section {
-      padding: var(--space-6) var(--space-4);
+      height: calc(var(--header-height) + 40px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       border-bottom: 1px solid var(--border-primary);
       text-align: center;
+      padding: 0 var(--space-4);
       
       .logo-subtitle {
         font-size: var(--text-xs);
         color: var(--text-tertiary);
-        margin-top: var(--space-2);
+        margin-top: var(--space-1);
         font-weight: var(--font-medium);
       }
     }
@@ -720,36 +707,23 @@ onUnmounted(() => {
           transition: all var(--transition-fast);
           position: relative;
           overflow: hidden;
-          font-weight: var(--font-semibold);
+          font-weight: var(--font-medium);
           font-size: 15px;
-          
-          &::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3px;
-            height: 0;
-            background: var(--primary-color);
-            border-radius: 0 2px 2px 0;
-            transition: height var(--transition-fast);
-          }
+          box-shadow: none;
           
           &:hover {
-            background: var(--primary-50);
+            background: var(--card-bg);
             color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
             transform: translateX(4px);
           }
           
           &.is-active {
-            background: var(--primary-100);
-            color: var(--primary-color);
+            color: white;
+            background: linear-gradient(135deg, #b8a4fb 0%, #9b7af7 100%);
             font-weight: var(--font-semibold);
-            
-            &::before {
-              height: 20px;
-            }
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
           }
           
           .el-icon {
@@ -760,17 +734,29 @@ onUnmounted(() => {
         
         :deep(.el-sub-menu) {
           .el-menu {
-            background: var(--bg-secondary);
+            background: transparent;
             border-radius: var(--radius-md);
-            margin: var(--space-1) var(--space-3);
+            margin: 0 var(--space-3);
             
             .el-menu-item {
               margin: var(--space-1);
               padding-left: var(--space-12) !important;
               font-size: var(--text-sm);
+              border-radius: var(--radius-lg);
+              color: var(--text-secondary);
               
               &:hover {
+                background: var(--card-bg);
+                color: var(--primary-color);
+                box-shadow: var(--shadow-xs);
                 transform: translateX(2px);
+              }
+              
+              &.is-active {
+                color: white;
+                background: linear-gradient(135deg, #b8a4fb 0%, #9b7af7 100%);
+                font-weight: var(--font-semibold);
+                box-shadow: var(--shadow-sm);
               }
             }
           }
@@ -817,15 +803,19 @@ onUnmounted(() => {
         padding: var(--space-3);
         border-radius: var(--radius-lg);
         background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
         transition: all var(--transition-fast);
         
         &:hover {
-          background: var(--primary-50);
+          background: var(--card-bg);
+          box-shadow: var(--shadow-sm);
+          border-color: var(--primary-color);
         }
         
         .user-avatar {
           flex-shrink: 0;
           border: 2px solid var(--primary-color);
+          box-shadow: 0 0 0 3px var(--primary-100);
         }
         
         .user-info {
@@ -984,12 +974,12 @@ onUnmounted(() => {
     .header-right {
       display: flex;
       align-items: center;
-      gap: var(--space-2);
+      gap: var(--space-1);
       
       .header-action-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: var(--radius-lg);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
         color: var(--text-secondary);
         transition: all var(--transition-fast);
         
@@ -1005,12 +995,6 @@ onUnmounted(() => {
           border: 2px solid var(--card-bg);
         }
       }
-      
-      .theme-toggle {
-        margin: 0 var(--space-2);
-      }
-      
-
     }
   }
   
@@ -1024,14 +1008,17 @@ onUnmounted(() => {
     
     .page-tabs {
       background: var(--card-bg);
-      border-bottom: 1px solid var(--border-primary);
       padding: 0 var(--space-4);
+      height: 40px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--border-primary);
       
       .tabs-wrapper {
         display: flex;
         align-items: center;
-        gap: var(--space-1);
-        height: 40px;
+        gap: var(--space-2);
+        height: 100%;
         overflow-x: auto;
         
         &::-webkit-scrollbar {
@@ -1041,29 +1028,34 @@ onUnmounted(() => {
         .tab-item {
           display: flex;
           align-items: center;
-          gap: var(--space-2);
+          gap: var(--space-1);
           padding: var(--space-1) var(--space-3);
           border-radius: var(--radius-md);
           color: var(--text-secondary);
-          font-size: var(--text-sm);
+          font-size: var(--text-xs);
           cursor: pointer;
           transition: all var(--transition-fast);
           white-space: nowrap;
           user-select: none;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border-primary);
+          height: 28px;
           
           &:hover {
             color: var(--primary-color);
             background: var(--primary-50);
+            border-color: var(--primary-color);
           }
           
           &.active {
             color: var(--primary-color);
             background: var(--primary-100);
+            border-color: var(--primary-color);
             font-weight: var(--font-medium);
           }
           
           .tab-close {
-            font-size: 12px;
+            font-size: 10px;
             opacity: 0.6;
             transition: opacity var(--transition-fast);
             
@@ -1105,9 +1097,10 @@ onUnmounted(() => {
   background: var(--card-bg);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-1);
-  min-width: 160px;
+  padding: var(--space-2);
+  min-width: 180px;
   z-index: 3000;
+  box-shadow: var(--shadow-xl);
   
   .context-menu-item {
     display: flex;

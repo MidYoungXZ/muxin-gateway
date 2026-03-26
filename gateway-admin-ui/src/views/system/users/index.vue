@@ -26,32 +26,25 @@
     <!-- 表格区 -->
     <div class="table-wrapper">
       <div class="table-toolbar">
-        <div class="toolbar-left">
-          <el-button type="danger" :disabled="!selectedUsers.length" @click="handleBatchDelete">
-            <el-icon><Delete /></el-icon>
-            批量删除
-          </el-button>
-        </div>
         <span class="toolbar-right">共 {{ total }} 条</span>
       </div>
 
-      <el-table :data="userList" v-loading="loading" @selection-change="handleSelectionChange" stripe>
-        <el-table-column type="selection" width="50" />
+      <el-table :data="userList" v-loading="loading" stripe>
         <el-table-column prop="username" label="用户名" min-width="100" />
         <el-table-column prop="nickname" label="昵称" min-width="100" />
-        <el-table-column prop="email" label="邮箱" min-width="150" />
-        <el-table-column prop="mobile" label="手机号" min-width="120" />
-        <el-table-column prop="deptName" label="部门" min-width="100" />
-        <el-table-column label="状态" width="70">
+        <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="mobile" label="手机号" width="120" />
+        <el-table-column prop="deptName" label="部门" min-width="120" show-overflow-tooltip />
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="150" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column prop="createTime" label="创建时间" width="160" align="center" />
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
-            <el-button type="warning" size="small" link @click="handleAssignRoles(row)">分配角色</el-button>
+            <el-button type="primary" size="small" link @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button type="primary" size="small" link @click="handleResetPassword(row)">重置密码</el-button>
             <el-popconfirm title="确定删除？" @confirm="handleDelete(row)">
               <template #reference>
@@ -144,7 +137,6 @@ const loading = ref(false)
 const formLoading = ref(false)
 const userList = ref<User[]>([])
 const total = ref(0)
-const selectedUsers = ref<User[]>([])
 
 const formDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -218,18 +210,6 @@ const handleDelete = async (user: User) => {
   }
 }
 
-const handleBatchDelete = async () => {
-  try {
-    await ElMessageBox.confirm('确定要删除选中的用户吗？', '批量删除', { type: 'warning' })
-    await userApi.batchDelete(selectedUsers.value.map(user => user.id))
-    ElMessage.success('批量删除成功')
-    loadUserList()
-    selectedUsers.value = []
-  } catch (error) {
-    if (error !== 'cancel') ElMessage.error('批量删除失败')
-  }
-}
-
 const handleStatusChange = async (user: User) => {
   try {
     await (user.status === 1 ? userApi.enable(user.id) : userApi.disable(user.id))
@@ -253,7 +233,6 @@ const handleResetPassword = async (user: User) => {
   }
 }
 
-const handleSelectionChange = (selection: User[]) => { selectedUsers.value = selection }
 const handleSizeChange = () => { pagination.page = 1; loadUserList() }
 const handleCurrentChange = () => loadUserList()
 

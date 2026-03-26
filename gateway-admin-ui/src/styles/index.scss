@@ -113,52 +113,96 @@ a {
   background: var(--bg-secondary);
 }
 
-// Element Plus 主题覆盖 - 扁平化设计
+// Element Plus 主题覆盖 - 圆角渐变风格
 .el-button {
   font-weight: var(--font-medium);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
+  border: none;
   
   &--primary {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+    background: var(--btn-gradient-primary);
     color: white;
+    box-shadow: var(--shadow-sm);
     
     &:hover {
-      background: var(--primary-dark);
-      border-color: var(--primary-dark);
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
     }
     
     &:active {
-      background: var(--primary-darker);
+      transform: translateY(0);
+      filter: brightness(0.95);
     }
   }
   
   &--default {
     background: var(--card-bg);
-    border-color: var(--border-primary);
+    border: 1px solid var(--border-primary);
     color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
     
     &:hover {
       background: var(--card-hover-bg);
-      border-color: var(--border-hover);
+      border-color: var(--primary-color);
       color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
     }
   }
   
   &--success {
-    background: var(--success-color);
-    border-color: var(--success-color);
+    background: var(--btn-gradient-success);
+    color: white;
+    box-shadow: var(--shadow-sm);
+    
+    &:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
   }
   
   &--warning {
-    background: var(--warning-color);
-    border-color: var(--warning-color);
+    background: var(--btn-gradient-warning);
+    color: white;
+    box-shadow: var(--shadow-sm);
+    
+    &:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
   }
   
   &--danger {
-    background: var(--error-color);
-    border-color: var(--error-color);
+    background: var(--btn-gradient-danger);
+    color: white;
+    box-shadow: var(--shadow-sm);
+    
+    &:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+  }
+  
+  &--text, &.is-text, &.is-link {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    
+    &:hover {
+      background: var(--primary-50);
+    }
+  }
+  
+  &.is-link {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 4px 8px;
+    
+    &:hover {
+      background: var(--primary-50);
+    }
   }
 }
 
@@ -166,7 +210,12 @@ a {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
+  
+  &:hover {
+    box-shadow: var(--card-hover-shadow);
+  }
   
   .el-card__header {
     background: var(--bg-secondary);
@@ -174,6 +223,7 @@ a {
     padding: var(--space-4) var(--space-6);
     font-weight: var(--font-semibold);
     color: var(--text-primary);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
   
   .el-card__body {
@@ -187,14 +237,17 @@ a {
     background: var(--input-bg);
     border: 1px solid var(--input-border);
     border-radius: var(--radius-md);
+    box-shadow: none;
     transition: all var(--transition-fast);
     
     &:hover {
       border-color: var(--input-hover-border);
+      box-shadow: none;
     }
     
     &.is-focus {
       border-color: var(--input-focus-border);
+      box-shadow: 0 0 0 3px var(--primary-100);
     }
   }
   
@@ -214,11 +267,45 @@ a {
   }
 }
 
+.el-select {
+  .el-select__wrapper {
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    
+    &:hover {
+      box-shadow: none;
+    }
+    
+    &.is-focus {
+      box-shadow: 0 0 0 3px var(--primary-100);
+    }
+  }
+}
+
+.el-textarea {
+  .el-textarea__inner {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--input-border);
+    box-shadow: none;
+    transition: all var(--transition-fast);
+    
+    &:hover {
+      border-color: var(--input-hover-border);
+    }
+    
+    &:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: 0 0 0 3px var(--primary-100);
+    }
+  }
+}
+
 .el-table {
   background: var(--card-bg);
   color: var(--text-primary);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  border: 1px solid var(--border-primary);
   
   th.el-table__cell {
     background: var(--bg-secondary);
@@ -231,12 +318,39 @@ a {
     border-bottom: 1px solid var(--border-primary);
   }
   
+  // 斑马纹样式
+  &--striped .el-table__body tr.el-table__row--striped td.el-table__cell,
+  .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background: var(--gray-50);
+  }
+  
+  // 悬停高亮
   tr {
     background: var(--card-bg);
     transition: background-color var(--transition-fast);
     
     &:hover > td {
-      background: var(--card-hover-bg);
+      background: var(--primary-50) !important;
+    }
+  }
+  
+  // 内部边框
+  &--border {
+    .el-table__cell {
+      border-right: 1px solid var(--border-primary);
+    }
+  }
+  
+  // 空数据样式
+  .el-table__empty-block {
+    background: var(--card-bg);
+  }
+  
+  // 固定列阴影
+  .el-table-fixed-column--right,
+  .el-table-fixed-column--left {
+    &::before {
+      box-shadow: var(--shadow-sm);
     }
   }
 }
@@ -249,6 +363,9 @@ a {
     border-radius: var(--radius-md);
     margin: 0 var(--space-1);
     transition: all var(--transition-fast);
+    min-width: 32px;
+    height: 32px;
+    line-height: 30px;
     
     &:hover {
       color: var(--primary-color);
@@ -257,9 +374,10 @@ a {
     }
     
     &.is-active {
-      background: var(--primary-color);
+      background: var(--btn-gradient-primary);
       color: white;
-      border-color: var(--primary-color);
+      border-color: transparent;
+      font-weight: var(--font-medium);
     }
   }
   
@@ -268,10 +386,25 @@ a {
     background: var(--card-bg);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-md);
+    width: 32px;
+    height: 32px;
     
     &:hover {
       color: var(--primary-color);
       background: var(--primary-50);
+      border-color: var(--primary-color);
+    }
+  }
+  
+  .el-pagination__sizes .el-select {
+    .el-select__wrapper {
+      border-radius: var(--radius-md);
+    }
+  }
+  
+  .el-pagination__jump {
+    .el-input__wrapper {
+      border-radius: var(--radius-md);
     }
   }
 }
@@ -281,6 +414,7 @@ a {
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-2);
+  box-shadow: var(--shadow-lg);
   
   .el-dropdown-menu__item {
     color: var(--text-primary);
@@ -295,9 +429,56 @@ a {
   }
 }
 
+.el-popover {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-lg);
+}
+
+.el-dialog {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-2xl);
+  
+  .el-dialog__header {
+    border-bottom: 1px solid var(--border-primary);
+    padding: var(--space-4) var(--space-6);
+    
+    .el-dialog__title {
+      font-weight: var(--font-semibold);
+      color: var(--text-primary);
+    }
+  }
+  
+  .el-dialog__body {
+    padding: var(--space-6);
+  }
+  
+  .el-dialog__footer {
+    border-top: 1px solid var(--border-primary);
+    padding: var(--space-4) var(--space-6);
+  }
+}
+
+.el-drawer {
+  .el-drawer__header {
+    border-bottom: 1px solid var(--border-primary);
+    padding: var(--space-4) var(--space-6);
+    margin-bottom: 0;
+    
+    .el-drawer__title {
+      font-weight: var(--font-semibold);
+    }
+  }
+  
+  .el-drawer__body {
+    padding: var(--space-6);
+  }
+}
+
 .el-menu {
-  background: var(--card-bg);
-  border-color: var(--border-primary);
+  background: transparent;
+  border-color: transparent;
   
   .el-menu-item,
   .el-sub-menu__title {
@@ -305,16 +486,61 @@ a {
     transition: all var(--transition-fast);
     border-radius: var(--radius-md);
     margin: var(--space-1) var(--space-2);
+    height: 44px;
+    line-height: 44px;
     
     &:hover {
-      background: var(--primary-50);
+      background: var(--card-bg);
       color: var(--primary-color);
+      box-shadow: var(--shadow-sm);
     }
     
     &.is-active {
-      color: var(--primary-color);
-      background: var(--primary-100);
-      font-weight: var(--font-semibold);
+      color: white;
+      background: var(--btn-gradient-primary);
+      font-weight: var(--font-medium);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+  
+  .el-sub-menu {
+    .el-menu {
+      background: transparent;
+      
+      .el-menu-item {
+        padding-left: calc(var(--space-6) + 24px) !important;
+        min-width: auto;
+        
+        &:hover {
+          background: var(--card-bg);
+        }
+        
+        &.is-active {
+          background: var(--primary-50);
+          color: var(--primary-color);
+        }
+      }
+    }
+  }
+  
+  // 水平菜单
+  &.el-menu--horizontal {
+    border-bottom: none;
+    
+    .el-menu-item,
+    .el-sub-menu__title {
+      margin: 0 var(--space-1);
+      
+      &:hover {
+        background: var(--primary-50);
+        box-shadow: none;
+      }
+      
+      &.is-active {
+        background: transparent;
+        color: var(--primary-color);
+        border-bottom: 2px solid var(--primary-color);
+      }
     }
   }
 }
@@ -325,9 +551,30 @@ a {
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius-lg) !important;
   color: var(--text-primary) !important;
+  box-shadow: var(--shadow-lg) !important;
   
   .el-message__content {
     color: var(--text-primary) !important;
+  }
+  
+  &.el-message--success {
+    border-color: var(--success-color) !important;
+    .el-message__icon { color: var(--success-color); }
+  }
+  
+  &.el-message--warning {
+    border-color: var(--warning-color) !important;
+    .el-message__icon { color: var(--warning-color); }
+  }
+  
+  &.el-message--error {
+    border-color: var(--error-color) !important;
+    .el-message__icon { color: var(--error-color); }
+  }
+  
+  &.el-message--info {
+    border-color: var(--primary-color) !important;
+    .el-message__icon { color: var(--primary-color); }
   }
 }
 
@@ -335,6 +582,7 @@ a {
   background: var(--card-bg) !important;
   border: 1px solid var(--border-primary) !important;
   border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
   
   .el-notification__title {
     color: var(--text-primary) !important;
@@ -343,6 +591,150 @@ a {
   
   .el-notification__content {
     color: var(--text-secondary) !important;
+  }
+}
+
+// Tag 标签样式
+.el-tag {
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-medium);
+  
+  &.el-tag--primary {
+    background: var(--primary-50);
+    border-color: var(--primary-200);
+    color: var(--primary-700);
+  }
+  
+  &.el-tag--success {
+    background: var(--success-50);
+    border-color: var(--success-100);
+    color: var(--success-600);
+  }
+  
+  &.el-tag--warning {
+    background: var(--warning-50);
+    border-color: var(--warning-100);
+    color: var(--warning-600);
+  }
+  
+  &.el-tag--danger {
+    background: var(--error-50);
+    border-color: var(--error-100);
+    color: var(--error-600);
+  }
+  
+  &.el-tag--info {
+    background: var(--gray-100);
+    border-color: var(--gray-200);
+    color: var(--gray-700);
+  }
+}
+
+// Switch 开关样式
+.el-switch {
+  --el-switch-on-color: var(--primary-color);
+}
+
+// Tabs 标签页样式 - 圆角标签式
+.el-tabs {
+  .el-tabs__header {
+    margin-bottom: var(--space-4);
+  }
+  
+  .el-tabs__nav-wrap {
+    &::after {
+      height: 1px;
+      background: var(--border-primary);
+    }
+  }
+  
+  .el-tabs__item {
+    padding: 0 var(--space-4);
+    height: 36px;
+    line-height: 36px;
+    color: var(--text-secondary);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    margin-right: var(--space-1);
+    transition: all var(--transition-fast);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-bottom: none;
+    
+    &:hover {
+      color: var(--primary-color);
+      background: var(--primary-50);
+    }
+    
+    &.is-active {
+      color: var(--primary-color);
+      background: var(--card-bg);
+      font-weight: var(--font-medium);
+      border-bottom: 1px solid var(--card-bg);
+      margin-bottom: -1px;
+      position: relative;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary-color);
+      }
+    }
+  }
+  
+  .el-tabs__content {
+    padding: var(--space-4);
+  }
+  
+  // 卡片风格
+  &--card {
+    .el-tabs__header {
+      border-bottom: 1px solid var(--border-primary);
+    }
+    
+    .el-tabs__item {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-primary);
+      
+      &.is-active {
+        background: var(--btn-gradient-primary);
+        color: white;
+        border-color: transparent;
+      }
+    }
+  }
+}
+
+// 表单项样式
+.el-form-item {
+  margin-bottom: var(--space-5);
+  
+  .el-form-item__label {
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+  }
+}
+
+// 描述列表样式
+.el-descriptions {
+  .el-descriptions__label {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-weight: var(--font-medium);
+  }
+  
+  .el-descriptions__content {
+    background: var(--card-bg);
+    color: var(--text-primary);
+  }
+  
+  &.is-bordered {
+    .el-descriptions__cell {
+      border-color: var(--border-primary);
+    }
   }
 }
 
@@ -487,36 +879,26 @@ a {
   background: var(--card-bg);
   padding: var(--space-6);
   border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
   margin-bottom: var(--space-6);
 }
 
-// 现代化卡片组件 - 扁平化设计
+// 现代化卡片组件 - 圆角+阴影
 .modern-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6);
+  box-shadow: var(--card-shadow);
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--gradient-primary);
-    opacity: 0;
-    transition: opacity var(--transition-base);
-  }
-  
   &:hover {
-    &::before {
-      opacity: 1;
-    }
+    box-shadow: var(--card-hover-shadow);
+    border-color: var(--border-hover);
   }
   
   &.glass {
@@ -526,7 +908,7 @@ a {
   }
 }
 
-// 统计卡片（重新设计）- 扁平化设计
+// 统计卡片 - 圆角渐变风格
 .stats-card {
   @extend .modern-card;
   
@@ -546,7 +928,8 @@ a {
     justify-content: center;
     font-size: var(--text-xl);
     color: white;
-    background: var(--primary-color);
+    background: var(--btn-gradient-primary);
+    box-shadow: var(--shadow-sm);
   }
   
   .stats-value {
@@ -1133,11 +1516,26 @@ a {
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  padding: var(--space-2) 0;
   
   .title {
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
     font-weight: var(--font-semibold);
     color: var(--text-primary);
+    position: relative;
+    padding-left: var(--space-4);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 20px;
+      background: var(--btn-gradient-primary);
+      border-radius: var(--radius-full);
+    }
   }
 }
 
@@ -1149,7 +1547,9 @@ a {
   flex-wrap: wrap;
   padding: var(--space-3);
   background: var(--card-bg);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-xs);
   flex-shrink: 0;
   
   .el-form-item {
@@ -1174,16 +1574,19 @@ a {
   display: flex;
   flex-direction: column;
   background: var(--card-bg);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   
   .table-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-primary);
     flex-shrink: 0;
+    background: var(--bg-secondary);
     
     .toolbar-left {
       display: flex;
@@ -1198,13 +1601,17 @@ a {
   
   .el-table {
     flex: 1;
+    border: none;
+    border-radius: 0;
   }
   
   .pagination-wrapper {
     display: flex;
     justify-content: flex-end;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-3) var(--space-4);
     border-top: 1px solid var(--border-primary);
     flex-shrink: 0;
+    background: var(--bg-secondary);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   }
 } 

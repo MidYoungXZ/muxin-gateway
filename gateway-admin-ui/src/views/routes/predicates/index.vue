@@ -88,10 +88,7 @@
         </el-table-column>
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
-            <el-switch
-              v-model="row.enabled"
-              @change="handleStatusChange(row)"
-            />
+            <el-switch v-model="row.enabled" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
         <el-table-column label="使用路由" width="100">
