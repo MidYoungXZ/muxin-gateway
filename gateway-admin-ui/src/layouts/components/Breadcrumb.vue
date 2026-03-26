@@ -22,11 +22,11 @@ import { RouteLocationMatched } from 'vue-router'
 const route = useRoute()
 
 const breadcrumbs = computed(() => {
-  const matched = route.matched.filter(item => item.meta?.title)
-  const first = matched[0]
+  const matched = route.matched.filter(item => item.meta?.title && item.path !== '/')
   
-  if (!isDashboard(first)) {
-    matched.unshift({ path: '/', meta: { title: '首页' } } as any)
+  const first = matched[0]
+  if (isDashboard(first)) {
+    return []
   }
   
   return matched

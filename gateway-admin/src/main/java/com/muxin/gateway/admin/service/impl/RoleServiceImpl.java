@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements RoleService {
     
+    private static final String SUPER_ADMIN_ROLE_CODE = "SUPER_ADMIN";
+    
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMenuMapper roleMenuMapper;
@@ -184,6 +186,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
             throw new BusinessException("角色不存在");
         }
         
+        if (isSuperAdminRole(role)) {
+            throw new BusinessException("超级管理员角色不允许删除");
+        }
+        
         // 检查是否有用户使用该角色（使用MyBatis-Flex查询）
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
@@ -304,12 +310,20 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
             throw new BusinessException("角色不存在");
         }
         
+        if (status == 0 && isSuperAdminRole(role)) {
+            throw new BusinessException("超级管理员角色不允许禁用");
+        }
+        
         role.setStatus(status);
         role.setUpdateTime(LocalDateTime.now());
         role.setUpdateBy(StpUtil.getLoginIdAsString());
         updateById(role);
         
         log.info("更新角色状态成功：{}，状态：{}", role.getRoleName(), status);
+    }
+    
+    private boolean isSuperAdminRole(SysRole role) {
+        return SUPER_ADMIN_ROLE_CODE.equals(role.getRoleCode());
     }
     
     /**

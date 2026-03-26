@@ -5,11 +5,13 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.muxin.gateway.admin.entity.SysDept;
+import com.muxin.gateway.admin.entity.SysRole;
 import com.muxin.gateway.admin.entity.SysUser;
 import com.muxin.gateway.admin.entity.SysUserRole;
 import static com.muxin.gateway.admin.entity.table.Tables.*;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.DeptMapper;
+import com.muxin.gateway.admin.mapper.RoleMapper;
 import com.muxin.gateway.admin.mapper.UserMapper;
 import com.muxin.gateway.admin.mapper.UserRoleMapper;
 import com.muxin.gateway.admin.model.dto.PasswordUpdateDTO;
@@ -46,9 +48,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements UserService {
     
+    private static final String SUPER_ADMIN_ROLE_CODE = "SUPER_ADMIN";
+    
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
     private final DeptMapper deptMapper;
+    private final RoleMapper roleMapper;
     private final RoleService roleService;
     
     @Override
@@ -208,6 +213,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("不能删除自己");
         }
         
+        // 不能删除最后一个超级管理员
+        if (isLastEnabledSuperAdmin(id)) {
+            throw new BusinessException("不能删除最后一个超级管理员用户");
+        }
+        
         // 逻辑删除
         user.setDeleted(1);
         user.setUpdateTime(LocalDateTime.now());
@@ -298,6 +308,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void assignRoles(Long userId, List<Long> roleIds) {
+        Long superAdminRoleId = getSuperAdminRoleId();
+        
+        // 检查用户当前是否是超级管理员
+        boolean isCurrentlySuperAdmin = isUserSuperAdmin(userId, superAdminRoleId);
+        
+        // 检查新角色列表是否包含超级管理员角色
+        boolean willBeSuperAdmin = superAdminRoleId != null && roleIds != null && roleIds.contains(superAdminRoleId);
+        
+        // 如果当前是超级管理员，但新的角色列表不包含超级管理员，需要检查是否是最后一个
+        if (isCurrentlySuperAdmin && !willBeSuperAdmin) {
+            if (isLastEnabledSuperAdmin(userId)) {
+                throw new BusinessException("不能移除最后一个超级管理员用户的超级管理员角色");
+            }
+        }
+        
         // 删除原有的用户角色关联
         QueryWrapper deleteWrapper = QueryWrapper.create()
                 .from(SYS_USER_ROLE)
@@ -347,6 +372,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             if (currentUserId.equals(id)) {
                 throw new BusinessException("不能禁用自己");
             }
+            
+            // 不能禁用最后一个超级管理员
+            if (isLastEnabledSuperAdmin(id)) {
+                throw new BusinessException("不能禁用最后一个超级管理员用户");
+            }
         }
         
         user.setStatus(status);
@@ -376,5 +406,56 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         }
         
         return vo;
+    }
+    
+    private Long getSuperAdminRoleId() {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(SYS_ROLE.ID)
+                .from(SYS_ROLE)
+                .where(SYS_ROLE.ROLE_CODE.eq(SUPER_ADMIN_ROLE_CODE))
+                .and(SYS_ROLE.DELETED.eq(0));
+        
+        SysRole role = roleMapper.selectOneByQuery(wrapper);
+        return role != null ? role.getId() : null;
+    }
+    
+    private boolean isUserSuperAdmin(Long userId, Long superAdminRoleId) {
+        if (superAdminRoleId == null) {
+            return false;
+        }
+        
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_USER_ROLE)
+                .where(SYS_USER_ROLE.USER_ID.eq(userId))
+                .and(SYS_USER_ROLE.ROLE_ID.eq(superAdminRoleId));
+        
+        return userRoleMapper.selectCountByQuery(wrapper) > 0;
+    }
+    
+    private boolean isLastEnabledSuperAdmin(Long userId) {
+        Long superAdminRoleId = getSuperAdminRoleId();
+        if (superAdminRoleId == null) {
+            return false;
+        }
+        
+        // 检查该用户是否是超级管理员
+        if (!isUserSuperAdmin(userId, superAdminRoleId)) {
+            return false;
+        }
+        
+        // 查询所有启用的超级管理员用户数量
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(SYS_USER.ID)
+                .from(SYS_USER)
+                .innerJoin(SYS_USER_ROLE).on(SYS_USER.ID.eq(SYS_USER_ROLE.USER_ID))
+                .where(SYS_USER_ROLE.ROLE_ID.eq(superAdminRoleId))
+                .and(SYS_USER.STATUS.eq(1))
+                .and(SYS_USER.DELETED.eq(0));
+        
+        List<SysUser> superAdminUsers = userMapper.selectListByQuery(wrapper);
+        
+        // 如果只有一个启用的超级管理员，那就是最后一个
+        return superAdminUsers.size() == 1;
     }
 } 
