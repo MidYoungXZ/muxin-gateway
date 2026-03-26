@@ -25,14 +25,16 @@ public class RouteUpdateDTO {
     private String uri;
     
     @NotEmpty(message = "至少需要配置一个断言")
-    private List<Long> predicateIds;  // 断言ID列表
+    private List<Long> predicateIds;
     
-    private List<Long> filterIds;     // 过滤器ID列表
+    private List<Long> filterIds;
     
     private Map<String, Object> metadata;
     
     @Min(0)
     private Integer order;
+    
+    private String loadBalanceStrategy;
     
     private Boolean enabled;
     

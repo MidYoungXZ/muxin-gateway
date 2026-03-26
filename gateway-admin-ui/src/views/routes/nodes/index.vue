@@ -1,54 +1,35 @@
 <template>
-  <div class="service-node-management">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>服务节点管理</h1>
-        <p>管理服务及其节点，节点通过负载均衡策略被路由调用</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" @click="handleAddService">
-          <el-icon><Plus /></el-icon>
-          新增服务
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">服务节点管理</span>
+      <el-button type="primary" @click="handleAddService">
+        <el-icon><Plus /></el-icon>
+        新增服务
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input 
+        v-model="searchForm.serviceName" 
+        placeholder="服务名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <el-card class="search-card">
-      <el-form :model="searchForm" :inline="true" label-width="80px">
-        <el-form-item label="服务名称">
-          <el-input 
-            v-model="searchForm.serviceName" 
-            placeholder="请输入服务名称"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            搜索
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><RefreshRight /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card class="table-card">
-      <div class="table-header">
-        <div class="table-info">
-          共 {{ serviceStats.length }} 个服务
-        </div>
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <span class="toolbar-right">共 {{ serviceStats.length }} 个服务</span>
       </div>
 
       <el-table 
         :data="serviceStats" 
         v-loading="loading"
         stripe
-        style="width: 100%"
         @expand-change="handleExpandChange"
       >
         <el-table-column type="expand">
@@ -190,7 +171,7 @@
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -906,116 +887,73 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.service-node-management {
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .header-right {
-      display: flex;
-      gap: 12px;
-    }
+.service-name {
+  font-weight: 500;
+}
+
+.health-stats {
+  .healthy {
+    color: var(--el-color-success);
+    font-weight: 500;
   }
   
-  .search-card {
-    margin-bottom: 20px;
+  .unhealthy {
+    color: var(--el-color-danger);
+    font-weight: 500;
   }
   
-  .table-card {
-    .table-header {
-      margin-bottom: 16px;
-      
-      .table-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .service-name {
-      font-weight: 500;
-    }
-    
-    .health-stats {
-      .healthy {
-        color: var(--el-color-success);
-        font-weight: 500;
-      }
-      
-      .unhealthy {
-        color: var(--el-color-danger);
-        font-weight: 500;
-      }
-      
-      .separator {
-        margin: 0 4px;
-        color: var(--el-text-color-secondary);
-      }
-    }
-    
-    .status-distribution {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-  }
-  
-  .expand-content {
-    padding: 16px 48px;
-    background: var(--el-bg-color-page);
-    
-    .expand-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      
-      .expand-title {
-        font-size: 14px;
-        font-weight: 500;
-      }
-    }
-    
-    .expand-pagination {
-      margin-top: 12px;
-      display: flex;
-      justify-content: flex-end;
-    }
-  }
-  
-  .text-muted {
+  .separator {
+    margin: 0 4px;
     color: var(--el-text-color-secondary);
   }
+}
+
+.status-distribution {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.expand-content {
+  padding: 16px 48px;
+  background: var(--el-bg-color-page);
   
-  .node-actions {
-    display: inline-flex;
+  .expand-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-  }
-  
-  .node-item {
     margin-bottom: 12px;
     
-    .node-item-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .expand-title {
+      font-size: 14px;
+      font-weight: 500;
     }
+  }
+  
+  .expand-pagination {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.text-muted {
+  color: var(--el-text-color-secondary);
+}
+
+.node-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-item {
+  margin-bottom: 12px;
+  
+  .node-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 </style>

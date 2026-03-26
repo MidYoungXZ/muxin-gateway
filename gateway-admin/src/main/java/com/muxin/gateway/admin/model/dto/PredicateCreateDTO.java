@@ -24,8 +24,8 @@ public class PredicateCreateDTO {
     
     private String description;
     
-    @NotNull(message = "断言配置不能为空")
-    private Map<String, Object> config;
+    @NotNull(message = "断言参数不能为空")
+    private Map<String, Object> args;
     
     private Boolean enabled = true;
 } 

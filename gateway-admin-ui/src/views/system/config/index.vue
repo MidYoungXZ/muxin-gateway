@@ -1,74 +1,48 @@
 <template>
-  <div class="config-management">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>系统配置</h1>
-        <p>管理系统配置参数，支持动态配置</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" @click="handleAdd">
-          <el-icon><Plus /></el-icon>
-          新增配置
-        </el-button>
-        <el-button @click="handleRefreshCache">
-          <el-icon><Refresh /></el-icon>
-          刷新缓存
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">系统配置</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增配置
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input 
+        v-model="searchForm.configKey" 
+        placeholder="配置键"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-input 
+        v-model="searchForm.configName" 
+        placeholder="配置名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="searchForm.status" placeholder="状态" clearable>
+        <el-option label="启用" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <el-card class="search-card">
-      <el-form :model="searchForm" :inline="true" label-width="80px">
-        <el-form-item label="配置键">
-          <el-input 
-            v-model="searchForm.configKey" 
-            placeholder="请输入配置键"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="配置名称">
-          <el-input 
-            v-model="searchForm.configName" 
-            placeholder="请输入配置名称"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            搜索
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><RefreshRight /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card class="table-card">
-      <div class="table-header">
-        <div class="table-actions">
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
           <el-button 
             type="danger" 
             :disabled="!selectedConfigs.length"
             @click="handleBatchDelete"
           >
-            <el-icon><Delete /></el-icon>
             批量删除
           </el-button>
         </div>
-        <div class="table-info">
-          共 {{ total }} 条记录
-        </div>
+        <span class="toolbar-right">共 {{ total }} 条</span>
       </div>
 
       <el-table 
@@ -76,7 +50,6 @@
         v-loading="loading"
         @selection-change="handleSelectionChange"
         stripe
-        style="width: 100%"
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="configKey" label="配置键" min-width="180" show-overflow-tooltip />
@@ -139,7 +112,7 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </el-card>
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -437,61 +410,9 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.config-management {
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .header-right {
-      .el-button + .el-button {
-        margin-left: 12px;
-      }
-    }
-  }
-  
-  .search-card {
-    margin-bottom: 20px;
-  }
-  
-  .table-card {
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .table-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .pagination-wrapper {
-      margin-top: 20px;
-      text-align: right;
-    }
-  }
-  
-  .form-tip {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-  }
+.form-tip {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 </style>

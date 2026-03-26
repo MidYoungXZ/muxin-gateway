@@ -34,9 +34,9 @@ public class FilterCreateDTO {
     private String description;
     
     /**
-     * 配置
+     * 参数
      */
-    private Map<String, Object> config;
+    private Map<String, Object> args;
     
     /**
      * 排序

@@ -38,9 +38,9 @@ public class GwFilterTableDef extends TableDef {
     public final QueryColumn DESCRIPTION = new QueryColumn(this, "description");
 
     /**
-     * 配置
+     * 参数
      */
-    public final QueryColumn CONFIG = new QueryColumn(this, "config");
+    public final QueryColumn ARGS = new QueryColumn(this, "args");
 
     /**
      * 排序
@@ -91,7 +91,7 @@ public class GwFilterTableDef extends TableDef {
      * 默认字段，排除逻辑删除字段
      */
     public final QueryColumn[] DEFAULT_COLUMNS = new QueryColumn[]{
-            ID, FILTER_NAME, FILTER_TYPE, DESCRIPTION, CONFIG, ORDER,
+            ID, FILTER_NAME, FILTER_TYPE, DESCRIPTION, ARGS, ORDER,
             IS_SYSTEM, ENABLED, CREATE_TIME, UPDATE_TIME, CREATE_BY, UPDATE_BY
     };
 

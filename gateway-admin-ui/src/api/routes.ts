@@ -8,6 +8,7 @@ export interface Route {
   uri: string
   metadata?: Record<string, any>
   order: number
+  loadBalanceStrategy?: string
   enabled: boolean
   grayscaleEnabled?: boolean
   version: number
@@ -50,6 +51,7 @@ export interface RouteCreateRequest {
   filterIds?: number[]
   metadata?: Record<string, any>
   order?: number
+  loadBalanceStrategy?: string
   enabled?: boolean
 }
 
@@ -61,8 +63,16 @@ export interface RouteUpdateRequest {
   filterIds?: number[]
   metadata?: Record<string, any>
   order?: number
+  loadBalanceStrategy?: string
   enabled?: boolean
 }
+
+export const LOAD_BALANCE_STRATEGIES = [
+  { value: 'ROUND_ROBIN', label: '轮询', description: '依次选择可用地址' },
+  { value: 'RANDOM', label: '随机', description: '随机选择可用地址' },
+  { value: 'WEIGHTED_ROUND_ROBIN', label: '加权轮询', description: '根据权重选择地址' },
+  { value: 'LEAST_CONNECTIONS', label: '最少连接', description: '选择连接数最少的地址' }
+]
 
 export interface PageResult<T> {
   data: T[]

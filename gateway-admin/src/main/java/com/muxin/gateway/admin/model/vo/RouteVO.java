@@ -35,6 +35,8 @@ public class RouteVO {
     
     private Integer order;
     
+    private String loadBalanceStrategy;
+    
     private Boolean enabled;
     
     private Boolean grayscaleEnabled;

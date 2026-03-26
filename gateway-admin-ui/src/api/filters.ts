@@ -5,7 +5,7 @@ export interface Filter {
   filterName: string
   filterType: string
   description?: string
-  config?: Record<string, any>
+  args?: Record<string, any>
   order: number
   isSystem: boolean
   enabled: boolean
@@ -27,14 +27,14 @@ export interface FilterCreateRequest {
   filterName: string
   filterType: string
   description?: string
-  config?: Record<string, any>
+  args?: Record<string, any>
   order: number
 }
 
 export interface FilterUpdateRequest {
   filterName: string
   description?: string
-  config?: Record<string, any>
+  args?: Record<string, any>
   order: number
 }
 

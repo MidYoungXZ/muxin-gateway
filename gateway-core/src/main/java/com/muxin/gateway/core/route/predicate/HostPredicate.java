@@ -39,7 +39,7 @@ public class HostPredicate implements Predicate {
         }
         this.patterns = parsePatterns(definition);
         this.compiledPatterns = new ArrayList<>();
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         for (String pattern : patterns) {
             compiledPatterns.add(convertToRegex(pattern));
@@ -48,7 +48,7 @@ public class HostPredicate implements Predicate {
 
     @SuppressWarnings("unchecked")
     private List<String> parsePatterns(PredicateDefinition definition) {
-        Object patternsObj = definition.getConfigValue("patterns");
+        Object patternsObj = definition.getArg("patterns");
         if (patternsObj == null) {
             throw new IllegalArgumentException("HostPredicate必须配置patterns参数");
         }
@@ -156,7 +156,7 @@ public class HostPredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            Object patterns = definition.getConfigValue("patterns");
+            Object patterns = definition.getArg("patterns");
             if (patterns == null) {
                 throw new IllegalArgumentException("HostPredicate 必须配置 patterns 参数");
             }

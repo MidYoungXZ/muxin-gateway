@@ -17,17 +17,16 @@ export interface RouteConfig {
 }
 
 export interface RoutePredicate {
-  type: string
+  name: string
   args: Record<string, any>
 }
 
 export interface RouteFilter {
   id: string
   name: string
-  type: string
   order: number
   enabled: boolean
-  config: Record<string, any>
+  args: Record<string, any>
 }
 
 export interface GrayscaleConfig {

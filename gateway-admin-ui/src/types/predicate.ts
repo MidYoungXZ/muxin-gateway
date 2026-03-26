@@ -7,7 +7,7 @@ export interface Predicate {
   predicateType: string
   predicateTypeDesc?: string
   description?: string
-  config: Record<string, any>
+  args: Record<string, any>
   isSystem: boolean
   enabled: boolean
   createTime: string

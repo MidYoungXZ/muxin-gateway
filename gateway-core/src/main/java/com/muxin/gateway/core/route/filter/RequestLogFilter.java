@@ -25,8 +25,8 @@ public class RequestLogFilter extends AbstractFilter {
         this.name = TYPE;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-        this.includeBody = definition.getBooleanConfig("include-body", false);
-        this.includeHeaders = definition.getBooleanConfig("include-headers", false);
+        this.includeBody = definition.getBooleanArg("include-body", false);
+        this.includeHeaders = definition.getBooleanArg("include-headers", false);
     }
 
     @Override

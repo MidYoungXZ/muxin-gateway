@@ -32,9 +32,9 @@ public class RequestRateLimiterFilter implements Filter {
     }
 
     public RequestRateLimiterFilter(FilterDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
-        this.replenishRate = config != null ? getIntValue(config.get("replenishRate"), 10) : 10;
-        this.burstCapacity = config != null ? getIntValue(config.get("burstCapacity"), 20) : 20;
+        Map<String, Object> args = definition.getArgs();
+        this.replenishRate = args != null ? getIntValue(args.get("replenishRate"), 10) : 10;
+        this.burstCapacity = args != null ? getIntValue(args.get("burstCapacity"), 20) : 20;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
     }

@@ -31,9 +31,9 @@ public class RewritePathFilter implements Filter {
     }
 
     public RewritePathFilter(FilterDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
-        this.regexp = config != null ? (String) config.get("regexp") : null;
-        this.replacement = config != null ? (String) config.get("replacement") : null;
+        Map<String, Object> args = definition.getArgs();
+        this.regexp = args != null ? (String) args.get("regexp") : null;
+        this.replacement = args != null ? (String) args.get("replacement") : null;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
         this.pattern = regexp != null && !regexp.isEmpty() ? Pattern.compile(regexp) : null;
@@ -121,8 +121,8 @@ public class RewritePathFilter implements Filter {
 
         @Override
         public void validateConfig(FilterDefinition definition) {
-            Map<String, Object> config = definition.getConfig();
-            if (config == null) {
+            Map<String, Object> args = definition.getArgs();
+            if (args == null) {
                 throw new IllegalArgumentException("RewritePathFilter 必须配置参数");
             }
         }

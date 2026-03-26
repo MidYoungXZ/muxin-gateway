@@ -38,9 +38,9 @@ public class GwPredicateTableDef extends TableDef {
     public final QueryColumn DESCRIPTION = new QueryColumn(this, "description");
 
     /**
-     * 配置
+     * 参数
      */
-    public final QueryColumn CONFIG = new QueryColumn(this, "config");
+    public final QueryColumn ARGS = new QueryColumn(this, "args");
 
     /**
      * 是否系统内置
@@ -86,7 +86,7 @@ public class GwPredicateTableDef extends TableDef {
      * 默认字段，排除逻辑删除字段
      */
     public final QueryColumn[] DEFAULT_COLUMNS = new QueryColumn[]{
-            ID, PREDICATE_NAME, PREDICATE_TYPE, DESCRIPTION, CONFIG, 
+            ID, PREDICATE_NAME, PREDICATE_TYPE, DESCRIPTION, ARGS, 
             IS_SYSTEM, ENABLED, CREATE_TIME, UPDATE_TIME, CREATE_BY, UPDATE_BY
     };
 

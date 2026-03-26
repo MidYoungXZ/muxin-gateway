@@ -1,95 +1,66 @@
 <template>
-  <div class="operation-logs-page">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h2>操作日志</h2>
-      <p>系统操作记录和审计信息</p>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">操作日志</span>
     </div>
 
-    <!-- 查询表单 -->
-    <div class="search-form">
-      <el-form :model="queryForm" inline>
-        <el-form-item label="模块">
-          <el-input
-            v-model="queryForm.module"
-            placeholder="请输入模块名称"
-            clearable
-            style="width: 150px"
-          />
-        </el-form-item>
-        <el-form-item label="操作">
-          <el-input
-            v-model="queryForm.operation"
-            placeholder="请输入操作类型"
-            clearable
-            style="width: 150px"
-          />
-        </el-form-item>
-        <el-form-item label="操作人">
-          <el-input
-            v-model="queryForm.operator"
-            placeholder="请输入操作人"
-            clearable
-            style="width: 150px"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select
-            v-model="queryForm.status"
-            placeholder="选择状态"
-            clearable
-            style="width: 120px"
+    <div class="search-bar">
+      <el-input
+        v-model="queryForm.module"
+        placeholder="模块"
+        clearable
+      />
+      <el-input
+        v-model="queryForm.operation"
+        placeholder="操作"
+        clearable
+      />
+      <el-input
+        v-model="queryForm.operator"
+        placeholder="操作人"
+        clearable
+      />
+      <el-select
+        v-model="queryForm.status"
+        placeholder="状态"
+        clearable
+      >
+        <el-option label="成功" :value="1" />
+        <el-option label="失败" :value="0" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <el-button
+            type="danger"
+            :disabled="selectedIds.length === 0"
+            @click="handleBatchDelete"
           >
-            <el-option label="成功" :value="1" />
-            <el-option label="失败" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            搜索
+            批量删除
           </el-button>
-          <el-button @click="handleReset">
-            重置
+          <el-button
+            type="warning"
+            @click="handleClearAll"
+          >
+            清空日志
           </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <el-button
-          type="danger"
-          :disabled="selectedIds.length === 0"
-          @click="handleBatchDelete"
-        >
-          批量删除
-        </el-button>
-        <el-button
-          type="warning"
-          @click="handleClearAll"
-        >
-          清空日志
-        </el-button>
+        </div>
+        <span class="toolbar-right">共 {{ pagination.total }} 条</span>
       </div>
-      <div class="toolbar-right">
-        <el-button
-          type="success"
-          @click="handleExport"
-        >
-          导出
-        </el-button>
-      </div>
-    </div>
 
-    <!-- 数据表格 -->
-    <div class="table-container">
       <el-table
         ref="tableRef"
         v-loading="loading"
         :data="tableData"
         row-key="id"
         @selection-change="handleSelectionChange"
+        stripe
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="id" label="日志ID" width="80" />
@@ -123,40 +94,25 @@
           </template>
         </el-table-column>
         <el-table-column prop="operateTime" label="操作时间" width="180" />
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button
-              link
-              type="primary"
-              size="small"
-              @click.stop="handleViewDetail(row)"
-            >
-              详情
-            </el-button>
-            <el-button
-              link
-              type="danger"
-              size="small"
-              @click.stop="handleDelete(row)"
-            >
-              删除
-            </el-button>
+            <el-button link type="primary" size="small" @click.stop="handleViewDetail(row)">详情</el-button>
+            <el-button link type="danger" size="small" @click.stop="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </div>
 
-    <!-- 分页 -->
-    <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pagination.pageNum"
-        v-model:page-size="pagination.pageSize"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handlePageSizeChange"
-        @current-change="handlePageNumChange"
-      />
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.pageNum"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handlePageSizeChange"
+          @current-change="handlePageNumChange"
+        />
+      </div>
     </div>
 
     <!-- 详情对话框 -->
@@ -424,64 +380,7 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.operation-logs-page {
-  padding: 20px;
-  background: #f5f5f5;
-  min-height: 100vh;
-}
-
-.page-header {
-  margin-bottom: 20px;
-}
-
-.page-header h2 {
-  margin: 0 0 8px 0;
-  color: #303133;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.page-header p {
-  margin: 0;
-  color: #909399;
-  font-size: 14px;
-}
-
-.search-form,
-.toolbar,
-.table-container,
-.pagination-container {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-}
-
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  gap: 12px;
-}
-
-.table-container {
-  padding: 0;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  padding: 16px;
-}
-
+<style lang="scss" scoped>
 .log-detail {
   max-height: 600px;
   overflow-y: auto;

@@ -42,14 +42,14 @@ public class RetryFilter implements Filter {
 
     @SuppressWarnings("unchecked")
     public RetryFilter(FilterDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
-        this.retries = config != null ? getIntValue(config.get("retries"), 3) : 3;
-        this.retryStatuses = parseStringSet(config != null ? config.get("statuses") : null, 
+        Map<String, Object> args = definition.getArgs();
+        this.retries = args != null ? getIntValue(args.get("retries"), 3) : 3;
+        this.retryStatuses = parseStringSet(args != null ? args.get("statuses") : null, 
                                              Set.of("BAD_GATEWAY", "SERVICE_UNAVAILABLE", "GATEWAY_TIMEOUT"));
-        this.retryMethods = parseStringSet(config != null ? config.get("methods") : null, 
+        this.retryMethods = parseStringSet(args != null ? args.get("methods") : null, 
                                             Set.of("GET"));
         
-        Map<String, Object> backoff = config != null ? (Map<String, Object>) config.get("backoff") : null;
+        Map<String, Object> backoff = args != null ? (Map<String, Object>) args.get("backoff") : null;
         this.firstBackoff = backoff != null ? parseBackoff(backoff.get("firstBackoff"), 10) : 10;
         this.maxBackoff = backoff != null ? parseBackoff(backoff.get("maxBackOff"), 1000) : 1000;
         this.backoffFactor = backoff != null ? getDoubleValue(backoff.get("factor"), 2.0) : 2.0;

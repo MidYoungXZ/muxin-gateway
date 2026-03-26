@@ -131,13 +131,13 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
     @Transactional(rollbackFor = Exception.class)
     public Long createPredicate(PredicateCreateDTO dto) {
         validatePredicateType(dto.getPredicateType());
-        validatePredicateConfig(dto.getPredicateType(), dto.getConfig());
+        validatePredicateConfig(dto.getPredicateType(), dto.getArgs());
         
         GwPredicate predicate = new GwPredicate();
         predicate.setPredicateName(dto.getPredicateName());
         predicate.setPredicateType(dto.getPredicateType());
         predicate.setDescription(dto.getDescription());
-        predicate.setConfig(dto.getConfig());
+        predicate.setArgs(dto.getArgs());
         predicate.setEnabled(dto.getEnabled());
         predicate.setIsSystem(false);
         predicate.setDeleted(false);
@@ -159,11 +159,11 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
             throw new BusinessException("系统内置断言不允许修改");
         }
         
-        validatePredicateConfig(predicate.getPredicateType(), dto.getConfig());
+        validatePredicateConfig(predicate.getPredicateType(), dto.getArgs());
         
         predicate.setPredicateName(dto.getPredicateName());
         predicate.setDescription(dto.getDescription());
-        predicate.setConfig(dto.getConfig());
+        predicate.setArgs(dto.getArgs());
         predicate.setEnabled(dto.getEnabled());
         
         updateById(predicate);
@@ -293,7 +293,7 @@ public class PredicateServiceImpl extends ServiceImpl<PredicateMapper, GwPredica
         vo.setPredicateName(predicate.getPredicateName());
         vo.setPredicateType(predicate.getPredicateType());
         vo.setDescription(predicate.getDescription());
-        vo.setConfig(predicate.getConfig());
+        vo.setArgs(predicate.getArgs());
         vo.setIsSystem(predicate.getIsSystem());
         vo.setEnabled(predicate.getEnabled());
         vo.setCreateTime(predicate.getCreateTime());

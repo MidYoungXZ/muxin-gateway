@@ -1,65 +1,38 @@
 <template>
-  <div class="permission-management">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>权限管理</h1>
-        <p>管理系统菜单权限，支持树形结构和权限配置</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">
-          新增权限
-        </el-button>
-        <el-button :icon="Refresh" @click="loadMenuTree">
-          刷新
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">权限管理</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增权限
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input
+        v-model="searchForm.menuName"
+        placeholder="权限名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="searchForm.menuType" placeholder="权限类型" clearable>
+        <el-option label="目录" value="M" />
+        <el-option label="菜单" value="C" />
+        <el-option label="按钮" value="F" />
+      </el-select>
+      <el-select v-model="searchForm.status" placeholder="状态" clearable>
+        <el-option label="启用" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <el-card class="search-card" shadow="never">
-      <el-form :model="searchForm" :inline="true" @submit.prevent="handleSearch">
-        <el-form-item label="权限名称">
-          <el-input
-            v-model="searchForm.menuName"
-            placeholder="请输入权限名称"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="权限类型">
-          <el-select v-model="searchForm.menuType" placeholder="请选择类型" clearable style="width: 120px">
-            <el-option label="目录" value="M" />
-            <el-option label="菜单" value="C" />
-            <el-option label="按钮" value="F" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="handleSearch">
-            搜索
-          </el-button>
-          <el-button :icon="Refresh" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card class="table-card" shadow="never">
-      <div class="table-header">
-        <div class="table-actions">
-          <span class="table-info">
-            共 {{ menuCount }} 个权限
-          </span>
-        </div>
-        <div class="table-controls">
-          <el-button text @click="expandAll">展开全部</el-button>
-          <el-button text @click="collapseAll">收起全部</el-button>
-        </div>
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <span class="toolbar-right">共 {{ menuCount }} 个权限</span>
       </div>
 
       <el-table
@@ -69,7 +42,6 @@
         row-key="id"
         :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
         :default-expand-all="false"
-        border
       >
         <el-table-column prop="menuName" label="权限名称" min-width="200">
           <template #default="{ row }">
@@ -120,39 +92,15 @@
         
         <el-table-column prop="createTime" label="创建时间" width="160" align="center" />
         
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" width="180" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              text
-              :icon="Plus"
-              @click="handleAddChild(row)"
-            >
-              新增
-            </el-button>
-            <el-button
-              type="warning"
-              size="small"
-              text
-              :icon="Edit"
-              @click="handleEdit(row)"
-            >
-              编辑
-            </el-button>
-            <el-button
-              type="danger"
-              size="small"
-              text
-              :icon="Delete"
-              @click="handleDelete(row)"
-            >
-              删除
-            </el-button>
+            <el-button type="primary" size="small" link @click="handleAddChild(row)">新增</el-button>
+            <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
+            <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
     <!-- 表单对话框 -->
     <el-dialog
@@ -290,7 +238,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { Plus, Delete, Search, Refresh, Edit } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { menuApi, type Menu } from '@/api/menus'
 
 const loading = ref(false)
@@ -684,61 +632,8 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.permission-management {
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .header-right {
-      .el-button + .el-button {
-        margin-left: 12px;
-      }
-    }
-  }
-  
-  .search-card {
-    margin-bottom: 20px;
-  }
-  
-  .table-card {
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .table-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-      
-      .table-controls {
-        .el-button + .el-button {
-          margin-left: 8px;
-        }
-      }
-    }
-    
-    .menu-name-cell {
-      display: flex;
-      align-items: center;
-    }
-  }
+.menu-name-cell {
+  display: flex;
+  align-items: center;
 }
 </style>

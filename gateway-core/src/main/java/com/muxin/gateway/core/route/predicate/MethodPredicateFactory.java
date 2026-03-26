@@ -31,12 +31,12 @@ public class MethodPredicateFactory implements PredicateFactory {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
 
-        Map<String, Object> config = definition.getConfig();
-        if (config == null) {
+        Map<String, Object> args = definition.getArgs();
+        if (args == null) {
             throw new IllegalArgumentException("MethodPredicate配置不能为空");
         }
 
-        Object methodsObj = config.get("methods");
+        Object methodsObj = args.get("methods");
         if (methodsObj == null) {
             throw new IllegalArgumentException("MethodPredicate必须配置methods参数");
         }

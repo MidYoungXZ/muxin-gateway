@@ -48,11 +48,11 @@ public class MethodPredicate implements Predicate {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
         this.allowedMethods = parseMethods(definition);
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
     }
 
     private Set<String> parseMethods(PredicateDefinition definition) {
-        Object methodsObj = definition.getConfigValue("methods");
+        Object methodsObj = definition.getArg("methods");
         if (methodsObj == null) {
             throw new IllegalArgumentException("MethodPredicate必须配置methods参数");
         }

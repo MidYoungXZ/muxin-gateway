@@ -26,8 +26,8 @@ public class RemoveResponseHeaderFilter implements Filter {
     }
 
     public RemoveResponseHeaderFilter(FilterDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
-        this.name = config != null ? (String) config.get("name") : null;
+        Map<String, Object> args = definition.getArgs();
+        this.name = args != null ? (String) args.get("name") : null;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
     }
@@ -84,8 +84,8 @@ public class RemoveResponseHeaderFilter implements Filter {
 
         @Override
         public void validateConfig(FilterDefinition definition) {
-            Map<String, Object> config = definition.getConfig();
-            if (config == null || !config.containsKey("name")) {
+            Map<String, Object> args = definition.getArgs();
+            if (args == null || !args.containsKey("name")) {
                 throw new IllegalArgumentException("RemoveResponseHeaderFilter 必须配置 name 参数");
             }
         }

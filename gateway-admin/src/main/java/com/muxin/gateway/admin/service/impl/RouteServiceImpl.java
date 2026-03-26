@@ -119,6 +119,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setUri(dto.getUri());
         route.setMetadata(dto.getMetadata());
         route.setOrder(dto.getOrder());
+        route.setLoadBalanceStrategy(dto.getLoadBalanceStrategy() != null ? dto.getLoadBalanceStrategy() : "ROUND_ROBIN");
         route.setEnabled(dto.getEnabled());
         route.setTemplateId(dto.getTemplateId());
         route.setVersion(1);
@@ -153,6 +154,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setUri(dto.getUri());
         route.setMetadata(dto.getMetadata());
         route.setOrder(dto.getOrder());
+        route.setLoadBalanceStrategy(dto.getLoadBalanceStrategy());
         route.setEnabled(dto.getEnabled());
         route.setGrayscaleEnabled(dto.getGrayscaleEnabled());
         route.setVersion(oldRoute.getVersion() + 1);
@@ -313,6 +315,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         vo.setUri(route.getUri());
         vo.setMetadata(route.getMetadata());
         vo.setOrder(route.getOrder());
+        vo.setLoadBalanceStrategy(route.getLoadBalanceStrategy());
         vo.setEnabled(route.getEnabled());
         vo.setGrayscaleEnabled(route.getGrayscaleEnabled());
         vo.setGrayscaleConfig(route.getGrayscaleConfig());
@@ -334,7 +337,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
                     vo.setId(((Number) map.get("id")).longValue());
                     vo.setPredicateName((String) map.get("predicateName"));
                     vo.setPredicateType((String) map.get("predicateType"));
-                    vo.setConfig(parseConfig(map.get("config")));
+                    vo.setArgs(parseConfig(map.get("args")));
                     
                     Arrays.stream(PredicateType.values())
                             .filter(t -> t.getType().equals(vo.getPredicateType()))
@@ -354,7 +357,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
                     vo.setId(((Number) map.get("id")).longValue());
                     vo.setFilterName((String) map.get("filterName"));
                     vo.setFilterType((String) map.get("filterType"));
-                    vo.setConfig(parseConfig(map.get("config")));
+                    vo.setArgs(parseConfig(map.get("args")));
                     
                     return vo;
                 })

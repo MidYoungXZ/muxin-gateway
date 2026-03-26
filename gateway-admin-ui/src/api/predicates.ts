@@ -6,7 +6,7 @@ export interface Predicate {
   predicateType: string
   predicateTypeDesc?: string
   description?: string
-  config?: Record<string, any>
+  args?: Record<string, any>
   isSystem: boolean
   enabled: boolean
   usageCount?: number
@@ -27,14 +27,14 @@ export interface PredicateCreateRequest {
   predicateName: string
   predicateType: string
   description?: string
-  config: Record<string, any>
+  args: Record<string, any>
   enabled?: boolean
 }
 
 export interface PredicateUpdateRequest {
   predicateName: string
   description?: string
-  config: Record<string, any>
+  args: Record<string, any>
   enabled?: boolean
 }
 

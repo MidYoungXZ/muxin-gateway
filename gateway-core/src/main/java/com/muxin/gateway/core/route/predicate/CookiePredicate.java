@@ -39,9 +39,9 @@ public class CookiePredicate implements Predicate {
         if (definition == null) {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
-        this.name = definition.getStringConfig("name");
-        this.regexp = definition.getStringConfig("regexp");
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.name = definition.getStringArg("name");
+        this.regexp = definition.getStringArg("regexp");
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Cookie名称(name)不能为空");
@@ -124,7 +124,7 @@ public class CookiePredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            String name = definition.getStringConfig("name");
+            String name = definition.getStringArg("name");
             if (name == null || name.trim().isEmpty()) {
                 throw new IllegalArgumentException("CookiePredicate 必须配置 name 参数");
             }

@@ -39,9 +39,9 @@ public class QueryPredicate implements Predicate {
         if (definition == null) {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
-        this.param = definition.getStringConfig("param");
-        this.regexp = definition.getStringConfig("regexp");
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.param = definition.getStringArg("param");
+        this.regexp = definition.getStringArg("regexp");
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         if (param == null || param.trim().isEmpty()) {
             throw new IllegalArgumentException("查询参数名(param)不能为空");
@@ -103,7 +103,7 @@ public class QueryPredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            String param = definition.getStringConfig("param");
+            String param = definition.getStringArg("param");
             if (param == null || param.trim().isEmpty()) {
                 throw new IllegalArgumentException("QueryPredicate 必须配置 param 参数");
             }

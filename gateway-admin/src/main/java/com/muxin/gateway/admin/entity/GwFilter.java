@@ -52,13 +52,13 @@ public class GwFilter {
     private String description;
 
     /**
-     * 过滤器配置.
+     * 过滤器参数.
      * <p>
-     * JSON格式的配置参数，使用Jackson类型处理器进行序列化和反序列化。
+     * JSON格式的参数，使用Jackson类型处理器进行序列化和反序列化。
      * </p>
      */
     @Column(typeHandler = com.mybatisflex.core.handler.JacksonTypeHandler.class)
-    private Map<String, Object> config;
+    private Map<String, Object> args;
 
     /**
      * 过滤器执行顺序.

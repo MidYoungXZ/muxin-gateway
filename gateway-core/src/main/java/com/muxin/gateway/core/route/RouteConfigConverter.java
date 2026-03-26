@@ -318,13 +318,13 @@ public class RouteConfigConverter {
 
         for (PredicateDefinition config : predicateConfigs) {
             try {
-                String predicateType = config.getType();
+                String predicateType = config.getName();
                 PredicateFactory factory = predicateFactories.get(predicateType);
                 if (factory == null) {
                     factory = predicateFactories.get(predicateType.toUpperCase());
                 }
                 if (factory == null) {
-                    log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getType(), routeId);
+                    log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getName(), routeId);
                     continue;
                 }
 
@@ -335,10 +335,10 @@ public class RouteConfigConverter {
                 Predicate predicate = factory.createPredicate(config);
                 predicates.add(predicate);
 
-                log.debug("[RouteConfigConverter] 为路由 {} 创建断言: {}", routeId, config.getType());
+                log.debug("[RouteConfigConverter] 为路由 {} 创建断言: {}", routeId, config.getName());
 
             } catch (Exception e) {
-                log.error("[RouteConfigConverter] 创建断言失败，跳过: {} (路由: {})", config.getType(), routeId, e);
+                log.error("[RouteConfigConverter] 创建断言失败，跳过: {} (路由: {})", config.getName(), routeId, e);
             }
         }
 
@@ -360,18 +360,18 @@ public class RouteConfigConverter {
 
         for (FilterDefinition config : filterConfigs) {
             if (!config.isEnabled()) {
-                log.debug("[RouteConfigConverter] 跳过已禁用的过滤器: {} (路由: {})", config.getType(), routeId);
+                log.debug("[RouteConfigConverter] 跳过已禁用的过滤器: {} (路由: {})", config.getName(), routeId);
                 continue;
             }
 
             try {
-                String filterType = config.getType();
+                String filterType = config.getName();
                 FilterFactory factory = filterFactories.get(filterType);
                 if (factory == null) {
                     factory = filterFactories.get(filterType.toUpperCase());
                 }
                 if (factory == null) {
-                    log.error("[RouteConfigConverter] 不支持的过滤器类型: {} (路由: {})", config.getType(), routeId);
+                    log.error("[RouteConfigConverter] 不支持的过滤器类型: {} (路由: {})", config.getName(), routeId);
                     continue;
                 }
 
@@ -383,10 +383,10 @@ public class RouteConfigConverter {
                 filters.add(filter);
 
                 log.debug("[RouteConfigConverter] 为路由 {} 创建过滤器: {} (order: {})",
-                        routeId, config.getType(), config.getOrder());
+                        routeId, config.getName(), config.getOrder());
 
             } catch (Exception e) {
-                log.error("[RouteConfigConverter] 创建过滤器失败，跳过: {} (路由: {})", config.getType(), routeId, e);
+                log.error("[RouteConfigConverter] 创建过滤器失败，跳过: {} (路由: {})", config.getName(), routeId, e);
             }
         }
 
@@ -459,17 +459,17 @@ public class RouteConfigConverter {
 
         for (FilterDefinition globalDef : globalFilters) {
             if (globalDef.isEnabled()) {
-                FilterFactory factory = filterFactories.get(globalDef.getType());
+                FilterFactory factory = filterFactories.get(globalDef.getName());
                 if (factory != null) {
                     try {
                         Filter filter = factory.createFilter(globalDef);
                         allFilters.add(filter);
                     } catch (Exception e) {
                         log.warn("[RouteConfigConverter] 创建全局过滤器失败: {} - {}",
-                                globalDef.getType(), e.getMessage());
+                                globalDef.getName(), e.getMessage());
                     }
                 } else {
-                    log.warn("[RouteConfigConverter] 全局过滤器类型不支持: {}", globalDef.getType());
+                    log.warn("[RouteConfigConverter] 全局过滤器类型不支持: {}", globalDef.getName());
                 }
             }
         }

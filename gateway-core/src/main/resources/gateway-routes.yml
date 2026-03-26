@@ -84,8 +84,8 @@ routes:
     
     # 路由匹配断言
     predicates:
-      - type: PATH
-        config:
+      - name: PATH
+        args:
           pattern: "/sde/**"
           strip-prefix: 1
     
@@ -95,10 +95,10 @@ routes:
     
     # 过滤器配置
     filters:
-      - type: PATH_REWRITE
+      - name: PATH_REWRITE
         order: 50
         enabled: true
-      - type: REQUEST_LOG
+      - name: REQUEST_LOG
         order: 100
         enabled: true
     
@@ -127,17 +127,17 @@ routes:
     
     # 路由匹配断言
     predicates:
-      - type: PATH
-        config:
+      - name: PATH
+        args:
           pattern: "/**"
-    
+
     # 负载均衡配置
     load-balance:
       strategy: ROUND_ROBIN
-    
+
     # 过滤器配置
     filters:
-      - type: REQUEST_LOG
+      - name: REQUEST_LOG
         order: 100
         enabled: true
     
@@ -148,17 +148,17 @@ routes:
 
 # ==================== 全局过滤器 ====================
 global-filters:
-  - type: REQUEST_ID
+  - name: REQUEST_ID
     order: 10
     enabled: true
-    config:
+    args:
       header-name: "X-Request-ID"
       generate-if-missing: true
-  
-  - type: METRICS
+
+  - name: METRICS
     order: 30
     enabled: true
-    config:
+    args:
       collect-request-metrics: true
       collect-response-metrics: true
 

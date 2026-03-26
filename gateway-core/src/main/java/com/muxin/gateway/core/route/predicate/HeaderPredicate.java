@@ -39,9 +39,9 @@ public class HeaderPredicate implements Predicate {
         if (definition == null) {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
-        this.header = definition.getStringConfig("header");
-        this.regexp = definition.getStringConfig("regexp");
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.header = definition.getStringArg("header");
+        this.regexp = definition.getStringArg("regexp");
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         if (header == null || header.trim().isEmpty()) {
             throw new IllegalArgumentException("请求头名称(header)不能为空");
@@ -103,7 +103,7 @@ public class HeaderPredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            String header = definition.getStringConfig("header");
+            String header = definition.getStringArg("header");
             if (header == null || header.trim().isEmpty()) {
                 throw new IllegalArgumentException("HeaderPredicate 必须配置 header 参数");
             }

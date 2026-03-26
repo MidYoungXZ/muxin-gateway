@@ -166,15 +166,15 @@ routes:
     protocol: HTTP                # 协议类型 (必需)
     
     predicates:                   # 断言列表 (至少一个)
-      - type: PATH
-        config:
+      - name: PATH
+        args:
           pattern: "/api/**"
-    
+
     load-balance:                 # 负载均衡配置
       strategy: ROUND_ROBIN
-    
+
     filters:                      # 过滤器列表
-      - type: REQUEST_LOG
+      - name: REQUEST_LOG
         order: 100
         enabled: true
     
@@ -204,8 +204,8 @@ routes:
 
 ```yaml
 predicates:
-  - type: PATH
-    config:
+  - name: PATH
+    args:
       pattern: "/api/users/**"      # 匹配 /api/users/ 下的所有路径
       # 示例: /api/users/123 匹配
       # 示例: /api/users/profile 匹配
@@ -223,8 +223,8 @@ predicates:
 
 ```yaml
 predicates:
-  - type: PATH
-    config:
+  - name: PATH
+    args:
       pattern: "/sde/admin/event/subscription/**"
       strip-prefix: 1              # 剥离第1个路径段
 ```
@@ -243,11 +243,11 @@ predicates:
 
 ```yaml
 predicates:
-  - type: PATH
-    config:
+  - name: PATH
+    args:
       pattern: "/api/users/**"
-  - type: METHOD
-    config:
+  - name: METHOD
+    args:
       methods: [GET, POST, PUT, DELETE]
 ```
 
@@ -257,10 +257,10 @@ predicates:
 
 ```yaml
 predicates:
-  - type: HEADER
-    config:
-      name: "X-Custom-Header"
-      pattern: "custom-value.*"
+  - name: HEADER
+    args:
+      header: "X-Custom-Header"
+      regexp: "custom-value.*"
 ```
 
 #### QUERY 断言
@@ -269,10 +269,10 @@ predicates:
 
 ```yaml
 predicates:
-  - type: QUERY
-    config:
-      name: "status"
-      pattern: "active"
+  - name: QUERY
+    args:
+      param: "status"
+      regexp: "active"
 ```
 
 ---
@@ -283,10 +283,10 @@ predicates:
 
 ```yaml
 filters:
-  - type: FILTER_TYPE           # 过滤器类型 (必需)
+  - name: FILTER_TYPE           # 过滤器类型 (必需)
     order: 100                  # 执行顺序，数字越小越先执行
     enabled: true               # 是否启用
-    config:                     # 过滤器配置 (可选)
+    args:                       # 过滤器参数 (可选)
       key: "value"
 ```
 
@@ -305,10 +305,10 @@ filters:
 
 ```yaml
 filters:
-  - type: REQUEST_ID
+  - name: REQUEST_ID
     order: 10
     enabled: true
-    config:
+    args:
       header-name: "X-Request-ID"           # 请求头名称
       generate-if-missing: true             # 如果不存在是否生成
 ```
@@ -317,10 +317,10 @@ filters:
 
 ```yaml
 filters:
-  - type: CORS
+  - name: CORS
     order: 200
     enabled: true
-    config:
+    args:
       allowed-origins: ["*"]                # 允许的来源
       allowed-methods: [GET, POST, PUT, DELETE, OPTIONS]
       allowed-headers: ["*"]                # 允许的请求头
@@ -334,10 +334,10 @@ filters:
 
 ```yaml
 filters:
-  - type: AUTH
+  - name: AUTH
     order: 200
     enabled: true
-    config:
+    args:
       auth-type: "JWT"                       # 认证类型
       secret-key: "${JWT_SECRET:muxin-gateway-secret}"  # 密钥，支持环境变量
 ```
@@ -346,10 +346,10 @@ filters:
 
 ```yaml
 filters:
-  - type: AUTH
+  - name: AUTH
     order: 200
     enabled: true
-    config:
+    args:
       auth-type: "BASIC"
 ```
 
@@ -357,10 +357,10 @@ filters:
 
 ```yaml
 filters:
-  - type: RATE_LIMIT
+  - name: RATE_LIMIT
     order: 300
     enabled: true
-    config:
+    args:
       requests-per-second: 100              # 每秒请求数
       burst-capacity: 200                   # 突发容量
 ```
@@ -407,27 +407,27 @@ services:
 
 ```yaml
 global-filters:
-  - type: REQUEST_ID
+  - name: REQUEST_ID
     order: 10
     enabled: true
-    config:
+    args:
       header-name: "X-Request-ID"
       generate-if-missing: true
-  
-  - type: CORS
+
+  - name: CORS
     order: 20
     enabled: true
-    config:
+    args:
       allowed-origins: ["*"]
       allowed-methods: [GET, POST, PUT, DELETE, OPTIONS]
       allowed-headers: ["*"]
       allow-credentials: true
       max-age: 3600
-  
-  - type: METRICS
+
+  - name: METRICS
     order: 30
     enabled: true
-    config:
+    args:
       collect-request-metrics: true
       collect-response-metrics: true
 ```
@@ -532,22 +532,22 @@ routes:
     service-ref: user-service-001
     protocol: HTTP
     predicates:
-      - type: PATH
-        config:
+      - name: PATH
+        args:
           pattern: "/api/users/**"
-      - type: METHOD
-        config:
+      - name: METHOD
+        args:
           methods: [GET, POST, PUT, DELETE]
     load-balance:
       strategy: ROUND_ROBIN
     filters:
-      - type: REQUEST_LOG
+      - name: REQUEST_LOG
         order: 100
         enabled: true
-      - type: AUTH
+      - name: AUTH
         order: 200
         enabled: true
-        config:
+        args:
           auth-type: "JWT"
           secret-key: "${JWT_SECRET:muxin-gateway-secret}"
     timeouts:
@@ -578,15 +578,15 @@ routes:
     service-ref: sde-admin-service-001
     protocol: HTTP
     predicates:
-      - type: PATH
-        config:
+      - name: PATH
+        args:
           pattern: "/sde/admin/event/subscription/**"
           strip-prefix: 1
     filters:
-      - type: REQUEST_LOG
+      - name: REQUEST_LOG
         order: 100
         enabled: true
-      - type: CORS
+      - name: CORS
         order: 200
         enabled: true
 ```

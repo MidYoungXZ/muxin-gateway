@@ -31,15 +31,18 @@ public class RouteCreateDTO {
     private String uri;
     
     @NotEmpty(message = "至少需要配置一个断言")
-    private List<Long> predicateIds;  // 断言ID列表
+    private List<Long> predicateIds;
     
-    private List<Long> filterIds;     // 过滤器ID列表
+    private List<Long> filterIds;
     
     private Map<String, Object> metadata;
     
     @Min(0)
     @Builder.Default
     private Integer order = 0;
+    
+    @Builder.Default
+    private String loadBalanceStrategy = "ROUND_ROBIN";
     
     @Builder.Default
     private Boolean enabled = true;

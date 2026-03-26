@@ -1115,4 +1115,96 @@ a {
   .text-mobile-lg { font-size: 16px !important; }
   .text-mobile-xl { font-size: 18px !important; }
   .text-mobile-2xl { font-size: 20px !important; }
+}
+
+// ==================== 通用页面布局样式 ====================
+
+// 页面容器
+.page-list-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: var(--space-3);
+}
+
+// 页面标题行（精简）
+.page-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  
+  .title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+  }
+}
+
+// 搜索区域（紧凑）
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  
+  .el-form-item {
+    margin-bottom: 0;
+    margin-right: var(--space-2);
+  }
+  
+  .el-input, .el-select {
+    width: 160px;
+  }
+  
+  .search-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-left: auto;
+  }
+}
+
+// 表格区域（自适应高度）
+.table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-primary);
+    flex-shrink: 0;
+    
+    .toolbar-left {
+      display: flex;
+      gap: var(--space-2);
+    }
+    
+    .toolbar-right {
+      color: var(--text-tertiary);
+      font-size: var(--text-sm);
+    }
+  }
+  
+  .el-table {
+    flex: 1;
+  }
+  
+  .pagination-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--border-primary);
+    flex-shrink: 0;
+  }
 } 

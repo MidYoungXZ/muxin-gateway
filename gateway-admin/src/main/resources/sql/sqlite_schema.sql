@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS gw_route (
     uri VARCHAR(500) NOT NULL,
     metadata TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
+    load_balance_strategy VARCHAR(50) DEFAULT 'ROUND_ROBIN',
     enabled INTEGER NOT NULL DEFAULT 1,
     grayscale_enabled INTEGER NOT NULL DEFAULT 0,
     grayscale_config TEXT,
@@ -36,7 +37,7 @@ CREATE TABLE IF NOT EXISTS gw_predicate (
     predicate_name VARCHAR(100) NOT NULL,
     predicate_type VARCHAR(50) NOT NULL,
     description VARCHAR(500),
-    config TEXT NOT NULL,
+    args TEXT NOT NULL,
     is_system INTEGER NOT NULL DEFAULT 0,
     enabled INTEGER NOT NULL DEFAULT 1,
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
@@ -56,7 +57,7 @@ CREATE TABLE IF NOT EXISTS gw_filter (
     filter_name VARCHAR(100) NOT NULL,
     filter_type VARCHAR(50) NOT NULL,
     description VARCHAR(500),
-    config TEXT,
+    args TEXT,
     "order" INTEGER NOT NULL DEFAULT 0,
     is_system INTEGER NOT NULL DEFAULT 0,
     enabled INTEGER NOT NULL DEFAULT 1,
@@ -150,21 +151,6 @@ CREATE TABLE IF NOT EXISTS gw_service_node (
 CREATE INDEX IF NOT EXISTS idx_node_service ON gw_service_node(service_name);
 CREATE INDEX IF NOT EXISTS idx_node_status ON gw_service_node(status);
 CREATE INDEX IF NOT EXISTS idx_node_deleted ON gw_service_node(deleted);
-
--- 8. 负载均衡配置表
-CREATE TABLE IF NOT EXISTS gw_load_balance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    route_id INTEGER NOT NULL UNIQUE,
-    strategy VARCHAR(50) NOT NULL DEFAULT 'ROUND_ROBIN',
-    config TEXT,
-    enabled INTEGER NOT NULL DEFAULT 1,
-    create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    create_by VARCHAR(50),
-    update_by VARCHAR(50)
-);
-
-CREATE INDEX IF NOT EXISTS idx_lb_strategy ON gw_load_balance(strategy);
 
 -- ====================================
 -- RBAC System Tables

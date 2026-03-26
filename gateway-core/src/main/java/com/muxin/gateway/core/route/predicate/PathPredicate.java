@@ -39,14 +39,31 @@ public class PathPredicate implements Predicate {
         if (definition == null) {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
-        this.pattern = definition.getStringConfig("pattern");
-        this.config = definition.getConfig();
-        this.stripPrefixCount = definition.getIntConfig("strip-prefix", 0);
-        if (pattern == null || pattern.trim().isEmpty()) {
+        
+        Object patternObj = definition.getArgs().get("pattern");
+        if (patternObj == null) {
+            patternObj = definition.getArgs().get("patterns");
+        }
+        if (patternObj instanceof java.util.List) {
+            java.util.List<?> patterns = (java.util.List<?>) patternObj;
+            if (!patterns.isEmpty()) {
+                this.pattern = patterns.get(0).toString();
+            } else {
+                this.pattern = null;
+            }
+        } else if (patternObj != null) {
+            this.pattern = patternObj.toString();
+        } else {
+            this.pattern = null;
+        }
+        
+        this.config = definition.getArgs();
+        this.stripPrefixCount = definition.getIntArg("strip-prefix", 0);
+        if (this.pattern == null || this.pattern.trim().isEmpty()) {
             throw new IllegalArgumentException("路径模式(pattern)不能为空");
         }
-        this.regexPattern = convertAntPatternToRegex(pattern);
-        this.endsWithDoubleStar = pattern.endsWith("/**");
+        this.regexPattern = convertAntPatternToRegex(this.pattern);
+        this.endsWithDoubleStar = this.pattern.endsWith("/**");
     }
 
     private Pattern convertAntPatternToRegex(String antPattern) {

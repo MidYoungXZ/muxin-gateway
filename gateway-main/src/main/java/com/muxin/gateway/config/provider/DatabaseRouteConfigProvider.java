@@ -150,11 +150,11 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
         for (Map<String, Object> map : predicateMaps) {
             String predicateType = (String) map.get("predicateType");
-            Map<String, Object> config = parseConfig(map.get("config"));
+            Map<String, Object> config = parseConfig(map.get("args"));
 
             PredicateDefinition predicate = PredicateDefinition.builder()
-                    .type(predicateType)
-                    .config(config != null ? config : new HashMap<>())
+                    .name(predicateType)
+                    .args(config != null ? config : new HashMap<>())
                     .build();
             predicates.add(predicate);
         }
@@ -168,13 +168,13 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
         for (Map<String, Object> map : filterMaps) {
             String filterType = (String) map.get("filterType");
-            Map<String, Object> config = parseConfig(map.get("config"));
+            Map<String, Object> config = parseConfig(map.get("args"));
             Object orderObj = map.get("order");
             int order = orderObj instanceof Number ? ((Number) orderObj).intValue() : 0;
 
             FilterDefinition filter = FilterDefinition.builder()
-                    .type(filterType)
-                    .config(config != null ? config : new HashMap<>())
+                    .name(filterType)
+                    .args(config != null ? config : new HashMap<>())
                     .order(order)
                     .enabled(true)
                     .build();

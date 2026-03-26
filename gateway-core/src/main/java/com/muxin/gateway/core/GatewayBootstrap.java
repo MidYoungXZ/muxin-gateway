@@ -294,11 +294,11 @@ public class GatewayBootstrap implements LifeCycle {
                     if (gatewayRouteConfig.getGlobalFilters() != null && !gatewayRouteConfig.getGlobalFilters().isEmpty()) {
                         List<FilterDefinition> globalFilters =
                             gatewayRouteConfig.getGlobalFilters().stream()
-                                .map(gfc -> FilterDefinition.builder()
-                                    .type(gfc.getType())
+.map(gfc -> FilterDefinition.builder()
+                                    .name(gfc.getType())
                                     .order(gfc.getOrder())
                                     .enabled(gfc.isEnabled())
-                                    .config(gfc.getConfig())
+                                    .args(gfc.getConfig())
                                     .build())
                                 .toList();
                         routeConfigConverter.setGlobalFilters(globalFilters);

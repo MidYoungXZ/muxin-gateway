@@ -44,12 +44,12 @@ public class CircuitBreakerFilter implements Filter {
     }
 
     public CircuitBreakerFilter(FilterDefinition definition) {
-        Map<String, Object> config = definition.getConfig();
-        this.name = config != null ? (String) config.get("name") : "default";
-        this.fallbackUri = config != null ? (String) config.get("fallbackUri") : "/fallback";
-        this.failureRateThreshold = config != null ? getIntValue(config.get("failureRateThreshold"), 50) : 50;
-        this.ringBufferSize = config != null ? getIntValue(config.get("ringBufferSize"), 100) : 100;
-        this.waitDurationInOpenState = config != null ? getLongValue(config.get("waitDurationInOpenState"), 60000) : 60000;
+        Map<String, Object> args = definition.getArgs();
+        this.name = args != null ? (String) args.get("name") : "default";
+        this.fallbackUri = args != null ? (String) args.get("fallbackUri") : "/fallback";
+        this.failureRateThreshold = args != null ? getIntValue(args.get("failureRateThreshold"), 50) : 50;
+        this.ringBufferSize = args != null ? getIntValue(args.get("ringBufferSize"), 100) : 100;
+        this.waitDurationInOpenState = args != null ? getLongValue(args.get("waitDurationInOpenState"), 60000) : 60000;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
     }

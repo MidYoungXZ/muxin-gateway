@@ -42,7 +42,7 @@ public interface RoutePredicateMapper extends BaseMapper<GwRoutePredicate> {
             "ORDER BY r.create_time DESC")
     List<Map<String, Object>> findRoutesByPredicateId(@Param("predicateId") Long predicateId);
     
-    @Select("SELECT p.id, p.predicate_name as predicateName, p.predicate_type as predicateType, p.config, rp.sort_order as sortOrder " +
+    @Select("SELECT p.id, p.predicate_name as predicateName, p.predicate_type as predicateType, p.args, rp.sort_order as sortOrder " +
             "FROM gw_predicate p " +
             "INNER JOIN gw_route_predicate rp ON p.id = rp.predicate_id " +
             "WHERE rp.route_id = #{routeId} AND p.deleted = 0 " +

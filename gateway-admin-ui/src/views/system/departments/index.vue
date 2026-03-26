@@ -1,61 +1,33 @@
 <template>
-  <div class="department-management">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>部门管理</h1>
-        <p>管理组织部门结构，支持树形展示和层级管理</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">
-          新增部门
-        </el-button>
-        <el-button :icon="Refresh" @click="loadDeptTree">
-          刷新
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">部门管理</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增部门
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input
+        v-model="searchForm.deptName"
+        placeholder="部门名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="searchForm.status" placeholder="状态" clearable>
+        <el-option label="启用" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <el-card class="search-card" shadow="never">
-      <el-form :model="searchForm" :inline="true" @submit.prevent="handleSearch">
-        <el-form-item label="部门名称">
-          <el-input
-            v-model="searchForm.deptName"
-            placeholder="请输入部门名称"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="handleSearch">
-            搜索
-          </el-button>
-          <el-button :icon="Refresh" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card class="tree-card" shadow="never">
-      <div class="tree-header">
-        <div class="tree-actions">
-          <span class="tree-info">
-            共 {{ deptCount }} 个部门
-          </span>
-        </div>
-        <div class="tree-controls">
-          <el-button text @click="toggleExpandAll">
-            <el-icon v-if="isAllExpanded"><CaretBottom /></el-icon>
-            <el-icon v-else><CaretRight /></el-icon>
-            {{ isAllExpanded ? '收起全部' : '展开全部' }}
-          </el-button>
-        </div>
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <span class="toolbar-right">共 {{ deptCount }} 个部门</span>
       </div>
 
       <el-tree
@@ -93,24 +65,8 @@
               </span>
             </div>
             <div class="dept-actions">
-              <el-button
-                type="primary"
-                size="small"
-                text
-                :icon="Plus"
-                @click="handleAddChild(data)"
-              >
-                添加
-              </el-button>
-              <el-button
-                type="warning"
-                size="small"
-                text
-                :icon="Edit"
-                @click="handleEdit(data)"
-              >
-                编辑
-              </el-button>
+              <el-button type="primary" size="small" link @click="handleAddChild(data)">添加</el-button>
+              <el-button type="primary" size="small" link @click="handleEdit(data)">编辑</el-button>
               <el-switch
                 v-model="data.status"
                 :active-value="1"
@@ -119,20 +75,12 @@
                 style="margin: 0 8px;"
                 @change="handleStatusChange(data)"
               />
-              <el-button
-                type="danger"
-                size="small"
-                text
-                :icon="Delete"
-                @click="handleDelete(data)"
-              >
-                删除
-              </el-button>
+              <el-button type="danger" size="small" link @click="handleDelete(data)">删除</el-button>
             </div>
           </div>
         </template>
       </el-tree>
-    </el-card>
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -246,7 +194,7 @@
 import { ref, reactive, onMounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { Plus, Delete, Search, Refresh, Edit, OfficeBuilding, CaretBottom, CaretRight } from '@element-plus/icons-vue'
+import { Plus, OfficeBuilding } from '@element-plus/icons-vue'
 import { departmentApi, type Department } from '@/api/departments'
 
 const loading = ref(false)
@@ -647,84 +595,43 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.department-management {
-  .page-header {
+.dept-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+  
+  .dept-info {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
+    align-items: center;
     
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
+    .dept-icon {
+      margin-right: 8px;
+      color: var(--el-color-primary);
+    }
+    
+    .dept-name {
+      font-weight: 500;
+      margin-right: 8px;
+    }
+    
+    .dept-leader {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-left: 8px;
     }
   }
   
-  .search-card {
-    margin-bottom: 20px;
+  .dept-actions {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
   }
   
-  .tree-card {
-    .tree-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .tree-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .dept-node {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-right: 8px;
-      
-      .dept-info {
-        display: flex;
-        align-items: center;
-        
-        .dept-icon {
-          margin-right: 8px;
-          color: var(--el-color-primary);
-        }
-        
-        .dept-name {
-          font-weight: 500;
-          margin-right: 8px;
-        }
-        
-        .dept-leader {
-          color: var(--text-secondary);
-          font-size: 12px;
-          margin-left: 8px;
-        }
-      }
-      
-      .dept-actions {
-        display: flex;
-        align-items: center;
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-      
-      &:hover .dept-actions {
-        opacity: 1;
-      }
-    }
+  &:hover .dept-actions {
+    opacity: 1;
   }
 }
 

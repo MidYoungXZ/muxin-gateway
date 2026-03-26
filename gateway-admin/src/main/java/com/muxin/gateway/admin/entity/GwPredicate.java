@@ -27,7 +27,7 @@ public class GwPredicate {
     private String description;
     
     @Column(typeHandler = com.mybatisflex.core.handler.JacksonTypeHandler.class)
-    private Map<String, Object> config;
+    private Map<String, Object> args;
     
     private Boolean isSystem;
     

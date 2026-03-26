@@ -1,105 +1,84 @@
 <template>
-  <div v-if="!item.meta?.hidden">
-    <!-- 无子菜单 -->
-    <el-menu-item
-      v-if="!hasChildren"
-      :index="resolvePath(onlyOneChild?.path || item.path)"
-    >
-      <el-icon v-if="icon">
-        <component :is="icon" />
-      </el-icon>
+  <template v-if="visible">
+    <el-sub-menu v-if="hasChildren" :index="menuIndex">
       <template #title>
-        <span class="menu-title">{{ item.meta?.title || item.name }}</span>
-      </template>
-    </el-menu-item>
-    
-    <!-- 有子菜单 -->
-    <el-sub-menu v-else :index="resolvePath(item.path)">
-      <template #title>
-        <el-icon v-if="icon">
-          <component :is="icon" />
-        </el-icon>
-        <span class="menu-title">{{ item.meta?.title || item.name }}</span>
+        <el-icon v-if="showIcon"><component :is="icon" /></el-icon>
+        <span>{{ title }}</span>
       </template>
       <sidebar-item
-        v-for="child in visibleChildren"
-        :key="child.path"
+        v-for="child in children"
+        :key="childKey(child)"
         :item="child"
-        :base-path="resolvePath(item.path)"
+        :base-path="menuPath"
+        :level="level + 1"
       />
     </el-sub-menu>
-  </div>
+    
+    <el-menu-item v-else :index="menuPath">
+      <el-icon v-if="showIcon"><component :is="icon" /></el-icon>
+      <template #title><span>{{ title }}</span></template>
+    </el-menu-item>
+  </template>
 </template>
 
 <script setup lang="ts">
-// 使用自动导入的 computed, ref
-import { RouteRecordRaw } from 'vue-router'
-import path from 'path-browserify'
+import type { MenuItem } from '@/stores/menu'
 
-const props = defineProps<{
-  item: RouteRecordRaw
-  basePath: string
-}>()
+const props = withDefaults(defineProps<{
+  item: any
+  basePath?: string
+  level?: number
+}>(), {
+  basePath: '',
+  level: 1
+})
 
-const onlyOneChild = ref<RouteRecordRaw>()
+// 统一属性提取
+const isMenuItem = computed(() => 'menuType' in props.item)
+const menuPath = computed(() => resolvePath(props.item.path))
+const menuIndex = computed(() => props.item.path || String(props.item.id))
+const title = computed(() => props.item.menuName || props.item.meta?.title || props.item.name)
+const icon = computed(() => props.item.icon || props.item.meta?.icon)
+const showIcon = computed(() => props.level === 1 && icon.value)
 
-// 获取可见的子路由
-const visibleChildren = computed(() => {
-  if (!props.item.children) return []
-  return props.item.children.filter((child: any) => !child.meta?.hidden)
+const visible = computed(() => {
+  if (isMenuItem.value) {
+    return props.item.menuType !== 'F' && props.item.visible === 1
+  }
+  return !props.item.meta?.hidden
+})
+
+const children = computed(() => {
+  const list = props.item.children || []
+  if (isMenuItem.value) {
+    return list.filter((c: MenuItem) => c.menuType !== 'F' && c.visible === 1)
+  }
+  return list.filter((c: any) => !c.meta?.hidden)
 })
 
 const hasChildren = computed(() => {
-  const children = visibleChildren.value
-  
-  if (children.length === 0) {
-    return false
-  }
-  
-  // 如果只有一个子路由，则直接显示该子路由
-  if (children.length === 1 && !children[0].children?.length) {
-    onlyOneChild.value = children[0]
-    return false
-  }
-  
-  return true
+  if (isMenuItem.value) return props.item.menuType === 'M'
+  return children.value.length > 0
 })
 
-const icon = computed(() => {
-  // 如果只有一个子路由，使用子路由的图标
-  if (!hasChildren.value && onlyOneChild.value) {
-    return onlyOneChild.value.meta?.icon || props.item.meta?.icon
-  }
-  return props.item.meta?.icon
-})
-
-const resolvePath = (routePath?: string) => {
-  if (!routePath) return props.basePath
-  
-  if (isExternal(routePath)) {
-    return routePath
-  }
-  
-  if (isExternal(props.basePath)) {
-    return props.basePath
-  }
-  
-  // 如果路径以 / 开头，说明是绝对路径，直接返回
-  if (routePath.startsWith('/')) {
-    return routePath
-  }
-  
-  return path.resolve(props.basePath, routePath)
+function childKey(child: any) {
+  return child.id || child.path
 }
 
-const isExternal = (path: string) => {
-  return /^(https?:|mailto:|tel:)/.test(path)
+function resolvePath(path?: string) {
+  if (!path || path.startsWith('/') || /^(https?:|mailto:|tel:)/.test(path)) {
+    return path || props.basePath
+  }
+  return `${props.basePath}/${path}`.replace(/\/+/g, '/')
 }
 </script>
 
 <style lang="scss" scoped>
-.menu-title {
-  white-space: nowrap;
-  overflow: hidden;
+:deep(.el-menu-item) {
+  padding-left: calc(20px + var(--level, 1) * 16px) !important;
 }
-</style> 
+
+:deep(.el-sub-menu > .el-sub-menu__title) {
+  padding-left: calc(20px + var(--level, 1) * 16px) !important;
+}
+</style>

@@ -26,8 +26,8 @@ public class RequestIdFilter extends AbstractFilter {
         this.name = TYPE;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-        this.headerName = definition.getStringConfig("header-name", DEFAULT_HEADER_NAME);
-        this.generateIfMissing = definition.getBooleanConfig("generate-if-missing", true);
+        this.headerName = definition.getStringArg("header-name", DEFAULT_HEADER_NAME);
+        this.generateIfMissing = definition.getBooleanArg("generate-if-missing", true);
     }
 
     @Override

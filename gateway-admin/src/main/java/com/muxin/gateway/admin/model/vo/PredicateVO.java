@@ -25,7 +25,7 @@ public class PredicateVO {
     
     private String description;
     
-    private Map<String, Object> config;
+    private Map<String, Object> args;
     
     private Boolean isSystem;
     

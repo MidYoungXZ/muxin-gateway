@@ -44,7 +44,7 @@ public class PredicateRegistry {
     }
 
     public Predicate createPredicate(PredicateDefinition definition) {
-        String predicateName = definition.getType();
+        String predicateName = definition.getName();
         PredicateFactory factory = factories.get(predicateName);
         
         if (factory == null) {

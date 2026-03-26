@@ -26,17 +26,30 @@ public class PathPredicateFactory implements PredicateFactory {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
 
-        Map<String, Object> config = definition.getConfig();
-        if (config == null) {
+        Map<String, Object> args = definition.getArgs();
+        if (args == null) {
             throw new IllegalArgumentException("PathPredicate配置不能为空");
         }
 
-        Object patternObj = config.get("pattern");
+        Object patternObj = args.get("pattern");
+        if (patternObj == null) {
+            patternObj = args.get("patterns");
+        }
         if (patternObj == null) {
             throw new IllegalArgumentException("PathPredicate必须配置pattern参数");
         }
 
-        String pattern = patternObj.toString();
+        String pattern;
+        if (patternObj instanceof java.util.List) {
+            java.util.List<?> patterns = (java.util.List<?>) patternObj;
+            if (patterns.isEmpty()) {
+                throw new IllegalArgumentException("patterns参数不能为空数组");
+            }
+            pattern = patterns.get(0).toString();
+        } else {
+            pattern = patternObj.toString();
+        }
+
         if (pattern.trim().isEmpty()) {
             throw new IllegalArgumentException("pattern参数不能为空字符串");
         }

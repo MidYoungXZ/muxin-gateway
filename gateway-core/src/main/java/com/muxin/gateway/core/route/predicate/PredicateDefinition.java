@@ -21,56 +21,56 @@ import java.util.Map;
 public class PredicateDefinition {
     
     /**
-     * 断言类型
+     * 断言名称
      */
-    private String type;
+    private String name;
     
     /**
-     * 断言配置参数
+     * 断言参数
      */
-    private Map<String, Object> config;
+    private Map<String, Object> args;
     
     /**
-     * 获取配置参数
+     * 获取参数
      */
-    public Object getConfigValue(String key) {
-        return config != null ? config.get(key) : null;
+    public Object getArg(String key) {
+        return args != null ? args.get(key) : null;
     }
     
     /**
-     * 获取配置参数（带默认值）
+     * 获取参数（带默认值）
      */
-    public <T> T getConfigValue(String key, T defaultValue) {
-        if (config == null) {
+    public <T> T getArg(String key, T defaultValue) {
+        if (args == null) {
             return defaultValue;
         }
         
         @SuppressWarnings("unchecked")
-        T value = (T) config.get(key);
+        T value = (T) args.get(key);
         return value != null ? value : defaultValue;
     }
     
     /**
-     * 获取字符串配置参数
+     * 获取字符串参数
      */
-    public String getStringConfig(String key) {
-        Object value = getConfigValue(key);
+    public String getStringArg(String key) {
+        Object value = getArg(key);
         return value != null ? value.toString() : null;
     }
     
     /**
-     * 获取字符串配置参数（带默认值）
+     * 获取字符串参数（带默认值）
      */
-    public String getStringConfig(String key, String defaultValue) {
-        String value = getStringConfig(key);
+    public String getStringArg(String key, String defaultValue) {
+        String value = getStringArg(key);
         return value != null ? value : defaultValue;
     }
 
     /**
-     * 获取布尔配置参数
+     * 获取布尔参数
      */
-    public boolean getBooleanConfig(String key, boolean defaultValue) {
-        Object value = getConfigValue(key);
+    public boolean getBooleanArg(String key, boolean defaultValue) {
+        Object value = getArg(key);
         if (value instanceof Boolean) {
             return (Boolean) value;
         }
@@ -81,10 +81,10 @@ public class PredicateDefinition {
     }
 
     /**
-     * 获取整数配置参数
+     * 获取整数参数
      */
-    public int getIntConfig(String key, int defaultValue) {
-        Object value = getConfigValue(key);
+    public int getIntArg(String key, int defaultValue) {
+        Object value = getArg(key);
         if (value instanceof Number) {
             return ((Number) value).intValue();
         }
@@ -99,12 +99,12 @@ public class PredicateDefinition {
     }
 
     /**
-     * 设置配置参数
+     * 设置参数
      */
-    public void setConfigValue(String key, Object value) {
-        if (config == null) {
-            config = new java.util.HashMap<>();
+    public void setArg(String key, Object value) {
+        if (args == null) {
+            args = new java.util.HashMap<>();
         }
-        config.put(key, value);
+        args.put(key, value);
     }
-} 
+}

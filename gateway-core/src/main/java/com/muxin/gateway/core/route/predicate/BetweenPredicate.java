@@ -39,9 +39,9 @@ public class BetweenPredicate implements Predicate {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
         
-        this.datetime1 = parseDateTime(definition.getStringConfig("datetime1"));
-        this.datetime2 = parseDateTime(definition.getStringConfig("datetime2"));
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.datetime1 = parseDateTime(definition.getStringArg("datetime1"));
+        this.datetime2 = parseDateTime(definition.getStringArg("datetime2"));
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         if (datetime1 == null || datetime2 == null) {
             throw new IllegalArgumentException("datetime1和datetime2参数不能为空");
@@ -131,8 +131,8 @@ public class BetweenPredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            String datetime1 = definition.getStringConfig("datetime1");
-            String datetime2 = definition.getStringConfig("datetime2");
+            String datetime1 = definition.getStringArg("datetime1");
+            String datetime2 = definition.getStringArg("datetime2");
             if (datetime1 == null || datetime2 == null) {
                 throw new IllegalArgumentException("BetweenPredicate 必须配置 datetime1 和 datetime2 参数");
             }

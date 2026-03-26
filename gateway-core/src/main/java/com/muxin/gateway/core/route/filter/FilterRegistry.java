@@ -48,7 +48,7 @@ public class FilterRegistry {
     }
 
     public Filter createFilter(FilterDefinition definition) {
-        String filterName = definition.getType();
+        String filterName = definition.getName();
         FilterFactory factory = factories.get(filterName);
         
         if (factory == null) {

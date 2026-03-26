@@ -1,74 +1,48 @@
 <template>
-  <div class="role-management">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-left">
-        <h1>角色管理</h1>
-        <p>管理系统角色和权限分配，控制用户访问权限</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">
-          新增角色
-        </el-button>
-        <el-button 
-          :icon="Delete" 
-          :disabled="selectedRoles.length === 0"
-          @click="handleBatchDelete"
-        >
-          批量删除
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">角色管理</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增角色
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input
+        v-model="searchForm.roleName"
+        placeholder="角色名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-input
+        v-model="searchForm.roleCode"
+        placeholder="角色编码"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="searchForm.status" placeholder="状态" clearable>
+        <el-option label="启用" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <!-- 搜索条件 -->
-    <el-card class="search-card" shadow="never">
-      <el-form 
-        :model="searchForm" 
-        :inline="true" 
-        label-width="80px"
-        @submit.prevent="handleSearch"
-      >
-        <el-form-item label="角色名称">
-          <el-input
-            v-model="searchForm.roleName"
-            placeholder="请输入角色名称"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="角色编码">
-          <el-input
-            v-model="searchForm.roleCode"
-            placeholder="请输入角色编码"
-            clearable
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="Search" @click="handleSearch">
-            搜索
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
+          <el-button 
+            type="danger" 
+            :disabled="selectedRoles.length === 0"
+            @click="handleBatchDelete"
+          >
+            批量删除
           </el-button>
-          <el-button :icon="Refresh" @click="handleReset">
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <!-- 数据表格 -->
-    <el-card class="table-card" shadow="never">
-      <div class="table-header">
-        <div class="table-actions">
-          <span class="table-info">
-            共 {{ total }} 条记录，已选择 {{ selectedRoles.length }} 条
-          </span>
         </div>
+        <span class="toolbar-right">共 {{ total }} 条，已选 {{ selectedRoles.length }} 条</span>
       </div>
 
       <el-table 
@@ -76,7 +50,6 @@
         :data="roleList" 
         @selection-change="handleSelectionChange"
         stripe
-        border
       >
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="id" label="角色ID" width="80" align="center" />
@@ -111,20 +84,20 @@
             {{ formatTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="250" align="center" fixed="right">
+        <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
             <el-button 
               type="primary" 
               size="small" 
-              :icon="Edit"
+              link
               @click="handleEdit(row)"
             >
               编辑
             </el-button>
             <el-button 
-              type="warning" 
+              type="primary" 
               size="small" 
-              :icon="Setting"
+              link
               @click="handleAssignMenus(row)"
             >
               权限
@@ -132,7 +105,7 @@
             <el-button 
               type="danger" 
               size="small" 
-              :icon="Delete"
+              link
               @click="handleDelete(row)"
             >
               删除
@@ -141,7 +114,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-wrapper">
         <el-pagination
           v-model:current-page="pagination.page"
@@ -153,7 +125,7 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </el-card>
+    </div>
 
     <!-- 角色表单对话框 -->
     <el-dialog
@@ -263,7 +235,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { Plus, Delete, Search, Refresh, Edit, Setting, Folder, Document, Key } from '@element-plus/icons-vue'
+import { Plus, Folder, Document, Key } from '@element-plus/icons-vue'
 import { roleApi, type Role, type RoleQueryParams } from '@/api/roles'
 import { menuApi } from '@/api/menus'
 
@@ -591,79 +563,27 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.role-management {
-  .page-header {
+.form-tip {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.role-info {
+  margin-bottom: 20px;
+}
+
+.menu-tree {
+  h4 {
+    margin: 0 0 16px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .menu-tree-node {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .header-right {
-      .el-button + .el-button {
-        margin-left: 12px;
-      }
-    }
-  }
-  
-  .search-card {
-    margin-bottom: 20px;
-  }
-  
-  .table-card {
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .table-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .pagination-wrapper {
-      margin-top: 20px;
-      text-align: right;
-    }
-  }
-  
-  .form-tip {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-  }
-  
-  .role-info {
-    margin-bottom: 20px;
-  }
-  
-  .menu-tree {
-    h4 {
-      margin: 0 0 16px 0;
-      font-size: 16px;
-      font-weight: 600;
-    }
-    
-    .menu-tree-node {
-      display: flex;
-      align-items: center;
-      font-size: 14px;
-    }
+    align-items: center;
+    font-size: 14px;
   }
 }
 </style> 

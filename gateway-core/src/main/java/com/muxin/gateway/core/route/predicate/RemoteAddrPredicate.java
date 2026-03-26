@@ -36,7 +36,7 @@ public class RemoteAddrPredicate implements Predicate {
             throw new IllegalArgumentException("PredicateDefinition不能为空");
         }
         this.cidrBlocks = new ArrayList<>();
-        this.config = definition.getConfig() != null ? definition.getConfig() : new HashMap<>();
+        this.config = definition.getArgs() != null ? definition.getArgs() : new HashMap<>();
         
         List<String> sources = parseSources(definition);
         for (String source : sources) {
@@ -46,7 +46,7 @@ public class RemoteAddrPredicate implements Predicate {
 
     @SuppressWarnings("unchecked")
     private List<String> parseSources(PredicateDefinition definition) {
-        Object sourcesObj = definition.getConfigValue("sources");
+        Object sourcesObj = definition.getArg("sources");
         if (sourcesObj == null) {
             throw new IllegalArgumentException("RemoteAddrPredicate必须配置sources参数");
         }
@@ -207,7 +207,7 @@ public class RemoteAddrPredicate implements Predicate {
 
         @Override
         public void validateConfig(PredicateDefinition definition) {
-            Object sources = definition.getConfigValue("sources");
+            Object sources = definition.getArg("sources");
             if (sources == null) {
                 throw new IllegalArgumentException("RemoteAddrPredicate 必须配置 sources 参数");
             }

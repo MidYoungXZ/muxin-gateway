@@ -39,16 +39,15 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 -- 路由管理子菜单
 (100, 1, '路由列表', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (101, 1, '服务节点', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'SetUp', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(102, 1, '负载均衡', 'menu.routes.loadbalance', 'C', '/routes/loadbalance', 'routes/loadbalance/index', 'route:loadbalance:list', 'DataLine', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 系统管理子菜单
 (200, 2, '用户管理', 'menu.system.user', 'C', '/system/users', 'system/users/index', 'system:user:list', 'User', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (201, 2, '角色管理', 'menu.system.role', 'C', '/system/roles', 'system/roles/index', 'system:role:list', 'UserFilled', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (202, 2, '部门管理', 'menu.system.dept', 'C', '/system/departments', 'system/departments/index', 'system:dept:list', 'OfficeBuilding', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (203, 2, '权限管理', 'menu.system.permission', 'C', '/system/permissions', 'system/permissions/index', 'system:menu:list', 'Menu', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(204, 2, '操作日志', 'menu.system.log', 'C', '/system/operation-logs', 'system/operation-logs/index', 'system:log:list', 'Document', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(204, 2, '操作日志', 'menu.system.log', 'C', '/system/operation-logs', 'system/operation-logs/index', 'system:log:operation:list', 'Document', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (205, 2, '系统配置', 'menu.system.config', 'C', '/system/config', 'system/config/index', 'system:config:list', 'Tools', 6, 1, 1, NOW(), NOW(), 'system', 'system', 0);
 
 -- 三级菜单（按钮权限）
@@ -64,12 +63,6 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 (1012, 101, '节点新增', '', 'F', '', '', 'route:node:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (1013, 101, '节点修改', '', 'F', '', '', 'route:node:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (1014, 101, '节点删除', '', 'F', '', '', 'route:node:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 负载均衡按钮
-(1021, 102, '配置查看', '', 'F', '', '', 'route:loadbalance:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1022, 102, '配置新增', '', 'F', '', '', 'route:loadbalance:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1023, 102, '配置修改', '', 'F', '', '', 'route:loadbalance:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1024, 102, '配置删除', '', 'F', '', '', 'route:loadbalance:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 过滤器管理按钮
 (1031, 103, '过滤器查看', '', 'F', '', '', 'route:filter:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -110,8 +103,12 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 (2034, 203, '权限删除', '', 'F', '', '', 'system:menu:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 操作日志按钮
-(2041, 204, '日志查看', '', 'F', '', '', 'system:log:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(2042, 204, '日志删除', '', 'F', '', '', 'system:log:delete', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2041, 204, '日志查看', '', 'F', '', '', 'system:log:operation:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2042, 204, '日志删除', '', 'F', '', '', 'system:log:operation:delete', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2043, 204, '清空日志', '', 'F', '', '', 'system:log:operation:clear', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2044, 204, '导出日志', '', 'F', '', '', 'system:log:operation:export', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2045, 204, '日志统计', '', 'F', '', '', 'system:log:operation:stats', '', 5, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(2046, 204, '清理日志', '', 'F', '', '', 'system:log:operation:clean', '', 6, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 系统配置按钮
 (2051, 205, '配置查看', '', 'F', '', '', 'system:config:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -133,7 +130,7 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (2, 201), (2, 2011), (2, 2012), (2, 2013), (2, 2014), (2, 2015),
 (2, 202), (2, 2021), (2, 2022), (2, 2023), (2, 2024),
 (2, 203), (2, 2031), (2, 2032), (2, 2033), (2, 2034),
-(2, 204), (2, 2041), (2, 2042),
+(2, 204), (2, 2041), (2, 2042), (2, 2043), (2, 2044), (2, 2045), (2, 2046),
 (2, 205), (2, 2051), (2, 2052);
 
 -- 路由管理员（路由管理相关权限）
@@ -142,7 +139,6 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (3, 1),
 (3, 100), (3, 1001), (3, 1002), (3, 1003), (3, 1004),
 (3, 101), (3, 1011), (3, 1012), (3, 1013), (3, 1014),
-(3, 102), (3, 1021), (3, 1022), (3, 1023), (3, 1024),
 (3, 103), (3, 1031), (3, 1032), (3, 1033), (3, 1034),
 (3, 104), (3, 1041), (3, 1042), (3, 1043), (3, 1044);
 
@@ -169,7 +165,7 @@ FROM sys_role_menu;
 -- 已创建：
 -- - 10个部门（含总公司及各业务部门）
 -- - 完整的三级菜单权限结构
---   - 路由管理：路由列表、服务节点、负载均衡、过滤器管理、断言管理
+--   - 路由管理：路由列表、服务节点、过滤器管理、断言管理
 --   - 系统管理：用户管理、角色管理、部门管理、权限管理、操作日志、系统配置
 -- - 角色权限分配
 -- ========================================

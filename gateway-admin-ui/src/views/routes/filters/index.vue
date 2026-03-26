@@ -1,79 +1,54 @@
 <template>
-  <div class="filter-management">
-    <div class="page-header">
-      <div class="header-left">
-        <h1>过滤器管理</h1>
-        <p>管理Gateway过滤器，包括系统内置和自定义过滤器</p>
-      </div>
-      <div class="header-right">
-        <el-button type="primary" @click="handleAdd">
-          <el-icon><Plus /></el-icon>
-          新增过滤器
-        </el-button>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">过滤器管理</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增过滤器
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-input 
+        v-model="searchForm.filterName" 
+        placeholder="过滤器名称"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+      <el-select v-model="searchForm.filterType" placeholder="过滤器类型" clearable>
+        <el-option 
+          v-for="type in filterTypes" 
+          :key="type.value" 
+          :label="type.label" 
+          :value="type.value" 
+        />
+      </el-select>
+      <el-select v-model="searchForm.enabled" placeholder="状态" clearable>
+        <el-option label="启用" :value="true" />
+        <el-option label="禁用" :value="false" />
+      </el-select>
+      <el-select v-model="searchForm.isSystem" placeholder="来源" clearable>
+        <el-option label="系统内置" :value="true" />
+        <el-option label="自定义" :value="false" />
+      </el-select>
+      <div class="search-actions">
+        <el-button type="primary" @click="handleSearch">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
       </div>
     </div>
 
-    <el-card class="search-card">
-      <el-form :model="searchForm" :inline="true" label-width="80px">
-        <el-form-item label="过滤器名">
-          <el-input 
-            v-model="searchForm.filterName" 
-            placeholder="请输入过滤器名称"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </el-form-item>
-        <el-form-item label="过滤器类型">
-          <el-select v-model="searchForm.filterType" placeholder="请选择类型" clearable style="width: 150px">
-            <el-option 
-              v-for="type in filterTypes" 
-              :key="type.value" 
-              :label="type.label" 
-              :value="type.value" 
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="searchForm.enabled" placeholder="请选择状态" clearable style="width: 120px">
-            <el-option label="启用" :value="true" />
-            <el-option label="禁用" :value="false" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="来源">
-          <el-select v-model="searchForm.isSystem" placeholder="请选择来源" clearable style="width: 120px">
-            <el-option label="系统内置" :value="true" />
-            <el-option label="自定义" :value="false" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            搜索
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><RefreshRight /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card class="table-card">
-      <div class="table-header">
-        <div class="table-actions">
+    <div class="table-wrapper">
+      <div class="table-toolbar">
+        <div class="toolbar-left">
           <el-button 
             type="danger" 
             :disabled="!selectedFilters.length || hasSystemFilters"
             @click="handleBatchDelete"
           >
-            <el-icon><Delete /></el-icon>
             批量删除
           </el-button>
         </div>
-        <div class="table-info">
-          共 {{ total }} 条记录
-        </div>
+        <span class="toolbar-right">共 {{ total }} 条</span>
       </div>
 
       <el-table 
@@ -81,7 +56,6 @@
         v-loading="loading"
         @selection-change="handleSelectionChange"
         stripe
-        style="width: 100%"
       >
         <el-table-column type="selection" width="50" />
         <el-table-column prop="filterName" label="过滤器名称" min-width="160" />
@@ -183,7 +157,7 @@
           @current-change="handleCurrentChange"
         />
       </div>
-    </el-card>
+    </div>
 
     <el-dialog
       v-model="formDialogVisible"
@@ -256,22 +230,22 @@
           </el-col>
         </el-row>
 
-        <el-form-item label="配置参数" prop="config">
-          <div class="config-container">
-            <div v-if="!form.filterType" class="config-placeholder">
+        <el-form-item label="配置参数" prop="args">
+          <div class="args-container">
+            <div v-if="!form.filterType" class="args-placeholder">
               请先选择过滤器类型
             </div>
-            <div v-else class="config-form">
+            <div v-else class="args-form">
               <template v-for="field in currentConfigFields" :key="field.field">
-                <div class="config-item">
+                <div class="args-item">
                   <label>
                     {{ field.label }}
                     <span v-if="field.required" class="required-mark">*</span>
                   </label>
-                  <div class="config-input">
+                  <div class="args-input">
                     <template v-if="field.type === 'array'">
                       <el-select
-                        v-model="form.config[field.field]"
+                        v-model="form.args[field.field]"
                         multiple
                         filterable
                         allow-create
@@ -282,19 +256,19 @@
                     </template>
                     <template v-else-if="field.type === 'number'">
                       <el-input-number
-                        v-model="form.config[field.field]"
+                        v-model="form.args[field.field]"
                         :placeholder="field.placeholder || `请输入${field.label}`"
                         style="width: 100%"
                       />
                     </template>
                     <template v-else>
                       <el-input
-                        v-model="form.config[field.field]"
+                        v-model="form.args[field.field]"
                         :placeholder="field.placeholder || `请输入${field.label}`"
                       />
                     </template>
                   </div>
-                  <div v-if="field.description" class="config-desc">
+                  <div v-if="field.description" class="args-desc">
                     {{ field.description }}
                   </div>
                 </div>
@@ -313,7 +287,7 @@
     </el-dialog>
 
     <el-dialog
-      v-model="configDialogVisible"
+      v-model="argsDialogVisible"
       title="过滤器配置"
       width="500px"
     >
@@ -331,7 +305,7 @@
           {{ currentFilter?.order }}
         </el-descriptions-item>
         <el-descriptions-item label="配置参数">
-          <pre class="config-json-display">{{ formatConfig(currentFilter?.config) }}</pre>
+          <pre class="args-json-display">{{ formatConfig(currentFilter?.args) }}</pre>
         </el-descriptions-item>
       </el-descriptions>
     </el-dialog>
@@ -389,7 +363,7 @@ const selectedFilters = ref<Filter[]>([])
 const filterTypes = ref<FilterType[]>([])
 
 const formDialogVisible = ref(false)
-const configDialogVisible = ref(false)
+const argsDialogVisible = ref(false)
 const routesDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 const currentFilter = ref<Filter>()
@@ -407,7 +381,7 @@ const form = reactive({
   filterName: '',
   filterType: '',
   description: '',
-  config: {} as Record<string, any>,
+  args: {} as Record<string, any>,
   order: 1
 })
 
@@ -440,7 +414,7 @@ const rules: FormRules = {
     { required: true, message: '请输入排序', trigger: 'blur' },
     { type: 'number', min: 1, max: 999, message: '排序范围1-999', trigger: 'blur' }
   ],
-  config: [
+  args: [
     { 
       validator: (_rule, _value, callback) => {
         if (!form.filterType) {
@@ -449,7 +423,7 @@ const rules: FormRules = {
         }
         const requiredFields = currentConfigFields.value.filter(f => f.required)
         for (const field of requiredFields) {
-          const val = form.config[field.field]
+          const val = form.args[field.field]
           if (val === undefined || val === null || val === '' || 
               (Array.isArray(val) && val.length === 0)) {
             callback(new Error(`${field.label}不能为空`))
@@ -544,7 +518,7 @@ const handleAdd = () => {
     filterName: '',
     filterType: '',
     description: '',
-    config: {},
+    args: {},
     order: 1
   })
   formDialogVisible.value = true
@@ -556,7 +530,7 @@ const handleEdit = (filter: Filter) => {
     filterName: filter.filterName,
     filterType: filter.filterType,
     description: filter.description || '',
-    config: { ...filter.config } || {},
+    args: { ...filter.args } || {},
     order: filter.order
   })
   formDialogVisible.value = true
@@ -568,7 +542,7 @@ const handleCopy = (filter: Filter) => {
     filterName: filter.filterName + '_copy',
     filterType: filter.filterType,
     description: filter.description || '',
-    config: { ...filter.config } || {},
+    args: { ...filter.args } || {},
     order: filter.order + 1
   })
   formDialogVisible.value = true
@@ -618,7 +592,7 @@ const handleStatusChange = async (filter: Filter) => {
 
 const handleViewConfig = (filter: Filter) => {
   currentFilter.value = filter
-  configDialogVisible.value = true
+  argsDialogVisible.value = true
 }
 
 const handleViewRoutes = async (filter: Filter) => {
@@ -655,19 +629,19 @@ const handleCurrentChange = () => {
 }
 
 const handleTypeChange = () => {
-  form.config = {}
+  form.args = {}
   for (const field of currentConfigFields.value) {
     if (field.defaultValue !== undefined) {
-      form.config[field.field] = field.defaultValue
+      form.args[field.field] = field.defaultValue
     } else if (field.type === 'array') {
-      form.config[field.field] = []
+      form.args[field.field] = []
     }
   }
 }
 
-const formatConfig = (config?: Record<string, any>) => {
-  if (!config) return '{}'
-  return JSON.stringify(config, null, 2)
+const formatConfig = (args?: Record<string, any>) => {
+  if (!args) return '{}'
+  return JSON.stringify(args, null, 2)
 }
 
 const handleSubmit = async () => {
@@ -680,7 +654,7 @@ const handleSubmit = async () => {
     const submitData = {
       filterName: form.filterName,
       description: form.description,
-      config: form.config,
+      args: form.args,
       order: form.order
     }
 
@@ -716,111 +690,65 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.filter-management {
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    
-    .header-left {
-      h1 {
-        margin: 0 0 8px 0;
-        font-size: 24px;
-        font-weight: 600;
-      }
-      
-      p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-  }
-  
-  .search-card {
-    margin-bottom: 20px;
-  }
-  
-  .table-card {
-    .table-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      
-      .table-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-    }
-    
-    .pagination-wrapper {
-      margin-top: 20px;
-      text-align: right;
-    }
-  }
+.args-container {
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  padding: 16px;
+  background-color: var(--el-bg-color-page);
+  width: 100%;
 
-  .config-container {
-    border: 1px solid var(--el-border-color);
-    border-radius: 4px;
-    padding: 16px;
-    background-color: var(--el-bg-color-page);
-    width: 100%;
-
-    .config-placeholder {
-      color: var(--el-text-color-secondary);
-      text-align: center;
-      padding: 20px;
-    }
-
-    .config-form {
-      .config-item {
-        margin-bottom: 16px;
-
-        label {
-          display: block;
-          margin-bottom: 8px;
-          font-weight: 500;
-          font-size: 14px;
-
-          .required-mark {
-            color: var(--el-color-danger);
-            margin-left: 4px;
-          }
-        }
-
-        .config-input {
-          width: 100%;
-        }
-
-        .config-desc {
-          margin-top: 4px;
-          font-size: 12px;
-          color: var(--el-text-color-secondary);
-        }
-      }
-    }
-  }
-
-  .config-json-display {
-    background-color: var(--el-bg-color-page);
-    border: 1px solid var(--el-border-color);
-    border-radius: 4px;
-    padding: 12px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    max-height: 300px;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    word-break: break-all;
-  }
-
-  .empty-routes {
-    text-align: center;
-    padding: 40px;
+  .args-placeholder {
     color: var(--el-text-color-secondary);
+    text-align: center;
+    padding: 20px;
   }
+
+  .args-form {
+    .args-item {
+      margin-bottom: 16px;
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+
+        .required-mark {
+          color: var(--el-color-danger);
+          margin-left: 4px;
+        }
+      }
+
+      .args-input {
+        width: 100%;
+      }
+
+      .args-desc {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}
+
+.args-json-display {
+  background-color: var(--el-bg-color-page);
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 300px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.empty-routes {
+  text-align: center;
+  padding: 40px;
+  color: var(--el-text-color-secondary);
 }
 </style>
