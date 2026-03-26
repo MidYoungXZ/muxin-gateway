@@ -9,6 +9,9 @@ export interface Role {
   roleName: string
   description: string
   status: number
+  dataScope?: number
+  dataScopeText?: string
+  deptIds?: number[]
   createTime: string
   updateTime: string
 }
@@ -17,13 +20,15 @@ export interface RoleCreateRequest {
   roleCode: string
   roleName: string
   description?: string
-  status: number
+  dataScope?: number
+  deptIds?: number[]
 }
 
 export interface RoleUpdateRequest {
   roleName: string
   description?: string
-  status: number
+  dataScope?: number
+  deptIds?: number[]
 }
 
 export interface RoleQueryParams {

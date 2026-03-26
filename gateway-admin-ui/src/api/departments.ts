@@ -41,6 +41,9 @@ export const departmentApi = {
   getTree: (params?: { deptName?: string; status?: number }) => 
     request.get('/api/dept/tree', { params }),
   
+  getOptions: () => 
+    request.get('/api/dept/options'),
+  
   getDetail: (id: number) => 
     request.get(`/api/dept/${id}`),
   

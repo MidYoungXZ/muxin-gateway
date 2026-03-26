@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 
 import App from './App.vue'
 import router from './router'
+import './router/permission'
 
 // Element Plus - 统一导入
 import ElementPlus from 'element-plus'
@@ -18,6 +19,7 @@ import {
   Monitor,
   Connection,
   House,
+  HomeFilled,
   Expand,
   Fold,
   SwitchButton,
@@ -62,6 +64,7 @@ const icons = {
   Monitor,
   Connection,
   House,
+  HomeFilled,
   Expand,
   Fold,
   SwitchButton,
@@ -109,16 +112,19 @@ app.directive('permission', permission)
 import { initTheme } from '@/composables/useTheme'
 initTheme()
 
-// 初始化用户状态
 import { useUserStore } from '@/stores/user'
-const userStore = useUserStore()
-userStore.init()
 
-// 开发环境信息
-if (import.meta.env.DEV) {
-  console.log('🚀 Muxin Gateway 管理系统启动完成')
-  console.log('📊 当前环境:', import.meta.env.MODE)
-  console.log('🎨 主题模式:', localStorage.getItem('theme') || 'light')
+async function bootstrap() {
+  const userStore = useUserStore()
+  await userStore.init()
+  
+  if (import.meta.env.DEV) {
+    console.log('🚀 Muxin Gateway 管理系统启动完成')
+    console.log('📊 当前环境:', import.meta.env.MODE)
+    console.log('🎨 主题模式:', localStorage.getItem('theme') || 'light')
+  }
+  
+  app.mount('#app')
 }
 
-app.mount('#app') 
+bootstrap() 

@@ -26,6 +26,13 @@ public interface DeptService extends IService<SysDept> {
     List<DeptTreeVO> getDeptTree();
     
     /**
+     * 获取部门选项列表（仅启用的部门）
+     *
+     * @return 部门选项列表
+     */
+    List<DeptTreeVO> getDeptOptions();
+    
+    /**
      * 获取部门详情
      *
      * @param id 部门ID

@@ -41,6 +41,11 @@ public class SysRoleTableDef extends TableDef {
      * 状态
      */
     public final QueryColumn STATUS = new QueryColumn(this, "status");
+    
+    /**
+     * 数据范围
+     */
+    public final QueryColumn DATA_SCOPE = new QueryColumn(this, "data_scope");
 
     /**
      * 创建时间
@@ -76,7 +81,7 @@ public class SysRoleTableDef extends TableDef {
      * 默认字段，排除逻辑删除字段
      */
     public final QueryColumn[] DEFAULT_COLUMNS = new QueryColumn[]{
-            ID, ROLE_CODE, ROLE_NAME, DESCRIPTION, STATUS,
+            ID, ROLE_CODE, ROLE_NAME, DESCRIPTION, STATUS, DATA_SCOPE,
             CREATE_TIME, UPDATE_TIME, CREATE_BY, UPDATE_BY
     };
 

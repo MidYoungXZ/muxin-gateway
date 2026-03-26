@@ -82,4 +82,19 @@ public interface UserService {
      * 获取用户的角色ID列表
      */
     List<Long> getUserRoleIds(Long userId);
+    
+    /**
+     * 分页查询用户列表（带数据权限过滤）
+     */
+    PageVO<UserVO> pageQueryWithDataScope(UserQueryDTO query);
+    
+    /**
+     * 获取用户可分配的角色列表（排除超级管理员）
+     */
+    List<Long> getAssignableRoleIds();
+    
+    /**
+     * 获取当前用户可管理的部门ID列表
+     */
+    List<Long> getManagedDeptIds();
 } 

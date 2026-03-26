@@ -57,7 +57,12 @@ const children = computed(() => {
 })
 
 const hasChildren = computed(() => {
-  if (isMenuItem.value) return props.item.menuType === 'M'
+  if (isMenuItem.value) {
+    if (props.item.menuType === 'M') {
+      return children.value.length > 0
+    }
+    return false
+  }
   return children.value.length > 0
 })
 

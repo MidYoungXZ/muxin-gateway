@@ -56,6 +56,7 @@
         <el-table-column prop="roleCode" label="角色编码" width="150" align="center" />
         <el-table-column prop="roleName" label="角色名称" width="150" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="dataScopeText" label="数据范围" width="120" align="center" />
         <el-table-column prop="userCount" label="用户数量" width="100" align="center">
           <template #default="{ row }">
             <el-link 
@@ -159,6 +160,28 @@
             placeholder="请输入角色描述"
           />
         </el-form-item>
+        
+        <el-form-item label="数据范围" prop="dataScope">
+          <el-select v-model="form.dataScope" placeholder="请选择数据范围" style="width: 100%">
+            <el-option label="全部数据" :value="1" />
+            <el-option label="自定义数据" :value="2" />
+            <el-option label="本部门数据" :value="3" />
+            <el-option label="本部门及以下" :value="4" />
+            <el-option label="仅本人数据" :value="5" />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item v-if="form.dataScope === 2" label="数据权限" prop="deptIds">
+          <el-tree-select
+            v-model="form.deptIds"
+            :data="deptOptions"
+            :props="{ label: 'deptName', value: 'id' }"
+            placeholder="请选择部门"
+            multiple
+            check-strictly
+            style="width: 100%"
+          />
+        </el-form-item>
       </el-form>
 
       <template #footer>
@@ -231,14 +254,15 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, Folder, Document, Key } from '@element-plus/icons-vue'
 import { roleApi, type Role, type RoleQueryParams } from '@/api/roles'
 import { menuApi } from '@/api/menus'
+import { departmentApi, type Department } from '@/api/departments'
 
-// 数据定义
 const loading = ref(false)
 const formLoading = ref(false)
 const menuLoading = ref(false)
 const roleList = ref<Role[]>([])
 const total = ref(0)
 const selectedRoles = ref<Role[]>([])
+const deptOptions = ref<Department[]>([])
 
 // 表单和对话框
 const formDialogVisible = ref(false)
@@ -260,7 +284,9 @@ const form = reactive({
   id: undefined as number | undefined,
   roleCode: '',
   roleName: '',
-  description: ''
+  description: '',
+  dataScope: 4 as number,
+  deptIds: [] as number[]
 })
 
 // 分页
@@ -342,20 +368,29 @@ const handleAdd = () => {
     id: undefined,
     roleCode: '',
     roleName: '',
-    description: ''
+    description: '',
+    dataScope: 4,
+    deptIds: []
   })
   formDialogVisible.value = true
 }
 
-// 编辑角色
-const handleEdit = (role: Role) => {
-  Object.assign(form, {
-    id: role.id,
-    roleCode: role.roleCode,
-    roleName: role.roleName,
-    description: role.description
-  })
-  formDialogVisible.value = true
+const handleEdit = async (role: Role) => {
+  try {
+    const response = await roleApi.getDetail(role.id)
+    const detail = response.data
+    Object.assign(form, {
+      id: detail.id,
+      roleCode: detail.roleCode,
+      roleName: detail.roleName,
+      description: detail.description,
+      dataScope: detail.dataScope || 4,
+      deptIds: detail.deptIds || []
+    })
+    formDialogVisible.value = true
+  } catch (error) {
+    ElMessage.error('获取角色详情失败')
+  }
 }
 
 // 删除角色
@@ -482,15 +517,15 @@ const handleSubmit = async () => {
     const submitData = {
       roleCode: form.roleCode,
       roleName: form.roleName,
-      description: form.description
+      description: form.description,
+      dataScope: form.dataScope,
+      deptIds: form.dataScope === 2 ? form.deptIds : []
     }
 
     if (isEdit.value && form.id) {
-      console.log('📤 更新角色:', form.id, submitData)
       await roleApi.update(form.id, submitData)
       ElMessage.success('更新成功')
     } else {
-      console.log('📤 创建角色:', submitData)
       await roleApi.create(submitData)
       ElMessage.success('创建成功')
     }
@@ -498,7 +533,6 @@ const handleSubmit = async () => {
     handleCloseDialog()
     loadRoleList()
   } catch (error) {
-    console.error('❌ 提交失败:', error)
     if (error instanceof Error) {
       ElMessage.error(`操作失败: ${error.message}`)
     } else {
@@ -549,9 +583,20 @@ const formatTime = (time: string) => {
   return new Date(time).toLocaleString()
 }
 
-// 初始化
+const loadDeptOptions = async () => {
+  try {
+    const response = await departmentApi.getOptions()
+    if (response?.data) {
+      deptOptions.value = response.data
+    }
+  } catch (error) {
+    console.error('加载部门选项失败:', error)
+  }
+}
+
 onMounted(() => {
   loadRoleList()
+  loadDeptOptions()
 })
 </script>
 

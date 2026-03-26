@@ -73,6 +73,16 @@ public interface RoleService {
     List<Long> getRoleMenuIds(Long roleId);
     
     /**
+     * 分配部门权限
+     */
+    void assignDepts(Long roleId, List<Long> deptIds);
+    
+    /**
+     * 获取角色的部门ID列表
+     */
+    List<Long> getRoleDeptIds(Long roleId);
+    
+    /**
      * 根据用户ID获取角色列表
      */
     List<RoleVO> getRolesByUserId(Long userId);

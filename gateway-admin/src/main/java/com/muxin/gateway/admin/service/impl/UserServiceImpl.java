@@ -4,6 +4,8 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.muxin.gateway.admin.annotation.DataScope;
+import com.muxin.gateway.admin.context.DataScopeContext;
 import com.muxin.gateway.admin.entity.SysDept;
 import com.muxin.gateway.admin.entity.SysRole;
 import com.muxin.gateway.admin.entity.SysUser;
@@ -23,6 +25,7 @@ import com.muxin.gateway.admin.model.vo.RoleVO;
 import com.muxin.gateway.admin.model.vo.UserVO;
 import com.muxin.gateway.admin.service.RoleService;
 import com.muxin.gateway.admin.service.UserService;
+import com.muxin.gateway.admin.util.DataScopeHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -55,6 +58,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     private final DeptMapper deptMapper;
     private final RoleMapper roleMapper;
     private final RoleService roleService;
+    private final DataScopeHelper dataScopeHelper;
     
     @Override
     public PageVO<UserVO> pageQuery(UserQueryDTO query) {
@@ -142,7 +146,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createUser(UserCreateDTO dto) {
-        // 检查用户名是否已存在
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_USER)
@@ -153,11 +156,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("用户名已存在");
         }
         
-        // 创建用户
+        validateDeptPermission(dto.getDeptId());
+        
         SysUser user = new SysUser();
         BeanUtils.copyProperties(dto, user);
         
-        // 密码加密
         user.setPassword(BCrypt.hashpw(dto.getPassword()));
         user.setStatus(1);
         user.setCreateTime(LocalDateTime.now());
@@ -167,7 +170,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         
         save(user);
         
-        // 分配角色
         if (!CollectionUtils.isEmpty(dto.getRoleIds())) {
             assignRoles(user.getId(), dto.getRoleIds());
         }
@@ -184,7 +186,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("用户不存在");
         }
         
-        // 更新用户信息
+        validateUserPermission(id);
+        validateDeptPermission(dto.getDeptId());
+        
         BeanUtils.copyProperties(dto, user);
         user.setUpdateTime(LocalDateTime.now());
         user.setUpdateBy(StpUtil.getLoginIdAsString());
@@ -207,24 +211,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("用户不存在");
         }
         
-        // 不能删除自己
         Long currentUserId = StpUtil.getLoginIdAsLong();
         if (currentUserId.equals(id)) {
             throw new BusinessException("不能删除自己");
         }
         
-        // 不能删除最后一个超级管理员
+        validateUserPermission(id);
+        
         if (isLastEnabledSuperAdmin(id)) {
             throw new BusinessException("不能删除最后一个超级管理员用户");
         }
         
-        // 逻辑删除
         user.setDeleted(1);
         user.setUpdateTime(LocalDateTime.now());
         user.setUpdateBy(StpUtil.getLoginIdAsString());
         updateById(user);
         
-        // 删除用户角色关联
         QueryWrapper deleteWrapper = QueryWrapper.create()
                 .from(SYS_USER_ROLE)
                 .where(SYS_USER_ROLE.USER_ID.eq(id));
@@ -268,7 +270,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("用户不存在");
         }
         
-        // 密码加密
+        validateUserPermission(id);
+        
         user.setPassword(BCrypt.hashpw(newPassword));
         user.setUpdateTime(LocalDateTime.now());
         user.setUpdateBy(StpUtil.getLoginIdAsString());
@@ -309,27 +312,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Transactional(rollbackFor = Exception.class)
     public void assignRoles(Long userId, List<Long> roleIds) {
         Long superAdminRoleId = getSuperAdminRoleId();
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        boolean isCurrentUserSuperAdmin = isUserSuperAdmin(currentUserId, superAdminRoleId);
         
-        // 检查用户当前是否是超级管理员
+        if (!isCurrentUserSuperAdmin && superAdminRoleId != null && roleIds != null && roleIds.contains(superAdminRoleId)) {
+            throw new BusinessException("非超级管理员不能分配超级管理员角色");
+        }
+        
         boolean isCurrentlySuperAdmin = isUserSuperAdmin(userId, superAdminRoleId);
-        
-        // 检查新角色列表是否包含超级管理员角色
         boolean willBeSuperAdmin = superAdminRoleId != null && roleIds != null && roleIds.contains(superAdminRoleId);
         
-        // 如果当前是超级管理员，但新的角色列表不包含超级管理员，需要检查是否是最后一个
         if (isCurrentlySuperAdmin && !willBeSuperAdmin) {
             if (isLastEnabledSuperAdmin(userId)) {
                 throw new BusinessException("不能移除最后一个超级管理员用户的超级管理员角色");
             }
         }
         
-        // 删除原有的用户角色关联
         QueryWrapper deleteWrapper = QueryWrapper.create()
                 .from(SYS_USER_ROLE)
                 .where(SYS_USER_ROLE.USER_ID.eq(userId));
         userRoleMapper.deleteByQuery(deleteWrapper);
         
-        // 创建新的关联
         if (!CollectionUtils.isEmpty(roleIds)) {
             List<SysUserRole> userRoles = new ArrayList<>();
             for (Long roleId : roleIds) {
@@ -366,14 +369,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("用户不存在");
         }
         
-        // 不能禁用自己
+        validateUserPermission(id);
+        
         if (status == 0) {
             Long currentUserId = StpUtil.getLoginIdAsLong();
             if (currentUserId.equals(id)) {
                 throw new BusinessException("不能禁用自己");
             }
             
-            // 不能禁用最后一个超级管理员
             if (isLastEnabledSuperAdmin(id)) {
                 throw new BusinessException("不能禁用最后一个超级管理员用户");
             }
@@ -455,7 +458,209 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         
         List<SysUser> superAdminUsers = userMapper.selectListByQuery(wrapper);
         
-        // 如果只有一个启用的超级管理员，那就是最后一个
         return superAdminUsers.size() == 1;
+    }
+    
+    @Override
+    public PageVO<UserVO> pageQueryWithDataScope(UserQueryDTO query) {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_USER)
+                .where(SYS_USER.DELETED.eq(0));
+        
+        if (StringUtils.hasText(query.getUsername())) {
+            wrapper.and(SYS_USER.USERNAME.like("%" + query.getUsername() + "%"));
+        }
+        
+        if (StringUtils.hasText(query.getNickname())) {
+            wrapper.and(SYS_USER.NICKNAME.like("%" + query.getNickname() + "%"));
+        }
+        
+        if (StringUtils.hasText(query.getMobile())) {
+            wrapper.and(SYS_USER.MOBILE.like("%" + query.getMobile() + "%"));
+        }
+        
+        if (query.getDeptId() != null) {
+            wrapper.and(SYS_USER.DEPT_ID.eq(query.getDeptId()));
+        }
+        
+        if (query.getStatus() != null) {
+            wrapper.and(SYS_USER.STATUS.eq(query.getStatus()));
+        }
+        
+        applyDataScope(wrapper);
+        
+        wrapper.orderBy(SYS_USER.CREATE_TIME.desc());
+        
+        com.mybatisflex.core.paginate.Page<SysUser> page = page(
+                new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
+                wrapper);
+        
+        List<UserVO> voList = page.getRecords().stream()
+                .map(this::convertToVO)
+                .collect(Collectors.toList());
+        
+        return PageVO.<UserVO>builder()
+                .data(voList)
+                .total(page.getTotalRow())
+                .pageNum(query.getPageNum())
+                .pageSize(query.getPageSize())
+                .totalPages((int) page.getTotalPage())
+                .build();
+    }
+    
+    private void applyDataScope(QueryWrapper wrapper) {
+        if (!StpUtil.isLogin()) {
+            return;
+        }
+        
+        DataScopeContext context = dataScopeHelper.getCurrentUserContext();
+        Integer dataScopeValue = context.getDataScope();
+        if (dataScopeValue == null) {
+            dataScopeValue = 4;
+        }
+        
+        switch (dataScopeValue) {
+            case 1:
+                break;
+            case 2:
+                List<Long> deptIds = context.getDeptIds();
+                if (deptIds != null && !deptIds.isEmpty()) {
+                    wrapper.and(SYS_USER.DEPT_ID.in(deptIds));
+                } else {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(-1L));
+                }
+                break;
+            case 3:
+                if (context.getDeptId() != null) {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(context.getDeptId()));
+                } else {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(-1L));
+                }
+                break;
+            case 4:
+                List<Long> deptAndChildrenIds = context.getDeptAndChildrenIds();
+                if (deptAndChildrenIds != null && !deptAndChildrenIds.isEmpty()) {
+                    wrapper.and(SYS_USER.DEPT_ID.in(deptAndChildrenIds));
+                } else if (context.getDeptId() != null) {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(context.getDeptId()));
+                } else {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(-1L));
+                }
+                break;
+            case 5:
+                wrapper.and(SYS_USER.ID.eq(context.getUserId()));
+                break;
+            default:
+                if (context.getDeptId() != null) {
+                    wrapper.and(SYS_USER.DEPT_ID.eq(context.getDeptId()));
+                }
+        }
+    }
+    
+    @Override
+    public List<Long> getAssignableRoleIds() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        
+        if (isUserSuperAdmin(userId, getSuperAdminRoleId())) {
+            QueryWrapper wrapper = QueryWrapper.create()
+                    .select(SYS_ROLE.ID)
+                    .from(SYS_ROLE)
+                    .where(SYS_ROLE.DELETED.eq(0))
+                    .and(SYS_ROLE.STATUS.eq(1));
+            
+            return roleMapper.selectListByQuery(wrapper).stream()
+                    .map(SysRole::getId)
+                    .collect(Collectors.toList());
+        }
+        
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(SYS_ROLE.ID)
+                .from(SYS_ROLE)
+                .where(SYS_ROLE.DELETED.eq(0))
+                .and(SYS_ROLE.STATUS.eq(1))
+                .and(SYS_ROLE.ROLE_CODE.ne(SUPER_ADMIN_ROLE_CODE));
+        
+        return roleMapper.selectListByQuery(wrapper).stream()
+                .map(SysRole::getId)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public List<Long> getManagedDeptIds() {
+        Long userId = StpUtil.getLoginIdAsLong();
+        
+        if (isUserSuperAdmin(userId, getSuperAdminRoleId())) {
+            QueryWrapper wrapper = QueryWrapper.create()
+                    .select(SYS_DEPT.ID)
+                    .from(SYS_DEPT)
+                    .where(SYS_DEPT.DELETED.eq(0))
+                    .and(SYS_DEPT.STATUS.eq(1));
+            
+            return deptMapper.selectListByQuery(wrapper).stream()
+                    .map(SysDept::getId)
+                    .collect(Collectors.toList());
+        }
+        
+        DataScopeContext context = dataScopeHelper.buildContext(userId);
+        Integer dataScopeValue = context.getDataScope();
+        if (dataScopeValue == null) {
+            dataScopeValue = 4;
+        }
+        
+        switch (dataScopeValue) {
+            case 1:
+                QueryWrapper allWrapper = QueryWrapper.create()
+                        .select(SYS_DEPT.ID)
+                        .from(SYS_DEPT)
+                        .where(SYS_DEPT.DELETED.eq(0))
+                        .and(SYS_DEPT.STATUS.eq(1));
+                return deptMapper.selectListByQuery(allWrapper).stream()
+                        .map(SysDept::getId)
+                        .collect(Collectors.toList());
+            case 2:
+                return context.getDeptIds() != null ? context.getDeptIds() : List.of();
+            case 3:
+                return context.getDeptId() != null ? List.of(context.getDeptId()) : List.of();
+            case 4:
+                return context.getDeptAndChildrenIds() != null ? context.getDeptAndChildrenIds() : List.of();
+            case 5:
+                return List.of();
+            default:
+                return context.getDeptId() != null ? List.of(context.getDeptId()) : List.of();
+        }
+    }
+    
+    private void validateDeptPermission(Long deptId) {
+        if (deptId == null) {
+            return;
+        }
+        
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        if (isUserSuperAdmin(currentUserId, getSuperAdminRoleId())) {
+            return;
+        }
+        
+        List<Long> managedDeptIds = getManagedDeptIds();
+        if (!managedDeptIds.contains(deptId)) {
+            throw new BusinessException("无权在该部门创建/编辑用户");
+        }
+    }
+    
+    private void validateUserPermission(Long targetUserId) {
+        Long currentUserId = StpUtil.getLoginIdAsLong();
+        if (isUserSuperAdmin(currentUserId, getSuperAdminRoleId())) {
+            return;
+        }
+        
+        SysUser targetUser = getById(targetUserId);
+        if (targetUser == null) {
+            return;
+        }
+        
+        List<Long> managedDeptIds = getManagedDeptIds();
+        if (targetUser.getDeptId() != null && !managedDeptIds.contains(targetUser.getDeptId())) {
+            throw new BusinessException("无权编辑该用户");
+        }
     }
 } 

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import type { RouteRecordRaw } from 'vue-router'
 import request from '@/utils/request'
+import router, { asyncRoutes, resetRouter } from '@/router'
+import { generateRoutes } from '@/router/utils'
 
 export interface MenuItem {
   id: number
@@ -8,6 +11,7 @@ export interface MenuItem {
   menuName: string
   menuType: 'M' | 'C' | 'F'
   path: string
+  component?: string
   icon: string
   visible: number
   children?: MenuItem[]
@@ -17,6 +21,9 @@ export const useMenuStore = defineStore('menu', () => {
   const menus = ref<MenuItem[]>([])
   const permissions = ref<string[]>([])
   const isLoaded = ref(false)
+  const routesLoaded = ref(false)
+
+  const menuRoutes = computed(() => menus.value)
 
   async function fetchUserMenus() {
     if (isLoaded.value) return menus.value
@@ -44,6 +51,34 @@ export const useMenuStore = defineStore('menu', () => {
     }
   }
 
+  function generateAndAddRoutes(): RouteRecordRaw[] {
+    if (routesLoaded.value) return []
+    
+    const dynamicRoutes = generateRoutes(menus.value)
+    
+    router.addRoute(asyncRoutes)
+    
+    for (const route of dynamicRoutes) {
+      router.addRoute(asyncRoutes.name as string, route)
+    }
+    
+    router.addRoute({
+      path: '/:pathMatch(.*)*',
+      redirect: '/404'
+    })
+    
+    routesLoaded.value = true
+    return dynamicRoutes
+  }
+
+  async function initRoutes() {
+    if (routesLoaded.value) return
+    
+    await fetchUserMenus()
+    await fetchUserPermissions()
+    generateAndAddRoutes()
+  }
+
   function hasPermission(permission: string) {
     return permissions.value.includes(permission)
   }
@@ -52,14 +87,20 @@ export const useMenuStore = defineStore('menu', () => {
     menus.value = []
     permissions.value = []
     isLoaded.value = false
+    routesLoaded.value = false
+    resetRouter()
   }
 
   return {
     menus,
     permissions,
     isLoaded,
+    routesLoaded,
+    menuRoutes,
     fetchUserMenus,
     fetchUserPermissions,
+    generateAndAddRoutes,
+    initRoutes,
     hasPermission,
     clearMenus
   }

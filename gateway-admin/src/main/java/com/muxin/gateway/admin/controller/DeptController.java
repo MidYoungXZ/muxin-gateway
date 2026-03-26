@@ -60,6 +60,22 @@ public class DeptController {
     }
 
     /**
+     * 获取部门选项列表.
+     * <p>
+     * 返回启用的部门树形结构，用于下拉选择器。
+     * 无需权限校验，登录用户即可访问。
+     * </p>
+     *
+     * @return 部门选项列表
+     */
+    @GetMapping("/options")
+    @Operation(summary = "获取部门选项", description = "获取部门选项列表（用于下拉选择）")
+    public Result<List<DeptTreeVO>> getDeptOptions() {
+        List<DeptTreeVO> options = deptService.getDeptOptions();
+        return Result.success(options);
+    }
+
+    /**
      * 获取部门详情.
      * <p>
      * 根据部门ID获取部门的详细信息。

@@ -4,10 +4,12 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.muxin.gateway.admin.entity.SysRole;
+import com.muxin.gateway.admin.entity.SysRoleDept;
 import com.muxin.gateway.admin.entity.SysRoleMenu;
 import com.muxin.gateway.admin.entity.SysUserRole;
 import static com.muxin.gateway.admin.entity.table.Tables.*;
 import com.muxin.gateway.admin.exception.BusinessException;
+import com.muxin.gateway.admin.mapper.RoleDeptMapper;
 import com.muxin.gateway.admin.mapper.RoleMapper;
 import com.muxin.gateway.admin.mapper.RoleMenuMapper;
 import com.muxin.gateway.admin.mapper.UserRoleMapper;
@@ -48,6 +50,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final RoleMenuMapper roleMenuMapper;
+    private final RoleDeptMapper roleDeptMapper;
     private final MenuService menuService;
     
     @Override
@@ -116,15 +119,18 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         }
         
         RoleVO vo = convertToVO(role);
-        // 加载菜单信息
         vo.setMenus(menuService.getMenusByRoleId(id));
+        
+        if (role.getDataScope() != null && role.getDataScope() == 2) {
+            vo.setDeptIds(getRoleDeptIds(id));
+        }
+        
         return vo;
     }
     
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long createRole(RoleCreateDTO dto) {
-        // 检查角色编码是否已存在（使用MyBatis-Flex查询）
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_ROLE)
@@ -135,10 +141,10 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
             throw new BusinessException("角色编码已存在");
         }
         
-        // 创建角色
         SysRole role = new SysRole();
         BeanUtils.copyProperties(dto, role);
         role.setStatus(1);
+        role.setDataScope(dto.getDataScope() != null ? dto.getDataScope() : 4);
         role.setCreateTime(LocalDateTime.now());
         role.setUpdateTime(LocalDateTime.now());
         role.setCreateBy(StpUtil.getLoginIdAsString());
@@ -146,9 +152,12 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         
         save(role);
         
-        // 分配菜单权限
         if (!CollectionUtils.isEmpty(dto.getMenuIds())) {
             assignMenus(role.getId(), dto.getMenuIds());
+        }
+        
+        if (dto.getDataScope() != null && dto.getDataScope() == 2 && !CollectionUtils.isEmpty(dto.getDeptIds())) {
+            assignDepts(role.getId(), dto.getDeptIds());
         }
         
         log.info("创建角色成功：{}", role.getRoleName());
@@ -163,16 +172,22 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
             throw new BusinessException("角色不存在");
         }
         
-        // 更新角色信息
         BeanUtils.copyProperties(dto, role);
         role.setUpdateTime(LocalDateTime.now());
         role.setUpdateBy(StpUtil.getLoginIdAsString());
         
         updateById(role);
         
-        // 重新分配菜单权限
         if (dto.getMenuIds() != null) {
             assignMenus(id, dto.getMenuIds());
+        }
+        
+        if (dto.getDataScope() != null) {
+            if (dto.getDataScope() == 2 && !CollectionUtils.isEmpty(dto.getDeptIds())) {
+                assignDepts(id, dto.getDeptIds());
+            } else {
+                assignDepts(id, new ArrayList<>());
+            }
         }
         
         log.info("更新角色成功：{}", role.getRoleName());
@@ -263,7 +278,6 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     
     @Override
     public List<Long> getRoleMenuIds(Long roleId) {
-        // 使用MyBatis-Flex查询角色的菜单ID列表
         QueryWrapper wrapper = QueryWrapper.create()
                 .select(SYS_ROLE_MENU.MENU_ID)
                 .from(SYS_ROLE_MENU)
@@ -272,6 +286,40 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         List<SysRoleMenu> roleMenus = roleMenuMapper.selectListByQuery(wrapper);
         return roleMenus.stream()
                 .map(SysRoleMenu::getMenuId)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignDepts(Long roleId, List<Long> deptIds) {
+        QueryWrapper deleteWrapper = QueryWrapper.create()
+                .from(SYS_ROLE_DEPT)
+                .where(SYS_ROLE_DEPT.ROLE_ID.eq(roleId));
+        roleDeptMapper.deleteByQuery(deleteWrapper);
+        
+        if (!CollectionUtils.isEmpty(deptIds)) {
+            List<SysRoleDept> roleDepts = new ArrayList<>();
+            for (Long deptId : deptIds) {
+                SysRoleDept roleDept = new SysRoleDept();
+                roleDept.setRoleId(roleId);
+                roleDept.setDeptId(deptId);
+                roleDept.setCreateTime(LocalDateTime.now());
+                roleDepts.add(roleDept);
+            }
+            roleDeptMapper.insertBatch(roleDepts);
+        }
+    }
+    
+    @Override
+    public List<Long> getRoleDeptIds(Long roleId) {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(SYS_ROLE_DEPT.DEPT_ID)
+                .from(SYS_ROLE_DEPT)
+                .where(SYS_ROLE_DEPT.ROLE_ID.eq(roleId));
+        
+        List<SysRoleDept> roleDepts = roleDeptMapper.selectListByQuery(wrapper);
+        return roleDepts.stream()
+                .map(SysRoleDept::getDeptId)
                 .collect(Collectors.toList());
     }
     
@@ -333,10 +381,9 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         RoleVO vo = new RoleVO();
         BeanUtils.copyProperties(role, vo);
         
-        // 设置状态文本
         vo.setStatusText(role.getStatus() == 1 ? "启用" : "禁用");
+        vo.setDataScopeText(getDataScopeText(role.getDataScope()));
         
-        // 查询用户数量（使用MyBatis-Flex查询）
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_USER_ROLE)
@@ -345,6 +392,18 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         vo.setUserCount(userRoleMapper.selectCountByQuery(wrapper));
         
         return vo;
+    }
+    
+    private String getDataScopeText(Integer dataScope) {
+        if (dataScope == null) return "本部门及以下";
+        return switch (dataScope) {
+            case 1 -> "全部数据";
+            case 2 -> "自定义数据";
+            case 3 -> "本部门数据";
+            case 4 -> "本部门及以下";
+            case 5 -> "仅本人数据";
+            default -> "本部门及以下";
+        };
     }
     
     @Override

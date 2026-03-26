@@ -199,9 +199,6 @@ const rules: FormRules = {
   ],
   email: [
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ],
-  mobile: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
   ]
 }
 
@@ -255,7 +252,8 @@ const handleSubmit = async () => {
       })
       ElMessage.success('创建成功')
     }
-
+    
+    handleClose()
     emit('success')
   } catch (error) {
     console.error('提交失败:', error)

@@ -55,6 +55,11 @@ public final class Tables {
     public static final SysRoleMenuTableDef SYS_ROLE_MENU = SysRoleMenuTableDef.SYS_ROLE_MENU;
     
     /**
+     * 角色部门关联表
+     */
+    public static final SysRoleDeptTableDef SYS_ROLE_DEPT = SysRoleDeptTableDef.SYS_ROLE_DEPT;
+    
+    /**
      * 菜单表
      */
     public static final SysMenuTableDef SYS_MENU = SysMenuTableDef.SYS_MENU;

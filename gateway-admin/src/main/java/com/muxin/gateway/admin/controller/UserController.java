@@ -33,12 +33,12 @@ public class UserController {
     private final UserService userService;
     
     /**
-     * 分页查询用户列表
+     * 分页查询用户列表（带数据权限过滤）
      */
     @GetMapping
     @SaCheckPermission("system:user:list")
     public Result<PageVO<UserVO>> listUsers(UserQueryDTO query) {
-        return Result.success(userService.pageQuery(query));
+        return Result.success(userService.pageQueryWithDataScope(query));
     }
     
     /**
@@ -163,5 +163,21 @@ public class UserController {
     @SaCheckPermission("system:user:view")
     public Result<List<Long>> getUserRoleIds(@PathVariable Long id) {
         return Result.success(userService.getUserRoleIds(id));
+    }
+    
+    /**
+     * 获取当前用户可分配的角色ID列表
+     */
+    @GetMapping("/assignable-role-ids")
+    public Result<List<Long>> getAssignableRoleIds() {
+        return Result.success(userService.getAssignableRoleIds());
+    }
+    
+    /**
+     * 获取当前用户可管理的部门ID列表
+     */
+    @GetMapping("/managed-depts")
+    public Result<List<Long>> getManagedDepts() {
+        return Result.success(userService.getManagedDeptIds());
     }
 } 

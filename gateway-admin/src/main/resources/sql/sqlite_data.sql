@@ -103,8 +103,24 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 (2052, 205, '配置修改', '', 'F', '', '', 'system:config:update', '', 2, 1, 1);
 
 -- 6. 角色菜单关联 - 超级管理员拥有所有权限
-INSERT INTO sys_role_menu (role_id, menu_id) 
-SELECT 1, id FROM sys_menu WHERE deleted = 0;
+-- 一级菜单
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 1), (1, 2);
+-- 二级菜单
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES 
+(1, 100), (1, 101), (1, 103), (1, 104),
+(1, 200), (1, 201), (1, 202), (1, 203), (1, 204), (1, 205);
+-- 三级菜单（按钮权限）
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES
+(1, 1001), (1, 1002), (1, 1003), (1, 1004),
+(1, 1011), (1, 1012), (1, 1013), (1, 1014),
+(1, 1031), (1, 1032), (1, 1033), (1, 1034),
+(1, 1041), (1, 1042), (1, 1043), (1, 1044),
+(1, 2001), (1, 2002), (1, 2003), (1, 2004), (1, 2005),
+(1, 2011), (1, 2012), (1, 2013), (1, 2014), (1, 2015),
+(1, 2021), (1, 2022), (1, 2023), (1, 2024),
+(1, 2031), (1, 2032), (1, 2033), (1, 2034),
+(1, 2041), (1, 2042), (1, 2043), (1, 2044), (1, 2045), (1, 2046),
+(1, 2051), (1, 2052);
 
 -- 系统管理员权限
 INSERT INTO sys_role_menu (role_id, menu_id) VALUES

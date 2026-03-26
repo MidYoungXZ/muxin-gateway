@@ -33,40 +33,6 @@
             </el-menu>
           </el-scrollbar>
         </div>
-        
-        <!-- 用户信息区域 -->
-        <div v-if="!isCollapse" class="user-section">
-          <div class="user-card">
-            <el-avatar :src="userStore.user?.avatar" :size="40" class="user-avatar">
-              {{ userStore.user?.nickname?.charAt(0) || 'A' }}
-            </el-avatar>
-            <div class="user-info">
-              <div class="user-name">{{ userStore.user?.nickname || '管理员' }}</div>
-              <div class="user-role">超级管理员</div>
-            </div>
-            <el-dropdown trigger="click" placement="top-start">
-              <el-button text class="user-menu-btn">
-                <el-icon><More /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="handleProfile">
-                    <el-icon><User /></el-icon>
-                    个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="handleSettings">
-                    <el-icon><Setting /></el-icon>
-                    偏好设置
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">
-                    <el-icon><SwitchButton /></el-icon>
-                    退出登录
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
-        </div>
       </div>
     </el-aside>
     
@@ -131,6 +97,33 @@
           
           <!-- 主题切换 -->
           <theme-toggle />
+          
+          <!-- 用户信息 -->
+          <el-dropdown trigger="click" placement="bottom-end">
+            <div class="user-dropdown-trigger">
+              <el-avatar :src="userStore.user?.avatar" :size="32" class="header-avatar">
+                {{ userStore.user?.nickname?.charAt(0) || 'A' }}
+              </el-avatar>
+              <span class="user-name-header">{{ userStore.user?.nickname || '管理员' }}</span>
+              <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="handleProfile">
+                  <el-icon><User /></el-icon>
+                  个人中心
+                </el-dropdown-item>
+                <el-dropdown-item @click="handleSettings">
+                  <el-icon><Setting /></el-icon>
+                  偏好设置
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">
+                  <el-icon><SwitchButton /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
       
@@ -321,7 +314,7 @@ const menuRoutes = computed(() => {
     path: '/dashboard', icon: 'House', visible: 1
   }
   const userMenus = menuStore.menus
-  return userMenus.length > 0 ? [homeMenu, ...userMenus] : router.options.routes.find(r => r.path === '/')?.children || []
+  return userMenus.length > 0 ? [homeMenu, ...userMenus] : [homeMenu]
 })
 
 // 当前右键菜单标签的索引
@@ -624,9 +617,6 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize)
   document.addEventListener('keydown', handleKeydown)
   document.addEventListener('click', handleClickOutside)
-  
-  // 获取用户菜单和权限
-  await Promise.all([menuStore.fetchUserMenus(), menuStore.fetchUserPermissions()])
   
   // 初始化当前路由的标签页
   const routeMeta = route.meta as any
@@ -993,6 +983,40 @@ onUnmounted(() => {
         :deep(.el-badge__content) {
           background: var(--error-color);
           border: 2px solid var(--card-bg);
+        }
+      }
+      
+      .user-dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        
+        &:hover {
+          background: var(--bg-secondary);
+        }
+        
+        .header-avatar {
+          background: var(--primary-color);
+          color: white;
+        }
+        
+        .user-name-header {
+          font-size: var(--text-sm);
+          color: var(--text-primary);
+          max-width: 100px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        
+        .dropdown-arrow {
+          font-size: 12px;
+          color: var(--text-tertiary);
+          transition: transform var(--transition-fast);
         }
       }
     }

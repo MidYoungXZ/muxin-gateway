@@ -38,6 +38,7 @@ export interface UserCreateRequest {
   mobile?: string
   status?: 0 | 1
   deptId?: number
+  roleIds?: number[]
 }
 
 // 用户更新参数
@@ -47,6 +48,7 @@ export interface UserUpdateRequest {
   mobile?: string
   status?: 0 | 1
   deptId?: number
+  roleIds?: number[]
 }
 
 export const userApi = {
@@ -198,6 +200,22 @@ export const userApi = {
   getStats: () => {
     return request({
       url: '/api/users/stats',
+      method: 'get'
+    })
+  },
+  
+  // 获取可分配的角色ID列表
+  getAssignableRoleIds: () => {
+    return request<number[]>({
+      url: '/api/users/assignable-role-ids',
+      method: 'get'
+    })
+  },
+  
+  // 获取可管理的部门ID列表
+  getManagedDeptIds: () => {
+    return request<number[]>({
+      url: '/api/users/managed-depts',
       method: 'get'
     })
   },

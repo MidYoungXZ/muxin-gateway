@@ -46,7 +46,6 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     
     @Override
     public List<DeptTreeVO> getDeptTree() {
-        // 查询所有部门
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
@@ -55,9 +54,22 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         
         List<SysDept> deptList = list(wrapper);
         
-        // 转换为树形结构
         List<DeptTreeVO> treeList = buildTree(deptList, 0L);
         return treeList;
+    }
+    
+    @Override
+    public List<DeptTreeVO> getDeptOptions() {
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select()
+                .from(SYS_DEPT)
+                .where(SYS_DEPT.DELETED.eq(0))
+                .and(SYS_DEPT.STATUS.eq(1))
+                .orderBy(SYS_DEPT.ORDER_NUM.asc(), SYS_DEPT.CREATE_TIME.asc());
+        
+        List<SysDept> deptList = list(wrapper);
+        
+        return buildTree(deptList, 0L);
     }
     
     @Override
