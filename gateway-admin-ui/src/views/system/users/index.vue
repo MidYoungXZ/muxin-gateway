@@ -46,7 +46,11 @@
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" align="center" />
+        <el-table-column prop="createTime" label="创建时间" min-width="180" align="center">
+          <template #default="{ row }">
+            <span class="time-cell">{{ formatDateTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
@@ -98,7 +102,7 @@
             {{ currentUser?.status === 1 ? '启用' : '禁用' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间" :span="2">{{ currentUser?.createTime }}</el-descriptions-item>
+        <el-descriptions-item label="创建时间" :span="2">{{ formatDateTime(currentUser?.createTime) }}</el-descriptions-item>
         <el-descriptions-item label="角色" :span="2">
           <el-tag v-for="role in currentUser?.roles" :key="role.id" style="margin-right: 8px;">
             {{ role.roleName }}
@@ -208,7 +212,7 @@ const loadUserList = async () => {
       total.value = response.data.total || 0
     }
   } catch (error) {
-    ElMessage.error('加载用户列表失败')
+    console.error('加载用户列表失败:', error)
   } finally {
     loading.value = false
   }
@@ -233,7 +237,7 @@ const handleView = async (user: User) => {
       viewDialogVisible.value = true
     }
   } catch (error) {
-    ElMessage.error('获取用户详情失败')
+    console.error('获取用户详情失败:', error)
   }
 }
 
@@ -248,7 +252,7 @@ const handleDelete = async (user: User) => {
     ElMessage.success('删除成功')
     loadUserList()
   } catch (error) {
-    ElMessage.error('删除失败')
+    console.error('删除失败:', error)
   }
 }
 
@@ -257,7 +261,7 @@ const handleStatusChange = async (user: User) => {
     await (user.status === 1 ? userApi.enable(user.id) : userApi.disable(user.id))
     ElMessage.success(user.status === 1 ? '启用成功' : '禁用成功')
   } catch (error) {
-    ElMessage.error('状态更新失败')
+    console.error('状态更新失败:', error)
     user.status = user.status === 1 ? 0 : 1
   }
 }
@@ -271,7 +275,9 @@ const handleResetPassword = async (user: User) => {
     await userApi.resetPassword(user.id, newPassword)
     ElMessage.success('密码重置成功')
   } catch (error) {
-    if (error !== 'cancel') ElMessage.error('密码重置失败')
+    if (error !== 'cancel') {
+      console.error('密码重置失败:', error)
+    }
   }
 }
 
@@ -299,7 +305,23 @@ onMounted(() => {
   loadManagedDeptIds()
   loadUserList()
 })
+
+// 时间格式化 - 标准格式不带T
+const formatDateTime = (dateTime: string) => {
+  if (!dateTime) return '-'
+  const date = new Date(dateTime)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
 </script>
 
 <style lang="scss" scoped>
+.time-cell {
+  white-space: nowrap;
+}
 </style>

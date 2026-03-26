@@ -52,7 +52,6 @@
         stripe
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column prop="id" label="角色ID" width="80" align="center" />
         <el-table-column prop="roleCode" label="角色编码" width="150" align="center" />
         <el-table-column prop="roleName" label="角色名称" width="150" />
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
@@ -73,9 +72,9 @@
             <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" align="center">
+        <el-table-column prop="createTime" label="创建时间" min-width="180" align="center">
           <template #default="{ row }">
-            {{ formatTime(row.createTime) }}
+            <span class="time-cell">{{ formatDateTime(row.createTime) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="200" align="center" fixed="right">
@@ -533,11 +532,7 @@ const handleSubmit = async () => {
     handleCloseDialog()
     loadRoleList()
   } catch (error) {
-    if (error instanceof Error) {
-      ElMessage.error(`操作失败: ${error.message}`)
-    } else {
-      ElMessage.error('操作失败')
-    }
+    console.error('操作失败:', error)
   } finally {
     formLoading.value = false
   }
@@ -559,7 +554,6 @@ const handleSubmitMenus = async () => {
     handleCloseMenuDialog()
   } catch (error) {
     console.error('❌ 权限分配失败:', error)
-    ElMessage.error('权限分配失败')
   } finally {
     menuLoading.value = false
   }
@@ -577,10 +571,17 @@ const handleCloseMenuDialog = () => {
   selectedMenuIds.value = []
 }
 
-// 时间格式化
-const formatTime = (time: string) => {
-  if (!time) return '-'
-  return new Date(time).toLocaleString()
+// 时间格式化 - 标准格式不带T
+const formatDateTime = (dateTime: string) => {
+  if (!dateTime) return '-'
+  const date = new Date(dateTime)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const loadDeptOptions = async () => {
@@ -623,5 +624,9 @@ onMounted(() => {
     align-items: center;
     font-size: 14px;
   }
+}
+
+.time-cell {
+  white-space: nowrap;
 }
 </style> 

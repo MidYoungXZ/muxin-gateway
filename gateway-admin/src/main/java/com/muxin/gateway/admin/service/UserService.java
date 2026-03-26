@@ -4,6 +4,7 @@ import com.muxin.gateway.admin.model.dto.UserCreateDTO;
 import com.muxin.gateway.admin.model.dto.UserQueryDTO;
 import com.muxin.gateway.admin.model.dto.UserUpdateDTO;
 import com.muxin.gateway.admin.model.dto.PasswordUpdateDTO;
+import com.muxin.gateway.admin.model.dto.ProfileUpdateDTO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.UserVO;
 
@@ -72,6 +73,11 @@ public interface UserService {
      * 修改密码
      */
     void updatePassword(Long id, PasswordUpdateDTO dto);
+    
+    /**
+     * 更新个人信息
+     */
+    void updateProfile(Long id, ProfileUpdateDTO dto);
     
     /**
      * 分配角色

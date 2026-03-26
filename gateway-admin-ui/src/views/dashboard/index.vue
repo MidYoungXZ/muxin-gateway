@@ -613,7 +613,7 @@ const handleQuickAction = (key: string) => {
       router.push('/monitor/logs')
       break
     case 'system-settings':
-      router.push('/system/settings')
+      router.push('/system/config')
       break
     case 'user-management':
       router.push('/system/users')

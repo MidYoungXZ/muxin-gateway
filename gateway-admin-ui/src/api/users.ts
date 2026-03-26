@@ -51,6 +51,21 @@ export interface UserUpdateRequest {
   roleIds?: number[]
 }
 
+// 个人信息更新参数
+export interface ProfileUpdateRequest {
+  nickname?: string
+  email?: string
+  mobile?: string
+  avatar?: string
+}
+
+// 密码修改参数
+export interface PasswordUpdateRequest {
+  oldPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
 export const userApi = {
   // 获取用户列表
   list: (params?: UserQueryParams) => {
@@ -74,6 +89,15 @@ export const userApi = {
     return request<User>({
       url: '/api/users/current',
       method: 'get'
+    })
+  },
+
+  // 更新个人信息
+  updateProfile: (data: ProfileUpdateRequest) => {
+    return request<void>({
+      url: '/api/users/profile',
+      method: 'put',
+      data
     })
   },
 

@@ -17,6 +17,7 @@ import com.muxin.gateway.admin.mapper.RoleMapper;
 import com.muxin.gateway.admin.mapper.UserMapper;
 import com.muxin.gateway.admin.mapper.UserRoleMapper;
 import com.muxin.gateway.admin.model.dto.PasswordUpdateDTO;
+import com.muxin.gateway.admin.model.dto.ProfileUpdateDTO;
 import com.muxin.gateway.admin.model.dto.UserCreateDTO;
 import com.muxin.gateway.admin.model.dto.UserQueryDTO;
 import com.muxin.gateway.admin.model.dto.UserUpdateDTO;
@@ -306,6 +307,35 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         updateById(user);
         
         log.info("修改用户密码成功：{}", user.getUsername());
+    }
+    
+    @Override
+    public void updateProfile(Long id, ProfileUpdateDTO dto) {
+        SysUser user = getById(id);
+        if (user == null || user.getDeleted() == 1) {
+            throw new BusinessException("用户不存在");
+        }
+        
+        // 只更新非空字段
+        if (StringUtils.hasText(dto.getNickname())) {
+            user.setNickname(dto.getNickname());
+        }
+        if (dto.getEmail() != null) {
+            user.setEmail(dto.getEmail());
+        }
+        if (dto.getMobile() != null) {
+            user.setMobile(dto.getMobile());
+        }
+        if (dto.getAvatar() != null) {
+            user.setAvatar(dto.getAvatar());
+        }
+        
+        user.setUpdateTime(LocalDateTime.now());
+        user.setUpdateBy(StpUtil.getLoginIdAsString());
+        
+        updateById(user);
+        
+        log.info("更新个人信息成功：{}", user.getUsername());
     }
     
     @Override
@@ -649,8 +679,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     
     private void validateUserPermission(Long targetUserId) {
         Long currentUserId = StpUtil.getLoginIdAsLong();
-        if (isUserSuperAdmin(currentUserId, getSuperAdminRoleId())) {
+        Long superAdminRoleId = getSuperAdminRoleId();
+        
+        if (isUserSuperAdmin(currentUserId, superAdminRoleId)) {
             return;
+        }
+        
+        // 检查目标用户是否是超级管理员
+        if (isUserSuperAdmin(targetUserId, superAdminRoleId)) {
+            throw new BusinessException("无权操作超级管理员用户");
         }
         
         SysUser targetUser = getById(targetUserId);

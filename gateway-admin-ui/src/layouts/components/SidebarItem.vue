@@ -86,4 +86,13 @@ function resolvePath(path?: string) {
 :deep(.el-sub-menu > .el-sub-menu__title) {
   padding-left: calc(20px + var(--level, 1) * 16px) !important;
 }
+
+// 收缩状态下重置padding和transform
+:deep(.el-menu--collapse) {
+  .el-menu-item,
+  .el-sub-menu__title {
+    padding-left: 0 !important;
+    transform: none !important;
+  }
+}
 </style>

@@ -1614,4 +1614,358 @@ a {
     background: var(--bg-secondary);
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   }
+}
+
+// ==================== 暗色模式样式覆盖 ====================
+.dark {
+  // Element Plus 组件暗色模式覆盖
+  .el-card {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    
+    .el-card__header {
+      background: var(--bg-secondary);
+      border-color: var(--border-primary);
+      color: var(--text-primary);
+    }
+    
+    .el-card__body {
+      background: var(--card-bg);
+      color: var(--text-primary);
+    }
+  }
+  
+  // 表格暗色模式
+  .el-table {
+    --el-table-bg-color: var(--card-bg);
+    --el-table-tr-bg-color: var(--card-bg);
+    --el-table-header-bg-color: var(--bg-secondary);
+    --el-table-row-hover-bg-color: var(--bg-tertiary);
+    --el-table-border-color: var(--border-primary);
+    --el-table-text-color: var(--text-primary);
+    --el-table-header-text-color: var(--text-primary);
+    --el-table-current-row-bg-color: var(--bg-tertiary);
+    
+    background: var(--card-bg);
+    
+    th.el-table__cell {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+    
+    td.el-table__cell {
+      background: var(--card-bg);
+    }
+    
+    // 斑马纹暗色模式
+    &.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+      background: var(--bg-tertiary);
+    }
+    
+    tr:hover > td {
+      background: var(--bg-tertiary) !important;
+    }
+  }
+  
+  // 分页暗色模式
+  .el-pagination {
+    --el-pagination-bg-color: var(--bg-tertiary);
+    --el-pagination-text-color: var(--text-primary);
+    --el-pagination-button-bg-color: var(--bg-tertiary);
+    --el-pagination-button-color: var(--text-primary);
+    --el-pagination-hover-color: var(--primary-color);
+  }
+  
+  // 输入框暗色模式
+  .el-input {
+    .el-input__wrapper {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+      
+      .el-input__inner {
+        color: var(--text-primary);
+        
+        &::placeholder {
+          color: var(--text-placeholder);
+        }
+      }
+    }
+    
+    &.is-disabled .el-input__wrapper {
+      background: var(--input-disabled-bg);
+      border-color: var(--input-disabled-border);
+    }
+  }
+  
+  // Select 暗色模式
+  .el-select {
+    .el-select__wrapper {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+      
+      .el-select__selected-item {
+        color: var(--text-primary);
+      }
+      
+      .el-select__placeholder {
+        color: var(--text-placeholder);
+      }
+    }
+  }
+  
+  // 弹窗暗色模式
+  .el-dialog {
+    --el-dialog-bg-color: var(--card-bg);
+    --el-dialog-title-font-size: var(--text-lg);
+    
+    background: var(--card-bg);
+    border: 1px solid var(--border-primary);
+    
+    .el-dialog__header {
+      border-bottom: 1px solid var(--border-primary);
+      
+      .el-dialog__title {
+        color: var(--text-primary);
+      }
+    }
+    
+    .el-dialog__body {
+      color: var(--text-primary);
+    }
+    
+    .el-dialog__footer {
+      border-top: 1px solid var(--border-primary);
+    }
+  }
+  
+  // 下拉菜单暗色模式
+  .el-dropdown-menu {
+    background: var(--card-bg);
+    border-color: var(--border-primary);
+    
+    .el-dropdown-menu__item {
+      color: var(--text-primary);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // 下拉弹出层暗色模式
+  .el-dropdown__popper,
+  .el-popper.is-light {
+    background: var(--card-bg) !important;
+    border-color: var(--border-primary) !important;
+    
+    .el-popper__arrow::before {
+      background: var(--card-bg);
+      border-color: var(--border-primary);
+    }
+  }
+  
+  .el-popper.is-dark {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--bg-tertiary) !important;
+  }
+  
+  // Tree Select 暗色模式
+  .el-tree-select {
+    .el-tree {
+      background: var(--card-bg);
+      
+      .el-tree-node__content {
+        color: var(--text-primary);
+        
+        &:hover {
+          background: var(--bg-tertiary);
+        }
+      }
+      
+      .el-tree-node.is-current > .el-tree-node__content {
+        background: var(--primary-100);
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // Tree 暗色模式
+  .el-tree {
+    background: transparent;
+    
+    .el-tree-node__content {
+      color: var(--text-primary);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+      }
+    }
+    
+    .el-tree-node:focus > .el-tree-node__content {
+      background: var(--bg-tertiary);
+    }
+    
+    .el-tree-node.is-current > .el-tree-node__content {
+      background: var(--primary-100);
+      color: var(--primary-color);
+    }
+    
+    .el-tree-node__expand-icon {
+      color: var(--text-secondary);
+      
+      &.is-leaf {
+        color: transparent;
+      }
+    }
+  }
+  
+  // Form 暗色模式
+  .el-form-item {
+    .el-form-item__label {
+      color: var(--text-primary);
+    }
+  }
+  
+  // Tag 暗色模式
+  .el-tag {
+    --el-tag-bg-color: var(--bg-tertiary);
+    --el-tag-border-color: var(--border-primary);
+    --el-tag-text-color: var(--text-primary);
+  }
+  
+  // Checkbox & Radio 暗色模式
+  .el-checkbox {
+    --el-checkbox-text-color: var(--text-primary);
+    --el-checkbox-input-border: var(--border-primary);
+  }
+  
+  .el-radio {
+    --el-radio-text-color: var(--text-primary);
+    --el-radio-input-border: var(--border-primary);
+  }
+  
+  // Switch 暗色模式
+  .el-switch {
+    --el-switch-off-color: var(--bg-quaternary);
+  }
+  
+  // Descriptions 暗色模式
+  .el-descriptions {
+    --el-descriptions-item-bordered-label-background: var(--bg-tertiary);
+    
+    .el-descriptions__label {
+      color: var(--text-secondary);
+    }
+    
+    .el-descriptions__content {
+      color: var(--text-primary);
+    }
+  }
+  
+  // Tabs 暗色模式
+  .el-tabs {
+    --el-tabs-header-height: 40px;
+    
+    .el-tabs__header {
+      border-bottom-color: var(--border-primary);
+    }
+    
+    .el-tabs__item {
+      color: var(--text-secondary);
+      
+      &.is-active {
+        color: var(--primary-color);
+      }
+      
+      &:hover {
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // Empty 暗色模式
+  .el-empty {
+    --el-empty-fill-color-0: var(--bg-tertiary);
+    --el-empty-fill-color-1: var(--bg-secondary);
+    --el-empty-fill-color-2: var(--bg-tertiary);
+    --el-empty-fill-color-3: var(--bg-secondary);
+    --el-empty-fill-color-4: var(--bg-tertiary);
+    --el-empty-fill-color-5: var(--bg-secondary);
+    --el-empty-fill-color-6: var(--bg-tertiary);
+    --el-empty-fill-color-7: var(--bg-secondary);
+    --el-empty-fill-color-8: var(--bg-tertiary);
+    --el-empty-fill-color-9: var(--bg-secondary);
+    
+    .el-empty__description {
+      color: var(--text-secondary);
+    }
+  }
+  
+  // 页面容器暗色模式
+  .page-list-container {
+    background: transparent;
+  }
+  
+  // 搜索栏暗色模式
+  .search-bar {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+  }
+  
+  // 表格工具栏暗色模式
+  .table-wrapper {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    
+    .table-toolbar {
+      background: var(--bg-secondary);
+      border-color: var(--border-primary);
+    }
+  }
+  
+  // 分页包装器暗色模式
+  .pagination-wrapper {
+    background: var(--bg-secondary);
+  }
+  
+  // 面包屑暗色模式
+  .el-breadcrumb {
+    .el-breadcrumb__item {
+      .el-breadcrumb__inner {
+        color: var(--text-secondary);
+        
+        &.is-link:hover {
+          color: var(--primary-color);
+        }
+      }
+      
+      &:last-child .el-breadcrumb__inner {
+        color: var(--text-primary);
+      }
+    }
+  }
+  
+  // Avatar 暗色模式
+  .el-avatar {
+    --el-avatar-bg-color: var(--bg-tertiary);
+    
+    &.header-avatar {
+      border: none;
+      outline: none;
+      box-shadow: none;
+    }
+  }
+  
+  // 用户下拉触发器暗色模式
+  .user-dropdown-trigger {
+    &:focus {
+      outline: none;
+    }
+    
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+  }
 } 

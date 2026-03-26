@@ -113,10 +113,6 @@
                   <el-icon><User /></el-icon>
                   个人中心
                 </el-dropdown-item>
-                <el-dropdown-item @click="handleSettings">
-                  <el-icon><Setting /></el-icon>
-                  偏好设置
-                </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
                   退出登录
@@ -426,11 +422,7 @@ const markAsRead = (id: number) => {
 }
 
 const handleProfile = () => {
-  router.push('/system/profile')
-}
-
-const handleSettings = () => {
-  router.push('/system/settings')
+  router.push('/profile')
 }
 
 const handleMenuSelect = (index: string) => {
@@ -754,26 +746,57 @@ onUnmounted(() => {
         
         // 折叠状态样式
         &.el-menu--collapse {
-          :deep(.el-menu-item),
-          :deep(.el-sub-menu__title) {
-            margin: var(--space-2) var(--space-3);
-            padding: 0 var(--space-4) !important;
+          :deep(.el-menu-item) {
+            margin: var(--space-2) auto;
+            padding: 0 !important;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
             justify-content: center;
+            transform: none !important;
             
             .el-icon {
-              margin-right: 0;
+              margin: 0;
+              font-size: 20px;
             }
             
             .menu-title {
               display: none;
             }
             
-            &:hover {
-              transform: none;
+            &:hover,
+            &.is-active {
+              transform: none !important;
             }
           }
           
           :deep(.el-sub-menu) {
+            .el-sub-menu__title {
+              margin: var(--space-2) auto;
+              padding: 0 !important;
+              width: 48px;
+              height: 48px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              transform: none !important;
+              
+              .el-icon {
+                margin: 0;
+                font-size: 20px;
+              }
+              
+              .menu-title {
+                display: none;
+              }
+              
+              &:hover,
+              &.is-active {
+                transform: none !important;
+              }
+            }
+            
             .el-sub-menu__icon-arrow {
               display: none;
             }

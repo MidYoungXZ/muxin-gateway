@@ -104,7 +104,11 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column prop="createTime" label="创建时间" min-width="180">
+          <template #default="{ row }">
+            <span class="time-cell">{{ formatDateTime(row.createTime) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
             <el-button 
@@ -684,6 +688,19 @@ onMounted(() => {
   loadFilterTypes()
   loadFilterList()
 })
+
+// 时间格式化 - 标准格式不带T
+const formatDateTime = (dateTime: string) => {
+  if (!dateTime) return '-'
+  const date = new Date(dateTime)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
 </script>
 
 <style lang="scss" scoped>
@@ -747,5 +764,9 @@ onMounted(() => {
   text-align: center;
   padding: 40px;
   color: var(--el-text-color-secondary);
+}
+
+.time-cell {
+  white-space: nowrap;
 }
 </style>

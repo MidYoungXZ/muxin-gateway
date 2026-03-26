@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.stp.StpUtil;
 import com.muxin.gateway.admin.model.Result;
 import com.muxin.gateway.admin.model.dto.PasswordUpdateDTO;
+import com.muxin.gateway.admin.model.dto.ProfileUpdateDTO;
 import com.muxin.gateway.admin.model.dto.UserCreateDTO;
 import com.muxin.gateway.admin.model.dto.UserQueryDTO;
 import com.muxin.gateway.admin.model.dto.UserUpdateDTO;
@@ -57,6 +58,16 @@ public class UserController {
     public Result<UserVO> getCurrentUser() {
         Long userId = StpUtil.getLoginIdAsLong();
         return Result.success(userService.getUserDetail(userId));
+    }
+    
+    /**
+     * 更新个人信息
+     */
+    @PutMapping("/profile")
+    public Result<Void> updateProfile(@RequestBody @Valid ProfileUpdateDTO dto) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        userService.updateProfile(userId, dto);
+        return Result.success();
     }
     
     /**

@@ -93,7 +93,11 @@
             <span>{{ row.duration }}ms</span>
           </template>
         </el-table-column>
-        <el-table-column prop="operateTime" label="操作时间" width="180" />
+        <el-table-column prop="operateTime" label="操作时间" min-width="180">
+          <template #default="{ row }">
+            <span class="time-cell">{{ formatDateTime(row.operateTime) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click.stop="handleViewDetail(row)">详情</el-button>
@@ -141,7 +145,7 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="执行时长">{{ currentLog.duration }}ms</el-descriptions-item>
-          <el-descriptions-item label="操作时间">{{ currentLog.operateTime }}</el-descriptions-item>
+          <el-descriptions-item label="操作时间">{{ formatDateTime(currentLog.operateTime) }}</el-descriptions-item>
         </el-descriptions>
         
         <div v-if="currentLog.params" class="detail-section">
@@ -374,6 +378,19 @@ const handleExport = async () => {
   }
 }
 
+// 时间格式化 - 标准格式不带T
+const formatDateTime = (dateTime: string) => {
+  if (!dateTime) return '-'
+  const date = new Date(dateTime)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
 // 生命周期
 onMounted(() => {
   loadData()
@@ -399,5 +416,9 @@ onMounted(() => {
 
 .error-text :deep(.el-textarea__inner) {
   color: #f56c6c;
+}
+
+.time-cell {
+  white-space: nowrap;
 }
 </style> 
