@@ -100,6 +100,14 @@ public class RouteConfigConverter {
         registerFilterFactory(new RequestLogFilter.Factory());
         registerFilterFactory(new MetricsFilter.Factory());
         registerFilterFactory(new PathRewriteFilter.Factory());
+        registerFilterFactory(new AddRequestHeaderFilter.Factory());
+        registerFilterFactory(new AddResponseHeaderFilter.Factory());
+        registerFilterFactory(new RemoveRequestHeaderFilter.Factory());
+        registerFilterFactory(new RemoveResponseHeaderFilter.Factory());
+        registerFilterFactory(new RewritePathFilter.Factory());
+        registerFilterFactory(new RetryFilter.Factory());
+        registerFilterFactory(new CircuitBreakerFilter.Factory());
+        registerFilterFactory(new RequestRateLimiterFilter.Factory());
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 
@@ -310,8 +318,11 @@ public class RouteConfigConverter {
 
         for (PredicateDefinition config : predicateConfigs) {
             try {
-                // 获取对应的Factory
-                PredicateFactory factory = predicateFactories.get(config.getType());
+                String predicateType = config.getType();
+                PredicateFactory factory = predicateFactories.get(predicateType);
+                if (factory == null) {
+                    factory = predicateFactories.get(predicateType.toUpperCase());
+                }
                 if (factory == null) {
                     log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getType(), routeId);
                     continue;
@@ -354,8 +365,11 @@ public class RouteConfigConverter {
             }
 
             try {
-                // 获取对应的Factory
-                FilterFactory factory = filterFactories.get(config.getType());
+                String filterType = config.getType();
+                FilterFactory factory = filterFactories.get(filterType);
+                if (factory == null) {
+                    factory = filterFactories.get(filterType.toUpperCase());
+                }
                 if (factory == null) {
                     log.error("[RouteConfigConverter] 不支持的过滤器类型: {} (路由: {})", config.getType(), routeId);
                     continue;

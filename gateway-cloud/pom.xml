@@ -24,10 +24,10 @@
             <artifactId>gateway-core</artifactId>
         </dependency>
 
-        <!-- Nacos Client -->
+        <!-- Spring Cloud Alibaba Nacos Discovery -->
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-client</artifactId>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
 
         <!-- Jackson -->

@@ -6,6 +6,7 @@ import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -20,15 +21,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *     <li>配置无需认证的路径白名单（登录接口、Swagger文档等）</li>
  * </ul>
  * </p>
- * <p>
- * 注意：该配置类当前被注释掉，未启用。
- * </p>
  *
  * @author muxin
  * @version 1.0.0
  * @since 1.0.0
 */
-//@Configuration
+@Configuration
 public class SaTokenConfig implements WebMvcConfigurer {
 
     /**
@@ -66,14 +64,17 @@ public class SaTokenConfig implements WebMvcConfigurer {
 
         // 注册Sa-Token的拦截器
         registry.addInterceptor(new SaInterceptor(handle -> {
-            // 登录认证 -- 拦截所有路由，并排除/auth/**
+            // 登录认证 -- 拦截所有路由，并排除白名单路径
             SaRouter.match("/**")
-                    .notMatch("/admin/api/auth/login")
-                    .notMatch("/admin/api/auth/refresh")
-                    .notMatch("/admin/api/test/**")  // 测试路径
+                    .notMatch("/api/auth/login")
+                    .notMatch("/api/auth/refresh-token")
+                    .notMatch("/api/test/**")
                     .notMatch("/swagger-ui/**")
+                    .notMatch("/swagger-ui.html")
                     .notMatch("/v3/api-docs/**")
-                    .notMatch("/admin/ws/**")  // WebSocket路径
+                    .notMatch("/webjars/**")
+                    .notMatch("/static/**")
+                    .notMatch("/ws/**")
                     .check(r -> StpUtil.checkLogin());
 
             // 角色认证 -- 暂时关闭角色认证

@@ -27,10 +27,11 @@ public class DatabaseServiceConfigProvider implements ServiceConfigProvider {
     private final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
     private volatile List<ServiceDefinition> cachedServices = new ArrayList<>();
     private volatile Map<String, ServiceDefinition> serviceMap = new HashMap<>();
+    private volatile boolean refreshing = false;
 
     @Override
     public List<ServiceDefinition> getServices() {
-        if (cachedServices.isEmpty()) {
+        if (cachedServices.isEmpty() && !refreshing) {
             refresh();
         }
         return Collections.unmodifiableList(cachedServices);
@@ -38,7 +39,7 @@ public class DatabaseServiceConfigProvider implements ServiceConfigProvider {
 
     @Override
     public Optional<ServiceDefinition> getService(String serviceId) {
-        if (serviceMap.isEmpty()) {
+        if (serviceMap.isEmpty() && !refreshing) {
             refresh();
         }
         return Optional.ofNullable(serviceMap.get(serviceId));
@@ -46,43 +47,51 @@ public class DatabaseServiceConfigProvider implements ServiceConfigProvider {
 
     @Override
     public void refresh() {
-        if (log.isInfoEnabled()) {
-            log.info("Refreshing service configuration from database");
+        if (refreshing) {
+            return;
         }
+        refreshing = true;
+        try {
+            if (log.isInfoEnabled()) {
+                log.info("Refreshing service configuration from database");
+            }
 
-        List<GwServiceNode> nodes = serviceNodeMapper.selectAll()
-                .stream()
-                .filter(n -> !Boolean.TRUE.equals(n.getDeleted()))
-                .filter(n -> n.getStatus() != null && n.getStatus() == 1)
-                .collect(Collectors.toList());
+            List<GwServiceNode> nodes = serviceNodeMapper.selectAll()
+                    .stream()
+                    .filter(n -> !Boolean.TRUE.equals(n.getDeleted()))
+                    .filter(n -> n.getStatus() != null && n.getStatus() == 1)
+                    .collect(Collectors.toList());
 
-        Map<String, List<GwServiceNode>> groupedNodes = nodes.stream()
-                .collect(Collectors.groupingBy(GwServiceNode::getServiceName));
+            Map<String, List<GwServiceNode>> groupedNodes = nodes.stream()
+                    .collect(Collectors.groupingBy(GwServiceNode::getServiceName));
 
-        List<ServiceDefinition> newServices = new ArrayList<>();
-        Map<String, ServiceDefinition> newServiceMap = new HashMap<>();
+            List<ServiceDefinition> newServices = new ArrayList<>();
+            Map<String, ServiceDefinition> newServiceMap = new HashMap<>();
 
-        for (Map.Entry<String, List<GwServiceNode>> entry : groupedNodes.entrySet()) {
-            String serviceName = entry.getKey();
-            List<GwServiceNode> serviceNodes = entry.getValue();
+            for (Map.Entry<String, List<GwServiceNode>> entry : groupedNodes.entrySet()) {
+                String serviceName = entry.getKey();
+                List<GwServiceNode> serviceNodes = entry.getValue();
 
-            ServiceDefinition service = convertToServiceDefinition(serviceName, serviceNodes);
-            newServices.add(service);
-            newServiceMap.put(serviceName, service);
-        }
+                ServiceDefinition service = convertToServiceDefinition(serviceName, serviceNodes);
+                newServices.add(service);
+                newServiceMap.put(serviceName, service);
+            }
 
-        cachedServices = newServices;
-        serviceMap = newServiceMap;
+            cachedServices = newServices;
+            serviceMap = newServiceMap;
 
-        ConfigChangedEvent event = new ConfigChangedEvent(
-                ConfigChangedEvent.ChangeType.SERVICE_REFRESH_ALL,
-                newServices.stream().map(ServiceDefinition::getId).toList(),
-                SOURCE
-        );
-        notifyListeners(event);
+            ConfigChangedEvent event = new ConfigChangedEvent(
+                    ConfigChangedEvent.ChangeType.SERVICE_REFRESH_ALL,
+                    newServices.stream().map(ServiceDefinition::getId).toList(),
+                    SOURCE
+            );
+            notifyListeners(event);
 
-        if (log.isInfoEnabled()) {
-            log.info("Loaded {} services ({} nodes) from database", cachedServices.size(), nodes.size());
+            if (log.isInfoEnabled()) {
+                log.info("Loaded {} services ({} nodes) from database", cachedServices.size(), nodes.size());
+            }
+        } finally {
+            refreshing = false;
         }
     }
 

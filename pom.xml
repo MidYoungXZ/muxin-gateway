@@ -34,6 +34,24 @@
     <!-- Import BOM for centralized dependency management -->
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>2023.0.3</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Spring Cloud Alibaba BOM -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>2023.0.1.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- BOM for external dependencies -->
             <dependency>
                 <groupId>com.muxin.gateway</groupId>

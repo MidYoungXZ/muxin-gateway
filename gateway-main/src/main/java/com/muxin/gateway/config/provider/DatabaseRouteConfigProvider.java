@@ -32,10 +32,11 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
     private final RouteFilterMapper routeFilterMapper;
     private final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
     private volatile List<RouteDefinition> cachedRoutes = new ArrayList<>();
+    private volatile boolean refreshing = false;
 
     @Override
     public List<RouteDefinition> getRoutes() {
-        if (cachedRoutes.isEmpty()) {
+        if (cachedRoutes.isEmpty() && !refreshing) {
             refresh();
         }
         return Collections.unmodifiableList(cachedRoutes);
@@ -50,37 +51,45 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
     @Override
     public void refresh() {
-        if (log.isInfoEnabled()) {
-            log.info("Refreshing route configuration from database");
+        if (refreshing) {
+            return;
         }
-
-        List<GwRoute> routes = routeMapper.selectAll()
-                .stream()
-                .filter(r -> !Boolean.TRUE.equals(r.getDeleted()))
-                .sorted(Comparator.comparingInt(r -> r.getOrder() != null ? r.getOrder() : 0))
-                .collect(Collectors.toList());
-
-        List<RouteDefinition> newRoutes = new ArrayList<>();
-        for (GwRoute route : routes) {
-            try {
-                RouteDefinition definition = convertToRouteDefinition(route);
-                newRoutes.add(definition);
-            } catch (Exception e) {
-                log.error("Failed to convert route: {}", route.getRouteId(), e);
+        refreshing = true;
+        try {
+            if (log.isInfoEnabled()) {
+                log.info("Refreshing route configuration from database");
             }
-        }
 
-        cachedRoutes = newRoutes;
+            List<GwRoute> routes = routeMapper.selectAll()
+                    .stream()
+                    .filter(r -> !Boolean.TRUE.equals(r.getDeleted()))
+                    .sorted(Comparator.comparingInt(r -> r.getOrder() != null ? r.getOrder() : 0))
+                    .collect(Collectors.toList());
 
-        ConfigChangedEvent event = new ConfigChangedEvent(
-                ConfigChangedEvent.ChangeType.ROUTE_REFRESH_ALL,
-                newRoutes.stream().map(RouteDefinition::getId).toList(),
-                SOURCE
-        );
-        notifyListeners(event);
+            List<RouteDefinition> newRoutes = new ArrayList<>();
+            for (GwRoute route : routes) {
+                try {
+                    RouteDefinition definition = convertToRouteDefinition(route);
+                    newRoutes.add(definition);
+                } catch (Exception e) {
+                    log.error("Failed to convert route: {}", route.getRouteId(), e);
+                }
+            }
 
-        if (log.isInfoEnabled()) {
-            log.info("Loaded {} routes from database", cachedRoutes.size());
+            cachedRoutes = newRoutes;
+
+            ConfigChangedEvent event = new ConfigChangedEvent(
+                    ConfigChangedEvent.ChangeType.ROUTE_REFRESH_ALL,
+                    newRoutes.stream().map(RouteDefinition::getId).toList(),
+                    SOURCE
+            );
+            notifyListeners(event);
+
+            if (log.isInfoEnabled()) {
+                log.info("Loaded {} routes from database", cachedRoutes.size());
+            }
+        } finally {
+            refreshing = false;
         }
     }
 

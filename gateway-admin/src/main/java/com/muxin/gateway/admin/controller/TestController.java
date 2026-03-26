@@ -4,8 +4,10 @@ import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.secure.BCrypt;
 import com.muxin.gateway.admin.entity.SysUser;
 import com.muxin.gateway.admin.mapper.UserMapper;
+import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDateTime;
 
 /**
@@ -64,7 +66,7 @@ public class TestController {
     @GetMapping("/check-user/{username}")
     public String checkUser(@PathVariable String username) {
         SysUser user = userMapper.selectOneByQuery(
-            com.mybatisflex.core.query.QueryWrapper.create()
+            QueryWrapper.create()
                 .eq("username", username)
         );
         
@@ -72,6 +74,30 @@ public class TestController {
             return "User exists: " + user.getUsername() + " (ID: " + user.getId() + ")";
         } else {
             return "User not found: " + username;
+        }
+    }
+
+    /**
+     * 重置admin用户密码
+     */
+    @PostMapping("/reset-admin-password")
+    public String resetAdminPassword() {
+        try {
+            SysUser user = userMapper.selectOneByQuery(
+                QueryWrapper.create().eq("username", "admin")
+            );
+            
+            if (user == null) {
+                return "Admin user not found!";
+            }
+            
+            user.setPassword(BCrypt.hashpw("admin123"));
+            user.setUpdateTime(LocalDateTime.now());
+            userMapper.update(user);
+            
+            return "Admin password reset successfully! Password: admin123";
+        } catch (Exception e) {
+            return "Error resetting password: " + e.getMessage();
         }
     }
 } 
