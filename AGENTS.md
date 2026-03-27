@@ -118,6 +118,123 @@ Permission: route:update
 Description: Refresh service configuration only
 ```
 
+## Dynamic Router System
+
+### Frontend Router Configuration
+
+The frontend uses a dynamic router system where routes are loaded from the backend menu API.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Dynamic Router Architecture                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Login → Fetch User Menus → Register Routes → Render Sidebar  │
+│              ↓                ↓                ↓                │
+│           API returns    router.addRoute()    Menu Component    │
+│                                                                 │
+│   Static Routes (only basic):                                   │
+│   ┌─────────────────┐                                           │
+│   │ /login          │  ← No permission required                │
+│   │ /404            │                                           │
+│   │ /403            │                                           │
+│   └─────────────────┘                                           │
+│                                                                 │
+│   Dynamic Routes (loaded by permission):                        │
+│   ┌─────────────────┐                                           │
+│   │ /system/users   │  ← Registered based on user permission    │
+│   │ /system/roles   │                                           │
+│   │ /routes/*       │                                           │
+│   └─────────────────┘                                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Router Files
+- `gateway-admin-ui/src/router/index.ts` - Static routes configuration
+- `gateway-admin-ui/src/router/utils.ts` - Route generation utilities
+- `gateway-admin-ui/src/router/permission.ts` - Route guards
+- `gateway-admin-ui/src/stores/menu.ts` - Dynamic route registration
+
+## Data Permission System
+
+### Data Scope Configuration
+
+Roles can be configured with different data scopes:
+
+| Data Scope | Code | Description |
+|------------|------|-------------|
+| 全部数据 | 1 | Access all data (Super Admin) |
+| 自定义数据 | 2 | Access selected departments only |
+| 本部门数据 | 3 | Access user's department only |
+| 本部门及以下 | 4 | Access user's department and sub-departments (default) |
+| 仅本人数据 | 5 | Access only own data |
+
+### Database Tables
+
+```sql
+-- Role table with data_scope field
+sys_role.data_scope INTEGER DEFAULT 4
+
+-- Role-Department association (for custom data scope)
+sys_role_dept (role_id, dept_id)
+```
+
+### Key Data Permission Files
+- `gateway-admin/src/main/java/com/muxin/gateway/admin/annotation/DataScope.java` - Annotation
+- `gateway-admin/src/main/java/com/muxin/gateway/admin/aspect/DataScopeAspect.java` - AOP aspect
+- `gateway-admin/src/main/java/com/muxin/gateway/admin/context/DataScopeContext.java` - Context
+- `gateway-admin/src/main/java/com/muxin/gateway/admin/util/DataScopeHelper.java` - Utility
+
+### Data Permission Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Data Permission Flow                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. User requests user list                                     │
+│     GET /api/users                                              │
+│                                                                 │
+│  2. UserService.pageQueryWithDataScope() applies @DataScope     │
+│                                                                 │
+│  3. DataScopeAspect intercepts                                  │
+│     ├── Get current user's data scope                           │
+│     ├── Generate SQL condition:                                 │
+│     │   ├── dataScope=1: No filter                              │
+│     │   ├── dataScope=2: dept_id IN (custom depts)              │
+│     │   ├── dataScope=3: dept_id = user's dept                  │
+│     │   ├── dataScope=4: dept_id IN (user's dept + children)    │
+│     │   └── dataScope=5: id = current user                      │
+│     └── Inject into QueryWrapper                                │
+│                                                                 │
+│  4. Return filtered user list                                   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Department-Role-User Relationship
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Entity Relationships                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  User → Department (belonging)                                  │
+│     sys_user.dept_id → sys_dept.id                              │
+│                                                                 │
+│  User → Roles (permissions)                                     │
+│     sys_user_role → sys_role                                    │
+│                                                                 │
+│  Role → Data Scope (data boundary)                              │
+│     sys_role.data_scope                                         │
+│                                                                 │
+│  Role → Departments (custom permission)                         │
+│     sys_role_dept → sys_dept (when data_scope=2)                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Development Notes
 
 ### Configuration Refresh Flow
