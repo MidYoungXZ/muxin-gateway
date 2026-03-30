@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: 'jdbc:sqlite:data/muxin-gateway.db'
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      auto-commit: false
+
+mybatis-flex:
+  print-sql: false
+  logic-delete-column: deleted
+  logic-delete-value: 1
+  logic-not-delete-value: 0
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.muxin.gateway.admin.entity
+  global-config:
+    print-banner: false
+    audit-enable: true
+  configuration:
+    jdbc-type-for-null: NULL
+    default-executor-type: REUSE

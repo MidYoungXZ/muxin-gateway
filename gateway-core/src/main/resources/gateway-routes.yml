@@ -1,211 +1,211 @@
-# ========================================
-# Muxin Gateway 路由配置文件
-# 仅支持 HTTP 协议
-# ========================================
-
-# ==================== 功能域配置 ====================
-domains:
-  # 核心配置域
-  core:
-    default-timeout: 30000
-    max-request-size: 10MB
-    max-response-size: 50MB
-
-  # 线程池配置域
-  thread-pools:
-    business:
-      core-size: 16
-      max-size: 32
-      queue-capacity: 1000
-      keep-alive: 60000
-  
-  # 服务器配置域
-  servers:
-    http:
-      port: 8080
-      max-content-length: 10MB
-      keep-alive: true
-      compression: true
-    management:
-      port: 8081
-      enabled: true
-  
-  # 连接池配置域
-  connection-pools:
-    default:
-      max-connections-per-host: 100
-      max-idle-connections: 50
-      connection-timeout: 5000
-      idle-timeout: 60000
-
-# ==================== 服务定义（仅HTTP协议） ====================
-services:
-  # SDE管理服务（STATIC类型）
-  - id: sde-admin-service-001
-    name: "sde-admin-service"
-    type: STATIC
-    supported-protocols: [HTTP]
-    addresses:
-      - uri: "http://127.0.0.1:9180"
-        weight: 100
-        metadata:
-          environment: "local"
-    health-check:
-      enabled: false
-  
-  # 默认服务（STATIC类型）
-  - id: default-service-001
-    name: "default-handler-service"
-    type: STATIC
-    supported-protocols: [HTTP]
-    addresses:
-      - uri: "http://default-service:8080"
-        weight: 100
-        metadata:
-          type: "fallback"
-          purpose: "default-handler"
-    health-check:
-      enabled: false
-
-# ==================== 路由配置（仅HTTP协议） ====================
-routes:
-  # ========== SDE管理服务路由 ==========
-  - id: sde-admin-route
-    name: "SDE管理服务"
-    description: "SDE管理事件订阅API"
-    order: 400
-    enabled: true
-    
-    # 服务引用
-    service-ref: sde-admin-service-001
-    
-    # 协议配置
-    protocol: HTTP
-    
-    # 路由匹配断言
-    predicates:
-      - name: PATH
-        args:
-          pattern: "/sde/**"
-          strip-prefix: 1
-    
-    # 负载均衡配置
-    load-balance:
-      strategy: ROUND_ROBIN
-    
-    # 过滤器配置
-    filters:
-      - name: PATH_REWRITE
-        order: 50
-        enabled: true
-      - name: REQUEST_LOG
-        order: 100
-        enabled: true
-    
-    # 超时配置
-    timeouts:
-      connection: 5000
-      request: 30000
-      total: 60000
-    
-    # 路由元数据
-    metadata:
-      business-domain: "sde-admin"
-  
-  # ========== 默认兜底路由 ==========
-  - id: default-fallback-route
-    name: "默认兜底路由"
-    description: "处理未匹配到其他路由的请求"
-    order: 9999
-    enabled: true
-    
-    # 服务引用
-    service-ref: default-service-001
-    
-    # 协议配置
-    protocol: HTTP
-    
-    # 路由匹配断言
-    predicates:
-      - name: PATH
-        args:
-          pattern: "/**"
-
-    # 负载均衡配置
-    load-balance:
-      strategy: ROUND_ROBIN
-
-    # 过滤器配置
-    filters:
-      - name: REQUEST_LOG
-        order: 100
-        enabled: true
-    
-    # 路由元数据
-    metadata:
-      business-domain: "system"
-      route-type: "fallback"
-
-# ==================== 全局过滤器 ====================
-global-filters:
-  - name: REQUEST_ID
-    order: 10
-    enabled: true
-    args:
-      header-name: "X-Request-ID"
-      generate-if-missing: true
-
-  - name: METRICS
-    order: 30
-    enabled: true
-    args:
-      collect-request-metrics: true
-      collect-response-metrics: true
-
-# ==================== 全局负载均衡默认配置 ====================
-global-route-config:
-  default-load-balance:
-    strategy: ROUND_ROBIN
-    config:
-      reset-period: 3600000
-
-# ==================== 监控配置 ====================
-monitoring:
-  metrics:
-    enabled: true
-    export-interval: 60000
-    tags:
-      application: "muxin-gateway"
-      environment: "${ENVIRONMENT:development}"
-  
-  tracing:
-    enabled: false
-    sampling-rate: 0.1
-    trace-header: "X-Trace-ID"
-    span-header: "X-Span-ID"
-  
-  logging:
-    level:
-      root: INFO
-      "com.muxin.gateway": DEBUG
-    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-
-# ==================== 安全配置 ====================
-security:
-  jwt:
-    secret: "${JWT_SECRET:muxin-gateway-secret-key-2024}"
-    expiration: 3600000
-    refresh-expiration: 86400000
-    issuer: "muxin-gateway"
-  
-  rate-limit:
-    default:
-      requests-per-second: 1000
-      burst-capacity: 2000
-
-# ==================== 缓存配置 ====================
-cache:
-  enabled: true
-  provider: "caffeine"
-  default-ttl: 300000
-  max-size: 10000
+## ========================================
+## Muxin Gateway 路由配置文件
+## 仅支持 HTTP 协议
+## ========================================
+#
+## ==================== 功能域配置 ====================
+#domains:
+#  # 核心配置域
+#  core:
+#    default-timeout: 30000
+#    max-request-size: 10MB
+#    max-response-size: 50MB
+#
+#  # 线程池配置域
+#  thread-pools:
+#    business:
+#      core-size: 16
+#      max-size: 32
+#      queue-capacity: 1000
+#      keep-alive: 60000
+#
+#  # 服务器配置域
+#  servers:
+#    http:
+#      port: 8080
+#      max-content-length: 10MB
+#      keep-alive: true
+#      compression: true
+#    management:
+#      port: 8081
+#      enabled: true
+#
+#  # 连接池配置域
+#  connection-pools:
+#    default:
+#      max-connections-per-host: 100
+#      max-idle-connections: 50
+#      connection-timeout: 5000
+#      idle-timeout: 60000
+#
+## ==================== 服务定义（仅HTTP协议） ====================
+#services:
+#  # SDE管理服务（STATIC类型）
+#  - id: sde-admin-service-001
+#    name: "sde-admin-service"
+#    type: STATIC
+#    supported-protocols: [HTTP]
+#    addresses:
+#      - uri: "http://127.0.0.1:9180"
+#        weight: 100
+#        metadata:
+#          environment: "local"
+#    health-check:
+#      enabled: false
+#
+#  # 默认服务（STATIC类型）
+#  - id: default-service-001
+#    name: "default-handler-service"
+#    type: STATIC
+#    supported-protocols: [HTTP]
+#    addresses:
+#      - uri: "http://default-service:8080"
+#        weight: 100
+#        metadata:
+#          type: "fallback"
+#          purpose: "default-handler"
+#    health-check:
+#      enabled: false
+#
+## ==================== 路由配置（仅HTTP协议） ====================
+#routes:
+#  # ========== SDE管理服务路由 ==========
+#  - id: sde-admin-route
+#    name: "SDE管理服务"
+#    description: "SDE管理事件订阅API"
+#    order: 400
+#    enabled: true
+#
+#    # 服务引用
+#    service-ref: sde-admin-service-001
+#
+#    # 协议配置
+#    protocol: HTTP
+#
+#    # 路由匹配断言
+#    predicates:
+#      - name: PATH
+#        args:
+#          pattern: "/sde/**"
+#          strip-prefix: 1
+#
+#    # 负载均衡配置
+#    load-balance:
+#      strategy: ROUND_ROBIN
+#
+#    # 过滤器配置
+#    filters:
+#      - name: PATH_REWRITE
+#        order: 50
+#        enabled: true
+#      - name: REQUEST_LOG
+#        order: 100
+#        enabled: true
+#
+#    # 超时配置
+#    timeouts:
+#      connection: 5000
+#      request: 30000
+#      total: 60000
+#
+#    # 路由元数据
+#    metadata:
+#      business-domain: "sde-admin"
+#
+#  # ========== 默认兜底路由 ==========
+#  - id: default-fallback-route
+#    name: "默认兜底路由"
+#    description: "处理未匹配到其他路由的请求"
+#    order: 9999
+#    enabled: true
+#
+#    # 服务引用
+#    service-ref: default-service-001
+#
+#    # 协议配置
+#    protocol: HTTP
+#
+#    # 路由匹配断言
+#    predicates:
+#      - name: PATH
+#        args:
+#          pattern: "/**"
+#
+#    # 负载均衡配置
+#    load-balance:
+#      strategy: ROUND_ROBIN
+#
+#    # 过滤器配置
+#    filters:
+#      - name: REQUEST_LOG
+#        order: 100
+#        enabled: true
+#
+#    # 路由元数据
+#    metadata:
+#      business-domain: "system"
+#      route-type: "fallback"
+#
+## ==================== 全局过滤器 ====================
+#global-filters:
+#  - name: REQUEST_ID
+#    order: 10
+#    enabled: true
+#    args:
+#      header-name: "X-Request-ID"
+#      generate-if-missing: true
+#
+#  - name: METRICS
+#    order: 30
+#    enabled: true
+#    args:
+#      collect-request-metrics: true
+#      collect-response-metrics: true
+#
+## ==================== 全局负载均衡默认配置 ====================
+#global-route-config:
+#  default-load-balance:
+#    strategy: ROUND_ROBIN
+#    config:
+#      reset-period: 3600000
+#
+## ==================== 监控配置 ====================
+#monitoring:
+#  metrics:
+#    enabled: true
+#    export-interval: 60000
+#    tags:
+#      application: "muxin-gateway"
+#      environment: "${ENVIRONMENT:development}"
+#
+#  tracing:
+#    enabled: false
+#    sampling-rate: 0.1
+#    trace-header: "X-Trace-ID"
+#    span-header: "X-Span-ID"
+#
+#  logging:
+#    level:
+#      root: INFO
+#      "com.muxin.gateway": DEBUG
+#    pattern: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+#
+## ==================== 安全配置 ====================
+#security:
+#  jwt:
+#    secret: "${JWT_SECRET:muxin-gateway-secret-key-2024}"
+#    expiration: 3600000
+#    refresh-expiration: 86400000
+#    issuer: "muxin-gateway"
+#
+#  rate-limit:
+#    default:
+#      requests-per-second: 1000
+#      burst-capacity: 2000
+#
+## ==================== 缓存配置 ====================
+#cache:
+#  enabled: true
+#  provider: "caffeine"
+#  default-ttl: 300000
+#  max-size: 10000

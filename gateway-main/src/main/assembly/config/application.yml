@@ -19,17 +19,6 @@ spring:
         cache: true
         compressed: true
       static-locations: classpath:/static/
-  cloud:
-    nacos:
-      username: nacos
-      password: nacos
-      discovery:
-        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
-        enabled: false
-        register-enabled: false
-        service: ${spring.application.name}
-        port: 9191
-        weight: 1.0
 
 sa-token:
   token-name: Authorization

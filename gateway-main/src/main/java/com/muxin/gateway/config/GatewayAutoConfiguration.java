@@ -29,7 +29,9 @@ public class GatewayAutoConfiguration {
     public GatewayBootstrap gatewayBootstrap(GatewayProperties gatewayProperties) {
         log.info("[GatewayAutoConfiguration] Creating GatewayBootstrap bean");
 
-        NettyServerProperties serverProps = gatewayProperties.getNetty();
+        GatewayProperties.ServerProperties serverProps = gatewayProperties.getNetty().getServer();
+        log.info("[GatewayAutoConfiguration] Netty server port: {}", serverProps.getPort());
+        
         HttpServerConfig httpConfig = buildHttpServerConfig(serverProps);
 
         GatewayBootstrapWrapper bootstrap = new GatewayBootstrapWrapper();
@@ -49,7 +51,7 @@ public class GatewayAutoConfiguration {
         return bootstrap;
     }
 
-    private HttpServerConfig buildHttpServerConfig(NettyServerProperties props) {
+    private HttpServerConfig buildHttpServerConfig(GatewayProperties.ServerProperties props) {
         return HttpServerConfig.builder()
                 .bossThreads(props.getBossThreads())
                 .workerThreads(props.getWorkerThreads())

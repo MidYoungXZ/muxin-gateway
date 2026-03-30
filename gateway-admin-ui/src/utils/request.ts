@@ -1,31 +1,22 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { apiConfig } from './path'
 
-// 扩展axios配置类型
 declare module 'axios' {
   export interface AxiosRequestConfig {
     showLoading?: boolean
-    showError?: boolean  // 是否显示错误消息，默认true
+    showError?: boolean
   }
 }
 
-// 创建axios实例，baseURL由ApiConfig智能管理
 const request: AxiosInstance = axios.create({
-  baseURL: apiConfig.getBaseURL(),
+  baseURL: '/api',
   timeout: 10000
 })
 
-// 输出axios配置用于调试
-console.log(`[Axios] baseURL配置: "${apiConfig.getBaseURL()}"`)
-console.log(`[Axios] 环境: ${import.meta.env.DEV ? '开发' : '生产'}`)
-
-// 请求计数器，用于管理全局loading
 let requestCount = 0
 let loadingInstance: ReturnType<typeof ElLoading.service> | null = null
 
-// 显示loading
 const showLoading = () => {
   if (requestCount === 0) {
     loadingInstance = ElLoading.service({
@@ -37,7 +28,6 @@ const showLoading = () => {
   requestCount++
 }
 
-// 隐藏loading
 const hideLoading = () => {
   requestCount--
   if (requestCount <= 0) {
@@ -46,7 +36,6 @@ const hideLoading = () => {
   }
 }
 
-// 错误消息防重复
 const errorMessages = new Set<string>()
 let errorTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -63,34 +52,33 @@ const showErrorMessage = (message: string) => {
     }
   })
   
-  // 清理定时器
   if (errorTimer) clearTimeout(errorTimer)
   errorTimer = setTimeout(() => {
     errorMessages.clear()
   }, 5000)
 }
 
-// 请求拦截器
 request.interceptors.request.use(
   async config => {
     const userStore = useUserStore()
     
-    // 是否显示loading（默认显示，可通过config.showLoading=false关闭）
     if (config.showLoading !== false) {
       showLoading()
     }
     
-    // 添加Token（登录接口除外）
     if (userStore.token && !config.url?.includes('/auth/login')) {
       config.headers.Authorization = `${userStore.tokenType} ${userStore.token}`
     }
     
-    // 添加请求时间戳，防止缓存
     if (config.method?.toLowerCase() === 'get') {
       config.params = {
         ...config.params,
         _t: Date.now()
       }
+    }
+    
+    if (config.url) {
+      config.url = config.url.replace(/^\/api\/?/, '/')
     }
     
     return config
@@ -102,23 +90,19 @@ request.interceptors.request.use(
   }
 )
 
-// 响应拦截器
 request.interceptors.response.use(
   response => {
     hideLoading()
     const res = response.data
     
-    // 文件下载等二进制数据直接返回
     if (response.config.responseType === 'blob') {
       return response
     }
     
-    // 正常响应
     if (res.code === 200) {
       return res
     }
     
-    // 业务错误（可根据配置决定是否显示）
     if (response.config.showError !== false) {
       showErrorMessage(res.message || '操作失败')
     }
@@ -129,7 +113,6 @@ request.interceptors.response.use(
     const { response, config } = error
     const userStore = useUserStore()
     
-    // 网络错误
     if (!response) {
       if (config.showError !== false) {
         showErrorMessage('网络连接失败，请检查网络设置')
@@ -137,25 +120,19 @@ request.interceptors.response.use(
       return Promise.reject(error)
     }
     
-    // HTTP状态码错误处理
     switch (response.status) {
       case 401:
-        // 如果是登录接口，显示具体错误信息
         if (config.url?.includes('/auth/login')) {
           const message = response.data?.message || '用户名或密码错误'
           if (config.showError !== false) {
             showErrorMessage(message)
           }
         } else if (!config._retry && userStore.token) {
-          // Token过期，尝试刷新
           config._retry = true
-          
           try {
             await userStore.refreshUserToken()
-            // 重新发送原请求
             return request(config)
           } catch {
-            // 刷新失败，跳转登录
             if (config.showError !== false) {
               showErrorMessage('登录已过期，请重新登录')
             }
@@ -181,44 +158,7 @@ request.interceptors.response.use(
         }
         break
         
-      case 408:
-        if (config.showError !== false) {
-          showErrorMessage('请求超时，请稍后重试')
-        }
-        break
-        
-      case 429:
-        if (config.showError !== false) {
-          showErrorMessage('请求过于频繁，请稍后再试')
-        }
-        break
-        
-      case 500:
-        if (config.showError !== false) {
-          showErrorMessage('服务器内部错误，请联系管理员')
-        }
-        break
-        
-      case 502:
-        if (config.showError !== false) {
-          showErrorMessage('网关错误，请稍后重试')
-        }
-        break
-        
-      case 503:
-        if (config.showError !== false) {
-          showErrorMessage('服务暂时不可用，请稍后重试')
-        }
-        break
-        
-      case 504:
-        if (config.showError !== false) {
-          showErrorMessage('网关超时，请稍后重试')
-        }
-        break
-        
       default:
-        // 其他错误，显示详细信息
         if (config.showError !== false) {
           const message = response.data?.message || `请求失败（${response.status}）`
           showErrorMessage(message)
@@ -229,7 +169,6 @@ request.interceptors.response.use(
   }
 )
 
-// 导出请求方法
 export const get = <T = any>(url: string, params?: any, config?: any) => {
   return request.get<T, T>(url, { params, ...config })
 }
@@ -246,4 +185,4 @@ export const del = <T = any>(url: string, config?: any) => {
   return request.delete<T, T>(url, config)
 }
 
-export default request 
+export default request
