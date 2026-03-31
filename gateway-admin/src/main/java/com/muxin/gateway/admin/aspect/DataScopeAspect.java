@@ -50,7 +50,8 @@ public class DataScopeAspect {
             Object[] args = point.getArgs();
             if (args != null && args.length > 0) {
                 for (int i = 0; i < args.length; i++) {
-                    if (args[i] instanceof QueryWrapper wrapper) {
+                    if (args[i] instanceof QueryWrapper) {
+                        QueryWrapper wrapper = (QueryWrapper) args[i];
                         injectDataScope(wrapper, dataScope, context);
                         args[i] = wrapper;
                     }

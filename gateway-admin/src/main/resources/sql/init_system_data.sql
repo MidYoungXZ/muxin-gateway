@@ -39,8 +39,7 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 -- 路由管理子菜单
 (100, 1, '路由列表', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (101, 1, '服务节点', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'SetUp', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(103, 1, '过滤器管理', 'menu.routes.filters', 'C', '/routes/filters', 'routes/filters/index', 'route:filter:list', 'Filter', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(104, 1, '断言管理', 'menu.routes.predicates', 'C', '/routes/predicates', 'routes/predicates/index', 'route:predicate:list', 'Aim', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(105, 1, '插件管理', 'menu.routes.plugins', 'C', '/routes/plugins', 'routes/plugins/index', 'route:plugin:list', 'Plug', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 系统管理子菜单
 (200, 2, '用户管理', 'menu.system.user', 'C', '/system/users', 'system/users/index', 'system:user:list', 'User', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -64,17 +63,11 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 (1013, 101, '节点修改', '', 'F', '', '', 'route:node:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 (1014, 101, '节点删除', '', 'F', '', '', 'route:node:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
--- 过滤器管理按钮
-(1031, 103, '过滤器查看', '', 'F', '', '', 'route:filter:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1032, 103, '过滤器新增', '', 'F', '', '', 'route:filter:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1033, 103, '过滤器修改', '', 'F', '', '', 'route:filter:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1034, 103, '过滤器删除', '', 'F', '', '', 'route:filter:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-
--- 断言管理按钮
-(1041, 104, '断言查看', '', 'F', '', '', 'route:predicate:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1042, 104, '断言新增', '', 'F', '', '', 'route:predicate:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1043, 104, '断言修改', '', 'F', '', '', 'route:predicate:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
-(1044, 104, '断言删除', '', 'F', '', '', 'route:predicate:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+-- 插件管理按钮
+(1051, 105, '插件查看', '', 'F', '', '', 'route:plugin:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1052, 105, '插件新增', '', 'F', '', '', 'route:plugin:create', '', 2, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1053, 105, '插件修改', '', 'F', '', '', 'route:plugin:update', '', 3, 1, 1, NOW(), NOW(), 'system', 'system', 0),
+(1054, 105, '插件删除', '', 'F', '', '', 'route:plugin:delete', '', 4, 1, 1, NOW(), NOW(), 'system', 'system', 0),
 
 -- 用户管理按钮
 (2001, 200, '用户查看', '', 'F', '', '', 'system:user:view', '', 1, 1, 1, NOW(), NOW(), 'system', 'system', 0),
@@ -139,8 +132,7 @@ INSERT INTO sys_role_menu (role_id, menu_id) VALUES
 (3, 1),
 (3, 100), (3, 1001), (3, 1002), (3, 1003), (3, 1004),
 (3, 101), (3, 1011), (3, 1012), (3, 1013), (3, 1014),
-(3, 103), (3, 1031), (3, 1032), (3, 1033), (3, 1034),
-(3, 104), (3, 1041), (3, 1042), (3, 1043), (3, 1044);
+(3, 105), (3, 1051), (3, 1052), (3, 1053), (3, 1054);
 
 -- ========================================
 -- 输出统计信息
@@ -165,7 +157,7 @@ FROM sys_role_menu;
 -- 已创建：
 -- - 10个部门（含总公司及各业务部门）
 -- - 完整的三级菜单权限结构
---   - 路由管理：路由列表、服务节点、过滤器管理、断言管理
+--   - 路由管理：路由列表、服务节点、插件管理
 --   - 系统管理：用户管理、角色管理、部门管理、权限管理、操作日志、系统配置
 -- - 角色权限分配
 -- ========================================

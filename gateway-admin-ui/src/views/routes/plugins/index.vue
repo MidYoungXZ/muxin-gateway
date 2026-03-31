@@ -1,0 +1,343 @@
+<template>
+  <div class="page-list-container">
+    <div class="page-title-bar">
+      <span class="title">插件管理</span>
+      <el-button type="primary" @click="handleAdd">
+        <el-icon><Plus /></el-icon>
+        新增插件
+      </el-button>
+    </div>
+
+    <div class="search-bar">
+      <el-select v-model="filterType" placeholder="插件类型" clearable style="width: 150px">
+        <el-option label="全部" value="" />
+        <el-option label="认证鉴权" value="AUTH" />
+        <el-option label="请求处理" value="FILTER" />
+      </el-select>
+      <el-input
+        v-model="searchName"
+        placeholder="插件名称"
+        clearable
+        @keyup.enter="loadPlugins"
+        style="width: 200px"
+      />
+      <div class="search-actions">
+        <el-button type="primary" @click="loadPlugins">搜索</el-button>
+        <el-button @click="handleReset">重置</el-button>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <el-table :data="pluginList" v-loading="loading" stripe>
+        <el-table-column prop="pluginName" label="插件名称" min-width="140" />
+        <el-table-column prop="pluginType" label="类型" width="100">
+          <template #default="{ row }">
+            <el-tag :type="row.pluginType === 'AUTH' ? 'warning' : ''" size="small">
+              {{ row.pluginType === 'AUTH' ? '认证鉴权' : '请求处理' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="defaultPriority" label="默认优先级" width="100" />
+        <el-table-column label="系统内置" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.isSystem ? 'info' : 'success'" size="small">
+              {{ row.isSystem ? '是' : '否' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="70">
+          <template #default="{ row }">
+            <el-switch v-model="row.enabled" @change="handleStatusChange(row)" />
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="140" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
+            <el-button
+              type="primary"
+              size="small"
+              link
+              @click="handleEdit(row)"
+              :disabled="row.isSystem"
+            >
+              编辑
+            </el-button>
+            <el-popconfirm
+              title="确定删除？"
+              @confirm="handleDelete(row)"
+              :disabled="row.isSystem"
+            >
+              <template #reference>
+                <el-button type="danger" size="small" link :disabled="row.isSystem">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <el-dialog
+      v-model="formDialogVisible"
+      :title="isEdit ? '编辑插件' : '新增插件'"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+        <el-form-item label="插件名称" prop="pluginName">
+          <el-input v-model="form.pluginName" placeholder="请输入插件名称" />
+        </el-form-item>
+        <el-form-item label="插件类型" prop="pluginType">
+          <el-select v-model="form.pluginType" placeholder="请选择类型" style="width: 100%">
+            <el-option label="认证鉴权 (AUTH)" value="AUTH" />
+            <el-option label="请求处理 (FILTER)" value="FILTER" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="描述">
+          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="请输入描述" />
+        </el-form-item>
+        <el-form-item label="默认优先级">
+          <el-input-number v-model="form.defaultPriority" :min="1" :max="99999" style="width: 100%" />
+          <div class="field-tip">数值越大越先执行</div>
+        </el-form-item>
+        <el-form-item label="执行阶段">
+          <el-select v-model="form.phase" placeholder="请选择阶段" style="width: 100%">
+            <el-option label="认证阶段 (AUTH)" value="AUTH" />
+            <el-option label="前置处理 (FILTER_PRE)" value="FILTER_PRE" />
+            <el-option label="后置处理 (FILTER_POST)" value="FILTER_POST" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch v-model="form.enabled" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="formDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="formLoading" @click="handleSubmit">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="detailDialogVisible" title="插件详情" width="600px">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="插件名称">{{ currentPlugin?.pluginName }}</el-descriptions-item>
+        <el-descriptions-item label="插件类型">
+          <el-tag :type="currentPlugin?.pluginType === 'AUTH' ? 'warning' : ''" size="small">
+            {{ currentPlugin?.pluginType === 'AUTH' ? '认证鉴权' : '请求处理' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="描述" :span="2">{{ currentPlugin?.description }}</el-descriptions-item>
+        <el-descriptions-item label="默认优先级">{{ currentPlugin?.defaultPriority }}</el-descriptions-item>
+        <el-descriptions-item label="执行阶段">{{ currentPlugin?.phase }}</el-descriptions-item>
+        <el-descriptions-item label="系统内置">
+          <el-tag :type="currentPlugin?.isSystem ? 'info' : 'success'" size="small">
+            {{ currentPlugin?.isSystem ? '是' : '否' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="currentPlugin?.enabled ? 'success' : 'danger'" size="small">
+            {{ currentPlugin?.enabled ? '启用' : '禁用' }}
+          </el-tag>
+        </el-descriptions-item>
+      </el-descriptions>
+      <div v-if="currentPlugin?.schema" style="margin-top: 16px">
+        <h4 style="margin: 0 0 8px; font-size: 14px">配置 Schema</h4>
+        <pre class="config-json">{{ JSON.stringify(currentPlugin.schema, null, 2) }}</pre>
+      </div>
+      <div v-if="currentPlugin?.defaultConfig" style="margin-top: 16px">
+        <h4 style="margin: 0 0 8px; font-size: 14px">默认配置</h4>
+        <pre class="config-json">{{ JSON.stringify(currentPlugin.defaultConfig, null, 2) }}</pre>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import type { FormInstance, FormRules } from 'element-plus'
+import { pluginsApi } from '@/api/plugins'
+import type { PluginInfo } from '@/api/routes'
+
+const loading = ref(false)
+const formLoading = ref(false)
+const pluginList = ref<PluginInfo[]>([])
+const filterType = ref('')
+const searchName = ref('')
+
+const formDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
+const formRef = ref<FormInstance>()
+const currentPlugin = ref<PluginInfo | null>(null)
+const isEdit = ref(false)
+
+const form = reactive({
+  id: undefined as number | undefined,
+  pluginName: '',
+  pluginType: 'FILTER',
+  description: '',
+  defaultPriority: 5000,
+  phase: 'FILTER_PRE',
+  enabled: true
+})
+
+const rules: FormRules = {
+  pluginName: [{ required: true, message: '请输入插件名称', trigger: 'blur' }],
+  pluginType: [{ required: true, message: '请选择插件类型', trigger: 'change' }]
+}
+
+const loadPlugins = async () => {
+  try {
+    loading.value = true
+    const response = await pluginsApi.list({ type: filterType.value || undefined })
+    if (response?.data) {
+      let list = response.data
+      if (searchName.value) {
+        list = list.filter(p => p.pluginName.includes(searchName.value))
+      }
+      pluginList.value = list
+    }
+  } catch (error) {
+    ElMessage.error('加载插件列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleReset = () => {
+  filterType.value = ''
+  searchName.value = ''
+  loadPlugins()
+}
+
+const handleAdd = () => {
+  isEdit.value = false
+  Object.assign(form, {
+    id: undefined,
+    pluginName: '',
+    pluginType: 'FILTER',
+    description: '',
+    defaultPriority: 5000,
+    phase: 'FILTER_PRE',
+    enabled: true
+  })
+  formDialogVisible.value = true
+}
+
+const handleView = async (plugin: PluginInfo) => {
+  currentPlugin.value = plugin
+  detailDialogVisible.value = true
+}
+
+const handleEdit = (plugin: PluginInfo) => {
+  isEdit.value = true
+  Object.assign(form, {
+    id: plugin.id,
+    pluginName: plugin.pluginName,
+    pluginType: plugin.pluginType,
+    description: plugin.description,
+    defaultPriority: plugin.defaultPriority,
+    phase: plugin.phase,
+    enabled: plugin.enabled
+  })
+  formDialogVisible.value = true
+}
+
+const handleDelete = async (plugin: PluginInfo) => {
+  try {
+    await pluginsApi.delete(plugin.id)
+    ElMessage.success('删除成功')
+    loadPlugins()
+  } catch (error) {
+    ElMessage.error('删除失败')
+  }
+}
+
+const handleStatusChange = async (plugin: PluginInfo) => {
+  try {
+    await pluginsApi.update(plugin.id, { enabled: plugin.enabled })
+    ElMessage.success(plugin.enabled ? '启用成功' : '禁用成功')
+  } catch (error) {
+    ElMessage.error('状态更新失败')
+    plugin.enabled = !plugin.enabled
+  }
+}
+
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  try {
+    await formRef.value.validate()
+    formLoading.value = true
+    
+    if (isEdit.value && form.id) {
+      await pluginsApi.update(form.id, form)
+      ElMessage.success('更新成功')
+    } else {
+      await pluginsApi.create(form)
+      ElMessage.success('创建成功')
+    }
+    
+    formDialogVisible.value = false
+    loadPlugins()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadPlugins()
+})
+</script>
+
+<style lang="scss" scoped>
+.page-title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-wrapper {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.field-tip {
+  font-size: 12px;
+  color: var(--el-text-color-placeholder);
+  margin-top: 4px;
+}
+
+.config-json {
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: Monaco, Menlo, monospace;
+  font-size: 12px;
+  max-height: 200px;
+  overflow: auto;
+  margin: 0;
+}
+</style>

@@ -1,6 +1,5 @@
 package com.muxin.gateway.admin.model.dto;
 
-import lombok.Builder;
 import lombok.Data;
 
 import jakarta.validation.constraints.*;
@@ -15,7 +14,6 @@ import java.util.Map;
  * @since 1.0.0
  */
 @Data
-@Builder
 public class RouteCreateDTO {
     
     @NotBlank(message = "路由标识不能为空")
@@ -30,22 +28,34 @@ public class RouteCreateDTO {
     @NotBlank(message = "目标URI不能为空")
     private String uri;
     
-    @NotEmpty(message = "至少需要配置一个断言")
-    private List<Long> predicateIds;
+    private RouteMatchingDTO matching;
     
-    private List<Long> filterIds;
+    private List<RoutePluginDTO> plugins;
+    
+    private String loadBalanceStrategy;
+    
+    private PathRewriteDTO pathRewrite;
+    
+    private TimeoutDTO timeouts;
     
     private Map<String, Object> metadata;
     
     @Min(0)
-    @Builder.Default
-    private Integer order = 0;
+    private Integer order;
     
-    @Builder.Default
-    private String loadBalanceStrategy = "ROUND_ROBIN";
-    
-    @Builder.Default
     private Boolean enabled = true;
     
     private Long templateId;
-} 
+    
+    @Data
+    public static class PathRewriteDTO {
+        private String from;
+        private String to;
+    }
+    
+    @Data
+    public static class TimeoutDTO {
+        private Integer connect;
+        private Integer response;
+    }
+}

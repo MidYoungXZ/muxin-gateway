@@ -16,6 +16,7 @@ export interface Route {
   updateTime?: string
   predicates?: PredicateInfo[]
   filters?: FilterInfo[]
+  plugins?: RoutePluginInfo[]
 }
 
 export interface PredicateInfo {
@@ -33,6 +34,19 @@ export interface FilterInfo {
   config?: Record<string, any>
 }
 
+export interface RoutePluginInfo {
+  id: number
+  pluginId: number
+  pluginName: string
+  pluginType: 'AUTH' | 'FILTER'
+  config: Record<string, any>
+  priorityOverride?: number
+  defaultPriority: number
+  effectivePriority: number
+  enabled: boolean
+  phase: string
+}
+
 export interface RouteQueryParams {
   routeId?: string
   routeName?: string
@@ -42,29 +56,119 @@ export interface RouteQueryParams {
   pageSize?: number
 }
 
+export interface HeaderMatch {
+  name: string
+  value: string
+  matchType: 'EXIST' | 'NOT_EXIST' | 'EQUAL' | 'REGEX'
+}
+
+export interface QueryMatch {
+  name: string
+  value: string
+  matchType: 'EXIST' | 'NOT_EXIST' | 'EQUAL' | 'REGEX'
+}
+
+export interface RouteFormState {
+  routeId: string
+  routeName: string
+  description: string
+  order: number
+  enabled: boolean
+  pathPattern: string
+  matchType: 'ANT' | 'REGEX' | 'EXACT'
+  ignoreCase: boolean
+  methods: string[]
+  headers: HeaderMatch[]
+  hosts: string[]
+  queries: QueryMatch[]
+  serviceName: string
+  loadBalanceStrategy: LoadBalanceStrategy
+  pathRewriteEnabled: boolean
+  pathRewriteFrom: string
+  pathRewriteTo: string
+  connectTimeout: number
+  responseTimeout: number
+  plugins: RoutePlugin[]
+}
+
+export interface RoutePlugin {
+  pluginId: number
+  pluginName: string
+  pluginType: 'AUTH' | 'FILTER'
+  config: Record<string, any>
+  priorityOverride?: number
+  enabled: boolean
+}
+
+export type LoadBalanceStrategy = 'ROUND_ROBIN' | 'RANDOM' | 'WEIGHTED_ROUND_ROBIN' | 'LEAST_CONNECTIONS'
+
 export interface RouteCreateRequest {
   routeId: string
   routeName: string
   description?: string
   uri: string
-  predicateIds: number[]
-  filterIds?: number[]
-  metadata?: Record<string, any>
-  order?: number
-  loadBalanceStrategy?: string
-  enabled?: boolean
+  order: number
+  enabled: boolean
+  matching: {
+    path: {
+      pattern: string
+      matchType: string
+      ignoreCase: boolean
+    }
+    methods?: string[]
+    headers?: HeaderMatch[]
+    hosts?: string[]
+    queries?: QueryMatch[]
+  }
+  loadBalanceStrategy: string
+  pathRewrite?: {
+    from: string
+    to: string
+  }
+  timeouts?: {
+    connect: number
+    response: number
+  }
+  plugins?: {
+    pluginId: number
+    config?: Record<string, any>
+    priorityOverride?: number
+    enabled: boolean
+  }[]
 }
 
 export interface RouteUpdateRequest {
   routeName: string
   description?: string
   uri: string
-  predicateIds: number[]
-  filterIds?: number[]
-  metadata?: Record<string, any>
-  order?: number
-  loadBalanceStrategy?: string
-  enabled?: boolean
+  order: number
+  enabled: boolean
+  matching: {
+    path: {
+      pattern: string
+      matchType: string
+      ignoreCase: boolean
+    }
+    methods?: string[]
+    headers?: HeaderMatch[]
+    hosts?: string[]
+    queries?: QueryMatch[]
+  }
+  loadBalanceStrategy: string
+  pathRewrite?: {
+    from: string
+    to: string
+  }
+  timeouts?: {
+    connect: number
+    response: number
+  }
+  plugins?: {
+    pluginId: number
+    config?: Record<string, any>
+    priorityOverride?: number
+    enabled: boolean
+  }[]
 }
 
 export const LOAD_BALANCE_STRATEGIES = [
@@ -72,6 +176,21 @@ export const LOAD_BALANCE_STRATEGIES = [
   { value: 'RANDOM', label: '随机', description: '随机选择可用地址' },
   { value: 'WEIGHTED_ROUND_ROBIN', label: '加权轮询', description: '根据权重选择地址' },
   { value: 'LEAST_CONNECTIONS', label: '最少连接', description: '选择连接数最少的地址' }
+]
+
+export const MATCH_TYPES = [
+  { value: 'ANT', label: 'ANT路径模式', description: '支持 **、*、? 通配符' },
+  { value: 'REGEX', label: '正则表达式', description: '使用Java正则表达式' },
+  { value: 'EXACT', label: '精确匹配', description: '路径必须完全一致' }
+]
+
+export const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'TRACE']
+
+export const HEADER_MATCH_TYPES = [
+  { value: 'EXIST', label: '存在' },
+  { value: 'NOT_EXIST', label: '不存在' },
+  { value: 'EQUAL', label: '等于' },
+  { value: 'REGEX', label: '正则匹配' }
 ]
 
 export interface PageResult<T> {
@@ -148,5 +267,61 @@ export const routesApi = {
       url: '/api/routes/services',
       method: 'get'
     })
+  }
+}
+
+export const pluginsApi = {
+  list(params?: { type?: string }) {
+    return request<{ data: PluginInfo[] }>({
+      url: '/api/plugins',
+      method: 'get',
+      params
+    })
+  },
+
+  detail(id: number) {
+    return request<{ data: PluginInfo }>({
+      url: `/api/plugins/${id}`,
+      method: 'get'
+    })
+  }
+}
+
+export interface PluginInfo {
+  id: number
+  pluginName: string
+  pluginType: 'AUTH' | 'FILTER'
+  description: string
+  schema: Record<string, any>
+  defaultConfig: Record<string, any>
+  defaultPriority: number
+  phase: string
+  icon: string
+  isSystem: boolean
+  enabled: boolean
+}
+
+export function getDefaultFormState(): RouteFormState {
+  return {
+    routeId: '',
+    routeName: '',
+    description: '',
+    order: 100,
+    enabled: true,
+    pathPattern: '',
+    matchType: 'ANT',
+    ignoreCase: false,
+    methods: [],
+    headers: [],
+    hosts: [],
+    queries: [],
+    serviceName: '',
+    loadBalanceStrategy: 'ROUND_ROBIN',
+    pathRewriteEnabled: false,
+    pathRewriteFrom: '',
+    pathRewriteTo: '',
+    connectTimeout: 5000,
+    responseTimeout: 30000,
+    plugins: []
   }
 }

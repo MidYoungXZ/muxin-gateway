@@ -396,14 +396,14 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     
     private String getDataScopeText(Integer dataScope) {
         if (dataScope == null) return "本部门及以下";
-        return switch (dataScope) {
-            case 1 -> "全部数据";
-            case 2 -> "自定义数据";
-            case 3 -> "本部门数据";
-            case 4 -> "本部门及以下";
-            case 5 -> "仅本人数据";
-            default -> "本部门及以下";
-        };
+        switch (dataScope) {
+            case 1: return "全部数据";
+            case 2: return "自定义数据";
+            case 3: return "本部门数据";
+            case 4: return "本部门及以下";
+            case 5: return "仅本人数据";
+            default: return "本部门及以下";
+        }
     }
     
     @Override

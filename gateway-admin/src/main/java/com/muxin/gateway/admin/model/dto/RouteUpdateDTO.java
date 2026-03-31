@@ -24,21 +24,24 @@ public class RouteUpdateDTO {
     @NotBlank(message = "目标URI不能为空")
     private String uri;
     
-    @NotEmpty(message = "至少需要配置一个断言")
-    private List<Long> predicateIds;
+    private RouteMatchingDTO matching;
     
-    private List<Long> filterIds;
+    private List<RoutePluginDTO> plugins;
+    
+    private String loadBalanceStrategy;
+    
+    private RouteCreateDTO.PathRewriteDTO pathRewrite;
+    
+    private RouteCreateDTO.TimeoutDTO timeouts;
     
     private Map<String, Object> metadata;
     
     @Min(0)
     private Integer order;
     
-    private String loadBalanceStrategy;
-    
     private Boolean enabled;
     
     private Boolean grayscaleEnabled;
     
     private Map<String, Object> grayscaleConfig;
-} 
+}

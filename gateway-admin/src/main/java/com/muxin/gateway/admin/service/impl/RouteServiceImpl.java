@@ -3,22 +3,19 @@ package com.muxin.gateway.admin.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.muxin.gateway.admin.entity.GwPlugin;
 import com.muxin.gateway.admin.entity.GwRoute;
-import com.muxin.gateway.admin.entity.GwRouteFilter;
-import com.muxin.gateway.admin.entity.GwRoutePredicate;
+import com.muxin.gateway.admin.entity.GwRoutePlugin;
 import static com.muxin.gateway.admin.entity.table.GwRouteTableDef.GW_ROUTE;
-import com.muxin.gateway.admin.enums.PredicateType;
 import com.muxin.gateway.admin.exception.BusinessException;
-import com.muxin.gateway.admin.mapper.RouteFilterMapper;
+import com.muxin.gateway.admin.mapper.PluginMapper;
 import com.muxin.gateway.admin.mapper.RouteMapper;
-import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
-import com.muxin.gateway.admin.model.dto.RouteCreateDTO;
-import com.muxin.gateway.admin.model.dto.RouteQueryDTO;
-import com.muxin.gateway.admin.model.dto.RouteTestDTO;
-import com.muxin.gateway.admin.model.dto.RouteUpdateDTO;
+import com.muxin.gateway.admin.mapper.RoutePluginMapper;
+import com.muxin.gateway.admin.model.dto.*;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.PredicateVO;
 import com.muxin.gateway.admin.model.vo.FilterVO;
+import com.muxin.gateway.admin.model.vo.PluginVO;
 import com.muxin.gateway.admin.model.vo.RouteTestResultVO;
 import com.muxin.gateway.admin.model.vo.RouteVO;
 import com.muxin.gateway.admin.service.RouteService;
@@ -31,11 +28,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,19 +39,17 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     
     private final RouteMapper routeMapper;
-    private final RoutePredicateMapper routePredicateMapper;
-    private final RouteFilterMapper routeFilterMapper;
+    private final RoutePluginMapper routePluginMapper;
+    private final PluginMapper pluginMapper;
     private final com.muxin.gateway.admin.service.ConfigRefreshService configRefreshService;
     
     @Override
     public PageVO<RouteVO> pageQuery(RouteQueryDTO query) {
-        // 构建查询条件
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(GW_ROUTE)
                 .where(GW_ROUTE.DELETED.eq(false));
         
-        // 动态条件
         if (StringUtils.hasText(query.getRouteName())) {
             wrapper.and(GW_ROUTE.ROUTE_NAME.like("%" + query.getRouteName() + "%"));
         }
@@ -71,16 +62,12 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             wrapper.and(GW_ROUTE.ENABLED.eq(query.getEnabled()));
         }
         
-        // 排序
-        wrapper.orderBy(GW_ROUTE.ORDER.asc(), 
-                       GW_ROUTE.CREATE_TIME.desc());
+        wrapper.orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc());
         
-        // 分页查询
         com.mybatisflex.core.paginate.Page<GwRoute> page = page(
                 new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
                 wrapper);
         
-        // 转换为VO
         List<RouteVO> voList = page.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
@@ -102,8 +89,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         }
         
         RouteVO vo = convertToVO(route);
-        vo.setPredicates(loadPredicates(id));
-        vo.setFilters(loadFilters(id));
+        vo.setPlugins(loadPlugins(id));
         return vo;
     }
     
@@ -118,19 +104,17 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setDescription(dto.getDescription());
         route.setUri(dto.getUri());
         route.setMetadata(dto.getMetadata());
-        route.setOrder(dto.getOrder());
+        route.setOrder(dto.getOrder() != null ? dto.getOrder() : 0);
         route.setLoadBalanceStrategy(dto.getLoadBalanceStrategy() != null ? dto.getLoadBalanceStrategy() : "ROUND_ROBIN");
-        route.setEnabled(dto.getEnabled());
+        route.setEnabled(dto.getEnabled() != null ? dto.getEnabled() : true);
         route.setTemplateId(dto.getTemplateId());
         route.setVersion(1);
         route.setDeleted(false);
         
         save(route);
         
-        saveRoutePredicates(route.getId(), dto.getPredicateIds());
-        
-        if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
-            saveRouteFilters(route.getId(), dto.getFilterIds());
+        if (!CollectionUtils.isEmpty(dto.getPlugins())) {
+            saveRoutePlugins(route.getId(), dto.getPlugins());
         }
         
         configRefreshService.refreshRoutes();
@@ -161,12 +145,9 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         updateById(route);
         
-        routePredicateMapper.deleteByRouteId(id);
-        saveRoutePredicates(id, dto.getPredicateIds());
-        
-        routeFilterMapper.deleteByRouteId(id);
-        if (!CollectionUtils.isEmpty(dto.getFilterIds())) {
-            saveRouteFilters(id, dto.getFilterIds());
+        routePluginMapper.deleteByRouteId(id);
+        if (!CollectionUtils.isEmpty(dto.getPlugins())) {
+            saveRoutePlugins(id, dto.getPlugins());
         }
         
         configRefreshService.refreshRoutes();
@@ -183,9 +164,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         String routeId = route.getRouteId();
         
-        routePredicateMapper.deleteByRouteId(id);
-        routeFilterMapper.deleteByRouteId(id);
-        
+        routePluginMapper.deleteByRouteId(id);
         removeById(id);
         
         configRefreshService.refreshRoutes();
@@ -202,8 +181,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         for (Long id : ids) {
             GwRoute route = getById(id);
             if (route != null && !route.getDeleted()) {
-                routePredicateMapper.deleteByRouteId(id);
-                routeFilterMapper.deleteByRouteId(id);
+                routePluginMapper.deleteByRouteId(id);
                 removeById(id);
             }
         }
@@ -235,9 +213,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         return routeMapper.findAllServiceNames();
     }
     
-    /**
-     * 检查路由ID唯一性
-     */
     private void checkRouteIdUnique(String routeId) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
@@ -251,45 +226,29 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         }
     }
     
-    /**
-     * 保存路由断言关联
-     */
-    private void saveRoutePredicates(Long routeId, List<Long> predicateIds) {
-        if (CollectionUtils.isEmpty(predicateIds)) {
-            return;
-        }
-        
-        for (int i = 0; i < predicateIds.size(); i++) {
-            GwRoutePredicate rp = new GwRoutePredicate();
+    private void saveRoutePlugins(Long routeId, List<RoutePluginDTO> plugins) {
+        for (int i = 0; i < plugins.size(); i++) {
+            RoutePluginDTO pluginDTO = plugins.get(i);
+            
+            GwPlugin plugin = pluginMapper.selectOneById(pluginDTO.getPluginId());
+            if (plugin == null || plugin.getDeleted()) {
+                log.warn("[RouteService] 插件不存在，跳过: {}", pluginDTO.getPluginId());
+                continue;
+            }
+            
+            GwRoutePlugin rp = new GwRoutePlugin();
             rp.setRouteId(routeId);
-            rp.setPredicateId(predicateIds.get(i));
+            rp.setPluginId(pluginDTO.getPluginId());
+            rp.setConfig(pluginDTO.getConfig());
+            rp.setPriorityOverride(pluginDTO.getPriorityOverride());
+            rp.setEnabled(pluginDTO.getEnabled() != null ? pluginDTO.getEnabled() : true);
             rp.setSortOrder(i);
             rp.setCreateTime(LocalDateTime.now());
-            routePredicateMapper.insert(rp);
+            
+            routePluginMapper.insert(rp);
         }
     }
     
-    /**
-     * 保存路由过滤器关联
-     */
-    private void saveRouteFilters(Long routeId, List<Long> filterIds) {
-        if (CollectionUtils.isEmpty(filterIds)) {
-            return;
-        }
-        
-        for (int i = 0; i < filterIds.size(); i++) {
-            GwRouteFilter rf = new GwRouteFilter();
-            rf.setRouteId(routeId);
-            rf.setFilterId(filterIds.get(i));
-            rf.setSortOrder(i);
-            rf.setCreateTime(LocalDateTime.now());
-            routeFilterMapper.insert(rf);
-        }
-    }
-    
-    /**
-     * 更新路由状态
-     */
     private void updateRouteStatus(Long id, boolean enabled) {
         GwRoute route = getById(id);
         if (route == null || route.getDeleted()) {
@@ -303,9 +262,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         log.info("[RouteService] 路由状态更新成功，已同步到 gateway-core: {} -> enabled={}", route.getRouteId(), enabled);
     }
     
-    /**
-     * 转换为VO
-     */
     private RouteVO convertToVO(GwRoute route) {
         RouteVO vo = new RouteVO();
         vo.setId(route.getId());
@@ -329,39 +285,45 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         return vo;
     }
     
-    private List<PredicateVO> loadPredicates(Long routeId) {
-        List<Map<String, Object>> predicates = routePredicateMapper.findPredicatesByRouteId(routeId);
-        return predicates.stream()
+    private List<PluginVO> loadPlugins(Long routeId) {
+        List<Map<String, Object>> plugins = routePluginMapper.findPluginsByRouteId(routeId);
+        return plugins.stream()
                 .map(map -> {
-                    PredicateVO vo = new PredicateVO();
-                    vo.setId(((Number) map.get("id")).longValue());
-                    vo.setPredicateName((String) map.get("predicateName"));
-                    vo.setPredicateType((String) map.get("predicateType"));
-                    vo.setArgs(parseConfig(map.get("args")));
+                    PluginVO vo = new PluginVO();
+                    vo.setId(getLong(map, "route_plugin_id"));
+                    vo.setPluginId(getLong(map, "plugin_id"));
+                    vo.setPluginName((String) map.get("plugin_name"));
+                    vo.setPluginType((String) map.get("plugin_type"));
+                    vo.setConfig(parseConfig(map.get("config")));
+                    vo.setPriorityOverride(getInteger(map, "priority_override"));
+                    vo.setDefaultPriority(getInteger(map, "default_priority"));
                     
-                    Arrays.stream(PredicateType.values())
-                            .filter(t -> t.getType().equals(vo.getPredicateType()))
-                            .findFirst()
-                            .ifPresent(t -> vo.setPredicateTypeDesc(t.getName()));
+                    Integer priorityOverride = getInteger(map, "priority_override");
+                    Integer defaultPriority = getInteger(map, "default_priority");
+                    vo.setEffectivePriority(priorityOverride != null ? priorityOverride : 
+                            (defaultPriority != null ? defaultPriority : 5000));
+                    
+                    Boolean enabled = (Boolean) map.get("enabled");
+                    vo.setEnabled(enabled != null ? enabled : true);
+                    vo.setPhase((String) map.get("phase"));
                     
                     return vo;
                 })
                 .collect(Collectors.toList());
     }
     
-    private List<FilterVO> loadFilters(Long routeId) {
-        List<Map<String, Object>> filters = routeFilterMapper.findFiltersByRouteId(routeId);
-        return filters.stream()
-                .map(map -> {
-                    FilterVO vo = new FilterVO();
-                    vo.setId(((Number) map.get("id")).longValue());
-                    vo.setFilterName((String) map.get("filterName"));
-                    vo.setFilterType((String) map.get("filterType"));
-                    vo.setArgs(parseConfig(map.get("args")));
-                    
-                    return vo;
-                })
-                .collect(Collectors.toList());
+    private Long getLong(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) return ((Number) value).longValue();
+        return null;
+    }
+    
+    private Integer getInteger(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value == null) return null;
+        if (value instanceof Number) return ((Number) value).intValue();
+        return null;
     }
     
     @SuppressWarnings("unchecked")

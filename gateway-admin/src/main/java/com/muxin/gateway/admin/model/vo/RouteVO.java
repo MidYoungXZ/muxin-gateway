@@ -31,6 +31,8 @@ public class RouteVO {
     
     private List<FilterVO> filters;
     
+    private List<PluginVO> plugins;
+    
     private Map<String, Object> metadata;
     
     private Integer order;
