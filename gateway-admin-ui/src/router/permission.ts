@@ -10,7 +10,9 @@ router.beforeEach(async (to, from, next) => {
   
   document.title = to.meta?.title ? `${to.meta.title} - Muxin Gateway` : 'Muxin Gateway'
   
-  if (userStore.isLoggedIn) {
+  const hasToken = !!(userStore.token || localStorage.getItem('user-token'))
+  
+  if (hasToken) {
     if (to.path === '/login') {
       next({ path: '/' })
     } else {
@@ -20,7 +22,7 @@ router.beforeEach(async (to, from, next) => {
           next({ ...to, replace: true })
         } catch (error) {
           console.error('初始化路由失败:', error)
-          await userStore.logout()
+          userStore.clearAuth()
           next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
         }
       } else {
@@ -36,5 +38,4 @@ router.beforeEach(async (to, from, next) => {
   }
 })
 
-router.afterEach(() => {
-})
+router.afterEach(() => {})

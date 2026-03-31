@@ -133,16 +133,12 @@ request.interceptors.response.use(
             await userStore.refreshUserToken()
             return request(config)
           } catch {
-            if (config.showError !== false) {
-              showErrorMessage('登录已过期，请重新登录')
-            }
+            showErrorMessage('登录已过期，请重新登录')
             await userStore.logout()
           }
         } else {
-          if (config.showError !== false) {
-            showErrorMessage('未登录或登录已过期')
-          }
-          await userStore.logout()
+          // 无 token（未登录），静默清理，不弹提示
+          userStore.clearAuth()
         }
         break
         

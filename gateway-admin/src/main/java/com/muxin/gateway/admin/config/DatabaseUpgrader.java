@@ -77,6 +77,7 @@ public class DatabaseUpgrader implements SmartLifecycle {
             ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
             populator.setContinueOnError(true);
             populator.setIgnoreFailedDrops(true);
+            populator.setSqlScriptEncoding("UTF-8");  // 显式指定 SQL 脚本编码
             
             ClassPathResource upgradeResource = new ClassPathResource("sql/upgrade_data_scope.sql");
             if (upgradeResource.exists()) {

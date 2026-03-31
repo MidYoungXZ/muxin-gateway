@@ -59,9 +59,7 @@ export const useUserStore = defineStore('user', () => {
         permissions.value = userInfo.value.permissions || []
         roles.value = userInfo.value.roles || []
       } catch {
-        localStorage.removeItem('user-token')
-        localStorage.removeItem('user-token-type')
-        localStorage.removeItem('user-info')
+        clearAuth()
       }
     }
   }
@@ -82,6 +80,10 @@ export const useUserStore = defineStore('user', () => {
       // ignore
     }
     
+    clearAuth()
+  }
+  
+  const clearAuth = () => {
     token.value = ''
     tokenType.value = 'Bearer'
     userInfo.value = {}
@@ -128,6 +130,7 @@ export const useUserStore = defineStore('user', () => {
     getUserInfoAction,
     refreshUserToken,
     logout,
+    clearAuth,
     hasPermission,
     hasRole,
     hasAnyPermission,

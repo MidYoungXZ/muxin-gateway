@@ -7,7 +7,7 @@ const permission = {
     
     if (value) {
       const permissions = Array.isArray(value) ? value : [value]
-      const hasPermission = menuStore.hasAnyPermissions(permissions)
+      const hasPermission = permissions.some(p => menuStore.hasPermission(p))
       if (!hasPermission) {
         el.parentNode?.removeChild(el)
       }
@@ -20,7 +20,7 @@ const permission = {
     
     if (value) {
       const permissions = Array.isArray(value) ? value : [value]
-      const hasPermission = menuStore.hasAnyPermissions(permissions)
+      const hasPermission = permissions.some(p => menuStore.hasPermission(p))
       if (!hasPermission) {
         el.style.display = 'none'
       } else {

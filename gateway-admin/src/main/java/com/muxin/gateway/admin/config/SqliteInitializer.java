@@ -134,6 +134,7 @@ public class SqliteInitializer implements SmartLifecycle {
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
         populator.setContinueOnError(true);
         populator.setIgnoreFailedDrops(true);
+        populator.setSqlScriptEncoding("UTF-8");  // 显式指定 SQL 脚本编码
         
         ClassPathResource schemaResource = new ClassPathResource("sql/sqlite_schema.sql");
         ClassPathResource dataResource = new ClassPathResource("sql/sqlite_data.sql");

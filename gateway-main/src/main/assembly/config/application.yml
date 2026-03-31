@@ -3,8 +3,6 @@ spring:
     name: muxin-gateway
   profiles:
     active: sqlite
-  mvc:
-    static-path-pattern: /static/**
   web:
     resources:
       cache:
@@ -15,7 +13,7 @@ spring:
         strategy:
           content:
             enabled: true
-            paths: /static/**, /assets/**, /css/**, /js/**, /images/**, /favicon.ico, /index.html, /*.html, /*.css, /*.js, /*.png, /*.jpg, /*.gif, /*.ico, /*.svg
+            paths: /assets/**, /css/**, /js/**, /images/**, /favicon.ico, /*.html, /*.css, /*.js, /*.png, /*.jpg, /*.gif, /*.ico, /*.svg
         cache: true
         compressed: true
       static-locations: classpath:/static/
@@ -33,6 +31,11 @@ sa-token:
 
 server:
   port: 9191
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 muxin:
   gateway:
