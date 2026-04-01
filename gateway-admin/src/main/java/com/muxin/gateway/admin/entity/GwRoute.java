@@ -7,13 +7,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 路由配置实体
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Data
 @Table("gw_route")
 public class GwRoute {
@@ -59,7 +52,6 @@ public class GwRoute {
     
     private String updateBy;
     
-    // 关联的断言列表（非数据库字段）
     @RelationManyToMany(
             joinTable = "gw_route_predicate",
             selfField = "id",
@@ -69,19 +61,6 @@ public class GwRoute {
     )
     private List<GwPredicate> predicates;
     
-    // 关联的过滤器列表（非数据库字段）
-    @RelationManyToMany(
-            joinTable = "gw_route_filter",
-            selfField = "id",
-            joinSelfColumn = "route_id",
-            targetField = "id",
-            joinTargetColumn = "filter_id"
-    )
-    private List<GwFilter> filters;
-    
-    /**
-     * 灰度配置
-     */
     @Data
     public static class GrayscaleConfig {
         private String type;

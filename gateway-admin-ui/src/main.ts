@@ -14,7 +14,8 @@ import {
   Expand, Fold, SwitchButton, Bell, Search, Plus, Edit, Delete, View,
   RefreshRight, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Close, Check,
   Warning, InfoFilled, SuccessFilled, CircleClose, QuestionFilled, FolderRemove,
-  Back, Right
+  Back, Right, Guide, List, UserFilled, OfficeBuilding, Document, Key,
+  SetUp, CircleCheck, Folder
 } from '@element-plus/icons-vue'
 
 import './styles/index.scss'
@@ -29,7 +30,8 @@ const icons = {
   Expand, Fold, SwitchButton, Bell, Search, Plus, Edit, Delete, View,
   RefreshRight, ArrowRight, ArrowLeft, ArrowUp, ArrowDown, Close, Check,
   Warning, InfoFilled, SuccessFilled, CircleClose, QuestionFilled, FolderRemove,
-  Back, Right
+  Back, Right, Guide, List, UserFilled, OfficeBuilding, Document, Key,
+  SetUp, CircleCheck, Folder
 }
 
 Object.entries(icons).forEach(([key, component]) => {
@@ -50,6 +52,12 @@ async function bootstrap() {
     localStorage.removeItem('user-token')
     localStorage.removeItem('user-token-type')
     localStorage.removeItem('user-info')
+  }
+  
+  if (storedToken) {
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    await userStore.init()
   }
   
   app.mount('#app')

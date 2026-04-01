@@ -51,7 +51,7 @@
       </el-form-item>
     </el-form>
 
-    <div class="section-title">服务节点详情</div>
+    <div class="section-title">服务节点</div>
     <div class="node-preview" v-if="modelValue.serviceName">
       <div class="node-header">
         <span>{{ modelValue.serviceName }} 节点列表</span>
@@ -60,23 +60,11 @@
       <el-table :data="serviceNodes" size="small" v-if="serviceNodes.length > 0">
         <el-table-column prop="address" label="地址" />
         <el-table-column prop="weight" label="权重" width="80" />
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.healthy ? 'success' : 'danger'" size="small">
-              {{ row.healthy ? '健康' : '异常' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="responseTime" label="响应时间" width="100">
-          <template #default="{ row }">
-            {{ row.responseTime }}ms
-          </template>
-        </el-table-column>
       </el-table>
       <el-empty v-else description="暂无可用节点" :image-size="60" />
       <div class="node-link">
         <el-button type="primary" link @click="goToNodes">
-          在服务节点管理中配置节点 →
+          在服务管理中配置节点 →
         </el-button>
       </div>
     </div>
@@ -199,16 +187,14 @@ async function loadServiceNodes(serviceName: string) {
   if (!serviceName || allServiceNodes.value[serviceName]) return
   try {
     const res = await request({
-      url: '/api/service-nodes',
+      url: `/api/nodes/services/${serviceName}/nodes`,
       method: 'get',
-      params: { serviceName }
+      params: { pageNum: 1, pageSize: 100 }
     })
     if (res?.data?.data) {
       allServiceNodes.value[serviceName] = res.data.data.map((node: any) => ({
-        address: `${node.host}:${node.port}`,
-        weight: node.weight || 1,
-        healthy: node.healthy !== false,
-        responseTime: node.responseTime || 0
+        address: node.address || `${node.host}:${node.port}`,
+        weight: node.weight || 1
       }))
     }
   } catch (error) {
@@ -247,12 +233,12 @@ defineExpose({ validate })
 }
 
 .section-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .required-mark {
@@ -262,37 +248,39 @@ defineExpose({ validate })
 
 .field-tip {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
-  margin-top: 4px;
+  color: var(--text-placeholder);
+  margin-top: 2px;
   line-height: 1.4;
 }
 
 .node-preview {
-  background: var(--el-fill-color-lighter);
+  background: var(--bg-secondary);
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-primary);
 }
 
 .node-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   font-size: 14px;
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .node-link {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 </style>

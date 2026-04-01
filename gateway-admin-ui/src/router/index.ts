@@ -9,12 +9,6 @@ export const constantRoutes: RouteRecordRaw[] = [
     meta: { hidden: true, title: '登录' }
   },
   {
-    path: '/404',
-    name: 'NotFound',
-    component: () => import('@/views/error/404.vue'),
-    meta: { hidden: true, title: '页面不存在' }
-  },
-  {
     path: '/403',
     name: 'Forbidden',
     component: () => import('@/views/error/403.vue'),

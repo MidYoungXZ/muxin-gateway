@@ -11,7 +11,8 @@
     <div class="dialog-content">
       <StepNavigation
         :current-step="currentStep"
-        @update:current-step="currentStep = $event"
+        :completed-steps="Array.from(completedSteps)"
+        @update:current-step="handleStepChange"
       />
       <div class="form-content">
         <StepBasicInfo
@@ -74,6 +75,7 @@ const emit = defineEmits<{
 const currentStep = ref(0)
 const loading = ref(false)
 const formData = ref<RouteFormState>(getDefaultFormState())
+const completedSteps = ref<Set<number>>(new Set())
 
 const stepBasicInfoRef = ref<InstanceType<typeof StepBasicInfo>>()
 const stepRouteMatchingRef = ref<InstanceType<typeof StepRouteMatching>>()
@@ -90,6 +92,7 @@ watch(() => props.modelValue, (val) => {
       formData.value = getDefaultFormState()
     }
     currentStep.value = 0
+    completedSteps.value = new Set()
   }
 })
 
@@ -162,6 +165,7 @@ async function validateCurrentStep(): Promise<boolean> {
 async function nextStep() {
   const valid = await validateCurrentStep()
   if (valid) {
+    completedSteps.value.add(currentStep.value)
     currentStep.value++
   } else {
     ElMessage.warning('请完成必填项')
@@ -170,6 +174,12 @@ async function nextStep() {
 
 function prevStep() {
   currentStep.value--
+}
+
+function handleStepChange(step: number) {
+  if (step <= currentStep.value || completedSteps.value.has(step - 1)) {
+    currentStep.value = step
+  }
 }
 
 function buildSubmitData(): RouteCreateRequest | RouteUpdateRequest {
@@ -262,6 +272,7 @@ async function handleSave() {
 
 function handleClose() {
   currentStep.value = 0
+  completedSteps.value = new Set()
 }
 </script>
 
@@ -274,12 +285,13 @@ function handleClose() {
 
 .dialog-content {
   display: flex;
-  min-height: 500px;
+  min-height: 420px;
+  max-height: 70vh;
 }
 
 .form-content {
   flex: 1;
-  padding: 24px 0;
+  padding: 16px 0;
   overflow-y: auto;
 }
 

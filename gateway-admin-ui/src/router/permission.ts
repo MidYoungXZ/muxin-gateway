@@ -2,7 +2,7 @@ import router from '@/router'
 import { useUserStore } from '@/stores/user'
 import { useMenuStore } from '@/stores/menu'
 
-const whiteList = ['/login', '/404', '/403']
+const whiteList = ['/login', '/403']
 
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
@@ -23,10 +23,15 @@ router.beforeEach(async (to, from, next) => {
         } catch (error) {
           console.error('初始化路由失败:', error)
           userStore.clearAuth()
+          menuStore.clearMenus()
           next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
         }
       } else {
-        next()
+        if (to.name === 'NotFound' && to.matched.length === 0) {
+          next({ path: '/dashboard' })
+        } else {
+          next()
+        }
       }
     }
   } else {

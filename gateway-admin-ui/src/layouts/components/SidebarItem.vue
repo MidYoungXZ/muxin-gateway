@@ -2,7 +2,7 @@
   <template v-if="visible">
     <el-sub-menu v-if="hasChildren" :index="menuIndex">
       <template #title>
-        <el-icon v-if="showIcon"><component :is="icon" /></el-icon>
+        <el-icon v-if="icon"><component :is="icon" /></el-icon>
         <span>{{ title }}</span>
       </template>
       <sidebar-item
@@ -15,7 +15,7 @@
     </el-sub-menu>
     
     <el-menu-item v-else :index="menuPath">
-      <el-icon v-if="showIcon"><component :is="icon" /></el-icon>
+      <el-icon v-if="icon"><component :is="icon" /></el-icon>
       <template #title><span>{{ title }}</span></template>
     </el-menu-item>
   </template>
@@ -33,13 +33,11 @@ const props = withDefaults(defineProps<{
   level: 1
 })
 
-// 统一属性提取
 const isMenuItem = computed(() => 'menuType' in props.item)
 const menuPath = computed(() => resolvePath(props.item.path))
 const menuIndex = computed(() => props.item.path || String(props.item.id))
 const title = computed(() => props.item.menuName || props.item.meta?.title || props.item.name)
 const icon = computed(() => props.item.icon || props.item.meta?.icon)
-const showIcon = computed(() => props.level === 1 && icon.value)
 
 const visible = computed(() => {
   if (isMenuItem.value) {
@@ -85,14 +83,5 @@ function resolvePath(path?: string) {
 
 :deep(.el-sub-menu > .el-sub-menu__title) {
   padding-left: calc(20px + var(--level, 1) * 16px) !important;
-}
-
-// 收缩状态下重置padding和transform
-:deep(.el-menu--collapse) {
-  .el-menu-item,
-  .el-sub-menu__title {
-    padding-left: 0 !important;
-    transform: none !important;
-  }
 }
 </style>

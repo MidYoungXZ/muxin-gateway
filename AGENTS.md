@@ -287,3 +287,71 @@ muxin:
 server:
   port: 8080  # Tomcat admin port
 ```
+
+## Recent Changes
+
+### Menu Renaming (2026-04-01)
+
+The route management sub-menus have been renamed for simplicity:
+
+| Old Name | New Name | Path |
+|----------|----------|------|
+| 路由列表 | 路由 | /routes/list |
+| 服务节点 | 服务 | /routes/nodes |
+| 插件管理 | 插件 | /routes/plugins |
+
+**Files Changed:**
+- `gateway-admin/src/main/resources/sql/sqlite/data.sql` - Menu names in database
+- `gateway-admin-ui/src/views/routes/list/index.vue` - Page title
+- `gateway-admin-ui/src/views/routes/nodes/index.vue` - Page title
+- `gateway-admin-ui/src/views/routes/plugins/index.vue` - Page title
+
+### Dark Mode Styling Fixes (2026-04-01)
+
+Fixed white background issues in dark mode by replacing hardcoded `#fff` and `var(--el-bg-color)` with CSS variables that support dark mode:
+
+**Key CSS Variables (defined in `variables.scss`):**
+- `--bg-primary` - Main background (#ffffff light / #111827 dark)
+- `--bg-secondary` - Secondary background (#f9fafb light / #1f2937 dark)
+- `--card-bg` - Card background (#ffffff light / #1f2937 dark)
+- `--text-primary` - Primary text color
+- `--border-primary` - Border color
+
+**Files Changed:**
+- `gateway-admin-ui/src/styles/index.scss` - Global dark mode styles
+- `gateway-admin-ui/src/views/routes/list/index.vue` - Removed scoped `background: #fff`
+- `gateway-admin-ui/src/views/routes/plugins/index.vue` - Removed scoped `background: #fff`
+- `gateway-admin-ui/src/views/routes/list/components/StepTargetService.vue` - Fixed node preview background
+
+### Route Creation Predicate Fix (2026-04-01)
+
+Fixed `IllegalArgumentException: 断言配置不能为空` when creating routes.
+
+**Problem:** `RouteServiceImpl.createRoute()` was not saving the `RouteMatchingDTO` (path, methods, headers, hosts, queries) to the database. This caused `RouteConfigConverter.convertToRoute()` to fail validation.
+
+**Solution:** Added `saveRouteMatching()` method to persist predicates:
+- PATH predicate for path matching
+- METHOD predicate for HTTP method matching
+- HOST predicate for host matching
+- HEADER predicate for header matching
+- QUERY predicate for query parameter matching
+
+**Files Changed:**
+- `gateway-admin/src/main/java/com/muxin/gateway/admin/service/impl/RouteServiceImpl.java`
+
+### Service Node API Fix (2026-04-01)
+
+Fixed `NoResourceFoundException: No static resource api/service-nodes` when selecting target service in route creation.
+
+**Problem:** Frontend was calling `/api/service-nodes?serviceName=xxx` but backend endpoint was `/api/nodes/services/{serviceName}/nodes`.
+
+**Solution:** Updated frontend to use correct API path.
+
+**Files Changed:**
+- `gateway-admin-ui/src/views/routes/list/components/StepTargetService.vue`
+
+## Known Issues
+
+1. **Database initialization required:** SQL changes (like menu renaming) require re-initializing the database or manually updating existing records.
+
+2. **Scoped styles override global dark mode:** When adding new components with scoped styles, avoid using hardcoded colors like `#fff` or Element Plus variables like `var(--el-bg-color)`. Use the custom CSS variables defined in `variables.scss` instead.

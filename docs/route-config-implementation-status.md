@@ -17,9 +17,10 @@
 | StepPlugins.vue | `src/views/routes/list/components/` | ✅ 完成 |
 | PluginConfigDrawer.vue | `src/views/routes/list/components/` | ✅ 完成 |
 | RouteFormDialog.vue | `src/views/routes/list/components/` | ✅ 完成 |
-| 路由列表页面 | `src/views/routes/list/index.vue` | ✅ 完成 |
+| 路由页面 | `src/views/routes/list/index.vue` | ✅ 完成 |
+| 插件页面 | `src/views/routes/plugins/index.vue` | ✅ 完成 |
 | API 类型定义 | `src/api/routes.ts` | ✅ 完成 |
-| 插件 API | `src/api/plugins.ts` | ✅ 完成 |
+| 插件 API | `src/api/plugins.ts` | ✅ 完成（含 PluginInfo 类型定义） |
 
 ### 2.2 后端代码
 
@@ -64,9 +65,9 @@
 
 ```
 路由管理
-├── 路由列表     /routes/list
-├── 服务节点     /routes/nodes
-└── 插件管理     /routes/plugins    [新增]
+├── 路由         /routes/list
+├── 服务         /routes/nodes
+└── 插件         /routes/plugins    [新增]
 
 系统管理
 ├── 用户管理     /system/users
@@ -81,17 +82,17 @@
 
 | 原菜单 | 处理方式 |
 |--------|----------|
-| 过滤器管理 | 从菜单移除，页面文件保留 |
-| 断言管理 | 从菜单移除，页面文件保留 |
+| 过滤器管理 | 已删除页面文件和 API 文件 |
+| 断言管理 | 已删除页面文件和 API 文件 |
 
 ### 3.3 菜单权限配置
 
 ```sql
--- 插件管理菜单 (ID: 105)
+-- 插件菜单 (ID: 105)
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order)
-VALUES (105, 1, '插件管理', 'menu.routes.plugins', 'C', '/routes/plugins', 'routes/plugins/index', 'route:plugin:list', 'Plug', 3);
+VALUES (105, 1, '插件', 'menu.routes.plugins', 'C', '/routes/plugins', 'routes/plugins/index', 'route:plugin:list', 'Plug', 3);
 
--- 插件管理按钮权限
+-- 插件按钮权限
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms) VALUES
 (1051, 105, '插件查看', 'F', 'route:plugin:view'),
 (1052, 105, '插件新增', 'F', 'route:plugin:create'),
@@ -103,31 +104,7 @@ INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms) VALUES
 
 ## 4. 未完成工作
 
-### 4.1 前端 - 插件管理页面
-
-**文件**: `src/views/routes/plugins/index.vue`
-
-**状态**: ❌ 未创建
-
-**功能需求**:
-- 插件列表展示（卡片式或表格）
-- 按类型筛选（AUTH/FILTER）
-- 新增/编辑插件对话框
-- 插件详情查看
-- 启用/禁用状态切换
-- 系统内置插件标识（不允许编辑/删除）
-
-**参考代码结构**:
-```vue
-<template>
-  <!-- 搜索栏：类型筛选、名称搜索 -->
-  <!-- 表格：插件名称、类型、描述、优先级、系统标识、状态、操作 -->
-  <!-- 新增/编辑对话框 -->
-  <!-- 详情对话框 -->
-</template>
-```
-
-### 4.2 数据库表初始化
+### 4.1 数据库表初始化
 
 **状态**: ❌ 未执行
 
@@ -142,27 +119,26 @@ mysql -u root -p gateway_db < gateway-admin/src/main/resources/sql/plugin_tables
 mysql -u root -p gateway_db < gateway-admin/src/main/resources/sql/init_system_data.sql
 ```
 
-### 4.3 前端路由注册
+### 4.2 插件 Schema 表单渲染器
 
-**状态**: ❌ 未配置
+**状态**: ✅ 递归 Schema 组件已完成
 
-**需要添加路由**: `/routes/plugins`
+**当前实现**:
+- `SchemaField.vue` - 递归组件，支持所有 JSON Schema 类型
+- `PluginConfigDrawer.vue` - 使用 SchemaField 渲染插件配置
 
-**配置位置**: 通过菜单动态生成，需确保菜单数据库配置正确
+**已支持类型**:
+| 类型 | 渲染组件 | 说明 |
+|------|----------|------|
+| string | el-input / el-select | 支持 enum、password format |
+| number / integer | el-input-number | 支持 minimum/maximum 约束 |
+| boolean | el-switch | - |
+| array (string items) | el-tag + el-input | 标签式输入 |
+| array (object items) | 递归 SchemaField | 可增删的对象列表 |
+| object (有 properties) | 递归 SchemaField | 嵌套对象表单 |
+| object (无 properties) | el-input textarea | JSON 文本编辑 |
 
-### 4.4 插件 Schema 表单渲染器
-
-**状态**: ⚠️ 基础实现完成，需优化
-
-**当前实现**: `PluginConfigDrawer.vue` 中的基础类型渲染
-
-**待优化**:
-- 嵌套对象类型支持
-- 数组对象类型支持
-- 自定义校验规则
-- 动态表单联动
-
-### 4.5 后端 - 插件配置持久化
+### 4.3 后端 - 插件配置持久化
 
 **状态**: ⚠️ 基础实现完成
 
@@ -177,13 +153,13 @@ mysql -u root -p gateway_db < gateway-admin/src/main/resources/sql/init_system_d
 
 ### 优先级 P0（核心功能）
 
-- [ ] 创建插件管理页面 `src/views/routes/plugins/index.vue`
+- [x] 创建插件页面 `src/views/routes/plugins/index.vue`
 - [ ] 执行数据库初始化 SQL
 - [ ] 验证端到端流程：创建路由 → 配置插件 → 保存 → 查看
 
 ### 优先级 P1（重要功能）
 
-- [ ] 优化 Schema 驱动表单渲染器
+- [x] 优化 Schema 驱动表单渲染器（递归 SchemaField 组件）
 - [ ] 插件配置预览和测试功能
 - [ ] 路由配置复制功能
 - [ ] 批量操作优化
@@ -197,9 +173,9 @@ mysql -u root -p gateway_db < gateway-admin/src/main/resources/sql/init_system_d
 
 ### 优先级 P3（清理工作）
 
-- [ ] 决定是否删除旧的过滤器/断言管理页面
-- [ ] 清理未使用的 API 文件（predicates.ts, filters.ts）
-- [ ] 更新设计文档
+- [x] 删除旧的过滤器/断言管理页面和 API 文件
+- [x] 清理 routes.ts 中重复的 pluginsApi 和 PluginInfo 定义
+- [x] 更新设计文档
 
 ---
 
@@ -278,10 +254,11 @@ Step 4: 插件配置
 ├── src/views/routes/list/components/StepRouteMatching.vue
 ├── src/views/routes/list/components/StepTargetService.vue
 ├── src/views/routes/list/components/StepPlugins.vue
+├── src/views/routes/list/components/SchemaField.vue  ← 递归 Schema 表单组件
 ├── src/views/routes/list/components/PluginConfigDrawer.vue
 ├── src/views/routes/list/components/RouteFormDialog.vue
-├── src/api/plugins.ts
-└── src/views/routes/plugins/index.vue (待创建)
+├── src/api/plugins.ts (含 PluginInfo 类型定义)
+└── src/views/routes/plugins/index.vue
 
 后端:
 ├── entity/GwPlugin.java
@@ -306,7 +283,10 @@ Step 4: 插件配置
 
 ```
 前端:
-├── src/api/routes.ts (新增类型定义)
+├── src/api/routes.ts (移除重复的 pluginsApi 和 PluginInfo)
+├── src/views/routes/list/components/StepPlugins.vue (更新导入路径)
+├── src/views/routes/list/components/PluginConfigDrawer.vue (更新导入路径)
+├── src/views/routes/plugins/index.vue (更新导入路径)
 └── src/views/routes/list/index.vue (重写)
 
 后端:
@@ -317,14 +297,14 @@ Step 4: 插件配置
 └── resources/sql/init_system_data.sql
 ```
 
-### 7.3 待删除文件（可选）
+### 7.3 已删除文件
 
 ```
 前端:
-├── src/views/routes/filters/index.vue
-├── src/views/routes/predicates/index.vue
-├── src/api/filters.ts
-└── src/api/predicates.ts
+├── src/views/routes/filters/index.vue        ← 已删除
+├── src/views/routes/predicates/index.vue     ← 已删除
+├── src/api/filters.ts                        ← 已删除
+└── src/api/predicates.ts                     ← 已删除
 ```
 
 ---
@@ -364,8 +344,8 @@ Step 4: 插件配置
 
 ---
 
-**最后更新**: 2026-03-31
+**最后更新**: 2026-04-01
 
-**完成进度**: 约 85%
+**完成进度**: 约 93%
 
-**下一步**: 创建插件管理页面
+**下一步**: 执行数据库初始化 SQL，验证端到端流程

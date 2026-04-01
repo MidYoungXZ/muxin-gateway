@@ -306,11 +306,11 @@ defineExpose({ validate })
 }
 
 .section-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
@@ -322,49 +322,49 @@ defineExpose({ validate })
 .field-tip {
   font-size: 12px;
   color: var(--el-text-color-placeholder);
-  margin-top: 4px;
+  margin-top: 2px;
   line-height: 1.4;
 }
 
 .method-checkboxes {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .match-list, .host-list {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .match-row, .host-row {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .match-preview {
-  margin-top: 24px;
+  margin-top: 16px;
   background: var(--el-fill-color-light);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
 }
 
 .preview-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .preview-tip {
   font-size: 13px;
   color: var(--el-text-color-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .preview-rules {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .rule-item {
@@ -380,11 +380,11 @@ defineExpose({ validate })
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 </style>

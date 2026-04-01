@@ -38,7 +38,7 @@ export interface RoutePluginInfo {
   id: number
   pluginId: number
   pluginName: string
-  pluginType: 'AUTH' | 'FILTER'
+  pluginType: 'FILTER'
   config: Record<string, any>
   priorityOverride?: number
   defaultPriority: number
@@ -94,7 +94,7 @@ export interface RouteFormState {
 export interface RoutePlugin {
   pluginId: number
   pluginName: string
-  pluginType: 'AUTH' | 'FILTER'
+  pluginType: 'FILTER'
   config: Record<string, any>
   priorityOverride?: number
   enabled: boolean
@@ -268,37 +268,6 @@ export const routesApi = {
       method: 'get'
     })
   }
-}
-
-export const pluginsApi = {
-  list(params?: { type?: string }) {
-    return request<{ data: PluginInfo[] }>({
-      url: '/api/plugins',
-      method: 'get',
-      params
-    })
-  },
-
-  detail(id: number) {
-    return request<{ data: PluginInfo }>({
-      url: `/api/plugins/${id}`,
-      method: 'get'
-    })
-  }
-}
-
-export interface PluginInfo {
-  id: number
-  pluginName: string
-  pluginType: 'AUTH' | 'FILTER'
-  description: string
-  schema: Record<string, any>
-  defaultConfig: Record<string, any>
-  defaultPriority: number
-  phase: string
-  icon: string
-  isSystem: boolean
-  enabled: boolean
 }
 
 export function getDefaultFormState(): RouteFormState {

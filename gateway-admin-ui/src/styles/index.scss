@@ -1507,7 +1507,14 @@ a {
   display: flex;
   flex-direction: column;
   height: 100%;
-  gap: var(--space-3);
+  
+  > * {
+    margin-bottom: var(--space-3);
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }
 
 // 页面标题行（精简）
@@ -1618,6 +1625,38 @@ a {
 
 // ==================== 暗色模式样式覆盖 ====================
 .dark {
+  // 布局暗色模式
+  .layout-main {
+    background: var(--bg-secondary);
+    
+    .content-wrapper {
+      background: var(--bg-secondary);
+    }
+    
+    .page-tabs {
+      background: var(--bg-secondary);
+      border-color: var(--border-primary);
+      
+      .tab-item {
+        background: var(--bg-tertiary);
+        border-color: var(--border-primary);
+        color: var(--text-secondary);
+        
+        &:hover {
+          background: var(--primary-100);
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+        }
+        
+        &.active {
+          background: var(--primary-100);
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+        }
+      }
+    }
+  }
+  
   // Element Plus 组件暗色模式覆盖
   .el-card {
     background: var(--card-bg);
@@ -1904,7 +1943,7 @@ a {
   
   // 页面容器暗色模式
   .page-list-container {
-    background: transparent;
+    background: var(--bg-secondary);
   }
   
   // 搜索栏暗色模式
@@ -1930,7 +1969,7 @@ a {
   }
   
   // 面包屑暗色模式
-  .el-breadcrumb {
+  .el-breadcrumb, .custom-breadcrumb {
     .el-breadcrumb__item {
       .el-breadcrumb__inner {
         color: var(--text-secondary);
@@ -1938,12 +1977,40 @@ a {
         &.is-link:hover {
           color: var(--primary-color);
         }
+        
+        a {
+          color: var(--text-secondary);
+          
+          &:hover {
+            color: var(--primary-color);
+          }
+        }
+      }
+      
+      .el-breadcrumb__separator {
+        color: var(--text-tertiary);
       }
       
       &:last-child .el-breadcrumb__inner {
         color: var(--text-primary);
+        
+        span {
+          color: var(--text-primary);
+        }
       }
     }
+  }
+  
+  .breadcrumb-link {
+    color: var(--text-secondary);
+    
+    &:hover {
+      color: var(--primary-color);
+    }
+  }
+  
+  .breadcrumb-current {
+    color: var(--text-primary);
   }
   
   // Avatar 暗色模式
@@ -1966,6 +2033,273 @@ a {
     &:focus-visible {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
+    }
+  }
+  
+  // InputNumber 数字输入框暗色模式
+  .el-input-number {
+    .el-input__wrapper {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+    }
+    
+    .el-input-number__decrease,
+    .el-input-number__increase {
+      background: var(--bg-tertiary);
+      border-color: var(--border-primary);
+      color: var(--text-primary);
+      
+      &:hover {
+        background: var(--bg-quaternary);
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // Textarea 多行文本框暗色模式
+  .el-textarea {
+    .el-textarea__inner {
+      background: var(--input-bg);
+      border-color: var(--input-border);
+      color: var(--text-primary);
+      
+      &::placeholder {
+        color: var(--text-placeholder);
+      }
+      
+      &:hover {
+        border-color: var(--input-hover-border);
+      }
+      
+      &:focus {
+        border-color: var(--input-focus-border);
+      }
+    }
+  }
+  
+  // Divider 分割线暗色模式
+  .el-divider {
+    --el-border-color: var(--border-primary);
+    border-color: var(--border-primary);
+    
+    .el-divider__text {
+      background: var(--card-bg);
+      color: var(--text-secondary);
+    }
+  }
+  
+  // Card 卡片暗色模式增强
+  .el-card {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+  }
+  
+  // 步骤导航暗色模式
+  .step-navigation {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+  }
+  
+  // 插件卡片暗色模式
+  .plugin-card {
+    background: var(--card-bg);
+    border-color: var(--border-primary);
+  }
+  
+  // 插件列表暗色模式
+  .plugin-list {
+    background: var(--bg-tertiary);
+  }
+  
+  // 节点项暗色模式
+  .node-item {
+    .el-card {
+      background: var(--bg-tertiary);
+      border-color: var(--border-primary);
+    }
+  }
+  
+  // 分页按钮暗色模式增强
+  .el-pagination {
+    .btn-prev,
+    .btn-next {
+      background: var(--card-bg);
+      border-color: var(--border-primary);
+      color: var(--text-primary);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+      
+      &.is-disabled {
+        background: var(--bg-tertiary);
+        color: var(--text-disabled);
+      }
+    }
+    
+    .el-pager li {
+      background: var(--card-bg);
+      border-color: var(--border-primary);
+      color: var(--text-primary);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+    }
+  }
+  
+  // 面包屑暗色模式增强
+  .el-breadcrumb {
+    .el-breadcrumb__item {
+      .el-breadcrumb__inner {
+        color: var(--text-tertiary);
+        
+        &.is-link {
+          color: var(--text-secondary);
+          
+          &:hover {
+            color: var(--primary-color);
+          }
+        }
+      }
+      
+      .el-breadcrumb__separator {
+        color: var(--text-tertiary);
+      }
+      
+      &:last-child .el-breadcrumb__inner {
+        color: var(--text-primary);
+        font-weight: var(--font-medium);
+      }
+    }
+  }
+  
+  // 下拉菜单分割线修复
+  .el-dropdown-menu {
+    .el-dropdown-menu__item {
+      &:not(:last-child) {
+        border-bottom: none;
+      }
+    }
+    
+    &::before {
+      display: none;
+    }
+  }
+  
+  // Dropdown 分割线暗色模式
+  .el-dropdown-menu__item--divided {
+    border-top-color: var(--border-primary);
+    
+    &::before {
+      background: var(--card-bg);
+    }
+  }
+  
+  .el-dropdown-menu__item--divided::before {
+    background: var(--card-bg);
+  }
+  
+  // 匹配预览暗色模式
+  .match-preview {
+    background: var(--bg-tertiary);
+  }
+  
+  // 搜索栏暗色模式增强
+  .search-bar {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+  }
+  
+  // 表格工具栏暗色模式增强
+  .table-wrapper {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    
+    .table-toolbar {
+      background: var(--bg-secondary);
+      border-color: var(--border-primary);
+    }
+  }
+  
+  // 分页包装器暗色模式增强
+  .pagination-wrapper {
+    background: var(--bg-secondary);
+    border-color: var(--border-primary);
+  }
+  
+  // 步骤导航暗色模式增强
+  .step-navigation {
+    background: var(--bg-secondary);
+    border-right-color: var(--border-primary);
+    
+    .step-title {
+      color: var(--text-primary);
+    }
+    
+    .step-item {
+      &.active {
+        background: var(--primary-100);
+        
+        .step-label {
+          color: var(--primary-color);
+        }
+        
+        .step-indicator {
+          background: var(--primary-color);
+        }
+      }
+      
+      &.completed {
+        .step-indicator {
+          background: var(--success-color);
+        }
+        
+        .step-status {
+          color: var(--success-color);
+        }
+      }
+      
+      &.disabled {
+        .step-label {
+          color: var(--text-disabled);
+        }
+        
+        .step-indicator {
+          background: var(--bg-tertiary);
+        }
+      }
+    }
+    
+    .step-label {
+      color: var(--text-primary);
+    }
+    
+    .step-status {
+      color: var(--text-secondary);
+    }
+    
+    .step-indicator {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+  }
+  
+  // 页面列表容器暗色模式 - 修复白色间隙
+  .page-list-container {
+    background: var(--bg-secondary);
+  }
+  
+  // 展开内容暗色模式 - 修复服务节点展开白色背景
+  .expand-content {
+    background: var(--bg-tertiary);
+    
+    .expand-title {
+      color: var(--text-primary);
     }
   }
 } 

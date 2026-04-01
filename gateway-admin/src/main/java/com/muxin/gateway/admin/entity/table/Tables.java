@@ -1,80 +1,28 @@
 package com.muxin.gateway.admin.entity.table;
 
-/**
- * 所有表定义的统一管理类
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 public final class Tables {
     
-    /**
-     * 路由配置表
-     */
     public static final GwRouteTableDef GW_ROUTE = GwRouteTableDef.GW_ROUTE;
     
-    /**
-     * 过滤器配置表
-     */
-    public static final GwFilterTableDef GW_FILTER = GwFilterTableDef.GW_FILTER;
-    
-    /**
-     * 断言配置表
-     */
     public static final GwPredicateTableDef GW_PREDICATE = GwPredicateTableDef.GW_PREDICATE;
     
-    /**
-     * 路由过滤器关联表
-     */
-    public static final GwRouteFilterTableDef GW_ROUTE_FILTER = GwRouteFilterTableDef.GW_ROUTE_FILTER;
-    
-    /**
-     * 路由断言关联表
-     */
     public static final GwRoutePredicateTableDef GW_ROUTE_PREDICATE = GwRoutePredicateTableDef.GW_ROUTE_PREDICATE;
     
-    /**
-     * 用户表
-     */
     public static final SysUserTableDef SYS_USER = SysUserTableDef.SYS_USER;
     
-    /**
-     * 角色表
-     */
     public static final SysRoleTableDef SYS_ROLE = SysRoleTableDef.SYS_ROLE;
     
-    /**
-     * 用户角色关联表
-     */
     public static final SysUserRoleTableDef SYS_USER_ROLE = SysUserRoleTableDef.SYS_USER_ROLE;
     
-    /**
-     * 角色菜单关联表
-     */
     public static final SysRoleMenuTableDef SYS_ROLE_MENU = SysRoleMenuTableDef.SYS_ROLE_MENU;
     
-    /**
-     * 角色部门关联表
-     */
     public static final SysRoleDeptTableDef SYS_ROLE_DEPT = SysRoleDeptTableDef.SYS_ROLE_DEPT;
     
-    /**
-     * 菜单表
-     */
     public static final SysMenuTableDef SYS_MENU = SysMenuTableDef.SYS_MENU;
     
-    /**
-     * 部门表
-     */
     public static final SysDeptTableDef SYS_DEPT = SysDeptTableDef.SYS_DEPT;
     
-    /**
-     * 系统配置表
-     */
     public static final SysConfigTableDef SYS_CONFIG = SysConfigTableDef.SYS_CONFIG;
     
-    private Tables() {
-        // 私有构造函数，防止实例化
-    }
+    private Tables() {}
 } 

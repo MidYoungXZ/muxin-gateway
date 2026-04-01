@@ -1,5 +1,18 @@
 import request from '@/utils/request'
-import type { PluginInfo } from './routes'
+
+export interface PluginInfo {
+  id: number
+  pluginName: string
+  pluginType: 'FILTER'
+  description: string
+  schema: Record<string, any>
+  defaultConfig: Record<string, any>
+  defaultPriority: number
+  phase: string
+  icon: string
+  isSystem: boolean
+  enabled: boolean
+}
 
 export const pluginsApi = {
   list(params?: { type?: string }) {

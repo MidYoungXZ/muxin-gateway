@@ -21,18 +21,12 @@ public class FilterRegistry {
     }
 
     private void registerBuiltInFactories() {
-        register(new AddRequestHeaderFilter.Factory());
-        register(new AddResponseHeaderFilter.Factory());
-        register(new RemoveRequestHeaderFilter.Factory());
-        register(new RemoveResponseHeaderFilter.Factory());
-        register(new RewritePathFilter.Factory());
         register(new RequestRateLimiterFilter.Factory());
         register(new CircuitBreakerFilter.Factory());
-        register(new RetryFilter.Factory());
-        register(new PathRewriteFilter.Factory());
-        register(new RequestIdFilter.Factory());
-        register(new RequestLogFilter.Factory());
-        register(new MetricsFilter.Factory());
+        register(new CorsFilter.Factory());
+        register(new TimeoutFilter.Factory());
+        register(new RequestRewriteFilter.Factory());
+        register(new ResponseRewriteFilter.Factory());
         
         log.info("[FilterRegistry] 已注册 {} 个内置过滤器工厂", factories.size());
     }

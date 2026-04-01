@@ -36,7 +36,8 @@ export const useMenuStore = defineStore('menu', () => {
       return menus.value
     } catch (error) {
       console.error('获取用户菜单失败:', error)
-      return []
+      isLoaded.value = false
+      throw error
     }
   }
 
@@ -47,7 +48,7 @@ export const useMenuStore = defineStore('menu', () => {
       return permissions.value
     } catch (error) {
       console.error('获取用户权限失败:', error)
-      return []
+      throw error
     }
   }
 
@@ -64,7 +65,9 @@ export const useMenuStore = defineStore('menu', () => {
     
     router.addRoute({
       path: '/:pathMatch(.*)*',
-      redirect: '/404'
+      name: 'NotFound',
+      component: () => import('@/views/error/404.vue'),
+      meta: { hidden: true, title: '页面不存在' }
     })
     
     routesLoaded.value = true
@@ -74,9 +77,14 @@ export const useMenuStore = defineStore('menu', () => {
   async function initRoutes() {
     if (routesLoaded.value) return
     
-    await fetchUserMenus()
-    await fetchUserPermissions()
-    generateAndAddRoutes()
+    try {
+      await fetchUserMenus()
+      await fetchUserPermissions()
+      generateAndAddRoutes()
+    } catch (error) {
+      clearMenus()
+      throw error
+    }
   }
 
   function hasPermission(permission: string) {

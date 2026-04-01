@@ -9,11 +9,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+
 import javax.sql.DataSource;
 import java.io.File;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -104,7 +109,18 @@ public class SqliteInitializer implements SmartLifecycle {
     private boolean isDatabaseInitialized() {
         try (Connection conn = dataSource.getConnection()) {
             ResultSet rs = conn.getMetaData().getTables(null, null, "sys_user", null);
-            return rs.next();
+            if (!rs.next()) {
+                return false;
+            }
+            ResultSet rs2 = conn.getMetaData().getTables(null, null, "sys_role_menu", null);
+            if (!rs2.next()) {
+                return false;
+            }
+            ResultSet countRs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM sys_role_menu");
+            if (countRs.next() && countRs.getInt(1) > 0) {
+                return true;
+            }
+            return false;
         } catch (Exception e) {
             log.debug("Database check failed: {}", e.getMessage());
             return false;
@@ -134,27 +150,20 @@ public class SqliteInitializer implements SmartLifecycle {
         ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
         populator.setContinueOnError(true);
         populator.setIgnoreFailedDrops(true);
-        populator.setSqlScriptEncoding("UTF-8");  // 显式指定 SQL 脚本编码
-        
-        ClassPathResource schemaResource = new ClassPathResource("sql/sqlite_schema.sql");
-        ClassPathResource dataResource = new ClassPathResource("sql/sqlite_data.sql");
-        
-        if (schemaResource.exists()) {
-            populator.addScript(schemaResource);
-            log.info("Added schema script: sql/sqlite_schema.sql");
-        } else {
-            log.warn("Schema script not found: sql/sqlite_schema.sql");
+        populator.setSqlScriptEncoding("UTF-8");
+
+        String[] sqlFiles = {"sql/sqlite/schema.sql", "sql/sqlite/data.sql"};
+        for (String sqlFile : sqlFiles) {
+            ClassPathResource resource = new ClassPathResource(sqlFile);
+            if (resource.exists()) {
+                populator.addScript(resource);
+                log.info("Added SQL script: {}", sqlFile);
+            } else {
+                log.warn("SQL script not found: {}", sqlFile);
+            }
         }
-        
-        if (dataResource.exists()) {
-            populator.addScript(dataResource);
-            log.info("Added data script: sql/sqlite_data.sql");
-        } else {
-            log.warn("Data script not found: sql/sqlite_data.sql");
-        }
-        
+
         populator.execute(dataSource);
-        
         log.info("Database initialization scripts executed");
     }
 }

@@ -27,10 +27,6 @@ public class RouteVO {
     
     private String uri;
     
-    private List<PredicateVO> predicates;
-    
-    private List<FilterVO> filters;
-    
     private List<PluginVO> plugins;
     
     private Map<String, Object> metadata;

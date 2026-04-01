@@ -102,17 +102,20 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     }
     
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Long createService(ServiceCreateDTO dto) {
         String serviceName = dto.getServiceName();
         
         checkServiceExists(serviceName);
         
+        Long firstId;
         if (ServiceCreateDTO.MODE_DISCOVERY.equals(dto.getCreateMode())) {
-            return createServiceFromDiscovery(serviceName, dto.getDiscoveryConfig());
+            firstId = createServiceFromDiscovery(serviceName, dto.getDiscoveryConfig());
         } else {
-            return createServiceManual(serviceName, dto.getNodes());
+            firstId = createServiceManual(serviceName, dto.getNodes());
         }
+        
+        configRefreshService.refreshServices();
+        return firstId;
     }
     
     private void checkServiceExists(String serviceName) {
@@ -140,7 +143,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             }
         }
         
-        configRefreshService.refreshServices();
         log.info("[ServiceNodeService] 手动创建服务成功: {}, 节点数: {}", serviceName, nodes.size());
         return firstId;
     }
@@ -169,7 +171,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         
         save(entity);
         
-        configRefreshService.refreshServices();
         log.info("[ServiceNodeService] 创建服务成功（默认节点）: {}", serviceName);
         return entity.getId();
     }
@@ -217,7 +218,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             index++;
         }
         
-        configRefreshService.refreshServices();
         log.info("[ServiceNodeService] 从注册中心创建服务成功: {}, 节点数: {}", serviceName, discoveredNodes.size());
         return firstId;
     }
@@ -382,7 +382,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     }
     
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public void deleteService(String serviceName) {
         List<RouteSimpleVO> routes = getRoutesByServiceName(serviceName);
         if (!routes.isEmpty()) {

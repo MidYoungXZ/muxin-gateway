@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
-import com.muxin.gateway.admin.mapper.RouteFilterMapper;
+import com.muxin.gateway.admin.mapper.RoutePluginMapper;
 import com.muxin.gateway.core.config.provider.ConfigChangedEvent;
 import com.muxin.gateway.core.config.provider.ConfigChangeListener;
 import com.muxin.gateway.core.config.provider.RouteConfigProvider;
@@ -29,7 +29,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
     private final RouteMapper routeMapper;
     private final RoutePredicateMapper routePredicateMapper;
-    private final RouteFilterMapper routeFilterMapper;
+    private final RoutePluginMapper routePluginMapper;
     private final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
     private volatile List<RouteDefinition> cachedRoutes = new ArrayList<>();
     private volatile boolean refreshing = false;
@@ -128,7 +128,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
         List<PredicateDefinition> predicates = loadPredicates(route.getId());
         definition.setPredicates(predicates);
 
-        List<FilterDefinition> filters = loadFilters(route.getId());
+        List<FilterDefinition> filters = loadFiltersFromPlugins(route.getId());
         definition.setFilters(filters);
 
         return definition;
@@ -162,26 +162,206 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
         return predicates;
     }
 
-    private List<FilterDefinition> loadFilters(Long routeId) {
-        List<Map<String, Object>> filterMaps = routeFilterMapper.findFiltersByRouteId(routeId);
+    private List<FilterDefinition> loadFiltersFromPlugins(Long routeId) {
+        List<Map<String, Object>> pluginMaps = routePluginMapper.findPluginsByRouteId(routeId);
         List<FilterDefinition> filters = new ArrayList<>();
 
-        for (Map<String, Object> map : filterMaps) {
-            String filterType = (String) map.get("filterType");
-            Map<String, Object> config = parseConfig(map.get("args"));
-            Object orderObj = map.get("order");
-            int order = orderObj instanceof Number ? ((Number) orderObj).intValue() : 0;
+        for (Map<String, Object> map : pluginMaps) {
+            String pluginName = (String) map.get("plugin_name");
+            String pluginType = (String) map.get("plugin_type");
+            Map<String, Object> routeConfig = parseConfig(map.get("config"));
+            Map<String, Object> defaultConfig = parseConfig(map.get("default_config"));
+            Object priorityOverride = map.get("priority_override");
+            Object defaultPriority = map.get("default_priority");
+            Boolean pluginEnabled = map.get("enabled") instanceof Number
+                    ? ((Number) map.get("enabled")).intValue() != 0
+                    : Boolean.TRUE.equals(map.get("enabled"));
 
-            FilterDefinition filter = FilterDefinition.builder()
-                    .name(filterType)
-                    .args(config != null ? config : new HashMap<>())
-                    .order(order)
-                    .enabled(true)
-                    .build();
-            filters.add(filter);
+            if (!pluginEnabled) {
+                continue;
+            }
+
+            Map<String, Object> effectiveConfig = mergeConfig(defaultConfig, routeConfig);
+            int order = priorityOverride instanceof Number
+                    ? ((Number) priorityOverride).intValue()
+                    : (defaultPriority instanceof Number ? ((Number) defaultPriority).intValue() : 0);
+
+            List<FilterDefinition> mapped = mapPluginToFilters(pluginName, pluginType, effectiveConfig, order);
+            filters.addAll(mapped);
         }
 
         return filters;
+    }
+
+    private Map<String, Object> mergeConfig(Map<String, Object> defaults, Map<String, Object> overrides) {
+        Map<String, Object> merged = new HashMap<>();
+        if (defaults != null) {
+            merged.putAll(defaults);
+        }
+        if (overrides != null) {
+            merged.putAll(overrides);
+        }
+        return merged;
+    }
+
+private List<FilterDefinition> mapPluginToFilters(String pluginName, String pluginType,
+                                                        Map<String, Object> config, int order) {
+        if (!"FILTER".equals(pluginType)) {
+            log.debug("Skipping non-FILTER plugin: {} (type={})", pluginName, pluginType);
+            return List.of();
+        }
+
+        return switch (pluginName) {
+            case "rate-limit" -> List.of(createRateLimitFilter(config, order));
+            case "circuit-breaker" -> List.of(createCircuitBreakerFilter(config, order));
+            case "cors" -> List.of(createCorsFilter(config, order));
+            case "timeout" -> List.of(createTimeoutFilter(config, order));
+            case "request-rewrite" -> List.of(createRequestRewriteFilter(config, order));
+            case "response-rewrite" -> List.of(createResponseRewriteFilter(config, order));
+            default -> {
+                log.warn("No filter mapping for plugin: {}, skipping", pluginName);
+                yield List.of();
+            }
+        };
+    }
+
+    private FilterDefinition createRateLimitFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        Object rate = config.get("rate");
+        if (rate != null) {
+            filterArgs.put("replenishRate", toInt(rate, 10));
+        }
+        Object burst = config.get("burst");
+        if (burst != null) {
+            filterArgs.put("burstCapacity", toInt(burst, 20));
+        }
+
+        return FilterDefinition.builder()
+                .name("RequestRateLimiter")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    private FilterDefinition createCircuitBreakerFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        Object failureThreshold = config.get("failureThreshold");
+        if (failureThreshold != null) {
+            filterArgs.put("failureRateThreshold", toInt(failureThreshold, 50));
+        }
+        Object timeout = config.get("timeout");
+        if (timeout != null) {
+            filterArgs.put("waitDurationInOpenState", toLong(timeout, 60000));
+        }
+        Object successThreshold = config.get("successThreshold");
+        if (successThreshold != null) {
+            filterArgs.put("ringBufferSize", toInt(successThreshold, 100));
+        }
+
+        return FilterDefinition.builder()
+                .name("CircuitBreaker")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    private FilterDefinition createCorsFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        filterArgs.put("allowOrigins", config.getOrDefault("allowOrigins", "*"));
+        filterArgs.put("allowMethods", config.getOrDefault("allowMethods", "*"));
+        filterArgs.put("allowHeaders", config.getOrDefault("allowHeaders", "*"));
+        filterArgs.put("allowCredentials", config.getOrDefault("allowCredentials", false));
+        filterArgs.put("maxAge", config.getOrDefault("maxAge", 3600));
+
+        return FilterDefinition.builder()
+                .name("CorsFilter")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    private FilterDefinition createTimeoutFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        filterArgs.put("connectTimeout", config.getOrDefault("connectTimeout", 5000));
+        filterArgs.put("responseTimeout", config.getOrDefault("responseTimeout", 30000));
+
+        return FilterDefinition.builder()
+                .name("TimeoutFilter")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private FilterDefinition createRequestRewriteFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        
+        if (config.get("pathRegex") != null) {
+            filterArgs.put("pathRegex", config.get("pathRegex"));
+        }
+        if (config.get("pathReplacement") != null) {
+            filterArgs.put("pathReplacement", config.get("pathReplacement"));
+        }
+        if (config.get("headersToAdd") != null) {
+            filterArgs.put("headersToAdd", config.get("headersToAdd"));
+        }
+        if (config.get("headersToRemove") != null) {
+            filterArgs.put("headersToRemove", config.get("headersToRemove"));
+        }
+
+        return FilterDefinition.builder()
+                .name("RequestRewriteFilter")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private FilterDefinition createResponseRewriteFilter(Map<String, Object> config, int order) {
+        Map<String, Object> filterArgs = new HashMap<>();
+        
+        if (config.get("headersToAdd") != null) {
+            filterArgs.put("headersToAdd", config.get("headersToAdd"));
+        }
+        if (config.get("headersToRemove") != null) {
+            filterArgs.put("headersToRemove", config.get("headersToRemove"));
+        }
+        if (config.get("bodyRegex") != null) {
+            filterArgs.put("bodyRegex", config.get("bodyRegex"));
+        }
+        if (config.get("bodyReplacement") != null) {
+            filterArgs.put("bodyReplacement", config.get("bodyReplacement"));
+        }
+
+        return FilterDefinition.builder()
+                .name("ResponseRewriteFilter")
+                .args(filterArgs)
+                .order(order)
+                .enabled(true)
+                .build();
+    }
+
+    private int toInt(Object value, int defaultValue) {
+        if (value instanceof Number) return ((Number) value).intValue();
+        if (value instanceof String) {
+            try { return Integer.parseInt((String) value); }
+            catch (NumberFormatException e) { return defaultValue; }
+        }
+        return defaultValue;
+    }
+
+    private long toLong(Object value, long defaultValue) {
+        if (value instanceof Number) return ((Number) value).longValue();
+        if (value instanceof String) {
+            try { return Long.parseLong((String) value); }
+            catch (NumberFormatException e) { return defaultValue; }
+        }
+        return defaultValue;
     }
 
     @SuppressWarnings("unchecked")

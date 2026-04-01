@@ -1,5 +1,4 @@
 -- Muxin Gateway SQLite Schema
--- SQLite compatible table definitions
 
 -- ====================================
 -- Gateway Core Tables
@@ -51,29 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_predicate_type ON gw_predicate(predicate_type);
 CREATE INDEX IF NOT EXISTS idx_predicate_enabled ON gw_predicate(enabled);
 CREATE INDEX IF NOT EXISTS idx_predicate_deleted ON gw_predicate(deleted);
 
--- 3. 过滤器配置表
-CREATE TABLE IF NOT EXISTS gw_filter (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filter_name VARCHAR(100) NOT NULL,
-    filter_type VARCHAR(50) NOT NULL,
-    description VARCHAR(500),
-    args TEXT,
-    "order" INTEGER NOT NULL DEFAULT 0,
-    is_system INTEGER NOT NULL DEFAULT 0,
-    enabled INTEGER NOT NULL DEFAULT 1,
-    create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_filter_type ON gw_filter(filter_type);
-CREATE INDEX IF NOT EXISTS idx_filter_order ON gw_filter("order");
-CREATE INDEX IF NOT EXISTS idx_filter_enabled ON gw_filter(enabled);
-CREATE INDEX IF NOT EXISTS idx_filter_deleted ON gw_filter(deleted);
-
--- 4. 路由-断言关联表
+-- 3. 路由-断言关联表
 CREATE TABLE IF NOT EXISTS gw_route_predicate (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     route_id INTEGER NOT NULL,
@@ -86,18 +63,45 @@ CREATE TABLE IF NOT EXISTS gw_route_predicate (
 CREATE INDEX IF NOT EXISTS idx_rp_route_id ON gw_route_predicate(route_id);
 CREATE INDEX IF NOT EXISTS idx_rp_predicate_id ON gw_route_predicate(predicate_id);
 
--- 5. 路由-过滤器关联表
-CREATE TABLE IF NOT EXISTS gw_route_filter (
+-- 4. 插件模板表
+CREATE TABLE IF NOT EXISTS gw_plugin (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    route_id INTEGER NOT NULL,
-    filter_id INTEGER NOT NULL,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    UNIQUE(route_id, filter_id)
+    plugin_name VARCHAR(64) NOT NULL UNIQUE,
+    plugin_type VARCHAR(32) NOT NULL,
+    description VARCHAR(500),
+    schema TEXT,
+    default_config TEXT,
+    default_priority INTEGER NOT NULL DEFAULT 5000,
+    phase VARCHAR(32),
+    icon VARCHAR(64),
+    is_system INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    deleted INTEGER NOT NULL DEFAULT 0,
+    create_time TEXT,
+    update_time TEXT,
+    create_by VARCHAR(64),
+    update_by VARCHAR(64)
 );
 
-CREATE INDEX IF NOT EXISTS idx_rf_route_id ON gw_route_filter(route_id);
-CREATE INDEX IF NOT EXISTS idx_rf_filter_id ON gw_route_filter(filter_id);
+CREATE INDEX IF NOT EXISTS idx_plugin_type ON gw_plugin(plugin_type);
+CREATE INDEX IF NOT EXISTS idx_plugin_enabled ON gw_plugin(enabled, deleted);
+
+-- 5. 路由-插件关联表
+CREATE TABLE IF NOT EXISTS gw_route_plugin (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    route_id INTEGER NOT NULL,
+    plugin_id INTEGER NOT NULL,
+    config TEXT,
+    priority_override INTEGER,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    create_time TEXT,
+    update_time TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_rplugin_route ON gw_route_plugin(route_id);
+CREATE INDEX IF NOT EXISTS idx_rplugin_plugin ON gw_route_plugin(plugin_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rplugin_unique ON gw_route_plugin(route_id, plugin_id);
 
 -- 6. 路由模板表
 CREATE TABLE IF NOT EXISTS gw_route_template (
@@ -156,7 +160,7 @@ CREATE INDEX IF NOT EXISTS idx_node_deleted ON gw_service_node(deleted);
 -- RBAC System Tables
 -- ====================================
 
--- 10. 用户表
+-- 8. 用户表
 CREATE TABLE IF NOT EXISTS sys_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -178,12 +182,13 @@ CREATE INDEX IF NOT EXISTS idx_user_dept ON sys_user(dept_id);
 CREATE INDEX IF NOT EXISTS idx_user_status ON sys_user(status);
 CREATE INDEX IF NOT EXISTS idx_user_deleted ON sys_user(deleted);
 
--- 11. 角色表
+-- 9. 角色表
 CREATE TABLE IF NOT EXISTS sys_role (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_code VARCHAR(50) NOT NULL UNIQUE,
     role_name VARCHAR(50) NOT NULL,
     description VARCHAR(200),
+    data_scope INTEGER DEFAULT 1,
     status INTEGER NOT NULL DEFAULT 1,
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
@@ -195,7 +200,7 @@ CREATE TABLE IF NOT EXISTS sys_role (
 CREATE INDEX IF NOT EXISTS idx_role_status ON sys_role(status);
 CREATE INDEX IF NOT EXISTS idx_role_deleted ON sys_role(deleted);
 
--- 12. 部门表
+-- 10. 部门表
 CREATE TABLE IF NOT EXISTS sys_dept (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_id INTEGER NOT NULL DEFAULT 0,
@@ -218,7 +223,7 @@ CREATE INDEX IF NOT EXISTS idx_dept_parent ON sys_dept(parent_id);
 CREATE INDEX IF NOT EXISTS idx_dept_status ON sys_dept(status);
 CREATE INDEX IF NOT EXISTS idx_dept_deleted ON sys_dept(deleted);
 
--- 13. 菜单表
+-- 11. 菜单表
 CREATE TABLE IF NOT EXISTS sys_menu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_id INTEGER NOT NULL DEFAULT 0,
@@ -243,7 +248,7 @@ CREATE INDEX IF NOT EXISTS idx_menu_parent ON sys_menu(parent_id);
 CREATE INDEX IF NOT EXISTS idx_menu_status ON sys_menu(status);
 CREATE INDEX IF NOT EXISTS idx_menu_deleted ON sys_menu(deleted);
 
--- 14. 用户角色关联表
+-- 12. 用户角色关联表
 CREATE TABLE IF NOT EXISTS sys_user_role (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -255,7 +260,7 @@ CREATE TABLE IF NOT EXISTS sys_user_role (
 CREATE INDEX IF NOT EXISTS idx_ur_user ON sys_user_role(user_id);
 CREATE INDEX IF NOT EXISTS idx_ur_role ON sys_user_role(role_id);
 
--- 15. 角色菜单关联表
+-- 13. 角色菜单关联表
 CREATE TABLE IF NOT EXISTS sys_role_menu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INTEGER NOT NULL,
@@ -267,7 +272,19 @@ CREATE TABLE IF NOT EXISTS sys_role_menu (
 CREATE INDEX IF NOT EXISTS idx_rm_role ON sys_role_menu(role_id);
 CREATE INDEX IF NOT EXISTS idx_rm_menu ON sys_role_menu(menu_id);
 
--- 16. 操作日志表
+-- 14. 角色部门关联表
+CREATE TABLE IF NOT EXISTS sys_role_dept (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role_id INTEGER NOT NULL,
+    dept_id INTEGER NOT NULL,
+    create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    UNIQUE(role_id, dept_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rd_role ON sys_role_dept(role_id);
+CREATE INDEX IF NOT EXISTS idx_rd_dept ON sys_role_dept(dept_id);
+
+-- 15. 操作日志表
 CREATE TABLE IF NOT EXISTS sys_operation_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     module VARCHAR(100),
@@ -291,7 +308,7 @@ CREATE TABLE IF NOT EXISTS sys_operation_log (
 CREATE INDEX IF NOT EXISTS idx_log_operator ON sys_operation_log(operator_id);
 CREATE INDEX IF NOT EXISTS idx_log_operate_time ON sys_operation_log(operate_time);
 
--- 17. 系统配置表
+-- 16. 系统配置表
 CREATE TABLE IF NOT EXISTS sys_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     config_key VARCHAR(100) NOT NULL UNIQUE,

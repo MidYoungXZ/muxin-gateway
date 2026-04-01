@@ -51,15 +51,17 @@ export const useUserStore = defineStore('user', () => {
     const storedTokenType = localStorage.getItem('user-token-type')
     const storedUserInfo = localStorage.getItem('user-info')
     
-    if (storedToken && storedUserInfo) {
+    if (storedToken) {
       token.value = storedToken
       tokenType.value = storedTokenType || 'Bearer'
-      try {
-        userInfo.value = JSON.parse(storedUserInfo)
-        permissions.value = userInfo.value.permissions || []
-        roles.value = userInfo.value.roles || []
-      } catch {
-        clearAuth()
+      if (storedUserInfo) {
+        try {
+          userInfo.value = JSON.parse(storedUserInfo)
+          permissions.value = userInfo.value.permissions || []
+          roles.value = userInfo.value.roles || []
+        } catch {
+          clearAuth()
+        }
       }
     }
   }

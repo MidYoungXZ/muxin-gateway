@@ -1,68 +1,48 @@
 <template>
   <div class="step-plugins">
-    <div class="section-title">插件类型筛选</div>
-    <div class="type-filter">
-      <el-radio-group
-        :model-value="filterType"
-        @update:model-value="filterType = $event"
-      >
-        <el-radio-button label="">全部 ({{ plugins.length }})</el-radio-button>
-        <el-radio-button label="AUTH">认证鉴权 ({{ authCount }})</el-radio-button>
-        <el-radio-button label="FILTER">请求处理 ({{ filterCount }})</el-radio-button>
-      </el-radio-group>
-    </div>
-    <div class="type-tip">
-      注：路由匹配由断言器(Predicate)完成，已在 Step 2 配置
-    </div>
-
     <div class="section-title">可选插件</div>
     
-    <template v-if="filteredPlugins.length > 0">
-      <div class="plugin-category" v-for="type in ['AUTH', 'FILTER']" :key="type">
-        <div class="category-title" v-if="getPluginsByType(type).length > 0 && (filterType === '' || filterType === type)">
-          {{ type === 'AUTH' ? '认证鉴权' : '请求处理' }} ({{ type }})
-        </div>
-        <div class="plugin-grid" v-if="filterType === '' || filterType === type">
-          <div
-            v-for="plugin in getPluginsByType(type)"
-            :key="plugin.id"
-            class="plugin-card"
-            :class="{
-              configured: isPluginConfigured(plugin.id),
-              disabled: !plugin.enabled
-            }"
-          >
-            <div class="plugin-header">
-              <span class="plugin-icon">{{ type === 'AUTH' ? '🔐' : '⚡' }}</span>
-              <span class="plugin-name">{{ plugin.pluginName }}</span>
-            </div>
-            <div class="plugin-desc">{{ plugin.description }}</div>
-            <div class="plugin-meta">
-              <el-tag size="small" :type="type === 'AUTH' ? 'warning' : ''">{{ type }}</el-tag>
-              <span class="plugin-priority">优先级: {{ plugin.defaultPriority }}</span>
-            </div>
-            <div class="plugin-status" v-if="isPluginConfigured(plugin.id)">
-              <el-tag type="success" size="small">
-                <el-icon><Check /></el-icon> 已配置
-              </el-tag>
-              <span class="config-summary">{{ getConfigSummary(plugin.id) }}</span>
-            </div>
-            <div class="plugin-actions">
-              <template v-if="isPluginConfigured(plugin.id)">
-                <el-button size="small" @click="editPlugin(plugin)">编辑</el-button>
-                <el-button size="small" type="danger" link @click="removePlugin(plugin.id)">删除</el-button>
-              </template>
-              <template v-else>
-                <el-button
-                  size="small"
-                  type="primary"
-                  @click="selectPlugin(plugin)"
-                  :disabled="!plugin.enabled"
-                >
-                  选择+配置
-                </el-button>
-              </template>
-            </div>
+    <template v-if="plugins.length > 0">
+      <div class="plugin-grid">
+        <div
+          v-for="plugin in plugins"
+          :key="plugin.id"
+          class="plugin-card"
+          :class="{
+            configured: isPluginConfigured(plugin.id),
+            disabled: !plugin.enabled
+          }"
+        >
+          <div class="plugin-header">
+            <span class="plugin-icon">⚡</span>
+            <span class="plugin-name">{{ plugin.pluginName }}</span>
+          </div>
+          <div class="plugin-desc">{{ plugin.description }}</div>
+          <div class="plugin-meta">
+            <el-tag size="small">{{ plugin.phase || 'FILTER_PRE' }}</el-tag>
+            <span class="plugin-priority">优先级: {{ plugin.defaultPriority }}</span>
+          </div>
+          <div class="plugin-status" v-if="isPluginConfigured(plugin.id)">
+            <el-tag type="success" size="small">
+              <el-icon><Check /></el-icon> 已配置
+            </el-tag>
+            <span class="config-summary">{{ getConfigSummary(plugin.id) }}</span>
+          </div>
+          <div class="plugin-actions">
+            <template v-if="isPluginConfigured(plugin.id)">
+              <el-button size="small" @click="editPlugin(plugin)">编辑</el-button>
+              <el-button size="small" type="danger" link @click="removePlugin(plugin.id)">删除</el-button>
+            </template>
+            <template v-else>
+              <el-button
+                size="small"
+                type="primary"
+                @click="selectPlugin(plugin)"
+                :disabled="!plugin.enabled"
+              >
+                选择+配置
+              </el-button>
+            </template>
           </div>
         </div>
       </div>
@@ -73,17 +53,10 @@
       已配置插件列表（按执行优先级排序）
     </div>
     <div class="plugin-list" v-if="modelValue.plugins.length > 0">
-      <div class="list-tip">执行顺序: AUTH阶段 → FILTER阶段 → 转发到后端</div>
+      <div class="list-tip">执行顺序: FILTER_PRE → FILTER_POST → 转发到后端</div>
       <el-table :data="sortedPlugins" size="small">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="pluginName" label="插件名称" />
-        <el-table-column prop="pluginType" label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small" :type="row.pluginType === 'AUTH' ? 'warning' : ''">
-              {{ row.pluginType }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column label="优先级" width="100">
           <template #default="{ row }">
             {{ getEffectivePriority(row) }}
@@ -107,7 +80,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="list-footer">↑ 优先级数值越大越先执行，同类型插件按优先级排序</div>
+      <div class="list-footer">↑ 优先级数值越大越先执行</div>
     </div>
 
     <PluginConfigDrawer
@@ -122,8 +95,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Check } from '@element-plus/icons-vue'
-import type { RouteFormState, RoutePlugin, PluginInfo } from '@/api/routes'
-import { pluginsApi } from '@/api/routes'
+import type { RouteFormState, RoutePlugin } from '@/api/routes'
+import { pluginsApi, type PluginInfo } from '@/api/plugins'
 import PluginConfigDrawer from './PluginConfigDrawer.vue'
 
 const props = defineProps<{
@@ -134,19 +107,10 @@ const emit = defineEmits<{
   'update:modelValue': [value: RouteFormState]
 }>()
 
-const filterType = ref('')
 const plugins = ref<PluginInfo[]>([])
 const drawerVisible = ref(false)
 const currentPlugin = ref<PluginInfo | null>(null)
 const currentConfig = ref<Record<string, any>>({})
-
-const authCount = computed(() => plugins.value.filter(p => p.pluginType === 'AUTH').length)
-const filterCount = computed(() => plugins.value.filter(p => p.pluginType === 'FILTER').length)
-
-const filteredPlugins = computed(() => {
-  if (!filterType.value) return plugins.value
-  return plugins.value.filter(p => p.pluginType === filterType.value)
-})
 
 const sortedPlugins = computed(() => {
   return [...props.modelValue.plugins].sort((a, b) => {
@@ -155,10 +119,6 @@ const sortedPlugins = computed(() => {
     return priorityB - priorityA
   })
 })
-
-function getPluginsByType(type: string): PluginInfo[] {
-  return filteredPlugins.value.filter(p => p.pluginType === type)
-}
 
 function isPluginConfigured(pluginId: number): boolean {
   return props.modelValue.plugins.some(p => p.pluginId === pluginId)
@@ -180,7 +140,7 @@ async function loadPlugins() {
   try {
     const res = await pluginsApi.list()
     if (res?.data) {
-      plugins.value = res.data.filter(p => p.pluginType !== 'MATCH')
+      plugins.value = res.data.filter(p => p.pluginType === 'FILTER')
     }
   } catch (error) {
     console.error('加载插件列表失败', error)
@@ -206,8 +166,8 @@ function editPluginById(pluginId: number) {
 }
 
 function removePlugin(pluginId: number) {
-  const plugins = props.modelValue.plugins.filter(p => p.pluginId !== pluginId)
-  emit('update:modelValue', { ...props.modelValue, plugins })
+  const newPlugins = props.modelValue.plugins.filter(p => p.pluginId !== pluginId)
+  emit('update:modelValue', { ...props.modelValue, plugins: newPlugins })
 }
 
 function savePluginConfig(config: Record<string, any>, priorityOverride?: number) {
@@ -216,7 +176,7 @@ function savePluginConfig(config: Record<string, any>, priorityOverride?: number
   const newPlugin: RoutePlugin = {
     pluginId: currentPlugin.value.id,
     pluginName: currentPlugin.value.pluginName,
-    pluginType: currentPlugin.value.pluginType as 'AUTH' | 'FILTER',
+    pluginType: 'FILTER',
     config,
     priorityOverride,
     enabled: true
@@ -226,15 +186,15 @@ function savePluginConfig(config: Record<string, any>, priorityOverride?: number
     p => p.pluginId === currentPlugin.value!.id
   )
   
-  let plugins: RoutePlugin[]
+  let newPlugins: RoutePlugin[]
   if (existingIndex >= 0) {
-    plugins = [...props.modelValue.plugins]
-    plugins[existingIndex] = newPlugin
+    newPlugins = [...props.modelValue.plugins]
+    newPlugins[existingIndex] = newPlugin
   } else {
-    plugins = [...props.modelValue.plugins, newPlugin]
+    newPlugins = [...props.modelValue.plugins, newPlugin]
   }
   
-  emit('update:modelValue', { ...props.modelValue, plugins })
+  emit('update:modelValue', { ...props.modelValue, plugins: newPlugins })
   drawerVisible.value = false
 }
 
@@ -251,46 +211,25 @@ defineExpose({ validate: () => Promise.resolve(true) })
 }
 
 .section-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-.type-filter {
-  margin-bottom: 8px;
-}
-
-.type-tip {
-  font-size: 12px;
-  color: var(--el-text-color-placeholder);
-  margin-bottom: 16px;
-}
-
-.plugin-category {
-  margin-bottom: 24px;
-}
-
-.category-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--el-text-color-secondary);
   margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .plugin-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .plugin-card {
-  background: var(--el-bg-color);
+  background: var(--card-bg);
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
   transition: all 0.2s;
 
   &:hover {
@@ -311,16 +250,16 @@ defineExpose({ validate: () => Promise.resolve(true) })
 .plugin-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .plugin-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .plugin-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--el-text-color-primary);
 }
@@ -328,31 +267,31 @@ defineExpose({ validate: () => Promise.resolve(true) })
 .plugin-desc {
   font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   line-height: 1.4;
 }
 
 .plugin-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .plugin-priority {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--el-text-color-placeholder);
 }
 
 .plugin-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .config-summary {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--el-text-color-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -361,28 +300,24 @@ defineExpose({ validate: () => Promise.resolve(true) })
 
 .plugin-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .plugin-list {
   background: var(--el-fill-color-lighter);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px;
 }
 
 .list-tip {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .list-footer {
   font-size: 12px;
   color: var(--el-text-color-placeholder);
-  margin-top: 8px;
-}
-
-:deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-top: 6px;
 }
 </style>

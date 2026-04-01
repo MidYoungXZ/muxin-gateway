@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">插件管理</span>
+      <span class="title">插件</span>
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增插件
@@ -11,7 +11,6 @@
     <div class="search-bar">
       <el-select v-model="filterType" placeholder="插件类型" clearable style="width: 150px">
         <el-option label="全部" value="" />
-        <el-option label="认证鉴权" value="AUTH" />
         <el-option label="请求处理" value="FILTER" />
       </el-select>
       <el-input
@@ -32,8 +31,8 @@
         <el-table-column prop="pluginName" label="插件名称" min-width="140" />
         <el-table-column prop="pluginType" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.pluginType === 'AUTH' ? 'warning' : ''" size="small">
-              {{ row.pluginType === 'AUTH' ? '认证鉴权' : '请求处理' }}
+            <el-tag size="small">
+              {{ row.pluginType }}
             </el-tag>
           </template>
         </el-table-column>
@@ -89,7 +88,6 @@
         </el-form-item>
         <el-form-item label="插件类型" prop="pluginType">
           <el-select v-model="form.pluginType" placeholder="请选择类型" style="width: 100%">
-            <el-option label="认证鉴权 (AUTH)" value="AUTH" />
             <el-option label="请求处理 (FILTER)" value="FILTER" />
           </el-select>
         </el-form-item>
@@ -102,7 +100,6 @@
         </el-form-item>
         <el-form-item label="执行阶段">
           <el-select v-model="form.phase" placeholder="请选择阶段" style="width: 100%">
-            <el-option label="认证阶段 (AUTH)" value="AUTH" />
             <el-option label="前置处理 (FILTER_PRE)" value="FILTER_PRE" />
             <el-option label="后置处理 (FILTER_POST)" value="FILTER_POST" />
           </el-select>
@@ -121,8 +118,8 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="插件名称">{{ currentPlugin?.pluginName }}</el-descriptions-item>
         <el-descriptions-item label="插件类型">
-          <el-tag :type="currentPlugin?.pluginType === 'AUTH' ? 'warning' : ''" size="small">
-            {{ currentPlugin?.pluginType === 'AUTH' ? '认证鉴权' : '请求处理' }}
+          <el-tag size="small">
+            {{ currentPlugin?.pluginType }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">{{ currentPlugin?.description }}</el-descriptions-item>
@@ -156,8 +153,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { pluginsApi } from '@/api/plugins'
-import type { PluginInfo } from '@/api/routes'
+import { pluginsApi, type PluginInfo } from '@/api/plugins'
 
 const loading = ref(false)
 const formLoading = ref(false)
@@ -292,24 +288,10 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.page-title-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.search-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  color: var(--text-primary);
 }
 
 .search-actions {
@@ -317,15 +299,9 @@ onMounted(() => {
   gap: 8px;
 }
 
-.table-wrapper {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-}
-
 .field-tip {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 

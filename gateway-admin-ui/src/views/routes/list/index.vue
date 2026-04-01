@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">路由列表</span>
+      <span class="title">路由</span>
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增路由
@@ -211,7 +211,7 @@ const loadRouteList = async () => {
       total.value = data.total || 0
     }
   } catch (error) {
-    ElMessage.error('加载路由列表失败')
+    ElMessage.error('加载路由失败')
   } finally {
     loading.value = false
   }
@@ -313,24 +313,10 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.page-title-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
 .title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.search-bar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
+  color: var(--text-primary);
 }
 
 .search-actions {
@@ -338,28 +324,9 @@ onMounted(() => {
   gap: 8px;
 }
 
-.table-wrapper {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.table-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
 .toolbar-right {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-
-.pagination-wrapper {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
+  color: var(--text-secondary);
 }
 
 .config-json {

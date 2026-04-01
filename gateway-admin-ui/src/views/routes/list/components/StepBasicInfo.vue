@@ -119,27 +119,27 @@ defineExpose({ validate })
 }
 
 .section-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--el-text-color-primary);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .field-tip {
   font-size: 12px;
   color: var(--el-text-color-placeholder);
-  margin-top: 4px;
+  margin-top: 2px;
   line-height: 1.4;
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  padding-bottom: 4px;
+  padding-bottom: 2px;
 }
 </style>

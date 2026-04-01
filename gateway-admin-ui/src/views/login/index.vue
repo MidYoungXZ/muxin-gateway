@@ -172,21 +172,21 @@ const handleLogin = async () => {
 
     loading.value = true
 
-    // 模拟验证码检查
     if (showCaptcha.value && !loginForm.captcha) {
       ElMessage.error('请输入验证码')
       loading.value = false
       return
     }
 
-    // 执行登录
+    const { useMenuStore } = await import('@/stores/menu')
+    const menuStore = useMenuStore()
+    menuStore.clearMenus()
+    
     await userStore.loginAction(loginForm)
     
-    // 重置失败次数
     failedAttempts.value = 0
     showCaptcha.value = false
     
-    // 记住用户名
     if (loginForm.rememberMe) {
       localStorage.setItem('rememberedUsername', loginForm.username)
     } else {
@@ -212,10 +212,8 @@ const handleLogin = async () => {
       lockAccount()
     }
     
-    // 显示错误信息
-    const message = error.message || '登录失败，请检查用户名和密码'
-    ElMessage.error(message)
-    
+    // 错误消息已由 request.ts 拦截器处理，这里不再重复显示
+
   } finally {
     loading.value = false
   }

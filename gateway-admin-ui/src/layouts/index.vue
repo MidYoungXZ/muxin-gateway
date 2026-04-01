@@ -309,7 +309,7 @@ const menuRoutes = computed(() => {
     id: 0, parentId: 0, menuName: '首页', menuType: 'C',
     path: '/dashboard', icon: 'House', visible: 1
   }
-  const userMenus = menuStore.menus
+  const userMenus = menuStore.menus.filter((m: MenuItem) => m.menuType !== 'F' && m.visible === 1)
   return userMenus.length > 0 ? [homeMenu, ...userMenus] : [homeMenu]
 })
 
@@ -436,9 +436,11 @@ const handleLogout = async () => {
     ElMessage.success('退出登录成功')
     await router.push('/login')
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('退出登录失败:', error)
-      ElMessage.error('退出登录失败')
+    if (error === 'cancel') return
+    // 网络错误时也允许退出登录（已由 userStore.logout 处理）
+    if (!userStore.token) {
+      ElMessage.success('退出登录成功')
+      await router.push('/login')
     }
   }
 }

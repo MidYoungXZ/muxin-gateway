@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { useMenuStore } from '@/stores/menu'
 
 declare module 'axios' {
   export interface AxiosRequestConfig {
@@ -66,8 +67,11 @@ request.interceptors.request.use(
       showLoading()
     }
     
-    if (userStore.token && !config.url?.includes('/auth/login')) {
-      config.headers.Authorization = `${userStore.tokenType} ${userStore.token}`
+    const token = userStore.token || localStorage.getItem('user-token')
+    const tokenType = userStore.tokenType || localStorage.getItem('user-token-type') || 'Bearer'
+    
+    if (token && !config.url?.includes('/auth/login')) {
+      config.headers.Authorization = `${tokenType} ${token}`
     }
     
     if (config.method?.toLowerCase() === 'get') {
@@ -112,6 +116,7 @@ request.interceptors.response.use(
     hideLoading()
     const { response, config } = error
     const userStore = useUserStore()
+    const menuStore = useMenuStore()
     
     if (!response) {
       if (config.showError !== false) {
@@ -134,10 +139,11 @@ request.interceptors.response.use(
             return request(config)
           } catch {
             showErrorMessage('登录已过期，请重新登录')
+            menuStore.clearMenus()
             await userStore.logout()
           }
         } else {
-          // 无 token（未登录），静默清理，不弹提示
+          menuStore.clearMenus()
           userStore.clearAuth()
         }
         break

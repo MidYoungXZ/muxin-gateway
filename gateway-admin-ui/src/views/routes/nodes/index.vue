@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">服务节点管理</span>
+      <span class="title">服务</span>
       <el-button type="primary" @click="handleAddService">
         <el-icon><Plus /></el-icon>
         新增服务
@@ -308,8 +308,8 @@
         
         <el-form-item label="创建方式" prop="createMode">
           <el-radio-group v-model="serviceForm.createMode">
-            <el-radio value="MANUAL">手动输入</el-radio>
-            <el-radio value="DISCOVERY">注册中心发现</el-radio>
+            <el-radio label="MANUAL">手动输入</el-radio>
+            <el-radio label="DISCOVERY">注册中心发现</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -369,7 +369,7 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="注册中心地址" prop="discoveryConfig.serverAddr">
+              <el-form-item label="注册中心地址" required>
                 <el-input v-model="serviceForm.discoveryConfig.serverAddr" placeholder="如: 127.0.0.1:8848" />
               </el-form-item>
             </el-col>
@@ -499,9 +499,6 @@ const serviceRules: FormRules = {
   ],
   createMode: [
     { required: true, message: '请选择创建方式', trigger: 'change' }
-  ],
-  'discoveryConfig.serverAddr': [
-    { required: true, message: '请输入注册中心地址', trigger: 'blur' }
   ]
 }
 
@@ -805,6 +802,12 @@ const handleServiceSubmit = async () => {
   
   try {
     await serviceFormRef.value.validate()
+    
+    if (serviceForm.createMode === 'DISCOVERY' && !serviceForm.discoveryConfig.serverAddr) {
+      ElMessage.warning('请输入注册中心地址')
+      return
+    }
+    
     serviceFormLoading.value = true
     
     const request: ServiceCreateRequest = {
@@ -830,7 +833,7 @@ const handleServiceSubmit = async () => {
 }
 
 const handleCloseServiceDialog = () => {
-  serviceFormRef.value?.resetFields()
+  serviceFormRef.value?.clearValidate()
   serviceDialogVisible.value = false
   discoveredNodes.value = []
 }
@@ -916,7 +919,7 @@ onMounted(() => {
 
 .expand-content {
   padding: 16px 48px;
-  background: var(--el-bg-color-page);
+  background: var(--bg-secondary);
   
   .expand-header {
     display: flex;
@@ -927,6 +930,7 @@ onMounted(() => {
     .expand-title {
       font-size: 14px;
       font-weight: 500;
+      color: var(--text-primary);
     }
   }
   
@@ -938,7 +942,7 @@ onMounted(() => {
 }
 
 .text-muted {
-  color: var(--el-text-color-secondary);
+  color: var(--text-secondary);
 }
 
 .node-actions {

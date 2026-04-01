@@ -96,18 +96,12 @@ public class RouteConfigConverter {
      * 初始化FilterFactory映射
      */
     private void initFilterFactories() {
-        registerFilterFactory(new RequestIdFilter.Factory());
-        registerFilterFactory(new RequestLogFilter.Factory());
-        registerFilterFactory(new MetricsFilter.Factory());
-        registerFilterFactory(new PathRewriteFilter.Factory());
-        registerFilterFactory(new AddRequestHeaderFilter.Factory());
-        registerFilterFactory(new AddResponseHeaderFilter.Factory());
-        registerFilterFactory(new RemoveRequestHeaderFilter.Factory());
-        registerFilterFactory(new RemoveResponseHeaderFilter.Factory());
-        registerFilterFactory(new RewritePathFilter.Factory());
-        registerFilterFactory(new RetryFilter.Factory());
-        registerFilterFactory(new CircuitBreakerFilter.Factory());
         registerFilterFactory(new RequestRateLimiterFilter.Factory());
+        registerFilterFactory(new CircuitBreakerFilter.Factory());
+        registerFilterFactory(new CorsFilter.Factory());
+        registerFilterFactory(new TimeoutFilter.Factory());
+        registerFilterFactory(new RequestRewriteFilter.Factory());
+        registerFilterFactory(new ResponseRewriteFilter.Factory());
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());
     }
 

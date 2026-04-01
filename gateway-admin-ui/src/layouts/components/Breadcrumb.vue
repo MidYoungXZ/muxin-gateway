@@ -1,21 +1,20 @@
 <template>
-  <el-breadcrumb separator="/">
+  <el-breadcrumb separator="/" class="custom-breadcrumb">
     <el-breadcrumb-item :to="{ path: '/' }">
       <el-icon><HomeFilled /></el-icon>
-      首页
+      <span>首页</span>
     </el-breadcrumb-item>
     <el-breadcrumb-item
       v-for="(item, index) in breadcrumbs"
       :key="item.path"
     >
-      <span v-if="index === breadcrumbs.length - 1">{{ item.meta?.title }}</span>
-      <router-link v-else :to="item.path">{{ item.meta?.title }}</router-link>
+      <span v-if="index === breadcrumbs.length - 1" class="breadcrumb-current">{{ item.meta?.title }}</span>
+      <router-link v-else :to="item.path" class="breadcrumb-link">{{ item.meta?.title }}</router-link>
     </el-breadcrumb-item>
   </el-breadcrumb>
 </template>
 
 <script setup lang="ts">
-// 使用自动导入的 computed
 import { useRoute } from 'vue-router'
 import { RouteLocationMatched } from 'vue-router'
 
@@ -39,4 +38,39 @@ const isDashboard = (route: RouteLocationMatched) => {
   }
   return name === 'Dashboard'
 }
-</script> 
+</script>
+
+<style lang="scss" scoped>
+.custom-breadcrumb {
+  :deep(.el-breadcrumb__item) {
+    .el-breadcrumb__inner {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      
+      .el-icon {
+        font-size: 14px;
+      }
+    }
+    
+    .el-breadcrumb__separator {
+      color: var(--text-tertiary);
+    }
+  }
+}
+
+.breadcrumb-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  
+  &:hover {
+    color: var(--primary-color);
+  }
+}
+
+.breadcrumb-current {
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+</style> 

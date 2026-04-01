@@ -6,8 +6,12 @@
         v-for="(step, index) in steps"
         :key="index"
         class="step-item"
-        :class="{ active: currentStep === index, completed: index < currentStep }"
-        @click="$emit('update:currentStep', index)"
+        :class="{ 
+          active: currentStep === index, 
+          completed: index < currentStep,
+          disabled: index > maxAccessibleStep
+        }"
+        @click="handleStepClick(index)"
       >
         <div class="step-indicator">
           <span v-if="index < currentStep" class="step-check">
@@ -25,13 +29,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Check } from '@element-plus/icons-vue'
 
-defineProps<{
+const props = defineProps<{
   currentStep: number
+  completedSteps?: number[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:currentStep': [value: number]
 }>()
 
@@ -42,8 +48,24 @@ const steps = [
   { label: '插件配置', key: 'plugins' }
 ]
 
+const maxAccessibleStep = computed(() => {
+  if (!props.completedSteps || props.completedSteps.length === 0) {
+    return props.currentStep
+  }
+  const maxCompleted = Math.max(...props.completedSteps, -1)
+  return Math.min(maxCompleted + 1, steps.length - 1)
+})
+
+function handleStepClick(index: number) {
+  if (index <= maxAccessibleStep.value) {
+    emit('update:currentStep', index)
+  }
+}
+
 function getStepStatus(index: number): string {
-  return index < 2 ? '已完成' : '待完成'
+  if (index < props.currentStep) return '已完成'
+  if (index === props.currentStep) return '进行中'
+  return '待完成'
 }
 </script>
 
@@ -51,15 +73,15 @@ function getStepStatus(index: number): string {
 .step-navigation {
   width: 200px;
   height: 100%;
-  background: var(--el-fill-color-light);
-  border-right: 1px solid var(--el-border-color-light);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-primary);
   padding: 20px 0;
 }
 
 .step-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   padding: 0 20px;
   margin-bottom: 20px;
 }
@@ -78,33 +100,51 @@ function getStepStatus(index: number): string {
   transition: all 0.2s;
   border-left: 3px solid transparent;
 
-  &:hover {
-    background: var(--el-fill-color);
+  &:hover:not(.disabled) {
+    background: var(--bg-tertiary);
   }
 
   &.active {
-    background: var(--el-color-primary-light-9);
-    border-left-color: var(--el-color-primary);
+    background: var(--primary-100);
+    border-left-color: var(--primary-color);
 
     .step-indicator {
-      background: var(--el-color-primary);
+      background: var(--primary-color);
       color: #fff;
     }
 
     .step-label {
-      color: var(--el-color-primary);
+      color: var(--primary-color);
       font-weight: 600;
+    }
+    
+    .step-status {
+      color: var(--primary-color);
     }
   }
 
   &.completed {
     .step-indicator {
-      background: var(--el-color-success);
+      background: var(--success-color);
       color: #fff;
     }
 
     .step-status {
-      color: var(--el-color-success);
+      color: var(--success-color);
+    }
+  }
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+
+    .step-indicator {
+      background: var(--bg-tertiary);
+      color: var(--text-disabled);
+    }
+
+    .step-label {
+      color: var(--text-disabled);
     }
   }
 }
@@ -116,8 +156,8 @@ function getStepStatus(index: number): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--el-fill-color);
-  color: var(--el-text-color-secondary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   margin-right: 12px;
   flex-shrink: 0;
   transition: all 0.2s;
@@ -139,12 +179,12 @@ function getStepStatus(index: number): string {
 
 .step-label {
   font-size: 14px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .step-status {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 </style>

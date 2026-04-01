@@ -3,18 +3,20 @@ package com.muxin.gateway.admin.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.muxin.gateway.admin.entity.GwPredicate;
 import com.muxin.gateway.admin.entity.GwPlugin;
 import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.entity.GwRoutePlugin;
+import com.muxin.gateway.admin.entity.GwRoutePredicate;
 import static com.muxin.gateway.admin.entity.table.GwRouteTableDef.GW_ROUTE;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.PluginMapper;
+import com.muxin.gateway.admin.mapper.PredicateMapper;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.RoutePluginMapper;
+import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
 import com.muxin.gateway.admin.model.dto.*;
 import com.muxin.gateway.admin.model.vo.PageVO;
-import com.muxin.gateway.admin.model.vo.PredicateVO;
-import com.muxin.gateway.admin.model.vo.FilterVO;
 import com.muxin.gateway.admin.model.vo.PluginVO;
 import com.muxin.gateway.admin.model.vo.RouteTestResultVO;
 import com.muxin.gateway.admin.model.vo.RouteVO;
@@ -40,7 +42,9 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     
     private final RouteMapper routeMapper;
     private final RoutePluginMapper routePluginMapper;
+    private final RoutePredicateMapper routePredicateMapper;
     private final PluginMapper pluginMapper;
+    private final PredicateMapper predicateMapper;
     private final com.muxin.gateway.admin.service.ConfigRefreshService configRefreshService;
     
     @Override
@@ -112,6 +116,10 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setDeleted(false);
         
         save(route);
+        
+        if (dto.getMatching() != null) {
+            saveRouteMatching(route.getId(), dto.getMatching());
+        }
         
         if (!CollectionUtils.isEmpty(dto.getPlugins())) {
             saveRoutePlugins(route.getId(), dto.getPlugins());
@@ -246,6 +254,142 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             rp.setCreateTime(LocalDateTime.now());
             
             routePluginMapper.insert(rp);
+        }
+    }
+    
+    private void saveRouteMatching(Long routeId, RouteMatchingDTO matching) {
+        int sortOrder = 0;
+        LocalDateTime now = LocalDateTime.now();
+        
+        if (matching.getPath() != null && StringUtils.hasText(matching.getPath().getPattern())) {
+            GwPredicate predicate = new GwPredicate();
+            predicate.setPredicateName("Path");
+            predicate.setPredicateType("PATH");
+            predicate.setDescription("路径匹配");
+            
+            Map<String, Object> args = new HashMap<>();
+            args.put("pattern", matching.getPath().getPattern());
+            if (matching.getPath().getMatchType() != null) {
+                args.put("matchType", matching.getPath().getMatchType());
+            }
+            if (matching.getPath().getIgnoreCase() != null) {
+                args.put("ignoreCase", matching.getPath().getIgnoreCase());
+            }
+            predicate.setArgs(args);
+            predicate.setIsSystem(false);
+            predicate.setEnabled(true);
+            predicate.setDeleted(false);
+            predicate.setCreateTime(now);
+            predicate.setUpdateTime(now);
+            
+            predicateMapper.insert(predicate);
+            
+            GwRoutePredicate rp = new GwRoutePredicate();
+            rp.setRouteId(routeId);
+            rp.setPredicateId(predicate.getId());
+            rp.setSortOrder(sortOrder++);
+            rp.setCreateTime(now);
+            routePredicateMapper.insert(rp);
+        }
+        
+        if (!CollectionUtils.isEmpty(matching.getMethods())) {
+            GwPredicate predicate = new GwPredicate();
+            predicate.setPredicateName("Method");
+            predicate.setPredicateType("METHOD");
+            predicate.setDescription("方法匹配");
+            
+            Map<String, Object> args = new HashMap<>();
+            args.put("methods", matching.getMethods());
+            predicate.setArgs(args);
+            predicate.setIsSystem(false);
+            predicate.setEnabled(true);
+            predicate.setDeleted(false);
+            predicate.setCreateTime(now);
+            predicate.setUpdateTime(now);
+            
+            predicateMapper.insert(predicate);
+            
+            GwRoutePredicate rp = new GwRoutePredicate();
+            rp.setRouteId(routeId);
+            rp.setPredicateId(predicate.getId());
+            rp.setSortOrder(sortOrder++);
+            rp.setCreateTime(now);
+            routePredicateMapper.insert(rp);
+        }
+        
+        if (!CollectionUtils.isEmpty(matching.getHosts())) {
+            GwPredicate predicate = new GwPredicate();
+            predicate.setPredicateName("Host");
+            predicate.setPredicateType("HOST");
+            predicate.setDescription("Host匹配");
+            
+            Map<String, Object> args = new HashMap<>();
+            args.put("hosts", matching.getHosts());
+            predicate.setArgs(args);
+            predicate.setIsSystem(false);
+            predicate.setEnabled(true);
+            predicate.setDeleted(false);
+            predicate.setCreateTime(now);
+            predicate.setUpdateTime(now);
+            
+            predicateMapper.insert(predicate);
+            
+            GwRoutePredicate rp = new GwRoutePredicate();
+            rp.setRouteId(routeId);
+            rp.setPredicateId(predicate.getId());
+            rp.setSortOrder(sortOrder++);
+            rp.setCreateTime(now);
+            routePredicateMapper.insert(rp);
+        }
+        
+        if (!CollectionUtils.isEmpty(matching.getHeaders())) {
+            GwPredicate predicate = new GwPredicate();
+            predicate.setPredicateName("Header");
+            predicate.setPredicateType("HEADER");
+            predicate.setDescription("Header匹配");
+            
+            Map<String, Object> args = new HashMap<>();
+            args.put("headers", matching.getHeaders());
+            predicate.setArgs(args);
+            predicate.setIsSystem(false);
+            predicate.setEnabled(true);
+            predicate.setDeleted(false);
+            predicate.setCreateTime(now);
+            predicate.setUpdateTime(now);
+            
+            predicateMapper.insert(predicate);
+            
+            GwRoutePredicate rp = new GwRoutePredicate();
+            rp.setRouteId(routeId);
+            rp.setPredicateId(predicate.getId());
+            rp.setSortOrder(sortOrder++);
+            rp.setCreateTime(now);
+            routePredicateMapper.insert(rp);
+        }
+        
+        if (!CollectionUtils.isEmpty(matching.getQueries())) {
+            GwPredicate predicate = new GwPredicate();
+            predicate.setPredicateName("Query");
+            predicate.setPredicateType("QUERY");
+            predicate.setDescription("Query参数匹配");
+            
+            Map<String, Object> args = new HashMap<>();
+            args.put("queries", matching.getQueries());
+            predicate.setArgs(args);
+            predicate.setIsSystem(false);
+            predicate.setEnabled(true);
+            predicate.setDeleted(false);
+            predicate.setCreateTime(now);
+            predicate.setUpdateTime(now);
+            
+            predicateMapper.insert(predicate);
+            
+            GwRoutePredicate rp = new GwRoutePredicate();
+            rp.setRouteId(routeId);
+            rp.setPredicateId(predicate.getId());
+            rp.setSortOrder(sortOrder++);
+            rp.setCreateTime(now);
+            routePredicateMapper.insert(rp);
         }
     }
     
