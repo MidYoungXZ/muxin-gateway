@@ -111,6 +111,12 @@ public class RouteConfigConverter {
     private void initPredicateFactories() {
         registerPredicateFactory(new PathPredicateFactory());
         registerPredicateFactory(new MethodPredicateFactory());
+        registerPredicateFactory(new HeaderPredicate.Factory());
+        registerPredicateFactory(new QueryPredicate.Factory());
+        registerPredicateFactory(new CookiePredicate.Factory());
+        registerPredicateFactory(new HostPredicate.Factory());
+        registerPredicateFactory(new RemoteAddrPredicate.Factory());
+        registerPredicateFactory(new BetweenPredicate.Factory());
         log.info("[RouteConfigConverter] PredicateFactory初始化完成，支持的Predicate类型: {}", predicateFactories.keySet());
     }
 
@@ -313,10 +319,11 @@ public class RouteConfigConverter {
         for (PredicateDefinition config : predicateConfigs) {
             try {
                 String predicateType = config.getName();
-                PredicateFactory factory = predicateFactories.get(predicateType);
-                if (factory == null) {
-                    factory = predicateFactories.get(predicateType.toUpperCase());
-                }
+            PredicateFactory factory = predicateFactories.get(predicateType.toLowerCase());
+            if (factory == null) {
+                log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getName(), routeId);
+                continue;
+            }
                 if (factory == null) {
                     log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getName(), routeId);
                     continue;

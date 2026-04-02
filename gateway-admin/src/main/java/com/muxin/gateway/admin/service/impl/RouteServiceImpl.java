@@ -158,6 +158,11 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             saveRoutePlugins(id, dto.getPlugins());
         }
         
+        routePredicateMapper.deleteByRouteId(id);
+        if (dto.getMatching() != null) {
+            saveRouteMatching(id, dto.getMatching());
+        }
+        
         configRefreshService.refreshRoutes();
         log.info("[RouteService] 路由更新成功，已同步到 gateway-core: {}", oldRoute.getRouteId());
     }
