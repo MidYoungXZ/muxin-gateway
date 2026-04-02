@@ -4,6 +4,7 @@ import com.mybatisflex.core.service.IService;
 import com.muxin.gateway.admin.entity.SysDept;
 import com.muxin.gateway.admin.model.dto.DeptCreateDTO;
 import com.muxin.gateway.admin.model.dto.DeptUpdateDTO;
+import com.muxin.gateway.admin.model.vo.DeptStatsVO;
 import com.muxin.gateway.admin.model.vo.DeptTreeVO;
 import com.muxin.gateway.admin.model.vo.DeptVO;
 
@@ -117,5 +118,5 @@ public interface DeptService extends IService<SysDept> {
      *
      * @return 统计信息
      */
-    Object getDeptStats();
+    DeptStatsVO getDeptStats();
 } 

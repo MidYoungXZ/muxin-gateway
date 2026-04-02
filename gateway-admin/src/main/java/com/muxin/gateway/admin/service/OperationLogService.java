@@ -3,11 +3,11 @@ package com.muxin.gateway.admin.service;
 import com.mybatisflex.core.service.IService;
 import com.muxin.gateway.admin.entity.SysOperationLog;
 import com.muxin.gateway.admin.model.dto.OperationLogQueryDTO;
+import com.muxin.gateway.admin.model.vo.LogStatsVO;
 import com.muxin.gateway.admin.model.vo.OperationLogVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 操作日志服务接口
@@ -75,7 +75,7 @@ public interface OperationLogService extends IService<SysOperationLog> {
      *
      * @return 统计数据
      */
-    Map<String, Object> getLogStats();
+    LogStatsVO getLogStats();
     
     /**
      * 根据天数清理历史日志

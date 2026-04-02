@@ -7,13 +7,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 路由VO
- *
- * @author muxin
- * @version 1.0.0
- * @since 1.0.0
- */
 @Data
 public class RouteVO {
     
@@ -26,6 +19,8 @@ public class RouteVO {
     private String description;
     
     private String uri;
+    
+    private List<PredicateInfo> predicates;
     
     private List<PluginVO> plugins;
     
@@ -54,4 +49,10 @@ public class RouteVO {
     private String createBy;
     
     private String updateBy;
-} 
+    
+    @Data
+    public static class PredicateInfo {
+        private String predicateType;
+        private Map<String, Object> args;
+    }
+}

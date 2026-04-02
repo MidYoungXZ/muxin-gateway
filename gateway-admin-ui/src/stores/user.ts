@@ -115,7 +115,25 @@ export const useUserStore = defineStore('user', () => {
   }
   
   const init = async (): Promise<void> => {
-    await getUserInfoAction()
+    const storedToken = localStorage.getItem('user-token')
+    if (!storedToken) return
+
+    token.value = storedToken
+    tokenType.value = localStorage.getItem('user-token-type') || 'Bearer'
+
+    try {
+      const response = await authApi.getUserInfo()
+      if (response.code === 200 && response.data) {
+        userInfo.value = response.data
+        permissions.value = response.data.permissions || []
+        roles.value = response.data.roles || []
+        localStorage.setItem('user-info', JSON.stringify(userInfo.value))
+      } else {
+        clearAuth()
+      }
+    } catch {
+      clearAuth()
+    }
   }
   
   return {

@@ -148,7 +148,7 @@ public class RouteConfigConverter {
      */
     private void registerPredicateFactory(PredicateFactory factory) {
         String predicateName = factory.getSupportedPredicateName();
-        predicateFactories.put(predicateName, factory);
+        predicateFactories.put(predicateName.toLowerCase(), factory);
         log.debug("[RouteConfigConverter] 注册PredicateFactory: {}", predicateName);
     }
 

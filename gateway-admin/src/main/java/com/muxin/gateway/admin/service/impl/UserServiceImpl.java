@@ -63,42 +63,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     
     @Override
     public PageVO<UserVO> pageQuery(UserQueryDTO query) {
-        // 构建查询条件
         QueryWrapper wrapper = QueryWrapper.create()
-                .select()
                 .from(SYS_USER)
-                .where(SYS_USER.DELETED.eq(0));
+                .where(SYS_USER.DELETED.eq(0))
+                .and(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
+                .and(SYS_USER.NICKNAME.like(query.getNickname() != null ? "%" + query.getNickname() + "%" : null, query.getNickname() != null))
+                .and(SYS_USER.MOBILE.like(query.getMobile() != null ? "%" + query.getMobile() + "%" : null, query.getMobile() != null))
+                .and(SYS_USER.DEPT_ID.eq(query.getDeptId(), query.getDeptId() != null))
+                .and(SYS_USER.STATUS.eq(query.getStatus(), query.getStatus() != null))
+                .orderBy(SYS_USER.CREATE_TIME.desc());
         
-        // 动态条件
-        if (StringUtils.hasText(query.getUsername())) {
-            wrapper.and(SYS_USER.USERNAME.like("%" + query.getUsername() + "%"));
-        }
-        
-        if (StringUtils.hasText(query.getNickname())) {
-            wrapper.and(SYS_USER.NICKNAME.like("%" + query.getNickname() + "%"));
-        }
-        
-        if (StringUtils.hasText(query.getMobile())) {
-            wrapper.and(SYS_USER.MOBILE.like("%" + query.getMobile() + "%"));
-        }
-        
-        if (query.getDeptId() != null) {
-            wrapper.and(SYS_USER.DEPT_ID.eq(query.getDeptId()));
-        }
-        
-        if (query.getStatus() != null) {
-            wrapper.and(SYS_USER.STATUS.eq(query.getStatus()));
-        }
-        
-        // 排序
-        wrapper.orderBy(SYS_USER.CREATE_TIME.desc());
-        
-        // 分页查询
-        com.mybatisflex.core.paginate.Page<SysUser> page = page(
-                new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
+        com.mybatisflex.core.paginate.Page<SysUser> page = userMapper.paginate(
+                query.getPageNum(), 
+                query.getPageSize(), 
                 wrapper);
         
-        // 转换为VO
         List<UserVO> voList = page.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
@@ -128,18 +107,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public UserVO getByUsername(String username) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .select()
                 .from(SYS_USER)
                 .where(SYS_USER.USERNAME.eq(username))
                 .and(SYS_USER.DELETED.eq(0));
         
-        SysUser user = getOne(wrapper);
+        SysUser user = userMapper.selectOneByQuery(wrapper);
         if (user == null) {
             return null;
         }
         
         UserVO vo = convertToVO(user);
-        // 加载角色信息
         vo.setRoles(roleService.getRolesByUserId(user.getId()));
         return vo;
     }
@@ -494,36 +471,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public PageVO<UserVO> pageQueryWithDataScope(UserQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .select()
                 .from(SYS_USER)
-                .where(SYS_USER.DELETED.eq(0));
-        
-        if (StringUtils.hasText(query.getUsername())) {
-            wrapper.and(SYS_USER.USERNAME.like("%" + query.getUsername() + "%"));
-        }
-        
-        if (StringUtils.hasText(query.getNickname())) {
-            wrapper.and(SYS_USER.NICKNAME.like("%" + query.getNickname() + "%"));
-        }
-        
-        if (StringUtils.hasText(query.getMobile())) {
-            wrapper.and(SYS_USER.MOBILE.like("%" + query.getMobile() + "%"));
-        }
-        
-        if (query.getDeptId() != null) {
-            wrapper.and(SYS_USER.DEPT_ID.eq(query.getDeptId()));
-        }
-        
-        if (query.getStatus() != null) {
-            wrapper.and(SYS_USER.STATUS.eq(query.getStatus()));
-        }
+                .where(SYS_USER.DELETED.eq(0))
+                .and(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
+                .and(SYS_USER.NICKNAME.like(query.getNickname() != null ? "%" + query.getNickname() + "%" : null, query.getNickname() != null))
+                .and(SYS_USER.MOBILE.like(query.getMobile() != null ? "%" + query.getMobile() + "%" : null, query.getMobile() != null))
+                .and(SYS_USER.DEPT_ID.eq(query.getDeptId(), query.getDeptId() != null))
+                .and(SYS_USER.STATUS.eq(query.getStatus(), query.getStatus() != null));
         
         applyDataScope(wrapper);
         
         wrapper.orderBy(SYS_USER.CREATE_TIME.desc());
         
-        com.mybatisflex.core.paginate.Page<SysUser> page = page(
-                new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
+        com.mybatisflex.core.paginate.Page<SysUser> page = userMapper.paginate(
+                query.getPageNum(), 
+                query.getPageSize(), 
                 wrapper);
         
         List<UserVO> voList = page.getRecords().stream()

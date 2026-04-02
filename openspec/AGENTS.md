@@ -93,6 +93,121 @@ Admin UI → REST API → RouteServiceImpl
 - **API 前缀**: `/api/` + 资源名复数形式（如 `/api/routes`, `/api/plugins`）
 - **不要添加注释**，除非用户要求
 
+### MyBatis-Flex 使用规范
+
+#### 核心原则（AI生成代码必须遵循）
+
+1. **所有查询必须用 `QueryWrapper` 或 `QueryChain`**
+2. **所有条件必须支持 `null 判断`（动态开关）**
+3. **禁止字符串拼接 SQL**
+4. **优先使用 Lambda 写法**
+5. **分页统一用 `paginate`**
+6. **复杂 SQL 用 join + wrapper，不要 XML**
+7. **Mapper 层禁止使用 @Select/@Delete/@Update/@Insert 注解**，除非特殊情况（如复杂多表关联且无法用 QueryWrapper 表达）
+
+#### QueryWrapper 基础查询
+
+```java
+// 基础查询
+QueryWrapper query = QueryWrapper.create()
+    .from(USER)
+    .where(USER.AGE.gt(18));
+List<User> list = userMapper.selectListByQuery(query);
+
+// 动态条件（推荐）
+QueryWrapper query = QueryWrapper.create()
+    .from(USER)
+    .where(USER.AGE.gt(ageParam, ageParam != null))
+    .and(USER.NAME.like(nameParam, nameParam != null));
+
+// 条件组合
+QueryWrapper query = QueryWrapper.create()
+    .from(USER)
+    .where(USER.AGE.gt(18).and(USER.NAME.like("Tom")));
+```
+
+#### Lambda 风格（推荐）
+
+```java
+QueryWrapper query = QueryWrapper.create()
+    .where(User::getAge).gt(18)
+    .and(User::getName).like("Tom");
+```
+
+#### Join 查询
+
+```java
+QueryWrapper query = QueryWrapper.create()
+    .select(USER.ALL_COLUMNS, ORDER.ALL_COLUMNS)
+    .from(USER)
+    .leftJoin(ORDER).on(USER.ID.eq(ORDER.USER_ID))
+    .where(USER.AGE.gt(18));
+```
+
+#### 分页查询
+
+```java
+QueryWrapper query = QueryWrapper.create()
+    .from(USER)
+    .where(USER.NAME.like(dto.getName(), dto.getName() != null))
+    .orderBy(USER.ID.desc());
+
+Page<User> page = userMapper.paginate(dto.getPageNo(), dto.getPageSize(), query);
+```
+
+#### Db + Row 工具（无 Entity 场景）
+
+```java
+// 多表关联查询返回简单类型
+QueryWrapper wrapper = QueryWrapper.create()
+    .select(SYS_MENU.PERMS)
+    .from(SYS_USER)
+    .innerJoin(SYS_USER_ROLE).on(SYS_USER_ROLE.USER_ID.eq(SYS_USER.ID))
+    .innerJoin(SYS_ROLE).on(SYS_ROLE.ID.eq(SYS_USER_ROLE.ROLE_ID))
+    .where(SYS_USER.ID.eq(userId));
+
+List<Row> rows = Db.selectListByQuery(wrapper);
+List<String> perms = rows.stream()
+    .map(row -> row.getString("perms"))
+    .distinct()
+    .collect(Collectors.toList());
+```
+
+#### AI生成代码模板
+
+**查询模板**:
+```java
+public List<User> query(UserQueryDTO dto) {
+    QueryWrapper query = QueryWrapper.create()
+        .from(USER)
+        .where(USER.NAME.like(dto.getName(), dto.getName() != null))
+        .and(USER.AGE.ge(dto.getMinAge(), dto.getMinAge() != null))
+        .and(USER.AGE.le(dto.getMaxAge(), dto.getMaxAge() != null))
+        .orderBy(USER.ID.desc());
+    return userMapper.selectListByQuery(query);
+}
+```
+
+**分页模板**:
+```java
+public Page<User> page(UserQueryDTO dto) {
+    QueryWrapper query = QueryWrapper.create()
+        .from(USER)
+        .where(USER.NAME.like(dto.getName(), dto.getName() != null))
+        .orderBy(USER.ID.desc());
+    return userMapper.paginate(dto.getPageNo(), dto.getPageSize(), query);
+}
+```
+
+#### 场景适用建议
+
+| 场景 | 用法 |
+|------|------|
+| 网关配置 | QueryWrapper 动态条件 |
+| 投资系统 | 分页 + 聚合 |
+| 日志分析 | 原生 SQL + Wrapper 混合（特殊情况） |
+| 高并发 | 禁止复杂 ORM 嵌套 |
+
 ### 前端 (Vue 3)
 
 - **Composition API**: `<script setup lang="ts">`

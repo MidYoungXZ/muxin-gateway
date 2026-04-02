@@ -30,7 +30,7 @@
               >
                 <div>
                   <div>{{ item.label }}</div>
-                  <div style="font-size: 12px; color: var(--el-text-color-secondary)">
+                  <div style="font-size: 12px; color: var(--text-tertiary)">
                     {{ item.description }}
                   </div>
                 </div>
@@ -308,10 +308,10 @@ defineExpose({ validate })
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 12px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .required-mark {
@@ -321,13 +321,31 @@ defineExpose({ validate })
 
 .field-tip {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   margin-top: 2px;
   line-height: 1.4;
 }
 
 .method-checkboxes {
   margin-bottom: 6px;
+
+  :deep(.el-checkbox-button) {
+    .el-checkbox-button__inner {
+      background: var(--input-bg);
+      color: var(--text-primary);
+      border-color: var(--border-primary);
+      transition: all 0.2s;
+    }
+    &.is-checked .el-checkbox-button__inner {
+      background: var(--el-color-primary);
+      color: #fff;
+      border-color: var(--el-color-primary);
+      box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.3);
+    }
+    &:hover .el-checkbox-button__inner {
+      border-color: var(--el-color-primary-light-5);
+    }
+  }
 }
 
 .match-list, .host-list {
@@ -343,7 +361,7 @@ defineExpose({ validate })
 
 .match-preview {
   margin-top: 16px;
-  background: var(--el-fill-color-light);
+  background: var(--bg-tertiary);
   border-radius: 8px;
   padding: 12px;
 }
@@ -351,13 +369,13 @@ defineExpose({ validate })
 .preview-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .preview-tip {
   font-size: 13px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 6px;
 }
 
@@ -371,7 +389,7 @@ defineExpose({ validate })
   display: flex;
   align-items: center;
   font-size: 13px;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .rule-icon {

@@ -3,6 +3,7 @@ package com.muxin.gateway.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.muxin.gateway.admin.model.Result;
 import com.muxin.gateway.admin.model.dto.OperationLogQueryDTO;
+import com.muxin.gateway.admin.model.vo.LogStatsVO;
 import com.muxin.gateway.admin.model.vo.OperationLogVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.service.OperationLogService;
@@ -11,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 操作日志管理控制器
@@ -80,7 +80,7 @@ public class OperationLogController {
      */
     @GetMapping("/stats")
     @SaCheckPermission("system:log:operation:stats")
-    public Result<Map<String, Object>> getLogStats() {
+    public Result<LogStatsVO> getLogStats() {
         return Result.success(operationLogService.getLogStats());
     }
     

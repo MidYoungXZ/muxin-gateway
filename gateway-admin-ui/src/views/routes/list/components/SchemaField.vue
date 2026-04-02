@@ -248,7 +248,7 @@ function getDefaultForType(type?: string): any {
 <style lang="scss" scoped>
 .field-desc {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -257,8 +257,8 @@ function getDefaultForType(type?: string): any {
 }
 
 .array-item {
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 8px;
@@ -272,7 +272,7 @@ function getDefaultForType(type?: string): any {
     .array-item-index {
       font-size: 12px;
       font-weight: 600;
-      color: var(--el-text-color-secondary);
+      color: var(--text-tertiary);
     }
   }
 
@@ -289,8 +289,8 @@ function getDefaultForType(type?: string): any {
 
 .object-field {
   width: 100%;
-  background: var(--el-fill-color-lighter);
-  border: 1px solid var(--el-border-color-lighter);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
   border-radius: 6px;
   padding: 12px;
 

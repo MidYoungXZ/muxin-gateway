@@ -18,6 +18,7 @@ router.beforeEach(async (to, from, next) => {
     } else {
       if (!menuStore.routesLoaded) {
         try {
+          await userStore.init()
           await menuStore.initRoutes()
           next({ ...to, replace: true })
         } catch (error) {

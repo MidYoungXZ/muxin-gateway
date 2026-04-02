@@ -59,21 +59,21 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 
 -- Route list buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(101, 10, '路由查看', 'F', 'route:detail', 1, 1, 1),
+(101, 10, '路由查看', 'F', 'route:view', 1, 1, 1),
 (102, 10, '路由新增', 'F', 'route:create', 2, 1, 1),
 (103, 10, '路由修改', 'F', 'route:update', 3, 1, 1),
 (104, 10, '路由删除', 'F', 'route:delete', 4, 1, 1);
 
 -- Service node buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(111, 11, '节点查看', 'F', 'route:node:detail', 1, 1, 1),
+(111, 11, '节点查看', 'F', 'route:node:list', 1, 1, 1),
 (112, 11, '节点新增', 'F', 'route:node:create', 2, 1, 1),
 (113, 11, '节点修改', 'F', 'route:node:update', 3, 1, 1),
 (114, 11, '节点删除', 'F', 'route:node:delete', 4, 1, 1);
 
 -- Plugin management buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(1051, 105, '插件查看', 'F', 'route:plugin:detail', 1, 1, 1),
+(1051, 105, '插件查看', 'F', 'route:plugin:view', 1, 1, 1),
 (1052, 105, '插件新增', 'F', 'route:plugin:create', 2, 1, 1),
 (1053, 105, '插件修改', 'F', 'route:plugin:update', 3, 1, 1),
 (1054, 105, '插件删除', 'F', 'route:plugin:delete', 4, 1, 1);
@@ -86,7 +86,7 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 
 -- User management buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(201, 20, '用户查看', 'F', 'system:user:detail', 1, 1, 1),
+(201, 20, '用户查看', 'F', 'system:user:view', 1, 1, 1),
 (202, 20, '用户新增', 'F', 'system:user:create', 2, 1, 1),
 (203, 20, '用户修改', 'F', 'system:user:update', 3, 1, 1),
 (204, 20, '用户删除', 'F', 'system:user:delete', 4, 1, 1),
@@ -94,7 +94,7 @@ INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, vi
 
 -- Role management buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(211, 21, '角色查看', 'F', 'system:role:detail', 1, 1, 1),
+(211, 21, '角色查看', 'F', 'system:role:view', 1, 1, 1),
 (212, 21, '角色新增', 'F', 'system:role:create', 2, 1, 1),
 (213, 21, '角色修改', 'F', 'system:role:update', 3, 1, 1),
 (214, 21, '角色删除', 'F', 'system:role:delete', 4, 1, 1),
@@ -102,10 +102,10 @@ INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, vi
 
 -- Department management buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
-(221, 22, '部门查看', 'F', 'system:dept:detail', 1, 1, 1),
-(222, 22, '部门新增', 'F', 'system:dept:create', 2, 1, 1),
-(223, 22, '部门修改', 'F', 'system:dept:update', 3, 1, 1),
-(224, 22, '部门删除', 'F', 'system:dept:delete', 4, 1, 1);
+(221, 22, '部门查看', 'F', 'system:dept:query', 1, 1, 1),
+(222, 22, '部门新增', 'F', 'system:dept:add', 2, 1, 1),
+(223, 22, '部门修改', 'F', 'system:dept:edit', 3, 1, 1),
+(224, 22, '部门删除', 'F', 'system:dept:remove', 4, 1, 1);
 
 -- ====================================
 -- 6. Role-Menu Association

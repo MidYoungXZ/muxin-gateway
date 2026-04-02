@@ -7,6 +7,7 @@ import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.muxin.gateway.admin.entity.SysOperationLog;
 import com.muxin.gateway.admin.mapper.OperationLogMapper;
 import com.muxin.gateway.admin.model.dto.OperationLogQueryDTO;
+import com.muxin.gateway.admin.model.vo.LogStatsVO;
 import com.muxin.gateway.admin.model.vo.OperationLogVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.service.OperationLogService;
@@ -22,9 +23,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,37 +34,31 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     @Override
     public PageVO<OperationLogVO> pageQuery(OperationLogQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .orderBy("operate_time DESC");
+                .from(SysOperationLog.class)
+                .where(SysOperationLog::getModule).like(query.getModule() != null ? "%" + query.getModule() + "%" : null, query.getModule() != null)
+                .and(SysOperationLog::getOperation).like(query.getOperation() != null ? "%" + query.getOperation() + "%" : null, query.getOperation() != null)
+                .and(SysOperationLog::getOperator).like(query.getOperator() != null ? "%" + query.getOperator() + "%" : null, query.getOperator() != null)
+                .and(SysOperationLog::getStatus).eq(query.getStatus(), query.getStatus() != null)
+                .and(SysOperationLog::getMethod).eq(query.getMethod(), query.getMethod() != null)
+                .orderBy(SysOperationLog::getOperateTime, false);
         
-        if (StringUtils.hasText(query.getModule())) {
-            wrapper.and("module LIKE CONCAT('%', ?, '%')", query.getModule());
-        }
-        if (StringUtils.hasText(query.getOperation())) {
-            wrapper.and("operation LIKE CONCAT('%', ?, '%')", query.getOperation());
-        }
-        if (StringUtils.hasText(query.getOperator())) {
-            wrapper.and("operator LIKE CONCAT('%', ?, '%')", query.getOperator());
-        }
-        if (query.getStatus() != null) {
-            wrapper.and("status = ?", query.getStatus());
-        }
-        if (StringUtils.hasText(query.getMethod())) {
-            wrapper.and("method = ?", query.getMethod());
-        }
         if (StringUtils.hasText(query.getKeyword())) {
-            wrapper.and("(operator LIKE CONCAT('%', ?, '%') OR module LIKE CONCAT('%', ?, '%') OR operation LIKE CONCAT('%', ?, '%'))", 
-                    query.getKeyword(), query.getKeyword(), query.getKeyword());
+            String keyword = "%" + query.getKeyword() + "%";
+            wrapper.and(w -> {
+                w.where(SysOperationLog::getOperator).like(keyword)
+                 .or(SysOperationLog::getModule).like(keyword)
+                 .or(SysOperationLog::getOperation).like(keyword);
+            });
         }
         
         if (StringUtils.hasText(query.getStartTime())) {
-            wrapper.and("operate_time >= ?", LocalDateTime.parse(query.getStartTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            wrapper.and(SysOperationLog::getOperateTime).ge(LocalDateTime.parse(query.getStartTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         }
         if (StringUtils.hasText(query.getEndTime())) {
-            wrapper.and("operate_time <= ?", LocalDateTime.parse(query.getEndTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            wrapper.and(SysOperationLog::getOperateTime).le(LocalDateTime.parse(query.getEndTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         }
         
-        Page<SysOperationLog> page = Page.of(query.getPageNum(), query.getPageSize());
-        Page<SysOperationLog> logPage = page(page, wrapper);
+        Page<SysOperationLog> logPage = mapper.paginate(query.getPageNum(), query.getPageSize(), wrapper);
         
         List<OperationLogVO> logVOs = logPage.getRecords().stream()
                 .map(this::convertToVO)
@@ -163,24 +156,29 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     }
     
     @Override
-    public Map<String, Object> getLogStats() {
-        Map<String, Object> stats = new HashMap<>();
-        
+    public LogStatsVO getLogStats() {
         long totalCount = count();
-        stats.put("totalCount", totalCount);
         
         LocalDateTime todayStart = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
-        long todayCount = count(QueryWrapper.create().and("operate_time >= ?", todayStart));
-        stats.put("todayCount", todayCount);
+        QueryWrapper todayWrapper = QueryWrapper.create()
+                .from(SysOperationLog.class)
+                .where(SysOperationLog::getOperateTime).ge(todayStart);
+        long todayCount = count(todayWrapper);
         
-        long successCount = count(QueryWrapper.create().and("status = ?", 1));
+        QueryWrapper successWrapper = QueryWrapper.create()
+                .from(SysOperationLog.class)
+                .where(SysOperationLog::getStatus).eq(1);
+        long successCount = count(successWrapper);
         double successRate = totalCount > 0 ? (double) successCount / totalCount * 100 : 0;
-        stats.put("successRate", Math.round(successRate * 100.0) / 100.0);
         
         long failureCount = totalCount - successCount;
-        stats.put("failureCount", failureCount);
         
-        return stats;
+        return LogStatsVO.builder()
+                .totalCount(totalCount)
+                .todayCount(todayCount)
+                .successRate(Math.round(successRate * 100.0) / 100.0)
+                .failureCount(failureCount)
+                .build();
     }
     
     @Override
@@ -189,7 +187,8 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
         LocalDateTime cutoffTime = LocalDateTime.now().minusDays(days);
         
         QueryWrapper wrapper = QueryWrapper.create()
-                .where("operate_time < ?", cutoffTime);
+                .from(SysOperationLog.class)
+                .where(SysOperationLog::getOperateTime).lt(cutoffTime);
         
         List<SysOperationLog> oldLogs = list(wrapper);
         if (!oldLogs.isEmpty()) {

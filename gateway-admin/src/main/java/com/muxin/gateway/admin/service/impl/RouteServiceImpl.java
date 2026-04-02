@@ -8,13 +8,21 @@ import com.muxin.gateway.admin.entity.GwPlugin;
 import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.entity.GwRoutePlugin;
 import com.muxin.gateway.admin.entity.GwRoutePredicate;
+import com.muxin.gateway.admin.entity.GwServiceNode;
 import static com.muxin.gateway.admin.entity.table.GwRouteTableDef.GW_ROUTE;
+import static com.muxin.gateway.admin.entity.table.GwRoutePluginTableDef.GW_ROUTE_PLUGIN;
+import static com.muxin.gateway.admin.entity.table.GwRoutePredicateTableDef.GW_ROUTE_PREDICATE;
+import static com.muxin.gateway.admin.entity.table.GwPluginTableDef.GW_PLUGIN;
+import static com.muxin.gateway.admin.entity.table.GwPredicateTableDef.GW_PREDICATE;
+import com.muxin.gateway.admin.constants.PredicateConfigKeys;
+import com.muxin.gateway.admin.constants.PluginConfigKeys;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.PluginMapper;
 import com.muxin.gateway.admin.mapper.PredicateMapper;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.RoutePluginMapper;
 import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
+import com.muxin.gateway.admin.mapper.ServiceNodeMapper;
 import com.muxin.gateway.admin.model.dto.*;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.model.vo.PluginVO;
@@ -45,31 +53,22 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     private final RoutePredicateMapper routePredicateMapper;
     private final PluginMapper pluginMapper;
     private final PredicateMapper predicateMapper;
+    private final ServiceNodeMapper serviceNodeMapper;
     private final com.muxin.gateway.admin.service.ConfigRefreshService configRefreshService;
     
     @Override
     public PageVO<RouteVO> pageQuery(RouteQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .select()
                 .from(GW_ROUTE)
-                .where(GW_ROUTE.DELETED.eq(false));
+                .where(GW_ROUTE.DELETED.eq(0))
+                .and(GW_ROUTE.ROUTE_NAME.like(query.getRouteName() != null ? "%" + query.getRouteName() + "%" : null, query.getRouteName() != null))
+                .and(GW_ROUTE.URI.like(query.getUri() != null ? "%" + query.getUri() + "%" : null, query.getUri() != null))
+                .and(GW_ROUTE.ENABLED.eq(query.getEnabled(), query.getEnabled() != null))
+                .orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc());
         
-        if (StringUtils.hasText(query.getRouteName())) {
-            wrapper.and(GW_ROUTE.ROUTE_NAME.like("%" + query.getRouteName() + "%"));
-        }
-        
-        if (StringUtils.hasText(query.getUri())) {
-            wrapper.and(GW_ROUTE.URI.like("%" + query.getUri() + "%"));
-        }
-        
-        if (query.getEnabled() != null) {
-            wrapper.and(GW_ROUTE.ENABLED.eq(query.getEnabled()));
-        }
-        
-        wrapper.orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc());
-        
-        com.mybatisflex.core.paginate.Page<GwRoute> page = page(
-                new com.mybatisflex.core.paginate.Page<>(query.getPageNum(), query.getPageSize()), 
+        com.mybatisflex.core.paginate.Page<GwRoute> page = routeMapper.paginate(
+                query.getPageNum(), 
+                query.getPageSize(), 
                 wrapper);
         
         List<RouteVO> voList = page.getRecords().stream()
@@ -94,6 +93,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         RouteVO vo = convertToVO(route);
         vo.setPlugins(loadPlugins(id));
+        vo.setPredicates(loadPredicates(id));
         return vo;
     }
     
@@ -101,6 +101,8 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Transactional(rollbackFor = Exception.class)
     public Long createRoute(RouteCreateDTO dto) {
         checkRouteIdUnique(dto.getRouteId());
+        
+        LocalDateTime now = LocalDateTime.now();
         
         GwRoute route = new GwRoute();
         route.setRouteId(dto.getRouteId());
@@ -114,6 +116,8 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setTemplateId(dto.getTemplateId());
         route.setVersion(1);
         route.setDeleted(false);
+        route.setCreateTime(now);
+        route.setUpdateTime(now);
         
         save(route);
         
@@ -125,13 +129,21 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             saveRoutePlugins(route.getId(), dto.getPlugins());
         }
         
+        if (dto.getPathRewrite() != null) {
+            savePathRewritePlugin(route.getId(), dto.getPathRewrite());
+        }
+        
+        if (dto.getTimeouts() != null) {
+            saveTimeoutPlugin(route.getId(), dto.getTimeouts());
+        }
+        
         configRefreshService.refreshRoutes();
         log.info("[RouteService] 路由创建成功，已同步到 gateway-core: {}", dto.getRouteId());
         
         return route.getId();
     }
     
-    @Override
+@Override
     @Transactional(rollbackFor = Exception.class)
     public void updateRoute(Long id, RouteUpdateDTO dto) {
         GwRoute oldRoute = getById(id);
@@ -150,17 +162,26 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setEnabled(dto.getEnabled());
         route.setGrayscaleEnabled(dto.getGrayscaleEnabled());
         route.setVersion(oldRoute.getVersion() + 1);
+        route.setUpdateTime(LocalDateTime.now());
         
         updateById(route);
         
-        routePluginMapper.deleteByRouteId(id);
+        routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
         if (!CollectionUtils.isEmpty(dto.getPlugins())) {
             saveRoutePlugins(id, dto.getPlugins());
         }
         
-        routePredicateMapper.deleteByRouteId(id);
+        routePredicateMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PREDICATE.ROUTE_ID.eq(id)));
         if (dto.getMatching() != null) {
             saveRouteMatching(id, dto.getMatching());
+        }
+        
+        if (dto.getPathRewrite() != null) {
+            savePathRewritePlugin(id, dto.getPathRewrite());
+        }
+        
+        if (dto.getTimeouts() != null) {
+            saveTimeoutPlugin(id, dto.getTimeouts());
         }
         
         configRefreshService.refreshRoutes();
@@ -177,7 +198,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         String routeId = route.getRouteId();
         
-        routePluginMapper.deleteByRouteId(id);
+        routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
         removeById(id);
         
         configRefreshService.refreshRoutes();
@@ -194,7 +215,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         for (Long id : ids) {
             GwRoute route = getById(id);
             if (route != null && !route.getDeleted()) {
-                routePluginMapper.deleteByRouteId(id);
+                routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
                 removeById(id);
             }
         }
@@ -223,17 +244,26 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     
     @Override
     public List<String> getServiceNames() {
-        return routeMapper.findAllServiceNames();
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(GwServiceNode::getServiceName)
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getDeleted).eq(false)
+                .orderBy(GwServiceNode::getServiceName, true);
+        
+        return serviceNodeMapper.selectListByQuery(wrapper).stream()
+                .map(GwServiceNode::getServiceName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
     }
     
     private void checkRouteIdUnique(String routeId) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .select()
                 .from(GW_ROUTE)
                 .where(GW_ROUTE.ROUTE_ID.eq(routeId))
-                .and(GW_ROUTE.DELETED.eq(false));
+                .and(GW_ROUTE.DELETED.eq(0));
         
-        long count = count(wrapper);
+        long count = routeMapper.selectCountByQuery(wrapper);
         if (count > 0) {
             throw new BusinessException("路由ID已存在: " + routeId);
         }
@@ -273,12 +303,12 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setDescription("路径匹配");
             
             Map<String, Object> args = new HashMap<>();
-            args.put("pattern", matching.getPath().getPattern());
+            args.put(PredicateConfigKeys.PATTERN, matching.getPath().getPattern());
             if (matching.getPath().getMatchType() != null) {
-                args.put("matchType", matching.getPath().getMatchType());
+                args.put(PredicateConfigKeys.MATCH_TYPE, matching.getPath().getMatchType());
             }
             if (matching.getPath().getIgnoreCase() != null) {
-                args.put("ignoreCase", matching.getPath().getIgnoreCase());
+                args.put(PredicateConfigKeys.IGNORE_CASE, matching.getPath().getIgnoreCase());
             }
             predicate.setArgs(args);
             predicate.setIsSystem(false);
@@ -304,7 +334,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setDescription("方法匹配");
             
             Map<String, Object> args = new HashMap<>();
-            args.put("methods", matching.getMethods());
+            args.put(PredicateConfigKeys.METHODS, matching.getMethods());
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
@@ -329,7 +359,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setDescription("Host匹配");
             
             Map<String, Object> args = new HashMap<>();
-            args.put("hosts", matching.getHosts());
+            args.put(PredicateConfigKeys.HOSTS, matching.getHosts());
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
@@ -354,7 +384,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setDescription("Header匹配");
             
             Map<String, Object> args = new HashMap<>();
-            args.put("headers", matching.getHeaders());
+            args.put(PredicateConfigKeys.HEADERS, matching.getHeaders());
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
@@ -379,7 +409,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setDescription("Query参数匹配");
             
             Map<String, Object> args = new HashMap<>();
-            args.put("queries", matching.getQueries());
+            args.put(PredicateConfigKeys.QUERIES, matching.getQueries());
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
@@ -435,29 +465,146 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     }
     
     private List<PluginVO> loadPlugins(Long routeId) {
-        List<Map<String, Object>> plugins = routePluginMapper.findPluginsByRouteId(routeId);
-        return plugins.stream()
-                .map(map -> {
-                    PluginVO vo = new PluginVO();
-                    vo.setId(getLong(map, "route_plugin_id"));
-                    vo.setPluginId(getLong(map, "plugin_id"));
-                    vo.setPluginName((String) map.get("plugin_name"));
-                    vo.setPluginType((String) map.get("plugin_type"));
-                    vo.setConfig(parseConfig(map.get("config")));
-                    vo.setPriorityOverride(getInteger(map, "priority_override"));
-                    vo.setDefaultPriority(getInteger(map, "default_priority"));
+        List<GwRoutePlugin> routePlugins = routePluginMapper.selectListByQuery(
+            QueryWrapper.create()
+                .where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
+        );
+        
+        if (routePlugins.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Long> pluginIds = routePlugins.stream()
+                .map(GwRoutePlugin::getPluginId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, GwPlugin> pluginMap = pluginMapper.selectListByQuery(
+                QueryWrapper.create()
+                    .where(GW_PLUGIN.ID.in(pluginIds))
+                    .and(GW_PLUGIN.DELETED.eq(false))
+            ).stream()
+            .collect(Collectors.toMap(GwPlugin::getId, p -> p));
+        
+        return routePlugins.stream()
+                .map(rp -> {
+                    GwPlugin plugin = pluginMap.get(rp.getPluginId());
+                    if (plugin == null) return null;
                     
-                    Integer priorityOverride = getInteger(map, "priority_override");
-                    Integer defaultPriority = getInteger(map, "default_priority");
+                    PluginVO vo = new PluginVO();
+                    vo.setId(rp.getId());
+                    vo.setPluginId(plugin.getId());
+                    vo.setPluginName(plugin.getPluginName());
+                    vo.setPluginType(plugin.getPluginType());
+                    vo.setConfig(rp.getConfig());
+                    vo.setPriorityOverride(rp.getPriorityOverride());
+                    vo.setDefaultPriority(plugin.getDefaultPriority());
+                    
+                    Integer priorityOverride = rp.getPriorityOverride();
+                    Integer defaultPriority = plugin.getDefaultPriority();
                     vo.setEffectivePriority(priorityOverride != null ? priorityOverride : 
                             (defaultPriority != null ? defaultPriority : 5000));
                     
-                    Boolean enabled = (Boolean) map.get("enabled");
-                    vo.setEnabled(enabled != null ? enabled : true);
-                    vo.setPhase((String) map.get("phase"));
+                    vo.setEnabled(rp.getEnabled() != null ? rp.getEnabled() : true);
+                    vo.setPhase(plugin.getPhase());
                     
                     return vo;
                 })
+                .filter(Objects::nonNull)
+                .sorted((a, b) -> b.getEffectivePriority() - a.getEffectivePriority())
+                .collect(Collectors.toList());
+    }
+    
+    private void savePathRewritePlugin(Long routeId, RouteCreateDTO.PathRewriteDTO pathRewrite) {
+        GwPlugin plugin = pluginMapper.selectOneByQuery(
+            QueryWrapper.create()
+                .where(GW_PLUGIN.PLUGIN_NAME.eq("request-rewrite"))
+                .and(GW_PLUGIN.DELETED.eq(false))
+                .limit(1)
+        );
+        if (plugin == null) {
+            log.warn("[RouteService] request-rewrite 插件不存在，跳过路径重写");
+            return;
+        }
+        
+        GwRoutePlugin rp = new GwRoutePlugin();
+        rp.setRouteId(routeId);
+        rp.setPluginId(plugin.getId());
+        
+        Map<String, Object> config = new HashMap<>();
+        config.put(PluginConfigKeys.PATH_REGEX, pathRewrite.getFrom());
+        config.put(PluginConfigKeys.PATH_REPLACEMENT, pathRewrite.getTo());
+        rp.setConfig(config);
+        rp.setEnabled(true);
+        rp.setSortOrder(100);
+        rp.setCreateTime(LocalDateTime.now());
+        
+        routePluginMapper.insert(rp);
+    }
+    
+    private void saveTimeoutPlugin(Long routeId, RouteCreateDTO.TimeoutDTO timeouts) {
+        GwPlugin plugin = pluginMapper.selectOneByQuery(
+            QueryWrapper.create()
+                .where(GW_PLUGIN.PLUGIN_NAME.eq("timeout"))
+                .and(GW_PLUGIN.DELETED.eq(false))
+                .limit(1)
+        );
+        if (plugin == null) {
+            log.warn("[RouteService] timeout 插件不存在，跳过超时配置");
+            return;
+        }
+        
+        GwRoutePlugin rp = new GwRoutePlugin();
+        rp.setRouteId(routeId);
+        rp.setPluginId(plugin.getId());
+        
+        Map<String, Object> config = new HashMap<>();
+        if (timeouts.getConnect() != null) {
+            config.put(PluginConfigKeys.CONNECT_TIMEOUT, timeouts.getConnect());
+        }
+        if (timeouts.getResponse() != null) {
+            config.put(PluginConfigKeys.RESPONSE_TIMEOUT, timeouts.getResponse());
+        }
+        rp.setConfig(config);
+        rp.setEnabled(true);
+        rp.setSortOrder(99);
+        rp.setCreateTime(LocalDateTime.now());
+        
+        routePluginMapper.insert(rp);
+    }
+    
+    private List<RouteVO.PredicateInfo> loadPredicates(Long routeId) {
+        List<GwRoutePredicate> routePredicates = routePredicateMapper.selectListByQuery(
+            QueryWrapper.create().where(GW_ROUTE_PREDICATE.ROUTE_ID.eq(routeId))
+        );
+        
+        if (routePredicates.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Long> predicateIds = routePredicates.stream()
+                .map(GwRoutePredicate::getPredicateId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, GwPredicate> predicateMap = predicateMapper.selectListByQuery(
+                QueryWrapper.create()
+                    .where(GW_PREDICATE.ID.in(predicateIds))
+                    .and(GW_PREDICATE.DELETED.eq(false))
+            ).stream()
+            .collect(Collectors.toMap(GwPredicate::getId, p -> p));
+        
+        return routePredicates.stream()
+                .map(rp -> {
+                    GwPredicate predicate = predicateMap.get(rp.getPredicateId());
+                    if (predicate == null) return null;
+                    
+                    RouteVO.PredicateInfo info = new RouteVO.PredicateInfo();
+                    info.setPredicateType(predicate.getPredicateType());
+                    info.setArgs(predicate.getArgs());
+                    return info;
+                })
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
     

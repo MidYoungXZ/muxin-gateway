@@ -213,10 +213,10 @@ defineExpose({ validate: () => Promise.resolve(true) })
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
   margin-bottom: 12px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .plugin-grid {
@@ -239,7 +239,7 @@ defineExpose({ validate: () => Promise.resolve(true) })
 
   &.configured {
     border-color: var(--el-color-success-light-5);
-    background: var(--el-color-success-light-9);
+    background: var(--bg-tertiary);
   }
 
   &.disabled {
@@ -261,12 +261,12 @@ defineExpose({ validate: () => Promise.resolve(true) })
 .plugin-name {
   font-size: 13px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
+  color: var(--text-primary);
 }
 
 .plugin-desc {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 6px;
   line-height: 1.4;
 }
@@ -280,7 +280,7 @@ defineExpose({ validate: () => Promise.resolve(true) })
 
 .plugin-priority {
   font-size: 11px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
 }
 
 .plugin-status {
@@ -292,7 +292,7 @@ defineExpose({ validate: () => Promise.resolve(true) })
 
 .config-summary {
   font-size: 11px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -304,20 +304,20 @@ defineExpose({ validate: () => Promise.resolve(true) })
 }
 
 .plugin-list {
-  background: var(--el-fill-color-lighter);
+  background: var(--bg-tertiary);
   border-radius: 8px;
   padding: 12px;
 }
 
 .list-tip {
   font-size: 12px;
-  color: var(--el-text-color-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 8px;
 }
 
 .list-footer {
   font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  color: var(--text-tertiary);
   margin-top: 6px;
 }
 </style>

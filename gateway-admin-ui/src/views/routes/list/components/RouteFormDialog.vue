@@ -129,7 +129,7 @@ function loadRouteData(route: Route) {
   
   if (route.predicates && route.predicates.length > 0) {
     for (const pred of route.predicates) {
-      const config = pred.config || {}
+      const config = pred.args || pred.config || {}
       if (pred.predicateType === 'PATH' || pred.predicateName === 'Path') {
         formData.value.pathPattern = config.pattern || ''
         formData.value.matchType = config.matchType || 'ANT'
@@ -139,9 +139,9 @@ function loadRouteData(route: Route) {
       } else if (pred.predicateType === 'HEADER' || pred.predicateName === 'Header') {
         formData.value.headers = config.headers || []
       } else if (pred.predicateType === 'HOST' || pred.predicateName === 'Host') {
-        formData.value.hosts = config.patterns || []
+        formData.value.hosts = config.hosts || []
       } else if (pred.predicateType === 'QUERY' || pred.predicateName === 'Query') {
-        formData.value.queries = config.params || []
+        formData.value.queries = config.queries || []
       }
     }
   }

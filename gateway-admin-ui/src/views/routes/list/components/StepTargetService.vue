@@ -42,7 +42,7 @@
           >
             <div>
               <div>{{ item.label }}</div>
-              <div style="font-size: 12px; color: var(--el-text-color-secondary)">
+              <div style="font-size: 12px; color: var(--text-tertiary)">
                 {{ item.description }}
               </div>
             </div>

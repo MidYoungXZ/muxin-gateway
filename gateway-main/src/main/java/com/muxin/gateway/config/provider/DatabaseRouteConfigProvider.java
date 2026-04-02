@@ -1,15 +1,30 @@
 package com.muxin.gateway.config.provider;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.muxin.gateway.admin.entity.GwPlugin;
+import com.muxin.gateway.admin.entity.GwPredicate;
 import com.muxin.gateway.admin.entity.GwRoute;
+import com.muxin.gateway.admin.entity.GwRoutePlugin;
+import com.muxin.gateway.admin.entity.GwRoutePredicate;
+import com.muxin.gateway.admin.mapper.PluginMapper;
+import com.muxin.gateway.admin.mapper.PredicateMapper;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
 import com.muxin.gateway.admin.mapper.RoutePluginMapper;
+import com.muxin.gateway.admin.constants.PluginConfigKeys;
+import com.muxin.gateway.constants.FilterConfigKeys;
+import com.muxin.gateway.constants.FilterConfigKeys;
+import static com.muxin.gateway.admin.entity.table.GwRoutePluginTableDef.GW_ROUTE_PLUGIN;
+import static com.muxin.gateway.admin.entity.table.GwPluginTableDef.GW_PLUGIN;
+import static com.muxin.gateway.admin.entity.table.GwRoutePredicateTableDef.GW_ROUTE_PREDICATE;
+import static com.muxin.gateway.admin.entity.table.GwPredicateTableDef.GW_PREDICATE;
 import com.muxin.gateway.core.config.provider.ConfigChangedEvent;
 import com.muxin.gateway.core.config.provider.ConfigChangeListener;
 import com.muxin.gateway.core.config.provider.RouteConfigProvider;
 import com.muxin.gateway.core.route.RouteDefinition;
 import com.muxin.gateway.core.route.filter.FilterDefinition;
+import com.muxin.gateway.core.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.route.predicate.PredicateDefinition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +45,8 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
     private final RouteMapper routeMapper;
     private final RoutePredicateMapper routePredicateMapper;
     private final RoutePluginMapper routePluginMapper;
+    private final PluginMapper pluginMapper;
+    private final PredicateMapper predicateMapper;
     private final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
     private volatile List<RouteDefinition> cachedRoutes = new ArrayList<>();
     private volatile boolean refreshing = false;
@@ -125,6 +142,12 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
             definition.setServiceRef(extractServiceIdFromUri(uri));
         }
 
+        if (route.getLoadBalanceStrategy() != null && !route.getLoadBalanceStrategy().isEmpty()) {
+            LoadBalanceDefinition lb = new LoadBalanceDefinition();
+            lb.setStrategy(route.getLoadBalanceStrategy());
+            definition.setLoadBalance(lb);
+        }
+
         List<PredicateDefinition> predicates = loadPredicates(route.getId());
         definition.setPredicates(predicates);
 
@@ -145,46 +168,84 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
     }
 
     private List<PredicateDefinition> loadPredicates(Long routeId) {
-        List<Map<String, Object>> predicateMaps = routePredicateMapper.findPredicatesByRouteId(routeId);
+        List<GwRoutePredicate> routePredicates = routePredicateMapper.selectListByQuery(
+            QueryWrapper.create().where(GW_ROUTE_PREDICATE.ROUTE_ID.eq(routeId))
+        );
+        
+        if (routePredicates.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Long> predicateIds = routePredicates.stream()
+                .map(GwRoutePredicate::getPredicateId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, GwPredicate> predicateMap = predicateMapper.selectListByQuery(
+                QueryWrapper.create()
+                    .where(GW_PREDICATE.ID.in(predicateIds))
+                    .and(GW_PREDICATE.DELETED.eq(false))
+            ).stream()
+            .collect(Collectors.toMap(GwPredicate::getId, p -> p));
+        
         List<PredicateDefinition> predicates = new ArrayList<>();
 
-        for (Map<String, Object> map : predicateMaps) {
-            String predicateType = (String) map.get("predicateType");
-            Map<String, Object> config = parseConfig(map.get("args"));
+        for (GwRoutePredicate rp : routePredicates) {
+            GwPredicate predicate = predicateMap.get(rp.getPredicateId());
+            if (predicate == null) continue;
 
-            PredicateDefinition predicate = PredicateDefinition.builder()
-                    .name(predicateType)
-                    .args(config != null ? config : new HashMap<>())
+            PredicateDefinition pd = PredicateDefinition.builder()
+                    .name(predicate.getPredicateType())
+                    .args(predicate.getArgs() != null ? predicate.getArgs() : new HashMap<>())
                     .build();
-            predicates.add(predicate);
+            predicates.add(pd);
         }
 
         return predicates;
     }
 
     private List<FilterDefinition> loadFiltersFromPlugins(Long routeId) {
-        List<Map<String, Object>> pluginMaps = routePluginMapper.findPluginsByRouteId(routeId);
+        List<GwRoutePlugin> routePlugins = routePluginMapper.selectListByQuery(
+            QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
+        );
+        
+        if (routePlugins.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<Long> pluginIds = routePlugins.stream()
+                .map(GwRoutePlugin::getPluginId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        Map<Long, GwPlugin> pluginMap = pluginMapper.selectListByQuery(
+                QueryWrapper.create()
+                    .where(GW_PLUGIN.ID.in(pluginIds))
+                    .and(GW_PLUGIN.DELETED.eq(false))
+            ).stream()
+            .collect(Collectors.toMap(GwPlugin::getId, p -> p));
+        
         List<FilterDefinition> filters = new ArrayList<>();
-
-        for (Map<String, Object> map : pluginMaps) {
-            String pluginName = (String) map.get("plugin_name");
-            String pluginType = (String) map.get("plugin_type");
-            Map<String, Object> routeConfig = parseConfig(map.get("config"));
-            Map<String, Object> defaultConfig = parseConfig(map.get("default_config"));
-            Object priorityOverride = map.get("priority_override");
-            Object defaultPriority = map.get("default_priority");
-            Boolean pluginEnabled = map.get("enabled") instanceof Number
-                    ? ((Number) map.get("enabled")).intValue() != 0
-                    : Boolean.TRUE.equals(map.get("enabled"));
+        
+        for (GwRoutePlugin rp : routePlugins) {
+            GwPlugin plugin = pluginMap.get(rp.getPluginId());
+            if (plugin == null) continue;
+            
+            String pluginName = plugin.getPluginName();
+            String pluginType = plugin.getPluginType();
+            Map<String, Object> routeConfig = rp.getConfig();
+            Map<String, Object> defaultConfig = plugin.getDefaultConfig();
+            Integer priorityOverride = rp.getPriorityOverride();
+            Integer defaultPriority = plugin.getDefaultPriority();
+            Boolean pluginEnabled = rp.getEnabled() != null ? rp.getEnabled() : true;
 
             if (!pluginEnabled) {
                 continue;
             }
 
             Map<String, Object> effectiveConfig = mergeConfig(defaultConfig, routeConfig);
-            int order = priorityOverride instanceof Number
-                    ? ((Number) priorityOverride).intValue()
-                    : (defaultPriority instanceof Number ? ((Number) defaultPriority).intValue() : 0);
+            int order = priorityOverride != null ? priorityOverride : 
+                    (defaultPriority != null ? defaultPriority : 0);
 
             List<FilterDefinition> mapped = mapPluginToFilters(pluginName, pluginType, effectiveConfig, order);
             filters.addAll(mapped);
@@ -227,13 +288,13 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     private FilterDefinition createRateLimitFilter(Map<String, Object> config, int order) {
         Map<String, Object> filterArgs = new HashMap<>();
-        Object rate = config.get("rate");
+        Object rate = config.get(PluginConfigKeys.RATE);
         if (rate != null) {
-            filterArgs.put("replenishRate", toInt(rate, 10));
+            filterArgs.put(FilterConfigKeys.REPLENISH_RATE, toInt(rate, 10));
         }
-        Object burst = config.get("burst");
+        Object burst = config.get(PluginConfigKeys.BURST);
         if (burst != null) {
-            filterArgs.put("burstCapacity", toInt(burst, 20));
+            filterArgs.put(FilterConfigKeys.BURST_CAPACITY, toInt(burst, 20));
         }
 
         return FilterDefinition.builder()
@@ -246,17 +307,17 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     private FilterDefinition createCircuitBreakerFilter(Map<String, Object> config, int order) {
         Map<String, Object> filterArgs = new HashMap<>();
-        Object failureThreshold = config.get("failureThreshold");
+        Object failureThreshold = config.get(PluginConfigKeys.FAILURE_THRESHOLD);
         if (failureThreshold != null) {
-            filterArgs.put("failureRateThreshold", toInt(failureThreshold, 50));
+            filterArgs.put(FilterConfigKeys.FAILURE_RATE_THRESHOLD, toInt(failureThreshold, 50));
         }
-        Object timeout = config.get("timeout");
+        Object timeout = config.get(PluginConfigKeys.TIMEOUT);
         if (timeout != null) {
-            filterArgs.put("waitDurationInOpenState", toLong(timeout, 60000));
+            filterArgs.put(FilterConfigKeys.WAIT_DURATION_IN_OPEN_STATE, toLong(timeout, 60000));
         }
-        Object successThreshold = config.get("successThreshold");
+        Object successThreshold = config.get(PluginConfigKeys.SUCCESS_THRESHOLD);
         if (successThreshold != null) {
-            filterArgs.put("ringBufferSize", toInt(successThreshold, 100));
+            filterArgs.put(FilterConfigKeys.RING_BUFFER_SIZE, toInt(successThreshold, 100));
         }
 
         return FilterDefinition.builder()
@@ -269,11 +330,11 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     private FilterDefinition createCorsFilter(Map<String, Object> config, int order) {
         Map<String, Object> filterArgs = new HashMap<>();
-        filterArgs.put("allowOrigins", config.getOrDefault("allowOrigins", "*"));
-        filterArgs.put("allowMethods", config.getOrDefault("allowMethods", "*"));
-        filterArgs.put("allowHeaders", config.getOrDefault("allowHeaders", "*"));
-        filterArgs.put("allowCredentials", config.getOrDefault("allowCredentials", false));
-        filterArgs.put("maxAge", config.getOrDefault("maxAge", 3600));
+        filterArgs.put(FilterConfigKeys.ALLOW_ORIGINS, config.getOrDefault(PluginConfigKeys.ALLOW_ORIGINS, "*"));
+        filterArgs.put(FilterConfigKeys.ALLOW_METHODS, config.getOrDefault(PluginConfigKeys.ALLOW_METHODS, "*"));
+        filterArgs.put(FilterConfigKeys.ALLOW_HEADERS, config.getOrDefault(PluginConfigKeys.ALLOW_HEADERS, "*"));
+        filterArgs.put(FilterConfigKeys.ALLOW_CREDENTIALS, config.getOrDefault(PluginConfigKeys.ALLOW_CREDENTIALS, false));
+        filterArgs.put(FilterConfigKeys.MAX_AGE, config.getOrDefault(PluginConfigKeys.MAX_AGE, 3600));
 
         return FilterDefinition.builder()
                 .name("CorsFilter")
@@ -285,8 +346,8 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     private FilterDefinition createTimeoutFilter(Map<String, Object> config, int order) {
         Map<String, Object> filterArgs = new HashMap<>();
-        filterArgs.put("connectTimeout", config.getOrDefault("connectTimeout", 5000));
-        filterArgs.put("responseTimeout", config.getOrDefault("responseTimeout", 30000));
+        filterArgs.put(FilterConfigKeys.CONNECT_TIMEOUT, config.getOrDefault(PluginConfigKeys.CONNECT_TIMEOUT, 5000));
+        filterArgs.put(FilterConfigKeys.RESPONSE_TIMEOUT, config.getOrDefault(PluginConfigKeys.RESPONSE_TIMEOUT, 30000));
 
         return FilterDefinition.builder()
                 .name("TimeoutFilter")
@@ -298,19 +359,19 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     @SuppressWarnings("unchecked")
     private FilterDefinition createRequestRewriteFilter(Map<String, Object> config, int order) {
-        Map<String, Object> filterArgs = new HashMap<>();
+Map<String, Object> filterArgs = new HashMap<>();
         
-        if (config.get("pathRegex") != null) {
-            filterArgs.put("pathRegex", config.get("pathRegex"));
+        if (config.get(PluginConfigKeys.PATH_REGEX) != null) {
+            filterArgs.put(FilterConfigKeys.PATH_REGEX, config.get(PluginConfigKeys.PATH_REGEX));
         }
-        if (config.get("pathReplacement") != null) {
-            filterArgs.put("pathReplacement", config.get("pathReplacement"));
+        if (config.get(PluginConfigKeys.PATH_REPLACEMENT) != null) {
+            filterArgs.put(FilterConfigKeys.PATH_REPLACEMENT, config.get(PluginConfigKeys.PATH_REPLACEMENT));
         }
-        if (config.get("headersToAdd") != null) {
-            filterArgs.put("headersToAdd", config.get("headersToAdd"));
+        if (config.get(PluginConfigKeys.HEADERS_TO_ADD) != null) {
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, config.get(PluginConfigKeys.HEADERS_TO_ADD));
         }
-        if (config.get("headersToRemove") != null) {
-            filterArgs.put("headersToRemove", config.get("headersToRemove"));
+        if (config.get(PluginConfigKeys.HEADERS_TO_REMOVE) != null) {
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_REMOVE, config.get(PluginConfigKeys.HEADERS_TO_REMOVE));
         }
 
         return FilterDefinition.builder()
@@ -324,18 +385,18 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
     @SuppressWarnings("unchecked")
     private FilterDefinition createResponseRewriteFilter(Map<String, Object> config, int order) {
         Map<String, Object> filterArgs = new HashMap<>();
-        
-        if (config.get("headersToAdd") != null) {
-            filterArgs.put("headersToAdd", config.get("headersToAdd"));
+
+        if (config.get(PluginConfigKeys.HEADERS_TO_ADD) != null) {
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, config.get(PluginConfigKeys.HEADERS_TO_ADD));
         }
-        if (config.get("headersToRemove") != null) {
-            filterArgs.put("headersToRemove", config.get("headersToRemove"));
+        if (config.get(PluginConfigKeys.HEADERS_TO_REMOVE) != null) {
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_REMOVE, config.get(PluginConfigKeys.HEADERS_TO_REMOVE));
         }
-        if (config.get("bodyRegex") != null) {
-            filterArgs.put("bodyRegex", config.get("bodyRegex"));
+        if (config.get(PluginConfigKeys.BODY_REGEX) != null) {
+            filterArgs.put(FilterConfigKeys.BODY_REGEX, config.get(PluginConfigKeys.BODY_REGEX));
         }
-        if (config.get("bodyReplacement") != null) {
-            filterArgs.put("bodyReplacement", config.get("bodyReplacement"));
+        if (config.get(PluginConfigKeys.BODY_REPLACEMENT) != null) {
+            filterArgs.put(FilterConfigKeys.BODY_REPLACEMENT, config.get(PluginConfigKeys.BODY_REPLACEMENT));
         }
 
         return FilterDefinition.builder()

@@ -3,7 +3,9 @@ package com.muxin.gateway.admin.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.muxin.gateway.admin.entity.GwRoute;
 import com.muxin.gateway.admin.entity.GwServiceNode;
+import static com.muxin.gateway.admin.entity.table.GwRouteTableDef.GW_ROUTE;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.RouteMapper;
 import com.muxin.gateway.admin.mapper.ServiceNodeMapper;
@@ -52,32 +54,57 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     
     @Override
     public List<ServiceStatsVO> getServiceStats(String serviceName) {
-        List<Map<String, Object>> stats = mapper.selectServiceStats();
+        QueryWrapper wrapper = QueryWrapper.create()
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getDeleted).eq(false);
         
-        return stats.stream()
-                .filter(map -> !StringUtils.hasText(serviceName) || 
-                        map.get("serviceName").toString().contains(serviceName))
-                .map(map -> ServiceStatsVO.builder()
-                        .serviceName((String) map.get("serviceName"))
-                        .totalNodes(((Number) map.get("totalNodes")).intValue())
-                        .healthyNodes(((Number) map.get("healthyNodes")).intValue())
-                        .unhealthyNodes(((Number) map.get("unhealthyNodes")).intValue())
-                        .enabledNodes(((Number) map.get("enabledNodes")).intValue())
-                        .disabledNodes(((Number) map.get("disabledNodes")).intValue())
-                        .maintenanceNodes(((Number) map.get("maintenanceNodes")).intValue())
-                        .build())
+        List<GwServiceNode> nodes = mapper.selectListByQuery(wrapper);
+        
+        Map<String, ServiceStatsVO.ServiceStatsVOBuilder> statsBuilders = new java.util.LinkedHashMap<>();
+        
+        for (GwServiceNode node : nodes) {
+            String name = node.getServiceName();
+            if (!StringUtils.hasText(name)) continue;
+            if (StringUtils.hasText(serviceName) && !name.contains(serviceName)) continue;
+            
+            ServiceStatsVO.ServiceStatsVOBuilder builder = statsBuilders.computeIfAbsent(
+                name, k -> ServiceStatsVO.builder()
+                    .serviceName(k)
+                    .totalNodes(0)
+                    .healthyNodes(0)
+                    .unhealthyNodes(0)
+                    .enabledNodes(0)
+                    .disabledNodes(0)
+                    .maintenanceNodes(0)
+            );
+            
+            ServiceStatsVO stats = builder.build();
+            statsBuilders.put(name, builder
+                .totalNodes(stats.getTotalNodes() + 1)
+                .healthyNodes(stats.getHealthyNodes() + (Boolean.TRUE.equals(node.getLastCheckResult()) ? 1 : 0))
+                .unhealthyNodes(stats.getUnhealthyNodes() + (Boolean.FALSE.equals(node.getLastCheckResult()) ? 1 : 0))
+                .enabledNodes(stats.getEnabledNodes() + (Integer.valueOf(1).equals(node.getStatus()) ? 1 : 0))
+                .disabledNodes(stats.getDisabledNodes() + (Integer.valueOf(0).equals(node.getStatus()) ? 1 : 0))
+                .maintenanceNodes(stats.getMaintenanceNodes() + (Integer.valueOf(2).equals(node.getStatus()) ? 1 : 0))
+            );
+        }
+        
+        return statsBuilders.values().stream()
+                .map(ServiceStatsVO.ServiceStatsVOBuilder::build)
+                .sorted((a, b) -> a.getServiceName().compareTo(b.getServiceName()))
                 .collect(Collectors.toList());
     }
     
     @Override
     public PageVO<ServiceNodeVO> getNodesByService(String serviceName, int pageNum, int pageSize) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .where("service_name = '" + serviceName + "'")
-                .and("deleted = 0")
-                .orderBy("create_time DESC");
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getServiceName).eq(serviceName)
+                .and(GwServiceNode::getDeleted).eq(false)
+                .orderBy(GwServiceNode::getCreateTime, false);
         
         com.mybatisflex.core.paginate.Page<GwServiceNode> page = 
-                page(new com.mybatisflex.core.paginate.Page<>(pageNum, pageSize), wrapper);
+                mapper.paginate(pageNum, pageSize, wrapper);
         
         List<ServiceNodeVO> voList = page.getRecords().stream()
                 .map(this::convertToVO)
@@ -120,8 +147,9 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     
     private void checkServiceExists(String serviceName) {
         QueryWrapper existWrapper = QueryWrapper.create()
-                .where("service_name = '" + serviceName + "'")
-                .and("deleted = 0");
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getServiceName).eq(serviceName)
+                .and(GwServiceNode::getDeleted).eq(false);
         long existCount = mapper.selectCountByQuery(existWrapper);
         if (existCount > 0) {
             throw new BusinessException("服务已存在: " + serviceName);
@@ -250,7 +278,8 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     @Transactional(rollbackFor = Exception.class)
     public Long create(ServiceNodeCreateDTO dto) {
         QueryWrapper existWrapper = QueryWrapper.create()
-                .where("node_id = '" + dto.getNodeId() + "'");
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getNodeId).eq(dto.getNodeId());
         GwServiceNode exist = mapper.selectOneByQuery(existWrapper);
         if (exist != null) {
             throw new BusinessException("节点ID已存在: " + dto.getNodeId());
@@ -365,18 +394,35 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     
     @Override
     public List<String> getServiceNames() {
-        return mapper.selectServiceNames();
+        QueryWrapper wrapper = QueryWrapper.create()
+                .select(GwServiceNode::getServiceName)
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getDeleted).eq(false)
+                .orderBy(GwServiceNode::getServiceName, true);
+        
+        return mapper.selectListByQuery(wrapper).stream()
+                .map(GwServiceNode::getServiceName)
+                .filter(name -> name != null && !name.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
     }
     
     @Override
     public List<RouteSimpleVO> getRoutesByServiceName(String serviceName) {
-        List<Map<String, Object>> routes = routeMapper.findRoutesByServiceName(serviceName);
+        List<GwRoute> routes = routeMapper.selectListByQuery(
+            QueryWrapper.create()
+                .select()
+                .where(GW_ROUTE.URI.like("lb://" + serviceName))
+                .and(GW_ROUTE.DELETED.eq(false))
+                .orderBy(GW_ROUTE.CREATE_TIME.desc())
+        );
+        
         return routes.stream()
-                .map(map -> RouteSimpleVO.builder()
-                        .id(((Number) map.get("id")).longValue())
-                        .routeId((String) map.get("routeId"))
-                        .routeName((String) map.get("routeName"))
-                        .enabled(toBoolean(map.get("enabled")))
+                .map(route -> RouteSimpleVO.builder()
+                        .id(route.getId())
+                        .routeId(route.getRouteId())
+                        .routeName(route.getRouteName())
+                        .enabled(route.getEnabled())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -390,8 +436,9 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         }
         
         QueryWrapper wrapper = QueryWrapper.create()
-                .where("service_name = '" + serviceName + "'")
-                .and("deleted = 0");
+                .from(GwServiceNode.class)
+                .where(GwServiceNode::getServiceName).eq(serviceName)
+                .and(GwServiceNode::getDeleted).eq(false);
         
         List<GwServiceNode> nodes = mapper.selectListByQuery(wrapper);
         if (nodes.isEmpty()) {

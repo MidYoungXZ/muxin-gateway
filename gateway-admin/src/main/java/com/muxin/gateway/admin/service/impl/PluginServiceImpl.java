@@ -24,7 +24,12 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     
     @Override
     public List<GwPlugin> getAllPlugins() {
-        return pluginMapper.findAllEnabled();
+        return pluginMapper.selectListByQuery(
+            QueryWrapper.create()
+                .where(GW_PLUGIN.DELETED.eq(false))
+                .and(GW_PLUGIN.ENABLED.eq(true))
+                .orderBy(GW_PLUGIN.PLUGIN_TYPE.asc(), GW_PLUGIN.DEFAULT_PRIORITY.desc())
+        );
     }
     
     @Override
@@ -32,7 +37,13 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
         if (!StringUtils.hasText(type)) {
             return getAllPlugins();
         }
-        return pluginMapper.findByType(type);
+        return pluginMapper.selectListByQuery(
+            QueryWrapper.create()
+                .where(GW_PLUGIN.PLUGIN_TYPE.eq(type))
+                .and(GW_PLUGIN.DELETED.eq(false))
+                .and(GW_PLUGIN.ENABLED.eq(true))
+                .orderBy(GW_PLUGIN.DEFAULT_PRIORITY.desc())
+        );
     }
     
     @Override
@@ -46,12 +57,18 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     
     @Override
     public GwPlugin getPluginByName(String name) {
-        return pluginMapper.findByPluginName(name);
+        return pluginMapper.selectOneByQuery(
+            QueryWrapper.create()
+                .where(GW_PLUGIN.PLUGIN_NAME.eq(name))
+                .and(GW_PLUGIN.DELETED.eq(false))
+                .limit(1)
+        );
     }
     
     @Override
     public Long createPlugin(GwPlugin plugin) {
-        if (pluginMapper.findByPluginName(plugin.getPluginName()) != null) {
+        GwPlugin existing = getPluginByName(plugin.getPluginName());
+        if (existing != null) {
             throw new BusinessException("插件名称已存在: " + plugin.getPluginName());
         }
         

@@ -20,10 +20,11 @@ export interface Route {
 }
 
 export interface PredicateInfo {
-  id: number
-  predicateName: string
+  id?: number
+  predicateName?: string
   predicateType: string
   predicateTypeDesc?: string
+  args?: Record<string, any>
   config?: Record<string, any>
 }
 

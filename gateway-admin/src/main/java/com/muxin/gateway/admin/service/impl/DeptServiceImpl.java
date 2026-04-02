@@ -11,6 +11,7 @@ import com.muxin.gateway.admin.mapper.DeptMapper;
 import com.muxin.gateway.admin.mapper.UserMapper;
 import com.muxin.gateway.admin.model.dto.DeptCreateDTO;
 import com.muxin.gateway.admin.model.dto.DeptUpdateDTO;
+import com.muxin.gateway.admin.model.vo.DeptStatsVO;
 import com.muxin.gateway.admin.model.vo.DeptTreeVO;
 import com.muxin.gateway.admin.model.vo.DeptVO;
 import com.muxin.gateway.admin.service.DeptService;
@@ -278,29 +279,25 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     }
     
     @Override
-    public Object getDeptStats() {
-        // 统计总部门数
+    public DeptStatsVO getDeptStats() {
         long totalCount = count(QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
                 .where(SYS_DEPT.DELETED.eq(0)));
         
-        // 统计启用部门数
         long enabledCount = count(QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
                 .where(SYS_DEPT.DELETED.eq(0))
                 .and(SYS_DEPT.STATUS.eq(1)));
         
-        // 统计禁用部门数
         long disabledCount = totalCount - enabledCount;
         
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalCount", totalCount);
-        stats.put("enabledCount", enabledCount);
-        stats.put("disabledCount", disabledCount);
-        
-        return stats;
+        return DeptStatsVO.builder()
+                .totalCount(totalCount)
+                .enabledCount(enabledCount)
+                .disabledCount(disabledCount)
+                .build();
     }
     
     /**

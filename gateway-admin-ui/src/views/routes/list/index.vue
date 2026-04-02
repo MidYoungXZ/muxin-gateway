@@ -63,36 +63,38 @@
         <el-table-column prop="routeId" label="路由ID" min-width="140" />
         <el-table-column prop="routeName" label="路由名称" min-width="140" />
         <el-table-column prop="uri" label="目标URI" min-width="180" show-overflow-tooltip />
-        <el-table-column label="负载均衡" width="100">
+        <el-table-column label="负载均衡" min-width="100">
           <template #default="{ row }">
             <el-tag size="small">{{ getStrategyLabel(row.loadBalanceStrategy) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="order" label="优先级" width="70" />
-        <el-table-column label="断言" width="60">
+        <el-table-column prop="order" label="优先级" min-width="70" />
+        <el-table-column label="断言" min-width="60">
           <template #default="{ row }">
             <el-tag type="info" size="small">{{ row.predicates?.length || 0 }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="插件" width="60">
+        <el-table-column label="插件" min-width="60">
           <template #default="{ row }">
             <el-tag type="info" size="small">{{ row.plugins?.length || 0 }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="70">
+        <el-table-column label="状态" min-width="70">
           <template #default="{ row }">
             <el-switch v-model="row.enabled" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
-            <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row)">
-              <template #reference>
-                <el-button type="danger" size="small" link>删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="action-buttons">
+              <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
+              <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
+              <el-popconfirm title="确定删除？" @confirm="handleDelete(row)">
+                <template #reference>
+                  <el-button type="danger" size="small" link>删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -339,5 +341,12 @@ onMounted(() => {
   max-height: 80px;
   overflow: auto;
   margin: 0;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
 }
 </style>
