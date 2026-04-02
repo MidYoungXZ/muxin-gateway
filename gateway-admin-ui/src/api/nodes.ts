@@ -138,11 +138,11 @@ export interface DiscoveryRequest {
 }
 
 export const nodesApi = {
-  getServiceStats(serviceName?: string) {
-    return request<{ data: ServiceStats[] }>({
+  getServiceStats(serviceName?: string, pageNum: number = 1, pageSize: number = 20) {
+    return request<{ data: PageResult<ServiceStats> }>({
       url: '/api/nodes/services',
       method: 'get',
-      params: { serviceName }
+      params: { serviceName, pageNum, pageSize }
     })
   },
 

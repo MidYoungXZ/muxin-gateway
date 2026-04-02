@@ -23,7 +23,7 @@
 
     <div class="table-wrapper">
       <div class="table-toolbar">
-        <span class="toolbar-right">共 {{ serviceStats.length }} 个服务</span>
+        <span class="toolbar-right">共 {{ totalServices }} 个服务</span>
       </div>
 
       <el-table 
@@ -171,6 +171,18 @@
           </template>
         </el-table-column>
       </el-table>
+      
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="serviceCurrentPage"
+          v-model:page-size="servicePageSize"
+          :total="totalServices"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleServicePageSizeChange"
+          @current-change="handleServicePageChange"
+        />
+      </div>
     </div>
 
     <el-dialog
@@ -460,6 +472,10 @@ const expandLoading = ref<Record<string, boolean>>({})
 const expandedNodes = ref<Record<string, { data: ServiceNode[], total: number }>>({})
 const nodePagination = ref<Record<string, { page: number, size: number }>>({})
 
+const serviceCurrentPage = ref(1)
+const servicePageSize = ref(20)
+const totalServices = ref(0)
+
 const formDialogVisible = ref(false)
 const serviceDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -543,15 +559,31 @@ const rules: FormRules = {
 const loadServiceStats = async () => {
   try {
     loading.value = true
-    const response = await nodesApi.getServiceStats(searchForm.serviceName)
+    const response = await nodesApi.getServiceStats(
+      searchForm.serviceName, 
+      serviceCurrentPage.value, 
+      servicePageSize.value
+    )
     if (response && response.data) {
-      serviceStats.value = response.data
+      serviceStats.value = response.data.data || []
+      totalServices.value = response.data.total || 0
     }
   } catch (error) {
     ElMessage.error('加载服务列表失败：' + (error as Error).message)
   } finally {
     loading.value = false
   }
+}
+
+const handleServicePageChange = (page: number) => {
+  serviceCurrentPage.value = page
+  loadServiceStats()
+}
+
+const handleServicePageSizeChange = (size: number) => {
+  servicePageSize.value = size
+  serviceCurrentPage.value = 1
+  loadServiceStats()
 }
 
 const loadNodesByService = async (serviceName: string) => {
@@ -892,6 +924,16 @@ onMounted(() => {
 <style lang="scss" scoped>
 .service-name {
   font-weight: 500;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 .health-stats {

@@ -14,9 +14,17 @@ export interface PluginInfo {
   enabled: boolean
 }
 
+export interface PageResult<T> {
+  data: T[]
+  total: number
+  pageNum: number
+  pageSize: number
+  totalPages: number
+}
+
 export const pluginsApi = {
-  list(params?: { type?: string }) {
-    return request<{ data: PluginInfo[] }>({
+  list(params?: { type?: string; pluginName?: string; pageNum?: number; pageSize?: number }) {
+    return request<{ data: PageResult<PluginInfo> }>({
       url: '/api/plugins',
       method: 'get',
       params

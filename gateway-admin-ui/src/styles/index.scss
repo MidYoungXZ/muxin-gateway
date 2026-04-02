@@ -1643,15 +1643,15 @@ a {
         color: var(--text-secondary);
         
         &:hover {
-          background: var(--primary-100);
-          border-color: var(--primary-color);
-          color: var(--primary-color);
+          background: rgba(139, 92, 246, 0.1);
+          border-color: rgba(139, 92, 246, 0.3);
+          color: #a78bfa;
         }
         
         &.active {
-          background: var(--primary-100);
-          border-color: var(--primary-color);
-          color: var(--primary-color);
+          background: rgba(139, 92, 246, 0.15);
+          border-color: rgba(139, 92, 246, 0.4);
+          color: #c4b5fd;
         }
       }
     }
@@ -1914,11 +1914,11 @@ a {
       color: var(--text-secondary);
       
       &.is-active {
-        color: var(--primary-color);
+        color: #a78bfa;
       }
       
       &:hover {
-        color: var(--primary-color);
+        color: #c4b5fd;
       }
     }
   }

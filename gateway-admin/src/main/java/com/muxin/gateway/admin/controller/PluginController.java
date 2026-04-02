@@ -3,12 +3,11 @@ package com.muxin.gateway.admin.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.muxin.gateway.admin.entity.GwPlugin;
 import com.muxin.gateway.admin.model.Result;
+import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.service.PluginService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * 插件管理Controller
@@ -27,8 +26,12 @@ public class PluginController {
     
     @GetMapping
     @SaCheckPermission("route:plugin:list")
-    public Result<List<GwPlugin>> listPlugins(@RequestParam(required = false) String type) {
-        return Result.success(pluginService.getPluginsByType(type));
+    public Result<PageVO<GwPlugin>> listPlugins(
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String pluginName,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return Result.success(pluginService.getPluginsByType(type, pluginName, pageNum, pageSize));
     }
     
     @GetMapping("/{id}")

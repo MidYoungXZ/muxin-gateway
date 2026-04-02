@@ -50,30 +50,44 @@
             <el-switch v-model="row.enabled" @change="handleStatusChange(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="140" fixed="right">
+        <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
-            <el-button
-              type="primary"
-              size="small"
-              link
-              @click="handleEdit(row)"
-              :disabled="row.isSystem"
-            >
-              编辑
-            </el-button>
-            <el-popconfirm
-              title="确定删除？"
-              @confirm="handleDelete(row)"
-              :disabled="row.isSystem"
-            >
-              <template #reference>
-                <el-button type="danger" size="small" link :disabled="row.isSystem">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="table-actions">
+              <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                link
+                @click="handleEdit(row)"
+                :disabled="row.isSystem"
+              >
+                编辑
+              </el-button>
+              <el-popconfirm
+                title="确定删除？"
+                @confirm="handleDelete(row)"
+                :disabled="row.isSystem"
+              >
+                <template #reference>
+                  <el-button type="danger" size="small" link :disabled="row.isSystem">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </div>
           </template>
         </el-table-column>
       </el-table>
+      
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="totalPlugins"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handlePageSizeChange"
+          @current-change="handlePageChange"
+        />
+      </div>
     </div>
 
     <el-dialog
@@ -161,6 +175,10 @@ const pluginList = ref<PluginInfo[]>([])
 const filterType = ref('')
 const searchName = ref('')
 
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalPlugins = ref(0)
+
 const formDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const formRef = ref<FormInstance>()
@@ -185,13 +203,15 @@ const rules: FormRules = {
 const loadPlugins = async () => {
   try {
     loading.value = true
-    const response = await pluginsApi.list({ type: filterType.value || undefined })
+    const response = await pluginsApi.list({ 
+      type: filterType.value || undefined,
+      pluginName: searchName.value || undefined,
+      pageNum: currentPage.value,
+      pageSize: pageSize.value
+    })
     if (response?.data) {
-      let list = response.data
-      if (searchName.value) {
-        list = list.filter(p => p.pluginName.includes(searchName.value))
-      }
-      pluginList.value = list
+      pluginList.value = response.data.data || []
+      totalPlugins.value = response.data.total || 0
     }
   } catch (error) {
     ElMessage.error('加载插件列表失败')
@@ -203,6 +223,18 @@ const loadPlugins = async () => {
 const handleReset = () => {
   filterType.value = ''
   searchName.value = ''
+  currentPage.value = 1
+  loadPlugins()
+}
+
+const handlePageChange = (page: number) => {
+  currentPage.value = page
+  loadPlugins()
+}
+
+const handlePageSizeChange = (size: number) => {
+  pageSize.value = size
+  currentPage.value = 1
   loadPlugins()
 }
 
@@ -297,6 +329,23 @@ onMounted(() => {
 .search-actions {
   display: flex;
   gap: 8px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.table-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .field-tip {

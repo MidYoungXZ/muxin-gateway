@@ -1351,4 +1351,51 @@ onUnmounted(() => {
     }
   }
 }
+
+// 暗色模式样式
+.dark {
+  .layout-container {
+    .layout-aside {
+      .sidebar-menu {
+        :deep(.el-menu-item),
+        :deep(.el-sub-menu__title) {
+          &.is-active {
+            // 暗色模式下使用更柔和的紫色
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.25) 100%);
+            color: #c4b5fd;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+          }
+        }
+        
+        :deep(.el-sub-menu) {
+          .el-menu {
+            .el-menu-item {
+              &.is-active {
+                // 子菜单选中状态
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.25) 100%);
+                color: #c4b5fd;
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                box-shadow: 0 1px 4px rgba(139, 92, 246, 0.15);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    .layout-main {
+      .page-tabs {
+        .tab-item {
+          &.active {
+            // Tab选中状态 - 暗色模式使用柔和紫色
+            background: rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+            color: #c4b5fd;
+          }
+        }
+      }
+    }
+  }
+}
 </style> 

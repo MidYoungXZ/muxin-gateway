@@ -16,7 +16,7 @@ import java.util.List;
 
 public interface ServiceNodeService {
     
-    List<ServiceStatsVO> getServiceStats(String serviceName);
+    PageVO<ServiceStatsVO> getServiceStats(String serviceName, int pageNum, int pageSize);
     
     PageVO<ServiceNodeVO> getNodesByService(String serviceName, int pageNum, int pageSize);
     

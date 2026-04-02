@@ -53,7 +53,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     private final List<RegistryDiscoveryService> discoveryServices;
     
     @Override
-    public List<ServiceStatsVO> getServiceStats(String serviceName) {
+    public PageVO<ServiceStatsVO> getServiceStats(String serviceName, int pageNum, int pageSize) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GwServiceNode.class)
                 .where(GwServiceNode::getDeleted).eq(false);
@@ -89,10 +89,25 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             );
         }
         
-        return statsBuilders.values().stream()
+        List<ServiceStatsVO> allStats = statsBuilders.values().stream()
                 .map(ServiceStatsVO.ServiceStatsVOBuilder::build)
                 .sorted((a, b) -> a.getServiceName().compareTo(b.getServiceName()))
                 .collect(Collectors.toList());
+        
+        long total = allStats.size();
+        int totalPages = (int) Math.ceil((double) total / pageSize);
+        int offset = (pageNum - 1) * pageSize;
+        int end = Math.min(offset + pageSize, allStats.size());
+        
+        List<ServiceStatsVO> pageData = allStats.subList(offset, end);
+        
+        return PageVO.<ServiceStatsVO>builder()
+                .data(pageData)
+                .total(total)
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .totalPages(totalPages)
+                .build();
     }
     
     @Override

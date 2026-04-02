@@ -6,6 +6,7 @@ import com.muxin.gateway.admin.entity.GwPlugin;
 import static com.muxin.gateway.admin.entity.table.GwPluginTableDef.GW_PLUGIN;
 import com.muxin.gateway.admin.exception.BusinessException;
 import com.muxin.gateway.admin.mapper.PluginMapper;
+import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.service.PluginService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,17 +34,36 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     }
     
     @Override
-    public List<GwPlugin> getPluginsByType(String type) {
-        if (!StringUtils.hasText(type)) {
-            return getAllPlugins();
+    public PageVO<GwPlugin> getPluginsByType(String type, String pluginName, int pageNum, int pageSize) {
+        QueryWrapper queryWrapper = QueryWrapper.create()
+            .where(GW_PLUGIN.DELETED.eq(false));
+        
+        if (StringUtils.hasText(type)) {
+            queryWrapper.and(GW_PLUGIN.PLUGIN_TYPE.eq(type));
         }
-        return pluginMapper.selectListByQuery(
-            QueryWrapper.create()
-                .where(GW_PLUGIN.PLUGIN_TYPE.eq(type))
-                .and(GW_PLUGIN.DELETED.eq(false))
-                .and(GW_PLUGIN.ENABLED.eq(true))
-                .orderBy(GW_PLUGIN.DEFAULT_PRIORITY.desc())
-        );
+        
+        if (StringUtils.hasText(pluginName)) {
+            queryWrapper.and(GW_PLUGIN.PLUGIN_NAME.like(pluginName));
+        }
+        
+        queryWrapper.orderBy(GW_PLUGIN.DEFAULT_PRIORITY.desc());
+        
+        long total = pluginMapper.selectCountByQuery(queryWrapper);
+        
+        int offset = (pageNum - 1) * pageSize;
+        queryWrapper.limit(offset, pageSize);
+        
+        List<GwPlugin> data = pluginMapper.selectListByQuery(queryWrapper);
+        
+        int totalPages = (int) Math.ceil((double) total / pageSize);
+        
+        return PageVO.<GwPlugin>builder()
+            .data(data)
+            .total(total)
+            .pageNum(pageNum)
+            .pageSize(pageSize)
+            .totalPages(totalPages)
+            .build();
     }
     
     @Override

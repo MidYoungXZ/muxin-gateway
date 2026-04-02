@@ -31,9 +31,11 @@ public class ServiceNodeController {
     
     @GetMapping("/services")
     @SaCheckPermission("route:node:list")
-    public Result<List<ServiceStatsVO>> getServiceStats(
-            @RequestParam(required = false) String serviceName) {
-        return Result.success(serviceNodeService.getServiceStats(serviceName));
+    public Result<PageVO<ServiceStatsVO>> getServiceStats(
+            @RequestParam(required = false) String serviceName,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "20") int pageSize) {
+        return Result.success(serviceNodeService.getServiceStats(serviceName, pageNum, pageSize));
     }
     
     @GetMapping("/services/{serviceName}/nodes")

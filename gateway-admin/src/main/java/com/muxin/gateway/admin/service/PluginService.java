@@ -1,6 +1,7 @@
 package com.muxin.gateway.admin.service;
 
 import com.muxin.gateway.admin.entity.GwPlugin;
+import com.muxin.gateway.admin.model.vo.PageVO;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ public interface PluginService {
     
     List<GwPlugin> getAllPlugins();
     
-    List<GwPlugin> getPluginsByType(String type);
+    PageVO<GwPlugin> getPluginsByType(String type, String pluginName, int pageNum, int pageSize);
     
     GwPlugin getPluginById(Long id);
     
