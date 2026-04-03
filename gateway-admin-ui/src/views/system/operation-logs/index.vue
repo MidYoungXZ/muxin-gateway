@@ -199,7 +199,7 @@ const currentLog = ref<OperationLog | null>(null)
 // 查询表单
 const queryForm = reactive<OperationLogQueryParams>({
   pageNum: 1,
-  pageSize: 20,
+  pageSize: 10,
   module: '',
   operation: '',
   operator: '',
@@ -213,7 +213,7 @@ const queryForm = reactive<OperationLogQueryParams>({
 // 分页信息
 const pagination = reactive({
   pageNum: 1,
-  pageSize: 20,
+  pageSize: 10,
   total: 0
 })
 

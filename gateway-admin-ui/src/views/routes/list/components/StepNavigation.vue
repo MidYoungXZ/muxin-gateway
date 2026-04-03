@@ -7,21 +7,23 @@
         :key="index"
         class="step-item"
         :class="{ 
-          active: currentStep === index, 
-          completed: index < currentStep,
-          disabled: index > maxAccessibleStep
+          active: currentStep === index && !viewMode,
+          'view-mode': viewMode,
+          'view-active': viewMode && currentStep === index,
+          completed: !viewMode && index < currentStep,
+          disabled: !viewMode && index > maxAccessibleStep
         }"
         @click="handleStepClick(index)"
       >
         <div class="step-indicator">
-          <span v-if="index < currentStep" class="step-check">
+          <span v-if="!viewMode && index < currentStep" class="step-check">
             <el-icon><Check /></el-icon>
           </span>
           <span v-else class="step-number">{{ index + 1 }}</span>
         </div>
         <div class="step-content">
           <div class="step-label">{{ step.label }}</div>
-          <div class="step-status">{{ getStepStatus(index) }}</div>
+          <div v-if="!viewMode" class="step-status">{{ getStepStatus(index) }}</div>
         </div>
       </div>
     </div>
@@ -35,6 +37,7 @@ import { Check } from '@element-plus/icons-vue'
 const props = defineProps<{
   currentStep: number
   completedSteps?: number[]
+  viewMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -49,6 +52,9 @@ const steps = [
 ]
 
 const maxAccessibleStep = computed(() => {
+  if (props.viewMode) {
+    return steps.length - 1
+  }
   if (!props.completedSteps || props.completedSteps.length === 0) {
     return props.currentStep
   }
@@ -57,7 +63,7 @@ const maxAccessibleStep = computed(() => {
 })
 
 function handleStepClick(index: number) {
-  if (index <= maxAccessibleStep.value) {
+  if (props.viewMode || index <= maxAccessibleStep.value) {
     emit('update:currentStep', index)
   }
 }
@@ -105,7 +111,7 @@ function getStepStatus(index: number): string {
   }
 
   &.active {
-    background: var(--primary-100);
+    background: var(--bg-tertiary);
     border-left-color: var(--primary-color);
 
     .step-indicator {
@@ -145,6 +151,30 @@ function getStepStatus(index: number): string {
 
     .step-label {
       color: var(--text-disabled);
+    }
+  }
+
+  &.view-mode {
+    cursor: pointer;
+    border-left: 3px solid transparent;
+
+    &:hover {
+      background: var(--bg-tertiary);
+    }
+
+    &.view-active {
+      background: var(--bg-tertiary);
+      border-left-color: var(--primary-color);
+
+      .step-indicator {
+        background: var(--primary-color);
+        color: #fff;
+      }
+
+      .step-label {
+        color: var(--primary-color);
+        font-weight: 600;
+      }
     }
   }
 }

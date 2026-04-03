@@ -12,6 +12,7 @@
               :model-value="modelValue.pathPattern"
               @update:model-value="updateField('pathPattern', $event)"
               placeholder="请输入路径模式，如 /api/v1/**"
+              :disabled="readonly"
             />
           </el-form-item>
         </el-col>
@@ -21,6 +22,7 @@
               :model-value="modelValue.matchType"
               @update:model-value="updateField('matchType', $event)"
               style="width: 100%"
+              :disabled="readonly"
             >
               <el-option
                 v-for="item in MATCH_TYPES"
@@ -43,6 +45,7 @@
         <el-checkbox
           :model-value="modelValue.ignoreCase"
           @update:model-value="updateField('ignoreCase', $event)"
+          :disabled="readonly"
         >
           忽略大小写
         </el-checkbox>
@@ -56,6 +59,7 @@
           <el-checkbox-group
             :model-value="modelValue.methods"
             @update:model-value="updateField('methods', $event)"
+            :disabled="readonly"
           >
             <el-checkbox-button
               v-for="method in HTTP_METHODS"
@@ -82,13 +86,15 @@
             v-model="header.name"
             placeholder="Header名称"
             style="width: 160px"
+            :disabled="readonly"
           />
           <el-input
             v-model="header.value"
             placeholder="匹配值"
             style="width: 160px"
+            :disabled="readonly"
           />
-          <el-select v-model="header.matchType" style="width: 120px">
+          <el-select v-model="header.matchType" style="width: 120px" :disabled="readonly">
             <el-option
               v-for="item in HEADER_MATCH_TYPES"
               :key="item.value"
@@ -96,12 +102,12 @@
               :value="item.value"
             />
           </el-select>
-          <el-button type="danger" link @click="removeHeader(index)">
+          <el-button v-if="!readonly" type="danger" link @click="removeHeader(index)">
             <el-icon><Delete /></el-icon>
           </el-button>
         </div>
       </div>
-      <el-button type="primary" link @click="addHeader">
+      <el-button v-if="!readonly" type="primary" link @click="addHeader">
         <el-icon><Plus /></el-icon>
         添加 Header 匹配条件
       </el-button>
@@ -120,13 +126,14 @@
             @update:model-value="updateHost(index, $event)"
             placeholder="如 api.example.com"
             style="flex: 1"
+            :disabled="readonly"
           />
-          <el-button type="danger" link @click="removeHost(index)">
+          <el-button v-if="!readonly" type="danger" link @click="removeHost(index)">
             <el-icon><Delete /></el-icon>
           </el-button>
         </div>
       </div>
-      <el-button type="primary" link @click="addHost">
+      <el-button v-if="!readonly" type="primary" link @click="addHost">
         <el-icon><Plus /></el-icon>
         添加 Host 匹配条件
       </el-button>
@@ -145,13 +152,15 @@
             v-model="query.name"
             placeholder="参数名称"
             style="width: 160px"
+            :disabled="readonly"
           />
           <el-input
             v-model="query.value"
             placeholder="匹配值"
             style="width: 160px"
+            :disabled="readonly"
           />
-          <el-select v-model="query.matchType" style="width: 120px">
+          <el-select v-model="query.matchType" style="width: 120px" :disabled="readonly">
             <el-option
               v-for="item in HEADER_MATCH_TYPES"
               :key="item.value"
@@ -159,12 +168,12 @@
               :value="item.value"
             />
           </el-select>
-          <el-button type="danger" link @click="removeQuery(index)">
+          <el-button v-if="!readonly" type="danger" link @click="removeQuery(index)">
             <el-icon><Delete /></el-icon>
           </el-button>
         </div>
       </div>
-      <el-button type="primary" link @click="addQuery">
+      <el-button v-if="!readonly" type="primary" link @click="addQuery">
         <el-icon><Plus /></el-icon>
         添加 Query 参数匹配条件
       </el-button>
@@ -210,6 +219,7 @@ import { MATCH_TYPES, HTTP_METHODS, HEADER_MATCH_TYPES } from '@/api/routes'
 
 const props = defineProps<{
   modelValue: RouteFormState
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

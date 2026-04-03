@@ -146,4 +146,32 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
         
         log.info("[PluginService] 插件删除成功: {}", plugin.getPluginName());
     }
+    
+    @Override
+    public void enablePlugin(Long id) {
+        GwPlugin plugin = getById(id);
+        if (plugin == null || plugin.getDeleted()) {
+            throw new BusinessException("插件不存在");
+        }
+        
+        plugin.setEnabled(true);
+        plugin.setUpdateTime(LocalDateTime.now());
+        updateById(plugin);
+        
+        log.info("[PluginService] 插件启用成功: {}", plugin.getPluginName());
+    }
+    
+    @Override
+    public void disablePlugin(Long id) {
+        GwPlugin plugin = getById(id);
+        if (plugin == null || plugin.getDeleted()) {
+            throw new BusinessException("插件不存在");
+        }
+        
+        plugin.setEnabled(false);
+        plugin.setUpdateTime(LocalDateTime.now());
+        updateById(plugin);
+        
+        log.info("[PluginService] 插件禁用成功: {}", plugin.getPluginName());
+    }
 }

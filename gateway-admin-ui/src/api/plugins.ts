@@ -59,5 +59,19 @@ export const pluginsApi = {
       url: `/api/plugins/${id}`,
       method: 'delete'
     })
+  },
+
+  enable(id: number) {
+    return request<{ data: void }>({
+      url: `/api/plugins/${id}/enable`,
+      method: 'post'
+    })
+  },
+
+  disable(id: number) {
+    return request<{ data: void }>({
+      url: `/api/plugins/${id}/disable`,
+      method: 'post'
+    })
   }
 }

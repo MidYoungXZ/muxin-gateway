@@ -89,11 +89,7 @@
             <div class="action-buttons">
               <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
               <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
-              <el-popconfirm title="确定删除？" @confirm="handleDelete(row)">
-                <template #reference>
-                  <el-button type="danger" size="small" link>删除</el-button>
-                </template>
-              </el-popconfirm>
+              <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
@@ -115,61 +111,11 @@
     <RouteFormDialog
       v-model="formDialogVisible"
       :route="currentRoute"
+      :mode="dialogMode"
       @success="loadRouteList"
     />
 
-    <el-dialog v-model="detailDialogVisible" title="路由详情" width="800px">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="路由ID">{{ currentRoute?.routeId }}</el-descriptions-item>
-        <el-descriptions-item label="路由名称">{{ currentRoute?.routeName }}</el-descriptions-item>
-        <el-descriptions-item label="目标URI">{{ currentRoute?.uri }}</el-descriptions-item>
-        <el-descriptions-item label="优先级">{{ currentRoute?.order }}</el-descriptions-item>
-        <el-descriptions-item label="负载均衡">
-          <el-tag>{{ getStrategyLabel(currentRoute?.loadBalanceStrategy) }}</el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="currentRoute?.enabled ? 'success' : 'danger'">
-            {{ currentRoute?.enabled ? '启用' : '禁用' }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="版本">{{ currentRoute?.version }}</el-descriptions-item>
-        <el-descriptions-item label="描述" :span="2">
-          {{ currentRoute?.description || '无' }}
-        </el-descriptions-item>
-      </el-descriptions>
-
-      <div v-if="currentRoute?.predicates?.length" style="margin-top: 16px">
-        <h4 style="margin: 0 0 8px; font-size: 14px">断言配置</h4>
-        <el-table :data="currentRoute.predicates" stripe size="small">
-          <el-table-column prop="predicateName" label="名称" />
-          <el-table-column prop="predicateType" label="类型" />
-          <el-table-column label="配置">
-            <template #default="{ row }">
-              <pre class="config-json">{{ JSON.stringify(row.config, null, 2) }}</pre>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div v-if="currentRoute?.plugins?.length" style="margin-top: 16px">
-        <h4 style="margin: 0 0 8px; font-size: 14px">插件配置</h4>
-        <el-table :data="currentRoute.plugins" stripe size="small">
-          <el-table-column prop="pluginName" label="名称" />
-          <el-table-column prop="pluginType" label="类型" width="80" />
-          <el-table-column label="优先级" width="80">
-            <template #default="{ row }">
-              {{ row.effectivePriority }}
-            </template>
-          </el-table-column>
-          <el-table-column label="配置">
-            <template #default="{ row }">
-              <pre class="config-json">{{ JSON.stringify(row.config, null, 2) }}</pre>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-    </el-dialog>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -185,8 +131,8 @@ const total = ref(0)
 const selectedRoutes = ref<Route[]>([])
 
 const formDialogVisible = ref(false)
-const detailDialogVisible = ref(false)
 const currentRoute = ref<Route | null>(null)
+const dialogMode = ref<'create' | 'edit' | 'view'>('create')
 
 const searchForm = reactive<RouteQueryParams>({
   routeId: '',
@@ -196,7 +142,7 @@ const searchForm = reactive<RouteQueryParams>({
 
 const pagination = reactive({
   page: 1,
-  size: 20
+  size: 10
 })
 
 const loadRouteList = async () => {
@@ -231,6 +177,7 @@ const handleReset = () => {
 
 const handleAdd = () => {
   currentRoute.value = null
+  dialogMode.value = 'create'
   formDialogVisible.value = true
 }
 
@@ -239,7 +186,8 @@ const handleView = async (route: Route) => {
     const response = await routesApi.detail(route.id)
     if (response?.data) {
       currentRoute.value = response.data
-      detailDialogVisible.value = true
+      dialogMode.value = 'view'
+      formDialogVisible.value = true
     }
   } catch (error) {
     ElMessage.error('获取路由详情失败')
@@ -251,6 +199,7 @@ const handleEdit = async (route: Route) => {
     const response = await routesApi.detail(route.id)
     if (response?.data) {
       currentRoute.value = response.data
+      dialogMode.value = 'edit'
       formDialogVisible.value = true
     }
   } catch (error) {
@@ -260,11 +209,17 @@ const handleEdit = async (route: Route) => {
 
 const handleDelete = async (route: Route) => {
   try {
+    await ElMessageBox.confirm(`确定要删除路由"${route.routeName}"吗？`, '删除确认', {
+      type: 'warning'
+    })
+    
     await routesApi.delete(route.id)
     ElMessage.success('删除成功')
     loadRouteList()
   } catch (error) {
-    ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -329,18 +284,6 @@ onMounted(() => {
 .toolbar-right {
   font-size: 13px;
   color: var(--text-secondary);
-}
-
-.config-json {
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 4px;
-  padding: 6px;
-  font-family: Monaco, Menlo, monospace;
-  font-size: 11px;
-  max-height: 80px;
-  overflow: auto;
-  margin: 0;
 }
 
 .action-buttons {

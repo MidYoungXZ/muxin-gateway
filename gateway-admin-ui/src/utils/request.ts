@@ -39,24 +39,27 @@ const hideLoading = () => {
 
 const errorMessages = new Set<string>()
 let errorTimer: ReturnType<typeof setTimeout> | null = null
+let isShowingError = false
 
 const showErrorMessage = (message: string) => {
-  if (errorMessages.has(message)) return
+  if (isShowingError) return
   
-  errorMessages.add(message)
+  isShowingError = true
   ElMessage.error({
     message,
     duration: 3000,
     showClose: true,
     onClose: () => {
-      errorMessages.delete(message)
+      isShowingError = false
+      errorMessages.clear()
     }
   })
   
   if (errorTimer) clearTimeout(errorTimer)
   errorTimer = setTimeout(() => {
+    isShowingError = false
     errorMessages.clear()
-  }, 5000)
+  }, 3000)
 }
 
 request.interceptors.request.use(

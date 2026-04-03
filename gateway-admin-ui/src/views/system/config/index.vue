@@ -83,7 +83,7 @@
               编辑
             </el-button>
             <el-popconfirm
-              title="确定要删除这个配置吗？"
+              title="确定要删除该配置项吗？"
               @confirm="handleDelete(row)"
             >
               <template #reference>
@@ -211,7 +211,7 @@ const form = reactive({
 
 const pagination = reactive({
   page: 1,
-  size: 20
+  size: 10
 })
 
 const isEdit = computed(() => !!form.id)

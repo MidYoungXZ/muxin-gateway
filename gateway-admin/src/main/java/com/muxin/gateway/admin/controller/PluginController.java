@@ -60,4 +60,18 @@ public class PluginController {
         pluginService.deletePlugin(id);
         return Result.success();
     }
+    
+    @PostMapping("/{id}/enable")
+    @SaCheckPermission("route:plugin:update")
+    public Result<Void> enablePlugin(@PathVariable Long id) {
+        pluginService.enablePlugin(id);
+        return Result.success();
+    }
+    
+    @PostMapping("/{id}/disable")
+    @SaCheckPermission("route:plugin:update")
+    public Result<Void> disablePlugin(@PathVariable Long id) {
+        pluginService.disablePlugin(id);
+        return Result.success();
+    }
 }

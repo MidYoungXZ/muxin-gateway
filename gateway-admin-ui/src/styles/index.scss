@@ -1752,6 +1752,31 @@ a {
     }
   }
   
+  // Select 下拉菜单暗色模式 - 增强选项区分度
+  .el-select-dropdown {
+    background: var(--card-bg);
+    border-color: var(--border-primary);
+    
+    .el-select-dropdown__item {
+      color: var(--text-primary);
+      font-weight: var(--font-medium);
+      padding: 8px 12px;
+      margin: 2px 4px;
+      border-radius: var(--radius-sm);
+      
+      &:hover {
+        background: var(--bg-tertiary);
+        color: var(--primary-color);
+      }
+      
+      &.is-selected {
+        background: rgba(139, 92, 246, 0.15);
+        color: #c4b5fd;
+        font-weight: var(--font-semibold);
+      }
+    }
+  }
+  
   // 弹窗暗色模式
   .el-dialog {
     --el-dialog-bg-color: var(--card-bg);
@@ -1785,7 +1810,8 @@ a {
     .el-dropdown-menu__item {
       color: var(--text-primary);
       
-      &:hover {
+      &:hover,
+      &:focus {
         background: var(--bg-tertiary);
         color: var(--primary-color);
       }
@@ -1809,6 +1835,76 @@ a {
     border-color: var(--bg-tertiary) !important;
   }
   
+  // MessageBox 消息弹框暗色模式
+  .el-message-box {
+    background: var(--card-bg);
+    border-color: var(--border-primary);
+    
+    .el-message-box__header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-primary);
+      
+      .el-message-box__title {
+        color: var(--text-primary);
+      }
+    }
+    
+    .el-message-box__content {
+      color: var(--text-primary);
+    }
+    
+    .el-message-box__message {
+      color: var(--text-primary);
+    }
+    
+    .el-message-box__btns {
+      .el-button--default {
+        background: var(--bg-tertiary);
+        border-color: var(--border-primary);
+        color: var(--text-primary);
+        
+        &:hover {
+          background: var(--bg-quaternary);
+          border-color: var(--border-hover);
+        }
+      }
+    }
+  }
+  
+  // Popconfirm 气泡确认框暗色模式
+  .el-popconfirm {
+    .el-popconfirm__main {
+      color: var(--text-primary);
+    }
+  }
+  
+  .el-popper {
+    &[data-popper-reference-hidden] {
+      .el-popconfirm {
+        background: var(--card-bg);
+        border-color: var(--border-primary);
+      }
+    }
+  }
+  
+  // Popover 暗色模式
+  .el-popover.el-popper {
+    background: var(--card-bg) !important;
+    border-color: var(--border-primary) !important;
+    
+    .el-popover__title {
+      color: var(--text-primary);
+    }
+    
+    .el-popconfirm__main {
+      color: var(--text-primary);
+    }
+    
+    .el-popconfirm__action {
+      margin-top: var(--space-2);
+    }
+  }
+  
   // Tree Select 暗色模式
   .el-tree-select {
     .el-tree {
@@ -1823,8 +1919,9 @@ a {
       }
       
       .el-tree-node.is-current > .el-tree-node__content {
-        background: var(--primary-100);
-        color: var(--primary-color);
+        background: rgba(139, 92, 246, 0.15);
+        color: #c4b5fd;
+        border-left: 3px solid rgba(139, 92, 246, 0.5);
       }
     }
   }
@@ -1846,8 +1943,9 @@ a {
     }
     
     .el-tree-node.is-current > .el-tree-node__content {
-      background: var(--primary-100);
-      color: var(--primary-color);
+      background: rgba(139, 92, 246, 0.15);
+      color: #c4b5fd;
+      border-left: 3px solid rgba(139, 92, 246, 0.5);
     }
     
     .el-tree-node__expand-icon {
@@ -2243,10 +2341,10 @@ a {
     
     .step-item {
       &.active {
-        background: var(--primary-100);
+        background: rgba(139, 92, 246, 0.15);
         
         .step-label {
-          color: var(--primary-color);
+          color: #c4b5fd;
         }
         
         .step-indicator {

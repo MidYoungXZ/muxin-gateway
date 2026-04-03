@@ -27,4 +27,8 @@ public interface PluginService {
     void updatePlugin(GwPlugin plugin);
     
     void deletePlugin(Long id);
+    
+    void enablePlugin(Long id);
+    
+    void disablePlugin(Long id);
 }

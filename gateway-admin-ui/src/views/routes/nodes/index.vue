@@ -56,12 +56,6 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="weight" label="权重" width="80" />
-                <el-table-column label="备份" width="80">
-                  <template #default="{ row: node }">
-                    <el-tag v-if="node.backup" type="warning" size="small">是</el-tag>
-                    <span v-else>否</span>
-                  </template>
-                </el-table-column>
                 <el-table-column label="健康状态" width="100">
                   <template #default="{ row: node }">
                     <el-tag v-if="node.healthy" type="success" size="small">健康</el-tag>
@@ -102,11 +96,7 @@
                           </el-dropdown-menu>
                         </template>
                       </el-dropdown>
-                      <el-popconfirm title="确定要删除该节点吗？" @confirm="handleDeleteNode(node)">
-                        <template #reference>
-                          <el-button type="danger" size="small" link>删除</el-button>
-                        </template>
-                      </el-popconfirm>
+                      <el-button type="danger" size="small" link @click="handleDeleteNode(node)">删除</el-button>
                     </div>
                   </template>
                 </el-table-column>
@@ -166,7 +156,7 @@
               添加节点
             </el-button>
             <el-button type="danger" size="small" link @click="handleDeleteService(row)">
-              删除服务
+              删除
             </el-button>
           </template>
         </el-table-column>
@@ -587,7 +577,7 @@ const handleServicePageSizeChange = (size: number) => {
 }
 
 const loadNodesByService = async (serviceName: string) => {
-  const pagination = nodePagination.value[serviceName] || { page: 1, size: 20 }
+  const pagination = nodePagination.value[serviceName] || { page: 1, size: 10 }
   nodePagination.value[serviceName] = pagination
   
   try {
@@ -609,7 +599,7 @@ const loadNodesByService = async (serviceName: string) => {
 const handleExpandChange = (row: ServiceStats, expandedRows: ServiceStats[]) => {
   const isExpanded = expandedRows.some(r => r.serviceName === row.serviceName)
   if (isExpanded && !expandedNodes.value[row.serviceName]) {
-    nodePagination.value[row.serviceName] = { page: 1, size: 20 }
+    nodePagination.value[row.serviceName] = { page: 1, size: 10 }
     loadNodesByService(row.serviceName)
   }
 }
@@ -678,12 +668,18 @@ const handleEditNode = (node: ServiceNode) => {
 
 const handleDeleteNode = async (node: ServiceNode) => {
   try {
+    await ElMessageBox.confirm(`确定要删除节点"${node.nodeName}"吗？`, '删除确认', {
+      type: 'warning'
+    })
+    
     await nodesApi.delete(node.id)
     ElMessage.success('删除成功')
     loadNodesByService(node.serviceName)
     loadServiceStats()
   } catch (error) {
-    ElMessage.error('删除失败')
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
   }
 }
 
@@ -877,30 +873,32 @@ const handleDeleteService = async (row: ServiceStats) => {
     
     if (routes.length > 0) {
       const routeList = routes.map(r => `• ${r.routeName} (${r.routeId})`).join('\n')
-      await ElMessageBox.confirm(
-        `该服务被以下路由引用，无法删除：\n\n${routeList}\n\n请先修改或删除相关路由。`,
-        '服务被引用',
-        {
-          confirmButtonText: '查看路由',
-          cancelButtonText: '关闭',
-          type: 'warning',
-          distinguishCancelAndClose: true
+      try {
+        await ElMessageBox.confirm(
+          `该服务被以下路由引用，无法删除：\n\n${routeList}\n\n请先修改或删除相关路由。`,
+          '服务被引用',
+          {
+            confirmButtonText: '查看路由',
+            cancelButtonText: '关闭',
+            type: 'warning',
+            distinguishCancelAndClose: true
+          }
+        )
+        if (routes.length === 1) {
+          router.push(`/routes/list?id=${routes[0].id}`)
+        } else {
+          router.push('/routes/list')
         }
-      )
-      if (routes.length === 1) {
-        router.push(`/routes/list?id=${routes[0].id}`)
-      } else {
-        router.push('/routes/list')
+      } catch (error) {
+        // 点击关闭按钮，不做任何操作
       }
       return
     }
     
     await ElMessageBox.confirm(
-      `确定要删除服务 "${row.serviceName}" 吗？\n这将删除该服务下的所有节点（共 ${row.totalNodes} 个）。`,
+      `确定要删除服务"${row.serviceName}"吗？`,
       '删除确认',
       {
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消',
         type: 'warning'
       }
     )
@@ -908,10 +906,10 @@ const handleDeleteService = async (row: ServiceStats) => {
     await nodesApi.deleteService(row.serviceName)
     ElMessage.success('删除服务成功')
     loadServiceStats()
-  } catch (error: unknown) {
-    const err = error as { message?: string }
-    if (err.message !== 'cancel' && err.message !== 'close') {
-      ElMessage.error('删除服务失败：' + (err.message || '未知错误'))
+  } catch (error) {
+    if (error !== 'cancel') {
+      const errorMsg = (error as any)?.response?.data?.message || (error as Error).message || '未知错误'
+      ElMessage.error('删除服务失败：' + errorMsg)
     }
   }
 }

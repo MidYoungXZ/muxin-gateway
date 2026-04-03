@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
-    :title="isEdit ? '编辑路由' : '新增路由'"
+    :title="mode === 'view' ? '查看路由' : (isEdit ? '编辑路由' : '新增路由')"
     width="900px"
     :close-on-click-modal="false"
     class="route-form-dialog"
@@ -11,7 +11,8 @@
     <div class="dialog-content">
       <StepNavigation
         :current-step="currentStep"
-        :completed-steps="Array.from(completedSteps)"
+        :completed-steps="isViewMode ? [0, 1, 2, 3] : Array.from(completedSteps)"
+        :view-mode="isViewMode"
         @update:current-step="handleStepChange"
       />
       <div class="form-content">
@@ -20,32 +21,38 @@
           ref="stepBasicInfoRef"
           v-model="formData"
           :is-edit="isEdit"
+          :readonly="isViewMode"
         />
         <StepRouteMatching
           v-show="currentStep === 1"
           ref="stepRouteMatchingRef"
           v-model="formData"
+          :readonly="isViewMode"
         />
         <StepTargetService
           v-show="currentStep === 2"
           ref="stepTargetServiceRef"
           v-model="formData"
+          :readonly="isViewMode"
         />
         <StepPlugins
           v-show="currentStep === 3"
           ref="stepPluginsRef"
           v-model="formData"
+          :readonly="isViewMode"
         />
       </div>
     </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="$emit('update:modelValue', false)">取消</el-button>
-        <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
-        <el-button v-if="currentStep < 3" type="primary" @click="nextStep">下一步</el-button>
-        <el-button v-if="currentStep === 3" type="primary" :loading="loading" @click="handleSave">
-          保存
-        </el-button>
+        <el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+        <template v-if="!isViewMode">
+          <el-button v-if="currentStep > 0" @click="prevStep">上一步</el-button>
+          <el-button v-if="currentStep < 3" type="primary" @click="nextStep">下一步</el-button>
+          <el-button v-if="currentStep === 3" type="primary" :loading="loading" @click="handleSave">
+            保存
+          </el-button>
+        </template>
       </div>
     </template>
   </el-dialog>
@@ -65,6 +72,7 @@ import StepPlugins from './StepPlugins.vue'
 const props = defineProps<{
   modelValue: boolean
   route?: Route | null
+  mode?: 'create' | 'edit' | 'view'
 }>()
 
 const emit = defineEmits<{
@@ -83,6 +91,7 @@ const stepTargetServiceRef = ref<InstanceType<typeof StepTargetService>>()
 const stepPluginsRef = ref<InstanceType<typeof StepPlugins>>()
 
 const isEdit = computed(() => !!props.route?.id)
+const isViewMode = computed(() => props.mode === 'view')
 
 watch(() => props.modelValue, (val) => {
   if (val) {
@@ -117,14 +126,31 @@ function loadRouteData(route: Route) {
     pathRewriteTo: '',
     connectTimeout: 5000,
     responseTimeout: 30000,
-    plugins: route.plugins?.map(p => ({
-      pluginId: p.pluginId,
-      pluginName: p.pluginName,
-      pluginType: p.pluginType,
-      config: p.config,
-      priorityOverride: p.priorityOverride,
-      enabled: p.enabled
-    })) || []
+    plugins: []
+  }
+  
+  if (route.plugins && route.plugins.length > 0) {
+    for (const plugin of route.plugins) {
+      if (plugin.pluginName === 'timeout') {
+        formData.value.connectTimeout = plugin.config?.connectTimeout || 5000
+        formData.value.responseTimeout = plugin.config?.responseTimeout || 30000
+      } else if (plugin.pluginName === 'request-rewrite') {
+        if (plugin.config?.pathRegex) {
+          formData.value.pathRewriteEnabled = true
+          formData.value.pathRewriteFrom = plugin.config.pathRegex
+          formData.value.pathRewriteTo = plugin.config.pathReplacement || ''
+        }
+      } else {
+        formData.value.plugins.push({
+          pluginId: plugin.pluginId,
+          pluginName: plugin.pluginName,
+          pluginType: plugin.pluginType,
+          config: plugin.config,
+          priorityOverride: plugin.priorityOverride,
+          enabled: plugin.enabled
+        })
+      }
+    }
   }
   
   if (route.predicates && route.predicates.length > 0) {
@@ -177,7 +203,9 @@ function prevStep() {
 }
 
 function handleStepChange(step: number) {
-  if (step <= currentStep.value || completedSteps.value.has(step - 1)) {
+  if (isViewMode.value) {
+    currentStep.value = step
+  } else if (step <= currentStep.value || completedSteps.value.has(step - 1)) {
     currentStep.value = step
   }
 }
@@ -252,6 +280,12 @@ async function handleSave() {
   loading.value = true
   try {
     const data = buildSubmitData()
+    
+    console.log('=== 提交的路由数据 ===')
+    console.log('plugins:', data.plugins)
+    console.log('timeouts:', data.timeouts)
+    console.log('pathRewrite:', data.pathRewrite)
+    console.log('===================')
     
     if (isEdit.value && props.route?.id) {
       await routesApi.update(props.route.id, data as RouteUpdateRequest)

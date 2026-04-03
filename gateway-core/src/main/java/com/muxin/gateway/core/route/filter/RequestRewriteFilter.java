@@ -29,7 +29,38 @@ public class RequestRewriteFilter implements Filter {
         this.headersToRemove = args != null ? extractHeadersToRemove(args.get("headersToRemove")) : null;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-        this.pattern = pathRegex != null && !pathRegex.isEmpty() ? Pattern.compile(pathRegex) : null;
+        this.pattern = pathRegex != null && !pathRegex.isEmpty() ? Pattern.compile(convertAntPathToRegex(pathRegex)) : null;
+    }
+    
+    private String convertAntPathToRegex(String antPattern) {
+        StringBuilder regex = new StringBuilder();
+        int i = 0;
+        int len = antPattern.length();
+        
+        while (i < len) {
+            char c = antPattern.charAt(i);
+            
+            if (c == '*' && i + 1 < len && antPattern.charAt(i + 1) == '*') {
+                regex.append("(.*)");
+                i += 2;
+            } else if (c == '*') {
+                regex.append("([^/]*)");
+                i++;
+            } else if (c == '?') {
+                regex.append("([^/])");
+                i++;
+            } else if ("[]{}()^$|+.\\".indexOf(c) != -1) {
+                regex.append("\\").append(c);
+                i++;
+            } else {
+                regex.append(c);
+                i++;
+            }
+        }
+        
+        String result = "^" + regex.toString() + "$";
+        log.debug("[RequestRewriteFilter] Ant路径转正则: {} -> {}", antPattern, result);
+        return result;
     }
 
     private String getStringValue(Object value, String defaultValue) {
@@ -74,6 +105,16 @@ public class RequestRewriteFilter implements Filter {
                 Matcher matcher = pattern.matcher(originalPath);
                 if (matcher.matches()) {
                     String newPath = pathReplacement;
+                    
+                    // 先处理 Ant 风格的 /** 和 /*，将其替换为对应的捕获组
+                    if (newPath.contains("/**")) {
+                        newPath = newPath.replace("/**", "/$1");
+                    }
+                    if (newPath.contains("/*")) {
+                        newPath = newPath.replace("/*", "/$1");
+                    }
+                    
+                    // 然后处理显式的占位符
                     for (int i = 1; i <= matcher.groupCount(); i++) {
                         String groupValue = matcher.group(i);
                         if (groupValue != null) {

@@ -12,6 +12,7 @@
           placeholder="请选择目标服务"
           filterable
           style="width: 100%"
+          :disabled="readonly"
         >
           <el-option
             v-for="name in serviceNames"
@@ -33,6 +34,7 @@
           :model-value="modelValue.loadBalanceStrategy"
           @update:model-value="updateField('loadBalanceStrategy', $event)"
           style="width: 100%"
+          :disabled="readonly"
         >
           <el-option
             v-for="item in LOAD_BALANCE_STRATEGIES"
@@ -76,6 +78,7 @@
         <el-checkbox
           :model-value="modelValue.pathRewriteEnabled"
           @update:model-value="updateField('pathRewriteEnabled', $event)"
+          :disabled="readonly"
         >
           启用路径重写
         </el-checkbox>
@@ -87,6 +90,7 @@
               :model-value="modelValue.pathRewriteFrom"
               @update:model-value="updateField('pathRewriteFrom', $event)"
               placeholder="/api/v1/**"
+              :disabled="readonly"
             />
           </el-form-item>
         </el-col>
@@ -96,6 +100,7 @@
               :model-value="modelValue.pathRewriteTo"
               @update:model-value="updateField('pathRewriteTo', $event)"
               placeholder="/v1/**"
+              :disabled="readonly"
             />
           </el-form-item>
         </el-col>
@@ -116,6 +121,7 @@
               :max="60000"
               :step="1000"
               style="width: 100%"
+              :disabled="readonly"
             />
           </el-form-item>
         </el-col>
@@ -128,6 +134,7 @@
               :max="300000"
               :step="1000"
               style="width: 100%"
+              :disabled="readonly"
             />
           </el-form-item>
         </el-col>
@@ -146,6 +153,7 @@ import request from '@/utils/request'
 
 const props = defineProps<{
   modelValue: RouteFormState
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

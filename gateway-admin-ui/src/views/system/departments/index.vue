@@ -646,4 +646,17 @@ onMounted(() => {
 :deep(.el-tree-node__expand-icon) {
   color: var(--el-color-primary);
 }
+
+// 暗色模式样式优化
+.dark {
+  .dept-node {
+    .dept-info {
+      .el-tag--info {
+        background: rgba(139, 92, 246, 0.1);
+        border-color: rgba(139, 92, 246, 0.3);
+        color: #c4b5fd;
+      }
+    }
+  }
+}
 </style>

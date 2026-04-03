@@ -14,34 +14,39 @@
           }"
         >
           <div class="plugin-header">
-            <span class="plugin-icon">⚡</span>
-            <span class="plugin-name">{{ plugin.pluginName }}</span>
+            <div class="plugin-title">
+              <span class="plugin-icon">⚡</span>
+              <span class="plugin-name">{{ plugin.pluginName }}</span>
+            </div>
+            <div v-if="isPluginConfigured(plugin.id)" class="plugin-status-badge">
+              <el-icon class="status-icon"><CircleCheckFilled /></el-icon>
+              <span class="status-text">已配置</span>
+            </div>
           </div>
+          
           <div class="plugin-desc">{{ plugin.description }}</div>
+          
           <div class="plugin-meta">
-            <el-tag size="small">{{ plugin.phase || 'FILTER_PRE' }}</el-tag>
+            <el-tag size="small">{{ getPhaseLabel(plugin.phase) }}</el-tag>
             <span class="plugin-priority">优先级: {{ plugin.defaultPriority }}</span>
           </div>
-          <div class="plugin-status" v-if="isPluginConfigured(plugin.id)">
-            <el-tag type="success" size="small">
-              <el-icon><Check /></el-icon> 已配置
-            </el-tag>
-            <span class="config-summary">{{ getConfigSummary(plugin.id) }}</span>
-          </div>
+          
           <div class="plugin-actions">
-            <template v-if="isPluginConfigured(plugin.id)">
-              <el-button size="small" @click="editPlugin(plugin)">编辑</el-button>
-              <el-button size="small" type="danger" link @click="removePlugin(plugin.id)">删除</el-button>
-            </template>
-            <template v-else>
-              <el-button
-                size="small"
-                type="primary"
-                @click="selectPlugin(plugin)"
-                :disabled="!plugin.enabled"
-              >
-                选择+配置
-              </el-button>
+            <template v-if="!readonly">
+              <template v-if="isPluginConfigured(plugin.id)">
+                <el-button size="small" @click="editPlugin(plugin)">编辑</el-button>
+                <el-button size="small" type="danger" link @click="removePlugin(plugin.id)">删除</el-button>
+              </template>
+              <template v-else>
+                <el-button
+                  size="small"
+                  type="primary"
+                  @click="selectPlugin(plugin)"
+                  :disabled="!plugin.enabled"
+                >
+                  选择+配置
+                </el-button>
+              </template>
             </template>
           </div>
         </div>
@@ -53,7 +58,7 @@
       已配置插件列表（按执行优先级排序）
     </div>
     <div class="plugin-list" v-if="modelValue.plugins.length > 0">
-      <div class="list-tip">执行顺序: FILTER_PRE → FILTER_POST → 转发到后端</div>
+      <div class="list-tip">执行顺序: 前置插件 → 转发到后端 → 后置插件</div>
       <el-table :data="sortedPlugins" size="small">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="pluginName" label="插件名称" />
@@ -74,7 +79,7 @@
             <span class="config-summary">{{ getConfigSummary(row.pluginId) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100">
+        <el-table-column v-if="!readonly" label="操作" width="100">
           <template #default="{ row }">
             <el-button type="primary" link size="small" @click="editPluginById(row.pluginId)">编辑</el-button>
           </template>
@@ -94,13 +99,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Check } from '@element-plus/icons-vue'
+import { Check, CircleCheckFilled } from '@element-plus/icons-vue'
 import type { RouteFormState, RoutePlugin } from '@/api/routes'
 import { pluginsApi, type PluginInfo } from '@/api/plugins'
 import PluginConfigDrawer from './PluginConfigDrawer.vue'
 
 const props = defineProps<{
   modelValue: RouteFormState
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -124,6 +130,11 @@ function isPluginConfigured(pluginId: number): boolean {
   return props.modelValue.plugins.some(p => p.pluginId === pluginId)
 }
 
+function getPhaseLabel(phase: string | undefined): string {
+  if (phase === 'FILTER_POST') return '后置插件'
+  return '前置插件'
+}
+
 function getConfigSummary(pluginId: number): string {
   const plugin = props.modelValue.plugins.find(p => p.pluginId === pluginId)
   if (!plugin || !plugin.config) return ''
@@ -139,8 +150,8 @@ function getEffectivePriority(plugin: RoutePlugin): number {
 async function loadPlugins() {
   try {
     const res = await pluginsApi.list()
-    if (res?.data) {
-      plugins.value = res.data.filter(p => p.pluginType === 'FILTER')
+    if (res?.data?.data) {
+      plugins.value = res.data.data.filter(p => p.pluginType === 'FILTER' && p.enabled === true)
     }
   } catch (error) {
     console.error('加载插件列表失败', error)
@@ -230,7 +241,10 @@ defineExpose({ validate: () => Promise.resolve(true) })
   border: 1px solid var(--el-border-color-lighter);
   border-radius: 8px;
   padding: 12px;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     border-color: var(--el-color-primary-light-5);
@@ -240,6 +254,14 @@ defineExpose({ validate: () => Promise.resolve(true) })
   &.configured {
     border-color: var(--el-color-success-light-5);
     background: var(--bg-tertiary);
+    
+    .status-icon {
+      color: var(--el-color-success);
+    }
+    
+    .status-text {
+      color: var(--el-color-success);
+    }
   }
 
   &.disabled {
@@ -250,32 +272,68 @@ defineExpose({ validate: () => Promise.resolve(true) })
 .plugin-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  min-height: 24px;
+}
+
+.plugin-title {
+  display: flex;
+  align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .plugin-icon {
   font-size: 16px;
+  flex-shrink: 0;
 }
 
 .plugin-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  
+  .status-icon {
+    font-size: 14px;
+  }
+  
+  .status-text {
+    font-size: 12px;
+    font-weight: 500;
+  }
 }
 
 .plugin-desc {
   font-size: 12px;
   color: var(--text-tertiary);
-  margin-bottom: 6px;
   line-height: 1.4;
+  margin-bottom: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: 17px;
 }
 
 .plugin-meta {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  min-height: 24px;
 }
 
 .plugin-priority {
@@ -283,24 +341,13 @@ defineExpose({ validate: () => Promise.resolve(true) })
   color: var(--text-tertiary);
 }
 
-.plugin-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.config-summary {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .plugin-actions {
   display: flex;
   gap: 6px;
+  margin-top: auto;
+  flex-shrink: 0;
+  min-height: 32px;
+  align-items: center;
 }
 
 .plugin-list {

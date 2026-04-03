@@ -57,11 +57,7 @@
             <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
             <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleAssignRoles(row)">分配角色</el-button>
             <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleResetPassword(row)">重置密码</el-button>
-            <el-popconfirm v-if="canManageUser(row) && row.id !== currentUserId" title="确定删除？" @confirm="handleDelete(row)">
-              <template #reference>
-                <el-button type="danger" size="small" link>删除</el-button>
-              </template>
-            </el-popconfirm>
+            <el-button v-if="canManageUser(row) && row.id !== currentUserId" type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -143,7 +139,7 @@ const currentUser = ref<Partial<User>>({})
 const roleList = ref<Role[]>([])
 
 const searchForm = reactive<UserQueryParams>({ username: '', nickname: '', status: undefined, deptId: undefined })
-const pagination = reactive({ page: 1, size: 20 })
+const pagination = reactive({ page: 1, size: 10 })
 
 const managedDeptOptions = computed(() => {
   if (managedDeptIds.value.length === 0) {
@@ -248,11 +244,18 @@ const handleEdit = (user: User) => {
 
 const handleDelete = async (user: User) => {
   try {
+    await ElMessageBox.confirm(`确定要删除用户"${user.username}"吗？`, '删除确认', {
+      type: 'warning'
+    })
+    
     await userApi.delete(user.id)
     ElMessage.success('删除成功')
     loadUserList()
   } catch (error) {
-    console.error('删除失败:', error)
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败')
+    }
   }
 }
 

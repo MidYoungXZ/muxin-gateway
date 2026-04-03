@@ -9,7 +9,7 @@
               :model-value="modelValue.routeId"
               @update:model-value="updateField('routeId', $event)"
               placeholder="请输入路由ID"
-              :disabled="isEdit"
+              :disabled="isEdit || readonly"
             />
             <div class="field-tip">只能包含字母、数字、下划线和中划线，全局唯一标识</div>
           </el-form-item>
@@ -20,6 +20,7 @@
               :model-value="modelValue.routeName"
               @update:model-value="updateField('routeName', $event)"
               placeholder="请输入路由名称"
+              :disabled="readonly"
             />
             <div class="field-tip">路由的显示名称，便于识别和管理</div>
           </el-form-item>
@@ -38,6 +39,7 @@
               :min="0"
               :max="9999"
               style="width: 100%"
+              :disabled="readonly"
             />
             <div class="field-tip">数值越大优先级越高，当多个路由匹配时优先执行</div>
           </el-form-item>
@@ -48,6 +50,7 @@
               :model-value="modelValue.enabled"
               @update:model-value="updateField('enabled', $event)"
               active-text="启用此路由"
+              :disabled="readonly"
             />
             <div class="field-tip">启用后路由立即生效，禁用则不会匹配任何请求</div>
           </el-form-item>
@@ -64,6 +67,7 @@
           type="textarea"
           :rows="3"
           placeholder="请输入路由描述（可选）"
+          :disabled="readonly"
         />
       </el-form-item>
     </el-form>
@@ -78,6 +82,7 @@ import type { RouteFormState } from '@/api/routes'
 const props = defineProps<{
   modelValue: RouteFormState
   isEdit: boolean
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -166,7 +166,9 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         updateById(route);
         
-        routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
+        int deletedCount = routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
+        log.info("[RouteService] 删除了 {} 条旧插件记录，routeId: {}", deletedCount, id);
+        
         if (!CollectionUtils.isEmpty(dto.getPlugins())) {
             saveRoutePlugins(id, dto.getPlugins());
         }
@@ -527,19 +529,36 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             return;
         }
         
-        GwRoutePlugin rp = new GwRoutePlugin();
-        rp.setRouteId(routeId);
-        rp.setPluginId(plugin.getId());
+        // 先查询是否已存在
+        GwRoutePlugin existingPlugin = routePluginMapper.selectOneByQuery(
+            QueryWrapper.create()
+                .where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
+                .and(GW_ROUTE_PLUGIN.PLUGIN_ID.eq(plugin.getId()))
+        );
         
         Map<String, Object> config = new HashMap<>();
         config.put(PluginConfigKeys.PATH_REGEX, pathRewrite.getFrom());
         config.put(PluginConfigKeys.PATH_REPLACEMENT, pathRewrite.getTo());
-        rp.setConfig(config);
-        rp.setEnabled(true);
-        rp.setSortOrder(100);
-        rp.setCreateTime(LocalDateTime.now());
         
-        routePluginMapper.insert(rp);
+        if (existingPlugin != null) {
+            // 更新现有记录
+            existingPlugin.setConfig(config);
+            existingPlugin.setEnabled(true);
+            existingPlugin.setSortOrder(100);
+            routePluginMapper.update(existingPlugin);
+            log.info("[RouteService] 更新 request-rewrite 插件配置，routeId: {}", routeId);
+        } else {
+            // 插入新记录
+            GwRoutePlugin rp = new GwRoutePlugin();
+            rp.setRouteId(routeId);
+            rp.setPluginId(plugin.getId());
+            rp.setConfig(config);
+            rp.setEnabled(true);
+            rp.setSortOrder(100);
+            rp.setCreateTime(LocalDateTime.now());
+            routePluginMapper.insert(rp);
+            log.info("[RouteService] 新增 request-rewrite 插件配置，routeId: {}", routeId);
+        }
     }
     
     private void saveTimeoutPlugin(Long routeId, RouteCreateDTO.TimeoutDTO timeouts) {
@@ -554,9 +573,12 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             return;
         }
         
-        GwRoutePlugin rp = new GwRoutePlugin();
-        rp.setRouteId(routeId);
-        rp.setPluginId(plugin.getId());
+        // 先查询是否已存在
+        GwRoutePlugin existingPlugin = routePluginMapper.selectOneByQuery(
+            QueryWrapper.create()
+                .where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
+                .and(GW_ROUTE_PLUGIN.PLUGIN_ID.eq(plugin.getId()))
+        );
         
         Map<String, Object> config = new HashMap<>();
         if (timeouts.getConnect() != null) {
@@ -565,12 +587,26 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         if (timeouts.getResponse() != null) {
             config.put(PluginConfigKeys.RESPONSE_TIMEOUT, timeouts.getResponse());
         }
-        rp.setConfig(config);
-        rp.setEnabled(true);
-        rp.setSortOrder(99);
-        rp.setCreateTime(LocalDateTime.now());
         
-        routePluginMapper.insert(rp);
+        if (existingPlugin != null) {
+            // 更新现有记录
+            existingPlugin.setConfig(config);
+            existingPlugin.setEnabled(true);
+            existingPlugin.setSortOrder(99);
+            routePluginMapper.update(existingPlugin);
+            log.info("[RouteService] 更新 timeout 插件配置，routeId: {}", routeId);
+        } else {
+            // 插入新记录
+            GwRoutePlugin rp = new GwRoutePlugin();
+            rp.setRouteId(routeId);
+            rp.setPluginId(plugin.getId());
+            rp.setConfig(config);
+            rp.setEnabled(true);
+            rp.setSortOrder(99);
+            rp.setCreateTime(LocalDateTime.now());
+            routePluginMapper.insert(rp);
+            log.info("[RouteService] 新增 timeout 插件配置，routeId: {}", routeId);
+        }
     }
     
     private List<RouteVO.PredicateInfo> loadPredicates(Long routeId) {

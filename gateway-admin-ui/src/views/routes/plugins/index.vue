@@ -29,13 +29,6 @@
     <div class="table-wrapper">
       <el-table :data="pluginList" v-loading="loading" stripe>
         <el-table-column prop="pluginName" label="插件名称" min-width="140" />
-        <el-table-column prop="pluginType" label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small">
-              {{ row.pluginType }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <el-table-column prop="defaultPriority" label="默认优先级" width="100" />
         <el-table-column label="系统内置" width="80">
@@ -64,7 +57,7 @@
                 编辑
               </el-button>
               <el-popconfirm
-                title="确定删除？"
+                title="确定要删除该插件吗？"
                 @confirm="handleDelete(row)"
                 :disabled="row.isSystem"
               >
@@ -176,7 +169,7 @@ const filterType = ref('')
 const searchName = ref('')
 
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 const totalPlugins = ref(0)
 
 const formDialogVisible = ref(false)
@@ -214,7 +207,6 @@ const loadPlugins = async () => {
       totalPlugins.value = response.data.total || 0
     }
   } catch (error) {
-    ElMessage.error('加载插件列表失败')
   } finally {
     loading.value = false
   }
@@ -277,16 +269,19 @@ const handleDelete = async (plugin: PluginInfo) => {
     ElMessage.success('删除成功')
     loadPlugins()
   } catch (error) {
-    ElMessage.error('删除失败')
   }
 }
 
 const handleStatusChange = async (plugin: PluginInfo) => {
   try {
-    await pluginsApi.update(plugin.id, { enabled: plugin.enabled })
-    ElMessage.success(plugin.enabled ? '启用成功' : '禁用成功')
+    if (plugin.enabled) {
+      await pluginsApi.enable(plugin.id)
+      ElMessage.success('启用成功')
+    } else {
+      await pluginsApi.disable(plugin.id)
+      ElMessage.success('禁用成功')
+    }
   } catch (error) {
-    ElMessage.error('状态更新失败')
     plugin.enabled = !plugin.enabled
   }
 }
@@ -308,7 +303,6 @@ const handleSubmit = async () => {
     formDialogVisible.value = false
     loadPlugins()
   } catch (error) {
-    ElMessage.error('操作失败')
   } finally {
     formLoading.value = false
   }

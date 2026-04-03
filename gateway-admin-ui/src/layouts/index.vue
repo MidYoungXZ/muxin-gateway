@@ -88,13 +88,6 @@
         </div>
         
         <div class="header-right">
-          <!-- 通知中心 -->
-          <el-badge :value="unreadNotifications" :hidden="unreadNotifications === 0" class="notification-badge">
-            <el-button text class="header-action-btn" @click="showNotifications = true">
-              <el-icon><Bell /></el-icon>
-            </el-button>
-          </el-badge>
-          
           <!-- 主题切换 -->
           <theme-toggle />
           
@@ -217,51 +210,7 @@
       </el-main>
     </el-container>
     
-    <!-- 通知抽屉 -->
-    <el-drawer
-      v-model="showNotifications"
-      title="通知中心"
-      direction="rtl"
-      size="360px"
-      class="notification-drawer"
-    >
-      <div class="notifications-content">
-        <div class="notification-tabs">
-          <el-button
-            v-for="tab in notificationTabs"
-            :key="tab.key"
-            :type="activeNotificationTab === tab.key ? 'primary' : 'default'"
-            text
-            @click="activeNotificationTab = tab.key"
-          >
-            {{ tab.label }}
-            <el-badge v-if="tab.count" :value="tab.count" />
-          </el-button>
-        </div>
-        
-        <div class="notification-list">
-          <div
-            v-for="notification in filteredNotifications"
-            :key="notification.id"
-            class="notification-item"
-            :class="{ unread: !notification.read }"
-            @click="markAsRead(notification.id)"
-          >
-            <div class="notification-icon" :class="notification.type">
-              <el-icon>
-                <component :is="notification.icon" />
-              </el-icon>
-            </div>
-            <div class="notification-content">
-              <div class="notification-title">{{ notification.title }}</div>
-              <div class="notification-desc">{{ notification.description }}</div>
-              <div class="notification-time">{{ formatTime(notification.time) }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </el-drawer>
-  </el-container>
+    </el-container>
 </template>
 
 <script setup lang="ts">
@@ -289,9 +238,6 @@ const isCollapse = ref(false)
 const cachedViews = ref<string[]>([])
 const searchQuery = ref('')
 const showSearchPanel = ref(false)
-const showNotifications = ref(false)
-const unreadNotifications = ref(5)
-const activeNotificationTab = ref('all')
 const activeTab = ref('Dashboard')
 const openTabs = ref<TabItem[]>([{ name: 'Dashboard', title: '首页', path: '/dashboard' }])
 
@@ -327,66 +273,6 @@ const searchSuggestions = ref([
   { id: 4, text: '日志查看', category: '功能', icon: 'Document', path: '/monitor/logs' }
 ])
 
-// 通知标签页
-const notificationTabs = ref([
-  { key: 'all', label: '全部', count: 5 },
-  { key: 'system', label: '系统', count: 2 },
-  { key: 'security', label: '安全', count: 1 },
-  { key: 'operation', label: '操作', count: 2 }
-])
-
-// 通知列表
-const notifications = ref([
-  {
-    id: 1,
-    type: 'warning',
-    icon: 'Warning',
-    title: '系统资源告警',
-    description: 'CPU使用率超过80%，请及时处理',
-    time: new Date(Date.now() - 5 * 60 * 1000),
-    read: false,
-    category: 'system'
-  },
-  {
-    id: 2,
-    type: 'info',
-    icon: 'User',
-    title: '新用户注册',
-    description: '用户"张三"完成注册验证',
-    time: new Date(Date.now() - 15 * 60 * 1000),
-    read: false,
-    category: 'operation'
-  },
-  {
-    id: 3,
-    type: 'success',
-    icon: 'CircleCheck',
-    title: '备份完成',
-    description: '系统数据备份已成功完成',
-    time: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    read: true,
-    category: 'system'
-  },
-  {
-    id: 4,
-    type: 'error',
-    icon: 'Warning',
-    title: '登录异常',
-    description: '检测到异常登录行为',
-    time: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    read: false,
-    category: 'security'
-  }
-])
-
-// 过滤通知
-const filteredNotifications = computed(() => {
-  if (activeNotificationTab.value === 'all') {
-    return notifications.value
-  }
-  return notifications.value.filter(n => n.category === activeNotificationTab.value)
-})
-
 // 响应式控制
 const isMobile = ref(false)
 
@@ -411,14 +297,6 @@ const handleSuggestionClick = (suggestion: any) => {
   router.push(suggestion.path)
   showSearchPanel.value = false
   searchQuery.value = ''
-}
-
-const markAsRead = (id: number) => {
-  const notification = notifications.value.find(n => n.id === id)
-  if (notification && !notification.read) {
-    notification.read = true
-    unreadNotifications.value--
-  }
 }
 
 const handleProfile = () => {
@@ -759,7 +637,7 @@ onUnmounted(() => {
             transform: none !important;
             
             .el-icon {
-              margin: 0;
+              margin: 0 !important;
               font-size: 20px;
             }
             
@@ -785,7 +663,7 @@ onUnmounted(() => {
               transform: none !important;
               
               .el-icon {
-                margin: 0;
+                margin: 0 !important;
                 font-size: 20px;
               }
               
@@ -1004,13 +882,6 @@ onUnmounted(() => {
         }
       }
       
-      .notification-badge {
-        :deep(.el-badge__content) {
-          background: var(--error-color);
-          border: 2px solid var(--card-bg);
-        }
-      }
-      
       .user-dropdown-trigger {
         display: flex;
         align-items: center;
@@ -1179,103 +1050,6 @@ onUnmounted(() => {
   }
 }
 
-// 通知抽屉
-.notification-drawer {
-  :deep(.el-drawer__body) {
-    padding: 0;
-  }
-  
-  .notifications-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    
-    .notification-tabs {
-      padding: var(--space-4);
-      border-bottom: 1px solid var(--border-primary);
-      display: flex;
-      gap: var(--space-2);
-    }
-    
-    .notification-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: var(--space-4);
-      
-      .notification-item {
-        display: flex;
-        gap: var(--space-3);
-        padding: var(--space-4);
-        border-radius: var(--radius-lg);
-        cursor: pointer;
-        transition: all var(--transition-fast);
-        margin-bottom: var(--space-3);
-        
-        &:hover {
-          background: var(--bg-secondary);
-        }
-        
-        &.unread {
-          background: var(--primary-50);
-          border-left: 3px solid var(--primary-color);
-        }
-        
-        .notification-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: var(--radius-lg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          
-          &.info {
-            background: var(--info-50);
-            color: var(--info-color);
-          }
-          
-          &.warning {
-            background: var(--warning-50);
-            color: var(--warning-color);
-          }
-          
-          &.success {
-            background: var(--success-50);
-            color: var(--success-color);
-          }
-          
-          &.error {
-            background: var(--error-50);
-            color: var(--error-color);
-          }
-        }
-        
-        .notification-content {
-          flex: 1;
-          
-          .notification-title {
-            font-weight: var(--font-semibold);
-            color: var(--text-primary);
-            margin-bottom: var(--space-1);
-          }
-          
-          .notification-desc {
-            font-size: var(--text-sm);
-            color: var(--text-secondary);
-            margin-bottom: var(--space-2);
-            line-height: var(--leading-relaxed);
-          }
-          
-          .notification-time {
-            font-size: var(--text-xs);
-            color: var(--text-tertiary);
-          }
-        }
-      }
-    }
-  }
-}
-
 // 响应式适配
 @media (max-width: 1200px) {
   .layout-container {
@@ -1392,6 +1166,28 @@ onUnmounted(() => {
             background: rgba(139, 92, 246, 0.15);
             border-color: rgba(139, 92, 246, 0.4);
             color: #c4b5fd;
+          }
+        }
+      }
+    }
+    
+    .layout-header {
+      .header-right {
+        // 修复暗色模式下用户下拉菜单的 focus 样式
+        :deep(.el-dropdown-menu__item) {
+          &:focus,
+          &:hover {
+            background: var(--bg-tertiary);
+            color: var(--primary-color);
+          }
+        }
+      }
+      
+      .header-left {
+        .collapse-btn {
+          &:hover {
+            background: var(--bg-tertiary);
+            color: var(--primary-color);
           }
         }
       }
