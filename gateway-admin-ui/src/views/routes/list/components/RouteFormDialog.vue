@@ -6,6 +6,7 @@
     width="clamp(600px, 85vw, 900px)"
     :close-on-click-modal="false"
     class="route-form-dialog"
+    append-to-body
     @close="handleClose"
   >
     <div class="dialog-content">
@@ -276,11 +277,15 @@ function handleClose() {
 
 <style lang="scss" scoped>
 .route-form-dialog {
+  :deep(.el-overlay) {
+    overflow: hidden;
+  }
+
   :deep(.el-dialog) {
-    max-height: 85vh;
+    height: 80vh;
     display: flex;
     flex-direction: column;
-    margin-top: 7.5vh !important;
+    margin-top: 10vh !important;
   }
 
   :deep(.el-dialog__header) {
@@ -307,7 +312,7 @@ function handleClose() {
 .dialog-content {
   display: flex;
   height: 100%;
-  min-height: 400px;
+  min-height: 0;
 }
 
 .form-content {
