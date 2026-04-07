@@ -503,6 +503,7 @@ const initMainChart = () => {
   if (!mainChartRef.value) return
   
   const chart = echarts.init(mainChartRef.value)
+  const isDark = document.documentElement.classList.contains('dark')
   
   // 生成模拟数据
   const data = []
@@ -518,16 +519,20 @@ const initMainChart = () => {
   const option = {
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'var(--card-bg)',
-      borderColor: 'var(--border-primary)',
+      backgroundColor: isDark ? 'rgba(20, 20, 20, 0.90)' : 'rgba(255, 255, 255, 0.95)',
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)',
+      borderWidth: 1,
       textStyle: {
-        color: 'var(--text-primary)'
-      }
+        color: isDark ? '#ffffff' : '#1f2937'
+      },
+      borderRadius: 12,
+      padding: [12, 16]
     },
     grid: {
       left: '3%',
       right: '4%',
       bottom: '3%',
+      top: '8%',
       containLabel: true
     },
     xAxis: {
@@ -535,26 +540,29 @@ const initMainChart = () => {
       boundaryGap: false,
       axisLine: {
         lineStyle: {
-          color: 'var(--border-primary)'
+          color: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.10)'
         }
       },
       axisLabel: {
-        color: 'var(--text-secondary)'
+        color: isDark ? 'rgba(255, 255, 255, 0.50)' : 'rgba(0, 0, 0, 0.50)',
+        fontSize: 11
+      },
+      splitLine: {
+        show: false
       }
     },
     yAxis: {
       type: 'value',
       axisLine: {
-        lineStyle: {
-          color: 'var(--border-primary)'
-        }
+        show: false
       },
       axisLabel: {
-        color: 'var(--text-secondary)'
+        color: isDark ? 'rgba(255, 255, 255, 0.50)' : 'rgba(0, 0, 0, 0.50)',
+        fontSize: 11
       },
       splitLine: {
         lineStyle: {
-          color: 'var(--border-primary)',
+          color: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
           type: 'dashed'
         }
       }
@@ -565,7 +573,7 @@ const initMainChart = () => {
       smooth: true,
       symbol: 'none',
       lineStyle: {
-        color: '#667eea',
+        color: isDark ? '#a78bfa' : '#667eea',
         width: 3
       },
       areaStyle: {
@@ -575,8 +583,12 @@ const initMainChart = () => {
           y: 0,
           x2: 0,
           y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+          colorStops: isDark ? [
+            { offset: 0, color: 'rgba(139, 92, 246, 0.35)' },
+            { offset: 0.5, color: 'rgba(139, 92, 246, 0.15)' },
+            { offset: 1, color: 'rgba(139, 92, 246, 0.02)' }
+          ] : [
+            { offset: 0, color: 'rgba(102, 126, 234, 0.30)' },
             { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
           ]
         }
@@ -646,6 +658,8 @@ onMounted(() => {
 <style lang="scss" scoped>
 .dashboard-container {
   padding: 0;
+  position: relative;
+  z-index: 1;
   
   // 欢迎区域
   .welcome-section {
@@ -654,11 +668,15 @@ onMounted(() => {
   
   .welcome-card {
     position: relative;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(124, 58, 237, 0.35) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(139, 92, 246, 0.25);
     border-radius: var(--radius-2xl);
     padding: var(--space-8);
     color: white;
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15);
     
     .welcome-content {
       position: relative;
@@ -676,13 +694,14 @@ onMounted(() => {
       font-size: var(--text-4xl);
       font-weight: var(--font-bold);
       margin-bottom: var(--space-2);
+      letter-spacing: 0.02em;
       
       .greeting {
         opacity: 0.9;
       }
       
       .username {
-        background: linear-gradient(45deg, #fff, #f0f0f0);
+        background: linear-gradient(45deg, #fff, rgba(255, 255, 255, 0.85));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -691,7 +710,7 @@ onMounted(() => {
     
     .welcome-subtitle {
       font-size: var(--text-lg);
-      opacity: 0.8;
+      opacity: 0.85;
       font-weight: var(--font-light);
     }
     
@@ -711,7 +730,7 @@ onMounted(() => {
       
       .stat-label {
         font-size: var(--text-sm);
-        opacity: 0.8;
+        opacity: 0.85;
       }
     }
     
@@ -725,7 +744,7 @@ onMounted(() => {
     .deco-circle {
       position: absolute;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       
       &.deco-1 {
         width: 200px;
@@ -763,11 +782,13 @@ onMounted(() => {
   
   .stats-card {
     background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-xl);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border-color);
+    border-radius: var(--glass-radius);
     padding: var(--space-6);
-    box-shadow: var(--card-shadow);
-    transition: all var(--transition-base);
+    box-shadow: var(--glass-shadow), var(--glass-inner-glow);
+    transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
     position: relative;
     overflow: hidden;
     animation: slideUp var(--duration-500) var(--ease-out) both;
@@ -778,15 +799,15 @@ onMounted(() => {
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
-      background: var(--gradient-primary);
+      height: 3px;
+      background: linear-gradient(90deg, rgba(139, 92, 246, 0.5), rgba(124, 58, 237, 0.5));
       opacity: 0;
       transition: opacity var(--transition-base);
     }
     
     &:hover {
-      transform: translateY(-8px);
-      box-shadow: var(--shadow-xl);
+      transform: translateY(var(--hover-lift));
+      box-shadow: var(--glass-shadow-hover);
       
       &::before {
         opacity: 1;
@@ -821,13 +842,13 @@ onMounted(() => {
       border-radius: var(--radius-full);
       
       &.up {
-        color: var(--success-color);
-        background: var(--success-50);
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.12);
       }
       
       &.down {
-        color: var(--error-color);
-        background: var(--error-50);
+        color: #f87171;
+        background: rgba(239, 68, 68, 0.12);
       }
     }
     
@@ -879,25 +900,28 @@ onMounted(() => {
     gap: var(--space-6);
   }
   
-  // 卡片通用样式
+  // 卡片通用样式 - 玻璃态
   .modern-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--card-shadow);
-    transition: all var(--transition-base);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--glass-radius);
+    box-shadow: var(--glass-shadow), var(--glass-inner-glow);
+    transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
     overflow: hidden;
     
     &:hover {
-      box-shadow: var(--card-hover-shadow);
+      box-shadow: var(--glass-shadow-hover);
     }
     
     .card-header {
       padding: var(--space-6) var(--space-6) var(--space-4);
-      border-bottom: 1px solid var(--border-primary);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: rgba(255, 255, 255, 0.02);
     }
     
     .card-title {
@@ -911,6 +935,7 @@ onMounted(() => {
     
     .card-body {
       padding: var(--space-6);
+      background: transparent;
     }
   }
   
@@ -940,25 +965,27 @@ onMounted(() => {
     
     .service-item {
       padding: var(--space-4);
-      border: 1px solid var(--border-primary);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-lg);
       display: flex;
       align-items: center;
       gap: var(--space-4);
       transition: all var(--transition-fast);
+      background: rgba(255, 255, 255, 0.02);
       
       &.healthy {
-        border-color: var(--success-color);
-        background: var(--success-50);
+        border-color: rgba(34, 197, 94, 0.30);
+        background: rgba(34, 197, 94, 0.06);
       }
       
       &.unhealthy {
-        border-color: var(--error-color);
-        background: var(--error-50);
+        border-color: rgba(239, 68, 68, 0.30);
+        background: rgba(239, 68, 68, 0.06);
       }
       
       &:hover {
         transform: translateX(4px);
+        background: rgba(255, 255, 255, 0.04);
       }
     }
     
@@ -999,11 +1026,11 @@ onMounted(() => {
     
     .service-status {
       .status-healthy {
-        color: var(--success-color);
+        color: #22c55e;
       }
       
       .status-unhealthy {
-        color: var(--error-color);
+        color: #f87171;
       }
     }
   }
@@ -1036,7 +1063,7 @@ onMounted(() => {
     
     .resource-bar {
       height: 8px;
-      background: var(--bg-tertiary);
+      background: rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-full);
       overflow: hidden;
     }
@@ -1059,7 +1086,7 @@ onMounted(() => {
       display: flex;
       gap: var(--space-3);
       padding: var(--space-3) 0;
-      border-bottom: 1px solid var(--border-primary);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       
       &:last-child {
         border-bottom: none;
@@ -1076,23 +1103,23 @@ onMounted(() => {
       flex-shrink: 0;
       
       &.info {
-        background: var(--info-50);
-        color: var(--info-color);
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
       }
       
       &.warning {
-        background: var(--warning-50);
-        color: var(--warning-color);
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
       }
       
       &.success {
-        background: var(--success-50);
-        color: var(--success-color);
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
       }
       
       &.error {
-        background: var(--error-50);
-        color: var(--error-color);
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
       }
     }
     
@@ -1131,15 +1158,17 @@ onMounted(() => {
       flex-direction: column;
       align-items: center;
       padding: var(--space-4);
-      border: 1px solid var(--border-primary);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-lg);
       cursor: pointer;
       transition: all var(--transition-fast);
+      background: rgba(255, 255, 255, 0.02);
       
       &:hover {
         transform: translateY(-2px);
         box-shadow: var(--shadow-md);
-        border-color: var(--primary-color);
+        border-color: rgba(139, 92, 246, 0.30);
+        background: rgba(255, 255, 255, 0.04);
       }
     }
     

@@ -517,7 +517,7 @@ onUnmounted(() => {
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-primary);
     box-shadow: var(--shadow-sm);
-    transition: width var(--transition-base);
+    transition: width var(--transition-base), background var(--transition-smooth);
     position: relative;
     z-index: 100;
     
@@ -1126,31 +1126,49 @@ onUnmounted(() => {
   }
 }
 
-// 暗色模式样式
+// 暗色模式样式 - 玻璃态
 .dark {
   .layout-container {
     .layout-aside {
+      background: rgba(10, 10, 10, 0.75);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+      
+      .logo-section {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      
       .sidebar-menu {
         :deep(.el-menu-item),
         :deep(.el-sub-menu__title) {
+          color: var(--text-secondary);
+          
+          &:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--primary-light);
+            box-shadow: none;
+          }
+          
           &.is-active {
-            // 暗色模式下使用更柔和的紫色
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.25) 100%);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.18) 0%, rgba(124, 58, 237, 0.28) 100%);
             color: #c4b5fd;
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            box-shadow: 0 2px 12px rgba(139, 92, 246, 0.2);
           }
         }
         
         :deep(.el-sub-menu) {
           .el-menu {
+            background: transparent;
+            
             .el-menu-item {
               &.is-active {
-                // 子菜单选中状态
-                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.25) 100%);
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.22) 100%);
                 color: #c4b5fd;
-                border: 1px solid rgba(139, 92, 246, 0.3);
-                box-shadow: 0 1px 4px rgba(139, 92, 246, 0.15);
+                border: 1px solid rgba(139, 92, 246, 0.25);
               }
             }
           }
@@ -1158,39 +1176,133 @@ onUnmounted(() => {
       }
     }
     
-    .layout-main {
-      .page-tabs {
-        .tab-item {
-          &.active {
-            // Tab选中状态 - 暗色模式使用柔和紫色
-            background: rgba(139, 92, 246, 0.15);
-            border-color: rgba(139, 92, 246, 0.4);
-            color: #c4b5fd;
+    .layout-header {
+      background: rgba(10, 10, 10, 0.70);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
+      
+      .header-left {
+        .collapse-btn {
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--primary-light);
+          }
+        }
+      }
+      
+      .header-center {
+        .global-search {
+          .search-input {
+            :deep(.el-input__wrapper) {
+              background: rgba(255, 255, 255, 0.05);
+              border: 1px solid rgba(255, 255, 255, 0.10);
+              
+              &:hover {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(255, 255, 255, 0.15);
+              }
+              
+              &.is-focus {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: rgba(139, 92, 246, 0.50);
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+              }
+            }
+          }
+          
+          .search-panel {
+            background: rgba(20, 20, 20, 0.90);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            box-shadow: var(--glass-shadow);
+            
+            .suggestion-item {
+              &:hover {
+                background: rgba(255, 255, 255, 0.06);
+              }
+              
+              .suggestion-category {
+                background: rgba(255, 255, 255, 0.08);
+              }
+            }
+          }
+        }
+      }
+      
+      .header-right {
+        .user-dropdown-trigger {
+          &:hover {
+            background: rgba(255, 255, 255, 0.06);
+          }
+          
+          .header-avatar {
+            background: var(--primary-color);
+          }
+          
+          .user-name-header {
+            color: var(--text-primary);
+          }
+          
+          .dropdown-arrow {
+            color: var(--text-tertiary);
           }
         }
       }
     }
     
-    .layout-header {
-      .header-right {
-        // 修复暗色模式下用户下拉菜单的 focus 样式
-        :deep(.el-dropdown-menu__item) {
-          &:focus,
-          &:hover {
-            background: var(--bg-tertiary);
-            color: var(--primary-color);
+    .layout-main {
+      background: transparent;
+      
+      .page-tabs {
+        .tabs-wrapper {
+          .tab-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            
+            &:hover {
+              background: rgba(255, 255, 255, 0.08);
+              border-color: rgba(255, 255, 255, 0.15);
+              color: var(--text-primary);
+            }
+            
+            &.active {
+              background: rgba(139, 92, 246, 0.15);
+              border-color: rgba(139, 92, 246, 0.35);
+              color: #c4b5fd;
+            }
           }
         }
       }
       
-      .header-left {
-        .collapse-btn {
-          &:hover {
-            background: var(--bg-tertiary);
-            color: var(--primary-color);
-          }
-        }
+      .content-wrapper {
+        background: transparent;
       }
+    }
+  }
+  
+  // 右键菜单 - 玻璃态
+  .context-menu {
+    background: rgba(20, 20, 20, 0.90);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: var(--glass-shadow);
+    
+    .context-menu-item {
+      color: var(--text-primary);
+      
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--primary-light);
+      }
+    }
+    
+    .context-menu-divider {
+      background: rgba(255, 255, 255, 0.08);
     }
   }
 }
