@@ -1,4 +1,4 @@
-## Context
+## 背景
 
 当前 Muxin Gateway 的 gateway-admin 模块使用 MyBatis-Flex 作为 ORM 框架，但在实际代码实现中，部分查询操作未严格遵循 AGENTS.md 中定义的最新规范。主要表现在：
 
@@ -25,7 +25,7 @@
 - ConfigServiceImpl（配置管理）
 - OperationLogServiceImpl（操作日志）
 
-## Goals / Non-Goals
+## 目标 / 非目标
 
 **Goals:**
 
@@ -47,7 +47,7 @@
 - 不进行性能优化的额外改动（如索引优化、缓存等）
 - 不修改 gateway-core 或 gateway-main 模块（它们不使用 MyBatis-Flex）
 
-## Decisions
+## 决策
 
 ### 决策 1：统一使用 TableDef 字段定义替代字符串拼接
 

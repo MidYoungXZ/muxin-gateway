@@ -1,8 +1,8 @@
-## Why
+## 背景
 
 当前后端代码中的 MyBatis-Flex 使用方式不完全符合 AGENTS.md 中定义的最新规范。主要问题包括：字符串拼接 SQL、动态条件使用传统的 if 判断而非 QueryWrapper 内置机制、未充分利用 Lambda 写法等。这些问题会导致代码可维护性降低、SQL 注入风险增加、性能优化受限。需要重构以确保所有数据库查询操作严格遵循规范，提高代码质量和一致性。
 
-## What Changes
+## 变更内容
 
 - 重构所有 Service 实现类中的 QueryWrapper 构建方式
 - 移除字符串拼接 SQL，改为使用 TableDef 字段定义

@@ -1,10 +1,10 @@
-## Context
+## 背景
 
 MyBatis-Flex 提供了强大的 QueryWrapper 链式查询能力，相比注解方式更灵活、类型安全、易于维护。当前项目 7 个 Mapper 文件中的 15 个方法使用了 @Select/@Delete 注解，需要统一重构为 QueryWrapper 方式。
 
 同时，Service 层和 Provider 层大量使用 `Map<String, Object>` 传递查询结果，存在 20+ 处字符串 key 硬编码（魔法值），降低了代码可维护性并埋下了潜在的运行时错误风险。
 
-## Goals / Non-Goals
+## 目标 / 非目标
 
 **Goals:**
 - 消除所有 Mapper 层的 @Select/@Delete/@Update/@Insert 注解，改用 QueryWrapper 或 BaseMapper 内置方法
@@ -18,7 +18,7 @@ MyBatis-Flex 提供了强大的 QueryWrapper 链式查询能力，相比注解�
 - 不改变数据库 schema
 - 不优化性能（仅重构代码结构）
 
-## Decisions
+## 决策
 
 ### D1: Mapper 注解重构策略 — 纯 QueryWrapper
 

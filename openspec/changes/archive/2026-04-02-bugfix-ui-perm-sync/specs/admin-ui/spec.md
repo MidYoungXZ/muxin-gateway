@@ -1,67 +1,67 @@
-## MODIFIED Requirements
+## 修改需求
 
-### Requirement: Dark mode with CSS variable system
-The frontend SHALL support dark mode via `.dark` CSS class toggle. All components SHALL use custom CSS variables (e.g., `--bg-primary`, `--card-bg`, `--text-primary`, `--border-primary`, `--text-tertiary`), NOT Element Plus theme variables (`--el-text-color-primary`, `--el-fill-color-light`, etc.).
+### 需求：暗黑模式 CSS 变量系统
+前端应通过 `.dark` CSS 类切换支持暗黑模式。所有组件应使用自定义 CSS 变量（如 `--bg-primary`、`--card-bg`、`--text-primary`、`--border-primary`、`--text-tertiary`），而非 Element Plus 主题变量（`--el-text-color-primary`、`--el-fill-color-light` 等）。
 
-#### Scenario: Toggle dark mode
-- **WHEN** the user toggles dark mode
-- **THEN** the `.dark` class SHALL be added/removed from the root element, and all CSS variables SHALL switch to dark values
+#### 场景：切换暗黑模式
+- **WHEN** 用户切换暗黑模式
+- **THEN** 根元素应添加/移除 `.dark` 类，所有 CSS 变量应切换为暗色值
 
-#### Scenario: Component uses correct CSS variables
-- **WHEN** a component sets background color
-- **THEN** it SHALL use `var(--card-bg)` instead of hardcoded `#fff` or `var(--el-bg-color)`
+#### 场景：组件使用正确的 CSS 变量
+- **WHEN** 组件设置背景色
+- **THEN** 应使用 `var(--card-bg)` 而非硬编码的 `#fff` 或 `var(--el-bg-color)`
 
-#### Scenario: Section title readable in dark mode
-- **WHEN** a route wizard step component renders a section title
-- **THEN** the title SHALL use `var(--text-primary)` and borders SHALL use `var(--border-primary)`, ensuring readability in both light and dark modes
+#### 场景：暗黑模式下章节标题可读
+- **WHEN** 路由向导步骤组件渲染章节标题
+- **THEN** 标题应使用 `var(--text-primary)`，边框应使用 `var(--border-primary)`，确保亮色和暗黑模式下都可读
 
-#### Scenario: Checkbox button styled in dark mode
-- **WHEN** dark mode is active and the route matching step renders `el-checkbox-button` components (HTTP methods)
-- **THEN** the buttons SHALL have background `var(--input-bg)`, text `var(--text-primary)`, border `var(--border-primary)`, and checked state SHALL use `var(--primary-color)` background
+#### 场景：暗黑模式下复选框按钮样式
+- **WHEN** 暗黑模式激活且路由匹配步骤渲染 `el-checkbox-button` 组件（HTTP 方法）
+- **THEN** 按钮应具有 `var(--input-bg)` 背景、`var(--text-primary)` 文字、`var(--border-primary)` 边框，选中状态应使用 `var(--primary-color)` 背景
 
-#### Scenario: Preview box dark mode background
-- **WHEN** dark mode is active and the route matching step renders the match preview section
-- **THEN** the preview box background SHALL use `var(--bg-tertiary)` instead of `var(--el-fill-color-light)`
+#### 场景：暗黑模式下预览框背景
+- **WHEN** 暗黑模式激活且路由匹配步骤渲染匹配预览区域
+- **THEN** 预览框背景应使用 `var(--bg-tertiary)` 而非 `var(--el-fill-color-light)`
 
-### Requirement: Login state persistence
-The frontend SHALL persist authentication state (token, tokenType) in localStorage via Pinia user store. On page refresh, the store SHALL restore state from localStorage AND proactively validate the token with the backend before considering the user authenticated.
+### 需求：登录状态持久化
+前端应通过 Pinia 用户 store 将认证状态（token、tokenType）持久化到 localStorage。页面刷新时，store 应从 localStorage 恢复状态，并主动向后端验证 token 后才认为用户已认证。
 
-#### Scenario: Restore session after refresh
-- **WHEN** the page is refreshed and localStorage contains a token
-- **THEN** the user store SHALL restore the token, call `GET /api/auth/user-info` to verify the token is still valid with the backend, and set `isLoggedIn: true` only if the backend confirms validity
+#### 场景：刷新后恢复会话
+- **WHEN** 页面刷新且 localStorage 中包含 token
+- **THEN** 用户 store 应恢复 token，调用 `GET /api/auth/user-info` 验证 token 仍然有效，仅在后端确认有效时设置 `isLoggedIn: true`
 
-#### Scenario: Redirect to login when backend rejects token
-- **WHEN** the page is refreshed with a stored token but `GET /api/auth/user-info` returns 401 or fails
-- **THEN** the user store SHALL clear localStorage and redirect to `/login`
+#### 场景：后端拒绝 token 时重定向到登录
+- **WHEN** 页面刷新时存在存储的 token，但 `GET /api/auth/user-info` 返回 401 或失败
+- **THEN** 用户 store 应清除 localStorage 并重定向到 `/login`
 
-#### Scenario: Redirect to login when token expired
-- **WHEN** an API call returns 401
-- **THEN** the request interceptor SHALL clear the user store and redirect to `/login`
+#### 场景：token 过期时重定向到登录
+- **WHEN** API 调用返回 401
+- **THEN** 请求拦截器应清除用户 store 并重定向到 `/login`
 
-### Requirement: Route creation wizard
-The frontend SHALL provide a 4-step wizard dialog for creating/editing routes: Step 1 (Basic Info) → Step 2 (Route Matching) → Step 3 (Target Service) → Step 4 (Plugin Config). When editing, the wizard SHALL load existing route data including predicates and populate all form fields correctly.
+### 需求：路由创建向导
+前端应提供 4 步向导对话框用于创建/编辑路由：步骤 1（基本信息）→ 步骤 2（路由匹配）→ 步骤 3（目标服务）→ 步骤 4（插件配置）。编辑时，向导应加载现有路由数据（包括断言）并正确填充所有表单字段。
 
-#### Scenario: Step navigation
-- **WHEN** the user clicks step 3 in the navigation
-- **THEN** steps 1 and 2 SHALL show a completion indicator (if previously completed) and the content SHALL switch to the service selection form
+#### 场景：步骤导航
+- **WHEN** 用户点击导航中的步骤 3
+- **THEN** 步骤 1 和 2 应显示完成指示器（如果之前已完成），内容应切换到服务选择表单
 
-#### Scenario: Save route from wizard
-- **WHEN** the user completes all 4 steps and clicks "Save"
-- **THEN** the frontend SHALL submit a `RouteCreateDTO` with `matching` (from step 2) and `plugins` (from step 4) to `POST /api/routes`
+#### 场景：从向导保存路由
+- **WHEN** 用户完成所有 4 步并点击"保存"
+- **THEN** 前端应提交包含 `matching`（来自步骤 2）和 `plugins`（来自步骤 4）的 `RouteCreateDTO` 到 `POST /api/routes`
 
-#### Scenario: Load predicates when editing route
-- **WHEN** the user clicks "Edit" on a route and the API returns predicates
-- **THEN** the form SHALL populate path pattern, methods, hosts (from `config.hosts`), headers (from `config.headers`), and queries (from `config.queries`) from the predicate data
+#### 场景：编辑路由时加载断言
+- **WHEN** 用户在路由上点击"编辑"且 API 返回断言
+- **THEN** 表单应从断言数据中填充路径模式、方法、主机（来自 `config.hosts`）、请求头（来自 `config.headers`）和查询参数（来自 `config.queries`）
 
-## ADDED Requirements
+## 新增需求
 
-### Requirement: Responsive route list layout
-The route list table SHALL use `min-width` for informational columns (route ID, name, URI, load balance, priority, predicates count, plugins count, status) so that the action column is always fully visible. Columns SHALL compress when viewport width is insufficient.
+### 需求：响应式路由列表布局
+路由列表表格应对信息列（路由 ID、名称、URI、负载均衡、优先级、断言数量、插件数量、状态）使用 `min-width`，使操作列始终完全可见。当视口宽度不足时，列应压缩。
 
-#### Scenario: Action buttons fully visible
-- **WHEN** the browser viewport is at standard width (1280px+)
-- **THEN** all action buttons (查看, 编辑, 删除) SHALL be fully visible without horizontal scrolling
+#### 场景：操作按钮完全可见
+- **WHEN** 浏览器视口为标准宽度（1280px+）
+- **THEN** 所有操作按钮（查看、编辑、删除）应完全可见，无需水平滚动
 
-#### Scenario: Columns compress on narrow viewport
-- **WHEN** the browser viewport narrows below the total column width
-- **THEN** informational columns with `min-width` SHALL compress while the action column remains accessible
+#### 场景：窄视口下列表压缩
+- **WHEN** 浏览器视口窄于总列宽
+- **THEN** 具有 `min-width` 的信息列应压缩，操作列保持可访问

@@ -1,21 +1,21 @@
 package com.muxin.gateway.core.route.predicate;
 
+import cn.hutool.core.text.AntPathMatcher;
 import com.muxin.gateway.core.route.exchange.HttpServerExchange;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class PathPredicate implements Predicate {
 
     public static final String TYPE = "PATH";
 
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
     private final String pattern;
     private final Map<String, Object> config;
-    private final Pattern regexPattern;
-    private final boolean endsWithDoubleStar;
     private final int stripPrefixCount;
 
     public PathPredicate(String pattern) {
@@ -31,8 +31,6 @@ public class PathPredicate implements Predicate {
         this.config = new HashMap<>();
         this.config.put("pattern", pattern);
         this.config.put("strip-prefix", stripPrefixCount);
-        this.regexPattern = convertAntPatternToRegex(pattern);
-        this.endsWithDoubleStar = pattern.endsWith("/**");
     }
 
     public PathPredicate(PredicateDefinition definition) {
@@ -60,26 +58,8 @@ public class PathPredicate implements Predicate {
         this.config = definition.getArgs();
         this.stripPrefixCount = definition.getIntArg("strip-prefix", 0);
         if (this.pattern == null || this.pattern.trim().isEmpty()) {
-            throw new IllegalArgumentException("路径模式(pattern)不能为空");
+            throw new IllegalArgumentException("路径模式不能为空");
         }
-        this.regexPattern = convertAntPatternToRegex(this.pattern);
-        this.endsWithDoubleStar = this.pattern.endsWith("/**");
-    }
-
-    private Pattern convertAntPatternToRegex(String antPattern) {
-        String regex = antPattern
-                .replace(".", "\\.")
-                .replace("**/", "[\\\\w\\\\W]*?/")
-                .replace("**", "[\\\\w\\\\W]*?")
-                .replace("*", "[^/]*")
-                .replace("?", "[^/]");
-        if (!regex.startsWith("^")) {
-            regex = "^" + regex;
-        }
-        if (!regex.endsWith("$") && !regex.endsWith("[\\\\w\\\\W]*?")) {
-            regex = regex + "$";
-        }
-        return Pattern.compile(regex);
     }
 
     @Override
@@ -95,13 +75,8 @@ public class PathPredicate implements Predicate {
             return false;
         }
 
-        boolean matched = regexPattern.matcher(path).matches();
+        boolean matched = PATH_MATCHER.match(pattern, path);
         
-        if (!matched && endsWithDoubleStar) {
-            String prefixPattern = pattern.substring(0, pattern.length() - 3);
-            matched = path.equals(prefixPattern) || path.startsWith(prefixPattern + "/");
-        }
-
         log.debug("[PathPredicate] 路径匹配: {} matches {} = {}", path, pattern, matched);
         return matched;
     }

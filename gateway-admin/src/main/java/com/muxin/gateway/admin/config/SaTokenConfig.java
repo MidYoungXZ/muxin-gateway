@@ -1,7 +1,7 @@
 package com.muxin.gateway.admin.config;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
-import cn.dev33.satoken.jwt.StpLogicJwtForStateless;
+import cn.dev33.satoken.jwt.StpLogicJwtForSimple;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
@@ -15,7 +15,7 @@ public class SaTokenConfig implements WebMvcConfigurer {
 
     @Bean
     public StpLogic getStpLogicJwt() {
-        return new StpLogicJwtForStateless();
+        return new StpLogicJwtForSimple();
     }
 
     @Override

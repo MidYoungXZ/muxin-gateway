@@ -1,70 +1,70 @@
-## ADDED Requirements
+## 新增需求
 
-### Requirement: Route CRUD operations
-The system SHALL provide REST API for creating, reading, updating, and deleting route configurations. All mutations SHALL be transactional.
+### 需求：路由 CRUD 操作
+系统应提供用于创建、读取、更新和删除路由配置的 REST API。所有变更操作应是事务性的。
 
-#### Scenario: Create route with unique ID
-- **WHEN** `POST /api/routes` is called with `RouteCreateDTO` containing a unique `routeId`
-- **THEN** the system SHALL create a `gw_route` record and return HTTP 200 with the new route ID
+#### 场景：创建具有唯一 ID 的路由
+- **WHEN** 使用包含唯一 `routeId` 的 `RouteCreateDTO` 调用 `POST /api/routes`
+- **THEN** 系统应创建 `gw_route` 记录并返回 HTTP 200 和新的路由 ID
 
-#### Scenario: Reject duplicate route ID
-- **WHEN** `POST /api/routes` is called with a `routeId` that already exists
-- **THEN** the system SHALL return a 400 error with message "路由ID已存在"
+#### 场景：拒绝重复的路由 ID
+- **WHEN** 使用已存在的 `routeId` 调用 `POST /api/routes`
+- **THEN** 系统应返回 400 错误，消息为"路由ID已存在"
 
-#### Scenario: Soft delete route
-- **WHEN** `DELETE /api/routes/{id}` is called
-- **THEN** the system SHALL remove the route and its plugin associations, then trigger config refresh
+#### 场景：软删除路由
+- **WHEN** 调用 `DELETE /api/routes/{id}`
+- **THEN** 系统应移除路由及其插件关联，然后触发配置刷新
 
-### Requirement: Predicate persistence from matching config
-The system SHALL convert the `matching` field from `RouteCreateDTO` into `gw_predicate` + `gw_route_predicate` records. Each matching type (path, methods, hosts, headers, queries) SHALL create a separate predicate record.
+### 需求：从匹配配置持久化断言
+系统应将 `RouteCreateDTO` 中的 `matching` 字段转换为 `gw_predicate` + `gw_route_predicate` 记录。每种匹配类型（path、methods、hosts、headers、queries）应创建单独的断言记录。
 
-#### Scenario: Path matching creates PATH predicate
-- **WHEN** a route is created with `matching.path.pattern: "/api/**"` and `matching.path.matchType: "ANT"`
-- **THEN** the system SHALL insert a `gw_predicate` with `predicate_type: "PATH"` and `args: {"pattern":"/api/**","matchType":"ANT"}`, and link it via `gw_route_predicate`
+#### 场景：路径匹配创建 PATH 断言
+- **WHEN** 创建路由时传入 `matching.path.pattern: "/api/**"` 和 `matching.path.matchType: "ANT"`
+- **THEN** 系统应插入 `gw_predicate`，`predicate_type: "PATH"`，`args: {"pattern":"/api/**","matchType":"ANT"}`，并通过 `gw_route_predicate` 关联
 
-#### Scenario: Method matching creates METHOD predicate
-- **WHEN** a route is created with `matching.methods: ["GET", "POST"]`
-- **THEN** the system SHALL insert a `gw_predicate` with `predicate_type: "METHOD"` and `args: {"methods":["GET","POST"]}`
+#### 场景：方法匹配创建 METHOD 断言
+- **WHEN** 创建路由时传入 `matching.methods: ["GET", "POST"]`
+- **THEN** 系统应插入 `gw_predicate`，`predicate_type: "METHOD"`，`args: {"methods":["GET","POST"]}`
 
-#### Scenario: Optional matching fields
-- **WHEN** `matching.hosts`, `matching.headers`, or `matching.queries` are not provided
-- **THEN** the system SHALL skip creating predicates for those types
+#### 场景：可选匹配字段
+- **WHEN** 未提供 `matching.hosts`、`matching.headers` 或 `matching.queries`
+- **THEN** 系统应跳过为这些类型创建断言
 
-### Requirement: Plugin association with route
-The system SHALL associate plugins with routes via `gw_route_plugin` records, storing per-route config overrides.
+### 需求：插件与路由关联
+系统应通过 `gw_route_plugin` 记录将插件与路由关联，存储每路由的配置覆盖。
 
-#### Scenario: Associate plugin with config override
-- **WHEN** a route is created with `plugins: [{pluginId: 1, config: {rate: 100}, enabled: true}]`
-- **THEN** the system SHALL insert a `gw_route_plugin` record with `config: {"rate":100}` linking the route to plugin ID 1
+#### 场景：带配置覆盖关联插件
+- **WHEN** 创建路由时传入 `plugins: [{pluginId: 1, config: {rate: 100}, enabled: true}]`
+- **THEN** 系统应插入 `gw_route_plugin` 记录，`config: {"rate":100}`，关联路由和插件 ID 1
 
-#### Scenario: Skip non-existent plugin
-- **WHEN** a plugin ID in the request does not exist in `gw_plugin`
-- **THEN** the system SHALL log a warning and skip that plugin association without failing the request
+#### 场景：跳过不存在的插件
+- **WHEN** 请求中的插件 ID 在 `gw_plugin` 中不存在
+- **THEN** 系统应记录警告并跳过该插件关联，不导致请求失败
 
-### Requirement: Config refresh after mutation
-The system SHALL trigger gateway-core config refresh after any route mutation (create, update, delete, enable, disable).
+### 需求：变更后配置刷新
+系统应在任何路由变更（创建、更新、删除、启用、禁用）后触发 gateway-core 配置刷新。
 
-#### Scenario: Refresh triggered after create
-- **WHEN** `RouteServiceImpl.createRoute()` completes successfully
-- **THEN** `configRefreshService.refreshRoutes()` SHALL be called to propagate changes to gateway-core
+#### 场景：创建后触发刷新
+- **WHEN** `RouteServiceImpl.createRoute()` 成功完成
+- **THEN** 应调用 `configRefreshService.refreshRoutes()` 将变更传播到 gateway-core
 
-### Requirement: Route enable and disable
-The system SHALL support enabling and disabling individual routes without deletion.
+### 需求：路由启用和禁用
+系统应支持启用和禁用单个路由而无需删除。
 
-#### Scenario: Disable route
-- **WHEN** `POST /api/routes/{id}/disable` is called
-- **THEN** the route's `enabled` field SHALL be set to `false` and config refresh SHALL be triggered
+#### 场景：禁用路由
+- **WHEN** 调用 `POST /api/routes/{id}/disable`
+- **THEN** 路由的 `enabled` 字段应设置为 `false` 并触发配置刷新
 
-### Requirement: Route update cleans up old associations
-The system SHALL clean up old plugin associations before saving new ones during route update.
+### 需求：路由更新清理旧关联
+系统在路由更新期间保存新关联之前应清理旧的插件关联。
 
-#### Scenario: Update replaces plugins
-- **WHEN** `PUT /api/routes/{id}` is called with new plugin list
-- **THEN** the system SHALL first delete all existing `gw_route_plugin` records for the route, then insert new associations
+#### 场景：更新替换插件
+- **WHEN** 使用新插件列表调用 `PUT /api/routes/{id}`
+- **THEN** 系统应先删除该路由的所有现有 `gw_route_plugin` 记录，然后插入新关联
 
-### Requirement: Paginated route listing
-The system SHALL support paginated route listing with optional filters by route name, URI, and enabled status.
+### 需求：分页路由列表
+系统应支持分页路由列表，可选按路由名称、URI 和启用状态过滤。
 
-#### Scenario: Filter by route name
-- **WHEN** `GET /api/routes?routeName=user` is called
-- **THEN** the system SHALL return paginated results where `route_name` contains "user"
+#### 场景：按路由名称过滤
+- **WHEN** 调用 `GET /api/routes?routeName=user`
+- **THEN** 系统应返回 `route_name` 包含 "user" 的分页结果

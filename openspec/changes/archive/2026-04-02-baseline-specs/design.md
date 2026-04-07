@@ -1,4 +1,4 @@
-## Context
+## 背景
 
 Muxin Gateway 是一个已实现的系统，包含 Netty 网关引擎和 Spring Boot 管理后台。代码按"先实现后文档"模式开发，现需记录架构决策和设计选择作为后续变更的基础。
 
@@ -7,7 +7,7 @@ Muxin Gateway 是一个已实现的系统，包含 Netty 网关引擎和 Spring 
 - gateway-admin: 10 个 Controller、13 个 Service、16 张数据库表、完整 RBAC
 - gateway-admin-ui: Vue 3 SPA、23 个组件、动态路由、暗黑模式
 
-## Goals / Non-Goals
+## 目标 / 非目标
 
 **Goals:**
 - 记录当前实现的架构决策和设计选择
@@ -19,7 +19,7 @@ Muxin Gateway 是一个已实现的系统，包含 Netty 网关引擎和 Spring 
 - 不引入新功能
 - 不修改数据库 Schema
 
-## Decisions
+## 决策
 
 ### D1: 双模块架构 (gateway-core + gateway-admin)
 

@@ -1,17 +1,18 @@
 package com.muxin.gateway.core.route.filter;
 
+import cn.hutool.core.text.AntPathMatcher;
 import com.muxin.gateway.core.route.exchange.HttpServerExchange;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class RequestRewriteFilter implements Filter {
 
     public static final String TYPE = "RequestRewriteFilter";
+
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
     private final String pathRegex;
     private final String pathReplacement;
@@ -19,7 +20,6 @@ public class RequestRewriteFilter implements Filter {
     private final List<String> headersToRemove;
     private final int order;
     private final boolean enabled;
-    private final Pattern pattern;
 
     public RequestRewriteFilter(FilterDefinition definition) {
         Map<String, Object> args = definition.getArgs();
@@ -29,38 +29,6 @@ public class RequestRewriteFilter implements Filter {
         this.headersToRemove = args != null ? extractHeadersToRemove(args.get("headersToRemove")) : null;
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-        this.pattern = pathRegex != null && !pathRegex.isEmpty() ? Pattern.compile(convertAntPathToRegex(pathRegex)) : null;
-    }
-    
-    private String convertAntPathToRegex(String antPattern) {
-        StringBuilder regex = new StringBuilder();
-        int i = 0;
-        int len = antPattern.length();
-        
-        while (i < len) {
-            char c = antPattern.charAt(i);
-            
-            if (c == '*' && i + 1 < len && antPattern.charAt(i + 1) == '*') {
-                regex.append("(.*)");
-                i += 2;
-            } else if (c == '*') {
-                regex.append("([^/]*)");
-                i++;
-            } else if (c == '?') {
-                regex.append("([^/])");
-                i++;
-            } else if ("[]{}()^$|+.\\".indexOf(c) != -1) {
-                regex.append("\\").append(c);
-                i++;
-            } else {
-                regex.append(c);
-                i++;
-            }
-        }
-        
-        String result = "^" + regex.toString() + "$";
-        log.debug("[RequestRewriteFilter] Ant路径转正则: {} -> {}", antPattern, result);
-        return result;
     }
 
     private String getStringValue(Object value, String defaultValue) {
@@ -99,44 +67,44 @@ public class RequestRewriteFilter implements Filter {
             return;
         }
 
-        if (pattern != null && pathReplacement != null) {
+        if (pathRegex != null && pathReplacement != null) {
             String originalPath = exchange.fullPath();
-            if (originalPath != null) {
-                Matcher matcher = pattern.matcher(originalPath);
-                if (matcher.matches()) {
-                    String newPath = pathReplacement;
-                    
-                    // 先处理 Ant 风格的 /** 和 /*，将其替换为对应的捕获组
-                    if (newPath.contains("/**")) {
-                        newPath = newPath.replace("/**", "/$1");
-                    }
-                    if (newPath.contains("/*")) {
-                        newPath = newPath.replace("/*", "/$1");
-                    }
-                    
-                    // 然后处理显式的占位符
-                    for (int i = 1; i <= matcher.groupCount(); i++) {
-                        String groupValue = matcher.group(i);
-                        if (groupValue != null) {
-                            newPath = newPath.replace("${segment}", groupValue);
-                            newPath = newPath.replace("$" + i, groupValue);
-                        }
-                    }
-                    if (!newPath.startsWith("/")) {
-                        newPath = "/" + newPath;
-                    }
-                    String queryString = "";
-                    int queryIndex = originalPath.indexOf('?');
-                    if (queryIndex > 0) {
-                        queryString = originalPath.substring(queryIndex);
-                    }
-                    String finalUri = newPath + queryString;
-                    exchange.uri(finalUri);
-                    exchange.setAttribute("originalPath", originalPath);
-                    exchange.setAttribute("rewrittenPath", finalUri);
-                    if (log.isDebugEnabled()) {
-                        log.debug("[RequestRewriteFilter] 路径重写: {} -> {}", originalPath, finalUri);
-                    }
+            if (originalPath != null && PATH_MATCHER.match(pathRegex, originalPath)) {
+                String extractedPath = PATH_MATCHER.extractPathWithinPattern(pathRegex, originalPath);
+                Map<String, String> uriVariables = PATH_MATCHER.extractUriTemplateVariables(pathRegex, originalPath);
+                
+                String newPath = pathReplacement;
+                
+                if (newPath.contains("/**")) {
+                    newPath = newPath.replace("/**", extractedPath.isEmpty() ? "" : "/" + extractedPath);
+                }
+                if (newPath.contains("/*")) {
+                    newPath = newPath.replace("/*", extractedPath.isEmpty() ? "" : "/" + extractedPath);
+                }
+                
+                for (Map.Entry<String, String> entry : uriVariables.entrySet()) {
+                    newPath = newPath.replace("${" + entry.getKey() + "}", entry.getValue());
+                    newPath = newPath.replace("{" + entry.getKey() + "}", entry.getValue());
+                }
+                
+                if (!newPath.startsWith("/")) {
+                    newPath = "/" + newPath;
+                }
+                
+                String queryString = "";
+                int queryIndex = originalPath.indexOf('?');
+                if (queryIndex > 0) {
+                    queryString = originalPath.substring(queryIndex);
+                }
+                
+                String finalUri = newPath + queryString;
+                exchange.uri(finalUri);
+                exchange.setAttribute("originalPath", originalPath);
+                exchange.setAttribute("rewrittenPath", finalUri);
+                exchange.setAttribute("uriVariables", uriVariables);
+                
+                if (log.isDebugEnabled()) {
+                    log.debug("[RequestRewriteFilter] 路径重写: {} -> {}, 变量: {}", originalPath, finalUri, uriVariables);
                 }
             }
         }

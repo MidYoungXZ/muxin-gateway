@@ -65,6 +65,9 @@
         <!-- Maven Plugin Versions -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
+
+        <!-- Hutool -->
+        <hutool.version>5.8.26</hutool.version>
     </properties>
 
     <dependencyManagement>
@@ -204,6 +207,13 @@
                 <artifactId>junit</artifactId>
                 <version>4.13.2</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Hutool -->
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-core</artifactId>
+                <version>${hutool.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

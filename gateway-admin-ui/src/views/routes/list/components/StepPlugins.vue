@@ -17,6 +17,7 @@
             <div class="plugin-title">
               <span class="plugin-icon">⚡</span>
               <span class="plugin-name">{{ plugin.pluginName }}</span>
+              <el-tag v-if="isRecommendedPlugin(plugin.pluginName)" type="warning" size="small" class="recommend-tag">推荐</el-tag>
             </div>
             <div v-if="isPluginConfigured(plugin.id)" class="plugin-status-badge">
               <el-icon class="status-icon"><CircleCheckFilled /></el-icon>
@@ -128,6 +129,11 @@ const sortedPlugins = computed(() => {
 
 function isPluginConfigured(pluginId: number): boolean {
   return props.modelValue.plugins.some(p => p.pluginId === pluginId)
+}
+
+function isRecommendedPlugin(pluginName: string): boolean {
+  const recommendedPlugins = ['timeout', 'request-rewrite']
+  return recommendedPlugins.includes(pluginName)
 }
 
 function getPhaseLabel(phase: string | undefined): string {
@@ -297,6 +303,11 @@ defineExpose({ validate: () => Promise.resolve(true) })
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.recommend-tag {
+  margin-left: 8px;
+  font-size: 11px;
 }
 
 .plugin-status-badge {

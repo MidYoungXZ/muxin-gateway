@@ -34,10 +34,6 @@ public class RouteCreateDTO {
     
     private String loadBalanceStrategy;
     
-    private PathRewriteDTO pathRewrite;
-    
-    private TimeoutDTO timeouts;
-    
     private Map<String, Object> metadata;
     
     @Min(0)
@@ -46,16 +42,4 @@ public class RouteCreateDTO {
     private Boolean enabled = true;
     
     private Long templateId;
-    
-    @Data
-    public static class PathRewriteDTO {
-        private String from;
-        private String to;
-    }
-    
-    @Data
-    public static class TimeoutDTO {
-        private Integer connect;
-        private Integer response;
-    }
 }

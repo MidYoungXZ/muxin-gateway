@@ -1,35 +1,35 @@
-## MODIFIED Requirements
+## 修改需求
 
-### Requirement: Service node Mapper implementation
-ServiceNodeMapper SHALL use QueryWrapper or BaseMapper methods instead of @Select annotations.
+### 需求：Service node Mapper 实现
+ServiceNodeMapper 应使用 QueryWrapper 或 BaseMapper 方法，而非 @Select 注解。
 
-#### Scenario: Service stats query
-- **WHEN** querying service statistics
-- **THEN** the implementation SHALL use QueryWrapper with groupBy in Service layer, returning ServiceStatsVO
+#### 场景：服务统计查询
+- **WHEN** 查询服务统计数据
+- **THEN** 实现应在 Service 层使用带 groupBy 的 QueryWrapper，返回 ServiceStatsVO
 
-#### Scenario: Service names query
-- **WHEN** querying distinct service names
-- **THEN** the implementation SHALL use QueryWrapper.select(SERVICE_NAME).distinct() in Service layer
+#### 场景：服务名称查询
+- **WHEN** 查询去重的服务名称
+- **THEN** 实现应在 Service 层使用 QueryWrapper.select(SERVICE_NAME).distinct()
 
-## ADDED Requirements
+## 新增需求
 
-### Requirement: ServiceStatsVO class
-A dedicated VO class SHALL be created for service statistics results.
+### 需求：ServiceStatsVO 类
+应为服务统计结果创建专用的 VO 类。
 
-#### Scenario: ServiceStatsVO fields
-- **WHEN** creating ServiceStatsVO
-- **THEN** it SHALL contain fields: serviceName, totalNodes, healthyNodes, unhealthyNodes, enabledNodes, disabledNodes, maintenanceNodes
+#### 场景：ServiceStatsVO 字段
+- **WHEN** 创建 ServiceStatsVO
+- **THEN** 应包含字段：serviceName、totalNodes、healthyNodes、unhealthyNodes、enabledNodes、disabledNodes、maintenanceNodes
 
-### Requirement: No magic values in service statistics
-ServiceNodeServiceImpl SHALL use ServiceStatsVO instead of Map<String, Object> for statistics results.
+### 需求：服务统计中不使用魔法值
+ServiceNodeServiceImpl 应使用 ServiceStatsVO 而非 Map<String, Object> 作为统计结果。
 
-#### Scenario: getServiceStats returns VO
-- **WHEN** getServiceStats() is called
-- **THEN** it SHALL return List<ServiceStatsVO> instead of List<Map<String, Object>>
+#### 场景：getServiceStats 返回 VO
+- **WHEN** 调用 getServiceStats()
+- **THEN** 应返回 List<ServiceStatsVO> 而非 List<Map<String, Object>>
 
-### Requirement: Bug fix for route query by service
-The findRoutesByServiceName query result access SHALL use correct keys matching SQL aliases.
+### 需求：修复按服务查询路由的 Bug
+findRoutesByServiceName 查询结果访问应使用与 SQL 别名匹配的正确键。
 
-#### Scenario: Route simple VO
-- **WHEN** querying routes by service name
-- **THEN** results SHALL be mapped to RouteSimpleVO to avoid key mismatch issues
+#### 场景：路由简单 VO
+- **WHEN** 按服务名称查询路由
+- **THEN** 结果应映射为 RouteSimpleVO 以避免键不匹配问题

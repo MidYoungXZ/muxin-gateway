@@ -3,18 +3,44 @@ schema: spec-driven
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  【重要】所有生成的OpenSpec文档（包括spec.md、SKILL.md、proposal.md、design.md、tasks.md等）必须使用简体中文编写。
+  
+  技术栈：
+  - 后端：Spring Boot 3.3.5 + MyBatis-Flex 1.9.8 + Sa-Token 1.37.0
+  - 网关核心：Netty 4.1.114+（无Spring依赖）
+  - 前端：Vue 3 + Element Plus
+  - 数据库：SQLite（默认）
+  
+  文档语言规范：
+  - Purpose 翻译为"目的"
+  - Requirements 翻译为"需求"
+  - Requirement 翻译为"需求：XXX"
+  - Scenario 翻译为"场景"
+  - WHEN/THEN 保持原样（场景描述）
+  - 保留所有代码、路径、命令、技术术语（JWT、RBAC、API等）
+  
+  项目特点：
+  - 网关引擎与管理系统解耦
+  - Provider桥接层支持热刷新
+  - RBAC权限体系，支持数据范围过滤
+  - 动态路由，Schema驱动表单
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  spec:
+    - 所有spec.md必须使用简体中文编写
+    - Purpose部分简明扼要说明能力目的
+    - Requirements使用"需求：XXX"格式
+    - Scenario使用"场景"标题，保留WHEN/THEN
+  proposal:
+    - 所有proposal.md必须使用简体中文编写
+    - 包含"变更概述"、"动机"、"范围"等部分
+  design:
+    - 所有design.md必须使用简体中文编写
+    - 包含架构图、决策、实现方案
+  tasks:
+    - 所有tasks.md必须使用简体中文编写
+    - 使用Markdown checkbox格式（- [ ] / - [x]）
+    - 每个任务明确、可执行

@@ -56,15 +56,15 @@
               >
                 编辑
               </el-button>
-              <el-popconfirm
-                title="确定要删除该插件吗？"
-                @confirm="handleDelete(row)"
+              <el-button 
+                type="danger" 
+                size="small" 
+                link 
+                @click="handleDeleteClick(row)"
                 :disabled="row.isSystem"
               >
-                <template #reference>
-                  <el-button type="danger" size="small" link :disabled="row.isSystem">删除</el-button>
-                </template>
-              </el-popconfirm>
+                删除
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -121,35 +121,90 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="detailDialogVisible" title="插件详情" width="600px">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item label="插件名称">{{ currentPlugin?.pluginName }}</el-descriptions-item>
-        <el-descriptions-item label="插件类型">
-          <el-tag size="small">
-            {{ currentPlugin?.pluginType }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="描述" :span="2">{{ currentPlugin?.description }}</el-descriptions-item>
-        <el-descriptions-item label="默认优先级">{{ currentPlugin?.defaultPriority }}</el-descriptions-item>
-        <el-descriptions-item label="执行阶段">{{ currentPlugin?.phase }}</el-descriptions-item>
-        <el-descriptions-item label="系统内置">
-          <el-tag :type="currentPlugin?.isSystem ? 'info' : 'success'" size="small">
-            {{ currentPlugin?.isSystem ? '是' : '否' }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="currentPlugin?.enabled ? 'success' : 'danger'" size="small">
-            {{ currentPlugin?.enabled ? '启用' : '禁用' }}
-          </el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
-      <div v-if="currentPlugin?.schema" style="margin-top: 16px">
-        <h4 style="margin: 0 0 8px; font-size: 14px">配置 Schema</h4>
-        <pre class="config-json">{{ JSON.stringify(currentPlugin.schema, null, 2) }}</pre>
-      </div>
-      <div v-if="currentPlugin?.defaultConfig" style="margin-top: 16px">
-        <h4 style="margin: 0 0 8px; font-size: 14px">默认配置</h4>
-        <pre class="config-json">{{ JSON.stringify(currentPlugin.defaultConfig, null, 2) }}</pre>
+    <el-dialog v-model="detailDialogVisible" title="插件详情" width="800px" class="plugin-detail-dialog">
+      <div class="plugin-detail-content">
+        <!-- 基本信息卡片 -->
+        <el-card shadow="never" class="detail-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon class="header-icon"><Document /></el-icon>
+              <span>基本信息</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="插件名称">
+              <span class="plugin-name">{{ currentPlugin?.pluginName }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <el-tag :type="currentPlugin?.enabled ? 'success' : 'danger'" size="small">
+                {{ currentPlugin?.enabled ? '启用' : '禁用' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="插件类型">
+              <el-tag size="small">{{ currentPlugin?.pluginType }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="执行阶段">
+              <el-tag :type="currentPlugin?.phase === 'FILTER_PRE' ? 'primary' : 'warning'" size="small">
+                {{ currentPlugin?.phase === 'FILTER_PRE' ? '前置处理' : '后置处理' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="描述" :span="2">
+              {{ currentPlugin?.description || '无' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="默认优先级">
+              <el-tag type="info" size="small">{{ currentPlugin?.defaultPriority }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="系统内置">
+              <el-tag :type="currentPlugin?.isSystem ? 'info' : 'success'" size="small">
+                {{ currentPlugin?.isSystem ? '是' : '否' }}
+              </el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 配置 Schema 卡片 -->
+        <el-card v-if="currentPlugin?.schema" shadow="never" class="detail-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon class="header-icon"><Setting /></el-icon>
+              <span>配置 Schema</span>
+              <el-button 
+                size="small" 
+                text 
+                @click="copyToClipboard(JSON.stringify(currentPlugin.schema, null, 2), 'Schema')"
+                style="margin-left: auto"
+              >
+                <el-icon><CopyDocument /></el-icon>
+                复制
+              </el-button>
+            </div>
+          </template>
+          <div class="code-block-wrapper">
+            <pre class="code-block"><code>{{ JSON.stringify(currentPlugin.schema, null, 2) }}</code></pre>
+          </div>
+        </el-card>
+
+        <!-- 默认配置卡片 -->
+        <el-card v-if="currentPlugin?.defaultConfig" shadow="never" class="detail-card">
+          <template #header>
+            <div class="card-header">
+              <el-icon class="header-icon"><Setting /></el-icon>
+              <span>默认配置</span>
+              <el-button 
+                size="small" 
+                text 
+                @click="copyToClipboard(JSON.stringify(currentPlugin.defaultConfig, null, 2), '默认配置')"
+                style="margin-left: auto"
+              >
+                <el-icon><CopyDocument /></el-icon>
+                复制
+              </el-button>
+            </div>
+          </template>
+          <div class="code-block-wrapper">
+            <pre class="code-block"><code>{{ JSON.stringify(currentPlugin.defaultConfig, null, 2) }}</code></pre>
+          </div>
+        </el-card>
       </div>
     </el-dialog>
   </div>
@@ -157,8 +212,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Document, Setting, CopyDocument } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { pluginsApi, type PluginInfo } from '@/api/plugins'
 
@@ -263,6 +318,21 @@ const handleEdit = (plugin: PluginInfo) => {
   formDialogVisible.value = true
 }
 
+const handleDeleteClick = async (plugin: PluginInfo) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除插件"${plugin.pluginName}"吗？`, '删除确认', {
+      type: 'warning'
+    })
+    await pluginsApi.delete(plugin.id)
+    ElMessage.success('删除成功')
+    loadPlugins()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
 const handleDelete = async (plugin: PluginInfo) => {
   try {
     await pluginsApi.delete(plugin.id)
@@ -311,6 +381,15 @@ const handleSubmit = async () => {
 onMounted(() => {
   loadPlugins()
 })
+
+const copyToClipboard = async (text: string, name: string) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success(`${name}已复制到剪贴板`)
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -358,5 +437,102 @@ onMounted(() => {
   max-height: 200px;
   overflow: auto;
   margin: 0;
+}
+
+.plugin-detail-dialog {
+  :deep(.el-dialog__body) {
+    padding: 0;
+  }
+}
+
+.plugin-detail-content {
+  .detail-card {
+    margin-bottom: 16px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    :deep(.el-card__header) {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-primary);
+    }
+    
+    :deep(.el-card__body) {
+      padding: 16px;
+    }
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    
+    .header-icon {
+      font-size: 18px;
+      color: var(--primary-color);
+    }
+  }
+  
+  .plugin-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  
+  .code-block-wrapper {
+    max-height: 400px;
+    overflow: auto;
+  }
+  
+  .code-block {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    overflow-x: auto;
+    white-space: pre;
+    
+    code {
+      font-family: inherit;
+      color: inherit;
+    }
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-secondary);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--border-hover);
+      }
+    }
+  }
+}
+
+// 暗色模式优化
+.dark {
+  .plugin-detail-content {
+    .code-block {
+      background: #1a1a1a;
+      border-color: #2a2a2a;
+      color: #c4b5fd;
+    }
+  }
 }
 </style>

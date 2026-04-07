@@ -463,7 +463,7 @@ const expandedNodes = ref<Record<string, { data: ServiceNode[], total: number }>
 const nodePagination = ref<Record<string, { page: number, size: number }>>({})
 
 const serviceCurrentPage = ref(1)
-const servicePageSize = ref(20)
+const servicePageSize = ref(10)
 const totalServices = ref(0)
 
 const formDialogVisible = ref(false)

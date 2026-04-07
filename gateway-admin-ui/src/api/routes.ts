@@ -84,11 +84,6 @@ export interface RouteFormState {
   queries: QueryMatch[]
   serviceName: string
   loadBalanceStrategy: LoadBalanceStrategy
-  pathRewriteEnabled: boolean
-  pathRewriteFrom: string
-  pathRewriteTo: string
-  connectTimeout: number
-  responseTimeout: number
   plugins: RoutePlugin[]
 }
 
@@ -287,11 +282,6 @@ export function getDefaultFormState(): RouteFormState {
     queries: [],
     serviceName: '',
     loadBalanceStrategy: 'ROUND_ROBIN',
-    pathRewriteEnabled: false,
-    pathRewriteFrom: '',
-    pathRewriteTo: '',
-    connectTimeout: 5000,
-    responseTimeout: 30000,
     plugins: []
   }
 }

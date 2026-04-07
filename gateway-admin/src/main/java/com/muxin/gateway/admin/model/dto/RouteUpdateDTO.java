@@ -30,10 +30,6 @@ public class RouteUpdateDTO {
     
     private String loadBalanceStrategy;
     
-    private RouteCreateDTO.PathRewriteDTO pathRewrite;
-    
-    private RouteCreateDTO.TimeoutDTO timeouts;
-    
     private Map<String, Object> metadata;
     
     @Min(0)

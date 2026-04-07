@@ -1,4 +1,4 @@
-## Why
+## 背景
 
 当前代码存在以下问题：
 1. **Mapper 层使用注解方式**：15 个方法使用 @Select/@Delete 注解，不符合 MyBatis-Flex 最佳实践，难以维护和扩展
@@ -7,7 +7,7 @@
 
 这些问题增加了代码维护成本和出错风险，需要系统性地重构。
 
-## What Changes
+## 变更内容
 
 - **Mapper 层重构**：将所有 @Select/@Delete 注解方法改为 MyBatis-Flex QueryWrapper 链式查询或 BaseMapper 内置方法
 - **新增 VO 类**：为多表关联查询结果创建专用 VO 类，替代 `Map<String, Object>` 返回类型

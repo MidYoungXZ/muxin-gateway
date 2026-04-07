@@ -129,14 +129,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             saveRoutePlugins(route.getId(), dto.getPlugins());
         }
         
-        if (dto.getPathRewrite() != null) {
-            savePathRewritePlugin(route.getId(), dto.getPathRewrite());
-        }
-        
-        if (dto.getTimeouts() != null) {
-            saveTimeoutPlugin(route.getId(), dto.getTimeouts());
-        }
-        
         configRefreshService.refreshRoutes();
         log.info("[RouteService] 路由创建成功，已同步到 gateway-core: {}", dto.getRouteId());
         
@@ -176,14 +168,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         routePredicateMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PREDICATE.ROUTE_ID.eq(id)));
         if (dto.getMatching() != null) {
             saveRouteMatching(id, dto.getMatching());
-        }
-        
-        if (dto.getPathRewrite() != null) {
-            savePathRewritePlugin(id, dto.getPathRewrite());
-        }
-        
-        if (dto.getTimeouts() != null) {
-            saveTimeoutPlugin(id, dto.getTimeouts());
         }
         
         configRefreshService.refreshRoutes();
@@ -515,98 +499,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
                 .filter(Objects::nonNull)
                 .sorted((a, b) -> b.getEffectivePriority() - a.getEffectivePriority())
                 .collect(Collectors.toList());
-    }
-    
-    private void savePathRewritePlugin(Long routeId, RouteCreateDTO.PathRewriteDTO pathRewrite) {
-        GwPlugin plugin = pluginMapper.selectOneByQuery(
-            QueryWrapper.create()
-                .where(GW_PLUGIN.PLUGIN_NAME.eq("request-rewrite"))
-                .and(GW_PLUGIN.DELETED.eq(false))
-                .limit(1)
-        );
-        if (plugin == null) {
-            log.warn("[RouteService] request-rewrite 插件不存在，跳过路径重写");
-            return;
-        }
-        
-        // 先查询是否已存在
-        GwRoutePlugin existingPlugin = routePluginMapper.selectOneByQuery(
-            QueryWrapper.create()
-                .where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
-                .and(GW_ROUTE_PLUGIN.PLUGIN_ID.eq(plugin.getId()))
-        );
-        
-        Map<String, Object> config = new HashMap<>();
-        config.put(PluginConfigKeys.PATH_REGEX, pathRewrite.getFrom());
-        config.put(PluginConfigKeys.PATH_REPLACEMENT, pathRewrite.getTo());
-        
-        if (existingPlugin != null) {
-            // 更新现有记录
-            existingPlugin.setConfig(config);
-            existingPlugin.setEnabled(true);
-            existingPlugin.setSortOrder(100);
-            routePluginMapper.update(existingPlugin);
-            log.info("[RouteService] 更新 request-rewrite 插件配置，routeId: {}", routeId);
-        } else {
-            // 插入新记录
-            GwRoutePlugin rp = new GwRoutePlugin();
-            rp.setRouteId(routeId);
-            rp.setPluginId(plugin.getId());
-            rp.setConfig(config);
-            rp.setEnabled(true);
-            rp.setSortOrder(100);
-            rp.setCreateTime(LocalDateTime.now());
-            routePluginMapper.insert(rp);
-            log.info("[RouteService] 新增 request-rewrite 插件配置，routeId: {}", routeId);
-        }
-    }
-    
-    private void saveTimeoutPlugin(Long routeId, RouteCreateDTO.TimeoutDTO timeouts) {
-        GwPlugin plugin = pluginMapper.selectOneByQuery(
-            QueryWrapper.create()
-                .where(GW_PLUGIN.PLUGIN_NAME.eq("timeout"))
-                .and(GW_PLUGIN.DELETED.eq(false))
-                .limit(1)
-        );
-        if (plugin == null) {
-            log.warn("[RouteService] timeout 插件不存在，跳过超时配置");
-            return;
-        }
-        
-        // 先查询是否已存在
-        GwRoutePlugin existingPlugin = routePluginMapper.selectOneByQuery(
-            QueryWrapper.create()
-                .where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
-                .and(GW_ROUTE_PLUGIN.PLUGIN_ID.eq(plugin.getId()))
-        );
-        
-        Map<String, Object> config = new HashMap<>();
-        if (timeouts.getConnect() != null) {
-            config.put(PluginConfigKeys.CONNECT_TIMEOUT, timeouts.getConnect());
-        }
-        if (timeouts.getResponse() != null) {
-            config.put(PluginConfigKeys.RESPONSE_TIMEOUT, timeouts.getResponse());
-        }
-        
-        if (existingPlugin != null) {
-            // 更新现有记录
-            existingPlugin.setConfig(config);
-            existingPlugin.setEnabled(true);
-            existingPlugin.setSortOrder(99);
-            routePluginMapper.update(existingPlugin);
-            log.info("[RouteService] 更新 timeout 插件配置，routeId: {}", routeId);
-        } else {
-            // 插入新记录
-            GwRoutePlugin rp = new GwRoutePlugin();
-            rp.setRouteId(routeId);
-            rp.setPluginId(plugin.getId());
-            rp.setConfig(config);
-            rp.setEnabled(true);
-            rp.setSortOrder(99);
-            rp.setCreateTime(LocalDateTime.now());
-            routePluginMapper.insert(rp);
-            log.info("[RouteService] 新增 timeout 插件配置，routeId: {}", routeId);
-        }
     }
     
     private List<RouteVO.PredicateInfo> loadPredicates(Long routeId) {

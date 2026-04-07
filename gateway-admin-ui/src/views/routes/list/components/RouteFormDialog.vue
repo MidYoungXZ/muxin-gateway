@@ -3,7 +3,7 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :title="mode === 'view' ? '查看路由' : (isEdit ? '编辑路由' : '新增路由')"
-    width="900px"
+    width="clamp(600px, 85vw, 900px)"
     :close-on-click-modal="false"
     class="route-form-dialog"
     @close="handleClose"
@@ -121,36 +121,14 @@ function loadRouteData(route: Route) {
     queries: [],
     serviceName: route.uri?.replace('lb://', '') || '',
     loadBalanceStrategy: (route.loadBalanceStrategy as any) || 'ROUND_ROBIN',
-    pathRewriteEnabled: false,
-    pathRewriteFrom: '',
-    pathRewriteTo: '',
-    connectTimeout: 5000,
-    responseTimeout: 30000,
-    plugins: []
-  }
-  
-  if (route.plugins && route.plugins.length > 0) {
-    for (const plugin of route.plugins) {
-      if (plugin.pluginName === 'timeout') {
-        formData.value.connectTimeout = plugin.config?.connectTimeout || 5000
-        formData.value.responseTimeout = plugin.config?.responseTimeout || 30000
-      } else if (plugin.pluginName === 'request-rewrite') {
-        if (plugin.config?.pathRegex) {
-          formData.value.pathRewriteEnabled = true
-          formData.value.pathRewriteFrom = plugin.config.pathRegex
-          formData.value.pathRewriteTo = plugin.config.pathReplacement || ''
-        }
-      } else {
-        formData.value.plugins.push({
-          pluginId: plugin.pluginId,
-          pluginName: plugin.pluginName,
-          pluginType: plugin.pluginType,
-          config: plugin.config,
-          priorityOverride: plugin.priorityOverride,
-          enabled: plugin.enabled
-        })
-      }
-    }
+    plugins: route.plugins?.map(p => ({
+      pluginId: p.pluginId,
+      pluginName: p.pluginName,
+      pluginType: p.pluginType,
+      config: p.config,
+      priorityOverride: p.priorityOverride,
+      enabled: p.enabled
+    })) || []
   }
   
   if (route.predicates && route.predicates.length > 0) {
@@ -246,20 +224,6 @@ function buildSubmitData(): RouteCreateRequest | RouteUpdateRequest {
     data.matching.queries = formData.value.queries
   }
 
-  if (formData.value.pathRewriteEnabled && formData.value.pathRewriteFrom) {
-    data.pathRewrite = {
-      from: formData.value.pathRewriteFrom,
-      to: formData.value.pathRewriteTo
-    }
-  }
-
-  if (formData.value.connectTimeout || formData.value.responseTimeout) {
-    data.timeouts = {
-      connect: formData.value.connectTimeout,
-      response: formData.value.responseTimeout
-    }
-  }
-
   if (!isEdit.value) {
     data.routeId = formData.value.routeId
   }
@@ -312,21 +276,45 @@ function handleClose() {
 
 <style lang="scss" scoped>
 .route-form-dialog {
+  :deep(.el-dialog) {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    margin-top: 7.5vh !important;
+  }
+
+  :deep(.el-dialog__header) {
+    flex-shrink: 0;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
   :deep(.el-dialog__body) {
+    flex: 1;
+    overflow: hidden;
     padding: 0;
+    min-height: 0;
+  }
+
+  :deep(.el-dialog__footer) {
+    flex-shrink: 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
   }
 }
 
 .dialog-content {
   display: flex;
-  min-height: 420px;
-  max-height: 70vh;
+  height: 100%;
+  min-height: 400px;
 }
 
 .form-content {
   flex: 1;
   padding: 16px 0;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .dialog-footer {

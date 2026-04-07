@@ -1,4 +1,4 @@
-## Context
+## 背景
 
 Muxin Gateway 的路由管理核心流程存在5类问题：登录状态异常持久化、暗色模式多处样式缺陷、权限字符串不匹配导致403、列表布局操作按钮不完整、以及前端↔数据库↔gateway-core多层数据不同步。这些问题相互独立但都需要在本次变更中统一解决。
 
@@ -8,7 +8,7 @@ Muxin Gateway 的路由管理核心流程存在5类问题：登录状态异常�
 - 权限：Controller用`@SaCheckPermission("route:view")`，数据库存`route:detail`
 - 数据同步：前端表单→DTO→DB→Provider→gateway-core 存在多处断裂
 
-## Goals / Non-Goals
+## 目标 / 非目标
 
 **Goals:**
 - 修复登录后重启后端仍保持登录状态的问题
@@ -23,7 +23,7 @@ Muxin Gateway 的路由管理核心流程存在5类问题：登录状态异常�
 - 不实现JWT secret动态轮换
 - 不添加metadata的前端编辑UI
 
-## Decisions
+## 决策
 
 ### D1: 登录验证 — 前端主动校验方案
 

@@ -1,85 +1,85 @@
-## MODIFIED Requirements
+## 修改需求
 
-### Requirement: Route CRUD operations
-The system SHALL provide REST API for creating, reading, updating, and deleting route configurations. All mutations SHALL be transactional. The `GET /api/routes/{id}` endpoint SHALL return the complete route detail including associated predicates and plugins. Permission checks SHALL use consistent permission strings matching the database seed data.
+### 需求：路由 CRUD 操作
+系统应提供用于创建、读取、更新和删除路由配置的 REST API。所有变更操作应是事务性的。`GET /api/routes/{id}` 端点应返回包含关联断言和插件的完整路由详情。权限检查应使用与数据库种子数据一致的一致权限字符串。
 
-#### Scenario: Create route with unique ID
-- **WHEN** `POST /api/routes` is called with `RouteCreateDTO` containing a unique `routeId`
-- **THEN** the system SHALL create a `gw_route` record and return HTTP 200 with the new route ID
+#### 场景：创建具有唯一 ID 的路由
+- **WHEN** 使用包含唯一 `routeId` 的 `RouteCreateDTO` 调用 `POST /api/routes`
+- **THEN** 系统应创建 `gw_route` 记录并返回 HTTP 200 和新的路由 ID
 
-#### Scenario: Reject duplicate route ID
-- **WHEN** `POST /api/routes` is called with a `routeId` that already exists
-- **THEN** the system SHALL return a 400 error with message "路由ID已存在"
+#### 场景：拒绝重复的路由 ID
+- **WHEN** 使用已存在的 `routeId` 调用 `POST /api/routes`
+- **THEN** 系统应返回 400 错误，消息为"路由ID已存在"
 
-#### Scenario: Soft delete route
-- **WHEN** `DELETE /api/routes/{id}` is called
-- **THEN** the system SHALL remove the route and its plugin associations, then trigger config refresh
+#### 场景：软删除路由
+- **WHEN** 调用 `DELETE /api/routes/{id}`
+- **THEN** 系统应移除路由及其插件关联，然后触发配置刷新
 
-#### Scenario: Get route detail with predicates
-- **WHEN** `GET /api/routes/{id}` is called and the user has `route:view` permission
-- **THEN** the system SHALL return `RouteVO` including `predicates` list (each with `predicateType` and `args`), `plugins` list, and all route fields
+#### 场景：获取包含断言的路由详情
+- **WHEN** 调用 `GET /api/routes/{id}` 且用户具有 `route:view` 权限
+- **THEN** 系统应返回 `RouteVO`，包含 `predicates` 列表（每项含 `predicateType` 和 `args`）、`plugins` 列表和所有路由字段
 
-#### Scenario: Permission string matches database
-- **WHEN** a controller method requires permission via `@SaCheckPermission`
-- **THEN** the permission string SHALL exactly match the corresponding `sys_menu.perms` value in the database seed data
+#### 场景：权限字符串与数据库匹配
+- **WHEN** 控制器方法通过 `@SaCheckPermission` 需要权限
+- **THEN** 权限字符串应与数据库种子数据中的 `sys_menu.perms` 值完全匹配
 
-### Requirement: Route update cleans up old associations
-The system SHALL clean up old plugin associations AND predicate associations before saving new ones during route update. If `matching` is provided, new predicates SHALL be created.
+### 需求：路由更新清理旧关联
+系统在路由更新期间保存新关联之前，应清理旧的插件关联和断言关联。如果提供了 `matching`，则应创建新断言。
 
-#### Scenario: Update replaces plugins
-- **WHEN** `PUT /api/routes/{id}` is called with new plugin list
-- **THEN** the system SHALL first delete all existing `gw_route_plugin` records for the route, then insert new associations
+#### 场景：更新替换插件
+- **WHEN** 使用新插件列表调用 `PUT /api/routes/{id}`
+- **THEN** 系统应先删除该路由的所有现有 `gw_route_plugin` 记录，然后插入新关联
 
-#### Scenario: Update replaces predicates
-- **WHEN** `PUT /api/routes/{id}` is called with `matching` data
-- **THEN** the system SHALL first delete all existing `gw_route_predicate` + associated `gw_predicate` records for the route, then insert new predicate records via `saveRouteMatching()`
+#### 场景：更新替换断言
+- **WHEN** 使用 `matching` 数据调用 `PUT /api/routes/{id}`
+- **THEN** 系统应先删除该路由的所有现有 `gw_route_predicate` 和关联的 `gw_predicate` 记录，然后通过 `saveRouteMatching()` 插入新断言记录
 
-## ADDED Requirements
+## 新增需求
 
-### Requirement: Route detail includes predicates
-The `RouteVO` returned by `GET /api/routes/{id}` SHALL include a `predicates` field containing all associated predicates with their types and args, enabling the frontend to populate the edit form with existing matching rules.
+### 需求：路由详情包含断言
+`GET /api/routes/{id}` 返回的 `RouteVO` 应包含 `predicates` 字段，包含所有关联断言的类型和参数，使前端能够用现有匹配规则填充编辑表单。
 
-#### Scenario: Predicates loaded for route detail
-- **WHEN** `RouteServiceImpl.getRouteDetail()` is called for a route that has 3 predicates (PATH, METHOD, HOST)
-- **THEN** the returned `RouteVO.predicates` SHALL contain 3 entries with `predicateType` and `args` fields
+#### 场景：路由详情加载断言
+- **WHEN** 为具有 3 个断言（PATH、METHOD、HOST）的路由调用 `RouteServiceImpl.getRouteDetail()`
+- **THEN** 返回的 `RouteVO.predicates` 应包含 3 条记录，每条含 `predicateType` 和 `args` 字段
 
-#### Scenario: No predicates for route
-- **WHEN** `RouteServiceImpl.getRouteDetail()` is called for a route with no predicates
-- **THEN** the returned `RouteVO.predicates` SHALL be an empty list (not null)
+#### 场景：路由无断言
+- **WHEN** 为没有断言的路由调用 `RouteServiceImpl.getRouteDetail()`
+- **THEN** 返回的 `RouteVO.predicates` 应为空列表（非 null）
 
-### Requirement: Load balance strategy synced to gateway-core
-The `DatabaseRouteConfigProvider` SHALL read `load_balance_strategy` from `gw_route` and set it on the `RouteDefinition.loadBalance` field so that the configured strategy takes effect at runtime.
+### 需求：负载均衡策略同步到 gateway-core
+`DatabaseRouteConfigProvider` 应从 `gw_route` 读取 `load_balance_strategy` 并设置到 `RouteDefinition.loadBalance` 字段，使配置的策略在运行时生效。
 
-#### Scenario: Custom load balance strategy applied
-- **WHEN** a route has `load_balance_strategy: "WEIGHTED"` in the database
-- **THEN** `DatabaseRouteConfigProvider.convertToRouteDefinition()` SHALL create a `LoadBalanceDefinition` with `strategy: "WEIGHTED"` and set it on the `RouteDefinition`
+#### 场景：应用自定义负载均衡策略
+- **WHEN** 路由在数据库中有 `load_balance_strategy: "WEIGHTED"`
+- **THEN** `DatabaseRouteConfigProvider.convertToRouteDefinition()` 应创建 `LoadBalanceDefinition`，策略为 `"WEIGHTED"`，并设置到 `RouteDefinition`
 
-#### Scenario: Default load balance when not set
-- **WHEN** a route has `load_balance_strategy: null` or empty
-- **THEN** the `RouteDefinition.loadBalance` SHALL be null, and gateway-core SHALL use its default "ROUND_ROBIN"
+#### 场景：未设置时使用默认负载均衡
+- **WHEN** 路由的 `load_balance_strategy` 为 null 或空
+- **THEN** `RouteDefinition.loadBalance` 应为 null，gateway-core 应使用默认的 "ROUND_ROBIN"
 
-### Requirement: Path rewrite and timeout auto-converted to plugins
-The `RouteServiceImpl` SHALL automatically convert `pathRewrite` and `timeouts` from the route DTO into `request-rewrite` and `timeout` plugin entries respectively, ensuring these configurations are persisted and synced to gateway-core.
+### 需求：路径重写和超时自动转换为插件
+`RouteServiceImpl` 应自动将路由 DTO 中的 `pathRewrite` 和 `timeouts` 分别转换为 `request-rewrite` 和 `timeout` 插件条目，确保这些配置被持久化并同步到 gateway-core。
 
-#### Scenario: Path rewrite creates request-rewrite plugin
-- **WHEN** `createRoute()` is called with `pathRewrite: {from: "/api/(.*)", to: "/$1"}`
-- **THEN** the system SHALL create a `gw_route_plugin` entry with plugin name `request-rewrite` and config `{"pathFrom": "/api/(.*)", "pathTo": "/$1", "rewriteType": "REGEX"}`
+#### 场景：路径重写创建 request-rewrite 插件
+- **WHEN** 调用 `createRoute()` 时传入 `pathRewrite: {from: "/api/(.*)", to: "/$1"}`
+- **THEN** 系统应创建一个 `gw_route_plugin` 条目，插件名称为 `request-rewrite`，配置为 `{"pathFrom": "/api/(.*)", "pathTo": "/$1", "rewriteType": "REGEX"}`
 
-#### Scenario: Timeouts create timeout plugin
-- **WHEN** `createRoute()` is called with `timeouts: {connect: 5000, response: 30000}`
-- **THEN** the system SHALL create a `gw_route_plugin` entry with plugin name `timeout` and config `{"connectTimeout": 5000, "responseTimeout": 30000}`
+#### 场景：超时创建 timeout 插件
+- **WHEN** 调用 `createRoute()` 时传入 `timeouts: {connect: 5000, response: 30000}`
+- **THEN** 系统应创建一个 `gw_route_plugin` 条目，插件名称为 `timeout`，配置为 `{"connectTimeout": 5000, "responseTimeout": 30000}`
 
-#### Scenario: No path rewrite or timeout
-- **WHEN** `createRoute()` is called without `pathRewrite` or `timeouts`
-- **THEN** no additional plugin entries SHALL be created
+#### 场景：无路径重写或超时
+- **WHEN** 调用 `createRoute()` 时未传入 `pathRewrite` 或 `timeouts`
+- **THEN** 不应创建额外的插件条目
 
-### Requirement: Permission seed data consistency
-The database seed data (`data.sql`) SHALL use permission strings that exactly match the `@SaCheckPermission` annotations in all controllers. Any existing database SHALL provide a migration script to update existing permission records.
+### 需求：权限种子数据一致性
+数据库种子数据（`data.sql`）应使用与所有控制器中 `@SaCheckPermission` 注解完全匹配的权限字符串。现有数据库应提供迁移脚本以更新现有权限记录。
 
-#### Scenario: Permission strings match controllers
-- **WHEN** the application initializes with seed data
-- **THEN** `sys_menu.perms` values SHALL be `route:view`, `route:plugin:view`, `system:user:view`, `system:role:view` — matching the controller annotations exactly
+#### 场景：权限字符串与控制器匹配
+- **WHEN** 应用使用种子数据初始化
+- **THEN** `sys_menu.perms` 值应为 `route:view`、`route:plugin:view`、`system:user:view`、`system:role:view`——与控制器注解完全匹配
 
-#### Scenario: Migration for existing databases
-- **WHEN** an existing database has old permission strings (`route:detail`, etc.)
-- **THEN** a migration SQL script SHALL be available to update those values to match the new convention
+#### 场景：现有数据库迁移
+- **WHEN** 现有数据库具有旧的权限字符串（如 `route:detail` 等）
+- **THEN** 应提供迁移 SQL 脚本以将这些值更新为新约定
