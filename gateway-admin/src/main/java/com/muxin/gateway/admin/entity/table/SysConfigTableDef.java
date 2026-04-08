@@ -27,8 +27,6 @@ public class SysConfigTableDef extends TableDef {
     
     public final QueryColumn UPDATE_BY = new QueryColumn(this, "update_by");
     
-    public final QueryColumn DELETED = new QueryColumn(this, "deleted");
-    
     public final QueryColumn ALL_COLUMNS = new QueryColumn(this, "*");
     
     public final QueryColumn[] DEFAULT_COLUMNS = new QueryColumn[]{

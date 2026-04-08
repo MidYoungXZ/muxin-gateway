@@ -58,7 +58,6 @@ public class DatabaseServiceConfigProvider implements ServiceConfigProvider {
 
             List<GwServiceNode> nodes = serviceNodeMapper.selectAll()
                     .stream()
-                    .filter(n -> !Boolean.TRUE.equals(n.getDeleted()))
                     .filter(n -> n.getStatus() != null && n.getStatus() == 1)
                     .collect(Collectors.toList());
 

@@ -68,10 +68,4 @@ public class SysRole {
      * 更新人
      */
     private String updateBy;
-    
-    /**
-     * 是否删除：0-否，1-是
-     */
-    @Column(isLogicDelete = true)
-    private Integer deleted;
 } 

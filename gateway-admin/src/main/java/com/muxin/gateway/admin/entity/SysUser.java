@@ -81,12 +81,6 @@ public class SysUser {
     private String updateBy;
     
     /**
-     * 是否删除：0-否，1-是
-     */
-    @Column(isLogicDelete = true)
-    private Integer deleted;
-    
-    /**
      * 用户角色列表（非数据库字段）
      */
     @RelationManyToMany(

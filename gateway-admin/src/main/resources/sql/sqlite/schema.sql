@@ -22,13 +22,11 @@ CREATE TABLE IF NOT EXISTS gw_route (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_route_enabled ON gw_route(enabled);
 CREATE INDEX IF NOT EXISTS idx_route_order ON gw_route("order");
-CREATE INDEX IF NOT EXISTS idx_route_deleted ON gw_route(deleted);
 
 -- 2. 断言配置表
 CREATE TABLE IF NOT EXISTS gw_predicate (
@@ -42,13 +40,11 @@ CREATE TABLE IF NOT EXISTS gw_predicate (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_predicate_type ON gw_predicate(predicate_type);
 CREATE INDEX IF NOT EXISTS idx_predicate_enabled ON gw_predicate(enabled);
-CREATE INDEX IF NOT EXISTS idx_predicate_deleted ON gw_predicate(deleted);
 
 -- 3. 路由-断言关联表
 CREATE TABLE IF NOT EXISTS gw_route_predicate (
@@ -76,7 +72,6 @@ CREATE TABLE IF NOT EXISTS gw_plugin (
     icon VARCHAR(64),
     is_system INTEGER NOT NULL DEFAULT 0,
     enabled INTEGER NOT NULL DEFAULT 1,
-    deleted INTEGER NOT NULL DEFAULT 0,
     create_time TEXT,
     update_time TEXT,
     create_by VARCHAR(64),
@@ -84,7 +79,7 @@ CREATE TABLE IF NOT EXISTS gw_plugin (
 );
 
 CREATE INDEX IF NOT EXISTS idx_plugin_type ON gw_plugin(plugin_type);
-CREATE INDEX IF NOT EXISTS idx_plugin_enabled ON gw_plugin(enabled, deleted);
+CREATE INDEX IF NOT EXISTS idx_plugin_enabled ON gw_plugin(enabled);
 
 -- 5. 路由-插件关联表
 CREATE TABLE IF NOT EXISTS gw_route_plugin (
@@ -117,12 +112,10 @@ CREATE TABLE IF NOT EXISTS gw_route_template (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_template_category ON gw_route_template(category);
-CREATE INDEX IF NOT EXISTS idx_template_deleted ON gw_route_template(deleted);
 
 -- 7. 服务节点表
 CREATE TABLE IF NOT EXISTS gw_service_node (
@@ -148,13 +141,11 @@ CREATE TABLE IF NOT EXISTS gw_service_node (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_node_service ON gw_service_node(service_name);
 CREATE INDEX IF NOT EXISTS idx_node_status ON gw_service_node(status);
-CREATE INDEX IF NOT EXISTS idx_node_deleted ON gw_service_node(deleted);
 
 -- ====================================
 -- RBAC System Tables
@@ -174,13 +165,11 @@ CREATE TABLE IF NOT EXISTS sys_user (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_dept ON sys_user(dept_id);
 CREATE INDEX IF NOT EXISTS idx_user_status ON sys_user(status);
-CREATE INDEX IF NOT EXISTS idx_user_deleted ON sys_user(deleted);
 
 -- 9. 角色表
 CREATE TABLE IF NOT EXISTS sys_role (
@@ -193,12 +182,10 @@ CREATE TABLE IF NOT EXISTS sys_role (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_role_status ON sys_role(status);
-CREATE INDEX IF NOT EXISTS idx_role_deleted ON sys_role(deleted);
 
 -- 10. 部门表
 CREATE TABLE IF NOT EXISTS sys_dept (
@@ -215,13 +202,11 @@ CREATE TABLE IF NOT EXISTS sys_dept (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_dept_parent ON sys_dept(parent_id);
 CREATE INDEX IF NOT EXISTS idx_dept_status ON sys_dept(status);
-CREATE INDEX IF NOT EXISTS idx_dept_deleted ON sys_dept(deleted);
 
 -- 11. 菜单表
 CREATE TABLE IF NOT EXISTS sys_menu (
@@ -240,13 +225,11 @@ CREATE TABLE IF NOT EXISTS sys_menu (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_menu_parent ON sys_menu(parent_id);
 CREATE INDEX IF NOT EXISTS idx_menu_status ON sys_menu(status);
-CREATE INDEX IF NOT EXISTS idx_menu_deleted ON sys_menu(deleted);
 
 -- 12. 用户角色关联表
 CREATE TABLE IF NOT EXISTS sys_user_role (
@@ -319,9 +302,7 @@ CREATE TABLE IF NOT EXISTS sys_config (
     create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     create_by VARCHAR(50),
-    update_by VARCHAR(50),
-    deleted INTEGER NOT NULL DEFAULT 0
+    update_by VARCHAR(50)
 );
 
 CREATE INDEX IF NOT EXISTS idx_config_status ON sys_config(status);
-CREATE INDEX IF NOT EXISTS idx_config_deleted ON sys_config(deleted);

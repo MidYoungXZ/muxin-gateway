@@ -64,12 +64,6 @@ public class GwRouteTemplate {
     private Boolean enabled;
     
     /**
-     * 是否删除：0-否，1-是
-     */
-    @Column(isLogicDelete = true)
-    private Boolean deleted;
-    
-    /**
      * 创建时间
      */
     private LocalDateTime createTime;

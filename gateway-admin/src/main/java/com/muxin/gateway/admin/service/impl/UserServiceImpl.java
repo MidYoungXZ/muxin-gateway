@@ -65,8 +65,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     public PageVO<UserVO> pageQuery(UserQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(SYS_USER)
-                .where(SYS_USER.DELETED.eq(0))
-                .and(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
+                .where(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
                 .and(SYS_USER.NICKNAME.like(query.getNickname() != null ? "%" + query.getNickname() + "%" : null, query.getNickname() != null))
                 .and(SYS_USER.MOBILE.like(query.getMobile() != null ? "%" + query.getMobile() + "%" : null, query.getMobile() != null))
                 .and(SYS_USER.DEPT_ID.eq(query.getDeptId(), query.getDeptId() != null))
@@ -94,7 +93,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public UserVO getUserDetail(Long id) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -108,8 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     public UserVO getByUsername(String username) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(SYS_USER)
-                .where(SYS_USER.USERNAME.eq(username))
-                .and(SYS_USER.DELETED.eq(0));
+                .where(SYS_USER.USERNAME.eq(username));
         
         SysUser user = userMapper.selectOneByQuery(wrapper);
         if (user == null) {
@@ -127,8 +125,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_USER)
-                .where(SYS_USER.USERNAME.eq(dto.getUsername()))
-                .and(SYS_USER.DELETED.eq(0));
+                .where(SYS_USER.USERNAME.eq(dto.getUsername()));
         
         if (count(wrapper) > 0) {
             throw new BusinessException("用户名已存在");
@@ -144,7 +141,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
         user.setCreateBy(StpUtil.getLoginIdAsString());
-        user.setDeleted(0);
         
         save(user);
         
@@ -160,7 +156,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Transactional(rollbackFor = Exception.class)
     public void updateUser(Long id, UserUpdateDTO dto) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -185,7 +181,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -200,10 +196,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
             throw new BusinessException("不能删除最后一个超级管理员用户");
         }
         
-        user.setDeleted(1);
-        user.setUpdateTime(LocalDateTime.now());
-        user.setUpdateBy(StpUtil.getLoginIdAsString());
-        updateById(user);
+        removeById(id);
         
         QueryWrapper deleteWrapper = QueryWrapper.create()
                 .from(SYS_USER_ROLE)
@@ -244,7 +237,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public void resetPassword(Long id, String newPassword) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -262,7 +255,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public void updatePassword(Long id, PasswordUpdateDTO dto) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -289,7 +282,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     @Override
     public void updateProfile(Long id, ProfileUpdateDTO dto) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -372,7 +365,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
      */
     private void updateStatus(Long id, Integer status) {
         SysUser user = getById(id);
-        if (user == null || user.getDeleted() == 1) {
+        if (user == null) {
             throw new BusinessException("用户不存在");
         }
         
@@ -422,8 +415,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select(SYS_ROLE.ID)
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.ROLE_CODE.eq(SUPER_ADMIN_ROLE_CODE))
-                .and(SYS_ROLE.DELETED.eq(0));
+                .where(SYS_ROLE.ROLE_CODE.eq(SUPER_ADMIN_ROLE_CODE));
         
         SysRole role = roleMapper.selectOneByQuery(wrapper);
         return role != null ? role.getId() : null;
@@ -460,8 +452,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
                 .from(SYS_USER)
                 .innerJoin(SYS_USER_ROLE).on(SYS_USER.ID.eq(SYS_USER_ROLE.USER_ID))
                 .where(SYS_USER_ROLE.ROLE_ID.eq(superAdminRoleId))
-                .and(SYS_USER.STATUS.eq(1))
-                .and(SYS_USER.DELETED.eq(0));
+                .and(SYS_USER.STATUS.eq(1));
         
         List<SysUser> superAdminUsers = userMapper.selectListByQuery(wrapper);
         
@@ -472,8 +463,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
     public PageVO<UserVO> pageQueryWithDataScope(UserQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(SYS_USER)
-                .where(SYS_USER.DELETED.eq(0))
-                .and(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
+                .where(SYS_USER.USERNAME.like(query.getUsername() != null ? "%" + query.getUsername() + "%" : null, query.getUsername() != null))
                 .and(SYS_USER.NICKNAME.like(query.getNickname() != null ? "%" + query.getNickname() + "%" : null, query.getNickname() != null))
                 .and(SYS_USER.MOBILE.like(query.getMobile() != null ? "%" + query.getMobile() + "%" : null, query.getMobile() != null))
                 .and(SYS_USER.DEPT_ID.eq(query.getDeptId(), query.getDeptId() != null))
@@ -557,9 +547,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         if (isUserSuperAdmin(userId, getSuperAdminRoleId())) {
             QueryWrapper wrapper = QueryWrapper.create()
                     .select(SYS_ROLE.ID)
-                    .from(SYS_ROLE)
-                    .where(SYS_ROLE.DELETED.eq(0))
-                    .and(SYS_ROLE.STATUS.eq(1));
+.from(SYS_ROLE)
+                .where(SYS_ROLE.STATUS.eq(1));
             
             return roleMapper.selectListByQuery(wrapper).stream()
                     .map(SysRole::getId)
@@ -569,8 +558,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select(SYS_ROLE.ID)
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.DELETED.eq(0))
-                .and(SYS_ROLE.STATUS.eq(1))
+                .where(SYS_ROLE.STATUS.eq(1))
                 .and(SYS_ROLE.ROLE_CODE.ne(SUPER_ADMIN_ROLE_CODE));
         
         return roleMapper.selectListByQuery(wrapper).stream()
@@ -585,9 +573,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
         if (isUserSuperAdmin(userId, getSuperAdminRoleId())) {
             QueryWrapper wrapper = QueryWrapper.create()
                     .select(SYS_DEPT.ID)
-                    .from(SYS_DEPT)
-                    .where(SYS_DEPT.DELETED.eq(0))
-                    .and(SYS_DEPT.STATUS.eq(1));
+.from(SYS_DEPT)
+                .where(SYS_DEPT.STATUS.eq(1));
             
             return deptMapper.selectListByQuery(wrapper).stream()
                     .map(SysDept::getId)
@@ -605,8 +592,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, SysUser> implements
                 QueryWrapper allWrapper = QueryWrapper.create()
                         .select(SYS_DEPT.ID)
                         .from(SYS_DEPT)
-                        .where(SYS_DEPT.DELETED.eq(0))
-                        .and(SYS_DEPT.STATUS.eq(1));
+                        .where(SYS_DEPT.STATUS.eq(1));
                 return deptMapper.selectListByQuery(allWrapper).stream()
                         .map(SysDept::getId)
                         .collect(Collectors.toList());

@@ -53,11 +53,6 @@ public class GwPredicateTableDef extends TableDef {
     public final QueryColumn ENABLED = new QueryColumn(this, "enabled");
 
     /**
-     * 是否删除
-     */
-    public final QueryColumn DELETED = new QueryColumn(this, "deleted");
-
-    /**
      * 创建时间
      */
     public final QueryColumn CREATE_TIME = new QueryColumn(this, "create_time");

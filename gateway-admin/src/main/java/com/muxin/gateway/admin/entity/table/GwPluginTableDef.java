@@ -25,7 +25,6 @@ public class GwPluginTableDef extends TableDef {
     public final QueryColumn ICON = new QueryColumn(this, "icon");
     public final QueryColumn IS_SYSTEM = new QueryColumn(this, "is_system");
     public final QueryColumn ENABLED = new QueryColumn(this, "enabled");
-    public final QueryColumn DELETED = new QueryColumn(this, "deleted");
     public final QueryColumn CREATE_TIME = new QueryColumn(this, "create_time");
     public final QueryColumn UPDATE_TIME = new QueryColumn(this, "update_time");
     public final QueryColumn CREATE_BY = new QueryColumn(this, "create_by");

@@ -60,8 +60,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     public PageVO<RouteVO> pageQuery(RouteQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GW_ROUTE)
-                .where(GW_ROUTE.DELETED.eq(0))
-                .and(GW_ROUTE.ROUTE_NAME.like(query.getRouteName() != null ? "%" + query.getRouteName() + "%" : null, query.getRouteName() != null))
+                .where(GW_ROUTE.ROUTE_NAME.like(query.getRouteName() != null ? "%" + query.getRouteName() + "%" : null, query.getRouteName() != null))
                 .and(GW_ROUTE.URI.like(query.getUri() != null ? "%" + query.getUri() + "%" : null, query.getUri() != null))
                 .and(GW_ROUTE.ENABLED.eq(query.getEnabled(), query.getEnabled() != null))
                 .orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc());
@@ -87,7 +86,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Override
     public RouteVO getRouteDetail(Long id) {
         GwRoute route = getById(id);
-        if (route == null || route.getDeleted()) {
+        if (route == null) {
             throw new BusinessException("路由不存在");
         }
         
@@ -115,7 +114,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         route.setEnabled(dto.getEnabled() != null ? dto.getEnabled() : true);
         route.setTemplateId(dto.getTemplateId());
         route.setVersion(1);
-        route.setDeleted(false);
         route.setCreateTime(now);
         route.setUpdateTime(now);
         
@@ -139,7 +137,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Transactional(rollbackFor = Exception.class)
     public void updateRoute(Long id, RouteUpdateDTO dto) {
         GwRoute oldRoute = getById(id);
-        if (oldRoute == null || oldRoute.getDeleted()) {
+        if (oldRoute == null) {
             throw new BusinessException("路由不存在");
         }
         
@@ -178,7 +176,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     @Transactional(rollbackFor = Exception.class)
     public void deleteRoute(Long id) {
         GwRoute route = getById(id);
-        if (route == null || route.getDeleted()) {
+        if (route == null) {
             throw new BusinessException("路由不存在");
         }
         
@@ -200,7 +198,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         
         for (Long id : ids) {
             GwRoute route = getById(id);
-            if (route != null && !route.getDeleted()) {
+            if (route != null) {
                 routePluginMapper.deleteByQuery(QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(id)));
                 removeById(id);
             }
@@ -233,7 +231,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         QueryWrapper wrapper = QueryWrapper.create()
                 .select(GwServiceNode::getServiceName)
                 .from(GwServiceNode.class)
-                .where(GwServiceNode::getDeleted).eq(false)
                 .orderBy(GwServiceNode::getServiceName, true);
         
         return serviceNodeMapper.selectListByQuery(wrapper).stream()
@@ -246,8 +243,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     private void checkRouteIdUnique(String routeId) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GW_ROUTE)
-                .where(GW_ROUTE.ROUTE_ID.eq(routeId))
-                .and(GW_ROUTE.DELETED.eq(0));
+                .where(GW_ROUTE.ROUTE_ID.eq(routeId));
         
         long count = routeMapper.selectCountByQuery(wrapper);
         if (count > 0) {
@@ -260,7 +256,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             RoutePluginDTO pluginDTO = plugins.get(i);
             
             GwPlugin plugin = pluginMapper.selectOneById(pluginDTO.getPluginId());
-            if (plugin == null || plugin.getDeleted()) {
+            if (plugin == null) {
                 log.warn("[RouteService] 插件不存在，跳过: {}", pluginDTO.getPluginId());
                 continue;
             }
@@ -299,7 +295,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
-            predicate.setDeleted(false);
             predicate.setCreateTime(now);
             predicate.setUpdateTime(now);
             
@@ -324,7 +319,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
-            predicate.setDeleted(false);
             predicate.setCreateTime(now);
             predicate.setUpdateTime(now);
             
@@ -349,7 +343,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
-            predicate.setDeleted(false);
             predicate.setCreateTime(now);
             predicate.setUpdateTime(now);
             
@@ -374,7 +367,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
-            predicate.setDeleted(false);
             predicate.setCreateTime(now);
             predicate.setUpdateTime(now);
             
@@ -399,7 +391,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
             predicate.setArgs(args);
             predicate.setIsSystem(false);
             predicate.setEnabled(true);
-            predicate.setDeleted(false);
             predicate.setCreateTime(now);
             predicate.setUpdateTime(now);
             
@@ -416,7 +407,7 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     
     private void updateRouteStatus(Long id, boolean enabled) {
         GwRoute route = getById(id);
-        if (route == null || route.getDeleted()) {
+        if (route == null) {
             throw new BusinessException("路由不存在");
         }
         
@@ -468,7 +459,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         Map<Long, GwPlugin> pluginMap = pluginMapper.selectListByQuery(
                 QueryWrapper.create()
                     .where(GW_PLUGIN.ID.in(pluginIds))
-                    .and(GW_PLUGIN.DELETED.eq(false))
             ).stream()
             .collect(Collectors.toMap(GwPlugin::getId, p -> p));
         
@@ -518,7 +508,6 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
         Map<Long, GwPredicate> predicateMap = predicateMapper.selectListByQuery(
                 QueryWrapper.create()
                     .where(GW_PREDICATE.ID.in(predicateIds))
-                    .and(GW_PREDICATE.DELETED.eq(false))
             ).stream()
             .collect(Collectors.toMap(GwPredicate::getId, p -> p));
         

@@ -50,7 +50,6 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.DELETED.eq(0))
                 .orderBy(SYS_DEPT.ORDER_NUM.asc(), SYS_DEPT.CREATE_TIME.asc());
         
         List<SysDept> deptList = list(wrapper);
@@ -64,8 +63,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.DELETED.eq(0))
-                .and(SYS_DEPT.STATUS.eq(1))
+                .where(SYS_DEPT.STATUS.eq(1))
                 .orderBy(SYS_DEPT.ORDER_NUM.asc(), SYS_DEPT.CREATE_TIME.asc());
         
         List<SysDept> deptList = list(wrapper);
@@ -76,7 +74,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     @Override
     public DeptVO getDeptDetail(Long id) {
         SysDept dept = getById(id);
-        if (dept == null || dept.getDeleted() == 1) {
+        if (dept == null) {
             throw new BusinessException("部门不存在");
         }
         
@@ -90,8 +88,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper checkWrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.DEPT_NAME.eq(dto.getDeptName()))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .where(SYS_DEPT.DEPT_NAME.eq(dto.getDeptName()));
         
         if (count(checkWrapper) > 0) {
             throw new BusinessException("部门名称已存在");
@@ -106,7 +103,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
             dept.setAncestors("0");
         } else {
             SysDept parent = getById(dto.getParentId());
-            if (parent == null || parent.getDeleted() == 1) {
+            if (parent == null) {
                 throw new BusinessException("父部门不存在");
             }
             dept.setAncestors(parent.getAncestors() + "," + parent.getId());
@@ -116,7 +113,6 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         dept.setCreateTime(LocalDateTime.now());
         dept.setUpdateTime(LocalDateTime.now());
         dept.setCreateBy(StpUtil.getLoginIdAsString());
-        dept.setDeleted(0);
         
         save(dept);
         
@@ -128,7 +124,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     @Transactional(rollbackFor = Exception.class)
     public void updateDept(Long id, DeptUpdateDTO dto) {
         SysDept dept = getById(id);
-        if (dept == null || dept.getDeleted() == 1) {
+        if (dept == null) {
             throw new BusinessException("部门不存在");
         }
         
@@ -137,8 +133,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
                 .select()
                 .from(SYS_DEPT)
                 .where(SYS_DEPT.DEPT_NAME.eq(dto.getDeptName()))
-                .and(SYS_DEPT.ID.ne(id))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .and(SYS_DEPT.ID.ne(id));
         
         if (count(checkWrapper) > 0) {
             throw new BusinessException("部门名称已存在");
@@ -162,7 +157,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     @Transactional(rollbackFor = Exception.class)
     public void deleteDept(Long id) {
         SysDept dept = getById(id);
-        if (dept == null || dept.getDeleted() == 1) {
+        if (dept == null) {
             throw new BusinessException("部门不存在");
         }
         
@@ -170,8 +165,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper childWrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.PARENT_ID.eq(id))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .where(SYS_DEPT.PARENT_ID.eq(id));
         
         if (count(childWrapper) > 0) {
             throw new BusinessException("存在子部门，不能删除");
@@ -181,18 +175,13 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper userWrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_USER)
-                .where(SYS_USER.DEPT_ID.eq(id))
-                .and(SYS_USER.DELETED.eq(0));
+                .where(SYS_USER.DEPT_ID.eq(id));
         
         if (userMapper.selectCountByQuery(userWrapper) > 0) {
             throw new BusinessException("部门下存在用户，不能删除");
         }
         
-        // 逻辑删除
-        dept.setDeleted(1);
-        dept.setUpdateTime(LocalDateTime.now());
-        dept.setUpdateBy(StpUtil.getLoginIdAsString());
-        updateById(dept);
+        removeById(id);
         
         log.info("删除部门成功：{}", dept.getDeptName());
     }
@@ -213,7 +202,6 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
                 .select()
                 .from(SYS_DEPT)
                 .where(SYS_DEPT.PARENT_ID.eq(parentId))
-                .and(SYS_DEPT.DELETED.eq(0))
                 .orderBy(SYS_DEPT.ORDER_NUM.asc(), SYS_DEPT.CREATE_TIME.asc());
         
         List<SysDept> deptList = list(wrapper);
@@ -226,7 +214,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     @Transactional(rollbackFor = Exception.class)
     public void moveDept(Long id, Long targetParentId) {
         SysDept dept = getById(id);
-        if (dept == null || dept.getDeleted() == 1) {
+        if (dept == null) {
             throw new BusinessException("部门不存在");
         }
         
@@ -251,8 +239,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
                 .select()
                 .from(SYS_DEPT)
                 .where(SYS_DEPT.DEPT_NAME.eq(deptName))
-                .and(SYS_DEPT.PARENT_ID.eq(parentId))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .and(SYS_DEPT.PARENT_ID.eq(parentId));
         
         if (excludeId != null) {
             wrapper.and(SYS_DEPT.ID.ne(excludeId));
@@ -267,8 +254,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.DEPT_CODE.eq(deptCode))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .where(SYS_DEPT.DEPT_CODE.eq(deptCode));
         
         if (excludeId != null) {
             wrapper.and(SYS_DEPT.ID.ne(excludeId));
@@ -282,14 +268,12 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
     public DeptStatsVO getDeptStats() {
         long totalCount = count(QueryWrapper.create()
                 .select()
-                .from(SYS_DEPT)
-                .where(SYS_DEPT.DELETED.eq(0)));
+                .from(SYS_DEPT));
         
         long enabledCount = count(QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.DELETED.eq(0))
-                .and(SYS_DEPT.STATUS.eq(1)));
+                .where(SYS_DEPT.STATUS.eq(1)));
         
         long disabledCount = totalCount - enabledCount;
         
@@ -305,7 +289,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
      */
     private void updateStatus(Long id, Integer status) {
         SysDept dept = getById(id);
-        if (dept == null || dept.getDeleted() == 1) {
+        if (dept == null) {
             throw new BusinessException("部门不存在");
         }
         
@@ -364,7 +348,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
             dept.setAncestors("0");
         } else {
             SysDept parent = getById(newParentId);
-            if (parent == null || parent.getDeleted() == 1) {
+            if (parent == null) {
                 throw new BusinessException("父部门不存在");
             }
             dept.setParentId(newParentId);
@@ -384,8 +368,7 @@ public class DeptServiceImpl extends ServiceImpl<DeptMapper, SysDept> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_DEPT)
-                .where(SYS_DEPT.PARENT_ID.eq(parentId))
-                .and(SYS_DEPT.DELETED.eq(0));
+                .where(SYS_DEPT.PARENT_ID.eq(parentId));
         
         List<SysDept> children = list(wrapper);
         for (SysDept child : children) {

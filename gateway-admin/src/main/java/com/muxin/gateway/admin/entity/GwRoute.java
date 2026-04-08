@@ -41,9 +41,6 @@ public class GwRoute {
     
     private Integer version;
     
-    @Column(isLogicDelete = true)
-    private Boolean deleted;
-    
     private LocalDateTime createTime;
     
     private LocalDateTime updateTime;

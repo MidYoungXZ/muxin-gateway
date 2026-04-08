@@ -58,8 +58,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         // 构建查询条件
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
-                .from(SYS_ROLE)
-                .where(SYS_ROLE.DELETED.eq(0));
+                .from(SYS_ROLE);
         
         // 动态条件
         if (StringUtils.hasText(query.getRoleName())) {
@@ -101,8 +100,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.DELETED.eq(0))
-                .and(SYS_ROLE.STATUS.eq(1))
+                .where(SYS_ROLE.STATUS.eq(1))
                 .orderBy(SYS_ROLE.CREATE_TIME.desc());
         
         List<SysRole> roles = list(wrapper);
@@ -114,7 +112,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     @Override
     public RoleVO getRoleDetail(Long id) {
         SysRole role = getById(id);
-        if (role == null || role.getDeleted() == 1) {
+        if (role == null) {
             throw new BusinessException("角色不存在");
         }
         
@@ -134,8 +132,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.ROLE_CODE.eq(dto.getRoleCode()))
-                .and(SYS_ROLE.DELETED.eq(0));
+                .where(SYS_ROLE.ROLE_CODE.eq(dto.getRoleCode()));
         
         if (count(wrapper) > 0) {
             throw new BusinessException("角色编码已存在");
@@ -148,7 +145,6 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         role.setCreateTime(LocalDateTime.now());
         role.setUpdateTime(LocalDateTime.now());
         role.setCreateBy(StpUtil.getLoginIdAsString());
-        role.setDeleted(0);
         
         save(role);
         
@@ -168,7 +164,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     @Transactional(rollbackFor = Exception.class)
     public void updateRole(Long id, RoleUpdateDTO dto) {
         SysRole role = getById(id);
-        if (role == null || role.getDeleted() == 1) {
+        if (role == null) {
             throw new BusinessException("角色不存在");
         }
         
@@ -197,7 +193,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
     @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long id) {
         SysRole role = getById(id);
-        if (role == null || role.getDeleted() == 1) {
+        if (role == null) {
             throw new BusinessException("角色不存在");
         }
         
@@ -216,13 +212,8 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
             throw new BusinessException("该角色下还有" + userCount + "个用户，无法删除");
         }
         
-        // 逻辑删除
-        role.setDeleted(1);
-        role.setUpdateTime(LocalDateTime.now());
-        role.setUpdateBy(StpUtil.getLoginIdAsString());
-        updateById(role);
+        removeById(id);
         
-        // 删除角色菜单关联（使用MyBatis-Flex删除）
         QueryWrapper deleteWrapper = QueryWrapper.create()
                 .from(SYS_ROLE_MENU)
                 .where(SYS_ROLE_MENU.ROLE_ID.eq(id));
@@ -330,8 +321,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
                 .select(SYS_ROLE.ALL_COLUMNS)
                 .from(SYS_ROLE)
                 .innerJoin(SYS_USER_ROLE).on(SYS_ROLE.ID.eq(SYS_USER_ROLE.ROLE_ID))
-                .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                .and(SYS_ROLE.DELETED.eq(0));
+                .where(SYS_USER_ROLE.USER_ID.eq(userId));
         
         List<SysRole> roles = roleMapper.selectListByQuery(wrapper);
         return roles.stream()
@@ -354,7 +344,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
      */
     private void updateStatus(Long id, Integer status) {
         SysRole role = getById(id);
-        if (role == null || role.getDeleted() == 1) {
+        if (role == null) {
             throw new BusinessException("角色不存在");
         }
         
@@ -411,8 +401,7 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.ROLE_CODE.eq(roleCode))
-                .and(SYS_ROLE.DELETED.eq(0));
+                .where(SYS_ROLE.ROLE_CODE.eq(roleCode));
         
         if (excludeId != null) {
             wrapper.and(SYS_ROLE.ID.ne(excludeId));
@@ -426,16 +415,14 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, SysRole> implements
         // 总角色数
         QueryWrapper totalWrapper = QueryWrapper.create()
                 .select()
-                .from(SYS_ROLE)
-                .where(SYS_ROLE.DELETED.eq(0));
+                .from(SYS_ROLE);
         long totalRoles = count(totalWrapper);
         
         // 启用角色数
         QueryWrapper enabledWrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_ROLE)
-                .where(SYS_ROLE.DELETED.eq(0))
-                .and(SYS_ROLE.STATUS.eq(1));
+                .where(SYS_ROLE.STATUS.eq(1));
         long enabledRoles = count(enabledWrapper);
         
         // 禁用角色数

@@ -184,6 +184,8 @@ const handleLogin = async () => {
     
     await userStore.loginAction(loginForm)
     
+    await menuStore.initRoutes()
+    
     failedAttempts.value = 0
     showCaptcha.value = false
     
@@ -194,7 +196,7 @@ const handleLogin = async () => {
     }
 
     ElMessage.success('登录成功')
-    await router.push('/')
+    router.push('/')
 
   } catch (error: any) {
     console.error('登录失败:', error)

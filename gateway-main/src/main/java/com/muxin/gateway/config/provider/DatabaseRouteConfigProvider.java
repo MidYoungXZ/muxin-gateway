@@ -78,7 +78,6 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
             List<GwRoute> routes = routeMapper.selectAll()
                     .stream()
-                    .filter(r -> !Boolean.TRUE.equals(r.getDeleted()))
                     .sorted(Comparator.comparingInt(r -> r.getOrder() != null ? r.getOrder() : 0))
                     .collect(Collectors.toList());
 
@@ -183,7 +182,6 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
         Map<Long, GwPredicate> predicateMap = predicateMapper.selectListByQuery(
                 QueryWrapper.create()
                     .where(GW_PREDICATE.ID.in(predicateIds))
-                    .and(GW_PREDICATE.DELETED.eq(false))
             ).stream()
             .collect(Collectors.toMap(GwPredicate::getId, p -> p));
         
@@ -220,7 +218,6 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
         Map<Long, GwPlugin> pluginMap = pluginMapper.selectListByQuery(
                 QueryWrapper.create()
                     .where(GW_PLUGIN.ID.in(pluginIds))
-                    .and(GW_PLUGIN.DELETED.eq(false))
             ).stream()
             .collect(Collectors.toMap(GwPlugin::getId, p -> p));
         

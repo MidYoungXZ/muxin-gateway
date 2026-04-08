@@ -1,22 +1,21 @@
 package com.muxin.gateway.admin.service.impl;
 
-import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.muxin.gateway.admin.entity.SysMenu;
 import com.muxin.gateway.admin.entity.SysRoleMenu;
-import static com.muxin.gateway.admin.entity.table.Tables.*;
+import com.muxin.gateway.admin.entity.SysUserRole;
 import com.muxin.gateway.admin.mapper.MenuMapper;
 import com.muxin.gateway.admin.mapper.RoleMenuMapper;
+import com.muxin.gateway.admin.mapper.UserRoleMapper;
 import com.muxin.gateway.admin.model.dto.MenuCreateDTO;
 import com.muxin.gateway.admin.model.dto.MenuQueryDTO;
 import com.muxin.gateway.admin.model.dto.MenuUpdateDTO;
-import com.muxin.gateway.admin.model.vo.MenuVO;
 import com.muxin.gateway.admin.model.vo.MenuTreeVO;
+import com.muxin.gateway.admin.model.vo.MenuVO;
 import com.muxin.gateway.admin.model.vo.PageVO;
 import com.muxin.gateway.admin.service.MenuService;
-import com.muxin.gateway.admin.entity.SysUserRole;
-import com.muxin.gateway.admin.mapper.UserRoleMapper;
+import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.spring.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -28,6 +27,8 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.muxin.gateway.admin.entity.table.Tables.*;
 
 /**
  * 菜单服务实现
@@ -53,7 +54,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
                 .from(SYS_MENU)
                 .innerJoin(SYS_ROLE_MENU).on(SYS_MENU.ID.eq(SYS_ROLE_MENU.MENU_ID))
                 .where(SYS_ROLE_MENU.ROLE_ID.eq(roleId))
-                .and(SYS_MENU.DELETED.eq(0))
                 .and(SYS_MENU.STATUS.eq(1))
                 .orderBy(SYS_MENU.SORT_ORDER.asc());
         
@@ -75,7 +75,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_MENU)
-                .where(SYS_MENU.DELETED.eq(0))
                 .orderBy(SYS_MENU.SORT_ORDER.asc());
         
         List<SysMenu> menus = list(wrapper);
@@ -185,7 +184,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
                 .innerJoin(SYS_ROLE_MENU).on(SYS_MENU.ID.eq(SYS_ROLE_MENU.MENU_ID))
                 .where(SYS_ROLE_MENU.ROLE_ID.in(roleIds))
                 .and(SYS_MENU.STATUS.eq(1))
-                .and(SYS_MENU.DELETED.eq(0))
                 .and(SYS_MENU.PERMS.isNotNull())
                 .and(SYS_MENU.PERMS.ne(""));
         
@@ -208,7 +206,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
                 .innerJoin(SYS_ROLE_MENU).on(SYS_MENU.ID.eq(SYS_ROLE_MENU.MENU_ID))
                 .innerJoin(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
                 .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                .and(SYS_MENU.DELETED.eq(0))
                 .and(SYS_MENU.STATUS.eq(1))
                 .and(SYS_MENU.VISIBLE.eq(1))
                 .orderBy(SYS_MENU.SORT_ORDER.asc());
@@ -232,7 +229,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
                 .innerJoin(SYS_ROLE_MENU).on(SYS_MENU.ID.eq(SYS_ROLE_MENU.MENU_ID))
                 .innerJoin(SYS_USER_ROLE).on(SYS_ROLE_MENU.ROLE_ID.eq(SYS_USER_ROLE.ROLE_ID))
                 .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                .and(SYS_MENU.DELETED.eq(0))
                 .and(SYS_MENU.STATUS.eq(1))
                 .and(SYS_MENU.VISIBLE.eq(1))
                 .orderBy(SYS_MENU.SORT_ORDER.asc());
@@ -311,7 +307,6 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     public PageVO<MenuVO> pageQuery(MenuQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(SYS_MENU)
-                .where(SYS_MENU.DELETED.eq(0))
                 .orderBy(SYS_MENU.SORT_ORDER.asc());
         
         // 添加查询条件
@@ -369,9 +364,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
         // 设置创建时间
         menu.setCreateTime(LocalDateTime.now());
         menu.setUpdateTime(LocalDateTime.now());
-        menu.setDeleted(0);
         
-        // 更新祖级列表（ancestors）
         updateAncestors(menu);
         
         save(menu);
@@ -407,8 +400,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
         // 检查是否有子菜单
         long childCount = count(QueryWrapper.create()
                 .from(SYS_MENU)
-                .where(SYS_MENU.PARENT_ID.eq(id))
-                .and(SYS_MENU.DELETED.eq(0)));
+                .where(SYS_MENU.PARENT_ID.eq(id)));
         
         if (childCount > 0) {
             throw new RuntimeException("存在子菜单，不能删除");
@@ -425,12 +417,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
             throw new RuntimeException("菜单已被角色引用，不能删除");
         }
         
-        // 逻辑删除
-        SysMenu menu = new SysMenu();
-        menu.setId(id);
-        menu.setDeleted(1);
-        menu.setUpdateTime(LocalDateTime.now());
-        updateById(menu);
+        removeById(id);
     }
     
     @Override
@@ -514,8 +501,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     private void updateChildrenAncestors(Long parentId) {
         List<SysMenu> children = list(QueryWrapper.create()
                 .from(SYS_MENU)
-                .where(SYS_MENU.PARENT_ID.eq(parentId))
-                .and(SYS_MENU.DELETED.eq(0)));
+                .where(SYS_MENU.PARENT_ID.eq(parentId)));
         
         for (SysMenu child : children) {
             updateAncestors(child);

@@ -89,7 +89,6 @@ public class DataScopeHelper {
                 .from(SYS_ROLE)
                 .innerJoin(SYS_USER_ROLE).on(SYS_ROLE.ID.eq(SYS_USER_ROLE.ROLE_ID))
                 .where(SYS_USER_ROLE.USER_ID.eq(userId))
-                .and(SYS_ROLE.DELETED.eq(0))
                 .and(SYS_ROLE.STATUS.eq(1));
         
         return roleMapper.selectListByQuery(wrapper);
@@ -122,8 +121,7 @@ public class DataScopeHelper {
                         .select()
                         .from(SYS_DEPT)
                         .where(SYS_DEPT.PARENT_ID.eq(parentId))
-                        .and(SYS_DEPT.DELETED.eq(0))
-                        .and(SYS_DEPT.STATUS.eq(1))
+                .and(SYS_DEPT.STATUS.eq(1))
         );
         
         for (SysDept child : children) {

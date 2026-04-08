@@ -42,9 +42,6 @@ public class GwPlugin {
     
     private Boolean enabled;
     
-    @Column(isLogicDelete = true)
-    private Boolean deleted;
-    
     private LocalDateTime createTime;
     
     private LocalDateTime updateTime;

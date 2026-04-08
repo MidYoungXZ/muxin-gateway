@@ -83,11 +83,6 @@ public class SysDeptTableDef extends TableDef {
     public final QueryColumn UPDATE_BY = new QueryColumn(this, "update_by");
 
     /**
-     * 是否删除
-     */
-    public final QueryColumn DELETED = new QueryColumn(this, "deleted");
-
-    /**
      * 所有字段
      */
     public final QueryColumn ALL_COLUMNS = new QueryColumn(this, "*");

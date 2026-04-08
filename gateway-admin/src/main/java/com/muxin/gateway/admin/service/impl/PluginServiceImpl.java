@@ -27,16 +27,14 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     public List<GwPlugin> getAllPlugins() {
         return pluginMapper.selectListByQuery(
             QueryWrapper.create()
-                .where(GW_PLUGIN.DELETED.eq(false))
-                .and(GW_PLUGIN.ENABLED.eq(true))
+                .where(GW_PLUGIN.ENABLED.eq(true))
                 .orderBy(GW_PLUGIN.PLUGIN_TYPE.asc(), GW_PLUGIN.DEFAULT_PRIORITY.desc())
         );
     }
     
     @Override
     public PageVO<GwPlugin> getPluginsByType(String type, String pluginName, int pageNum, int pageSize) {
-        QueryWrapper queryWrapper = QueryWrapper.create()
-            .where(GW_PLUGIN.DELETED.eq(false));
+        QueryWrapper queryWrapper = QueryWrapper.create();
         
         if (StringUtils.hasText(type)) {
             queryWrapper.and(GW_PLUGIN.PLUGIN_TYPE.eq(type));
@@ -69,7 +67,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     @Override
     public GwPlugin getPluginById(Long id) {
         GwPlugin plugin = getById(id);
-        if (plugin == null || plugin.getDeleted()) {
+        if (plugin == null) {
             throw new BusinessException("插件不存在");
         }
         return plugin;
@@ -80,7 +78,6 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
         return pluginMapper.selectOneByQuery(
             QueryWrapper.create()
                 .where(GW_PLUGIN.PLUGIN_NAME.eq(name))
-                .and(GW_PLUGIN.DELETED.eq(false))
                 .limit(1)
         );
     }
@@ -92,7 +89,6 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
             throw new BusinessException("插件名称已存在: " + plugin.getPluginName());
         }
         
-        plugin.setDeleted(false);
         plugin.setCreateTime(LocalDateTime.now());
         plugin.setUpdateTime(LocalDateTime.now());
         
@@ -115,7 +111,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     @Override
     public void updatePlugin(GwPlugin plugin) {
         GwPlugin existing = getById(plugin.getId());
-        if (existing == null || existing.getDeleted()) {
+        if (existing == null) {
             throw new BusinessException("插件不存在");
         }
         
@@ -132,7 +128,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     @Override
     public void deletePlugin(Long id) {
         GwPlugin plugin = getById(id);
-        if (plugin == null || plugin.getDeleted()) {
+        if (plugin == null) {
             throw new BusinessException("插件不存在");
         }
         
@@ -140,9 +136,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
             throw new BusinessException("系统内置插件不允许删除");
         }
         
-        plugin.setDeleted(true);
-        plugin.setUpdateTime(LocalDateTime.now());
-        updateById(plugin);
+        removeById(id);
         
         log.info("[PluginService] 插件删除成功: {}", plugin.getPluginName());
     }
@@ -150,7 +144,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     @Override
     public void enablePlugin(Long id) {
         GwPlugin plugin = getById(id);
-        if (plugin == null || plugin.getDeleted()) {
+        if (plugin == null) {
             throw new BusinessException("插件不存在");
         }
         
@@ -164,7 +158,7 @@ public class PluginServiceImpl extends ServiceImpl<PluginMapper, GwPlugin> imple
     @Override
     public void disablePlugin(Long id) {
         GwPlugin plugin = getById(id);
-        if (plugin == null || plugin.getDeleted()) {
+        if (plugin == null) {
             throw new BusinessException("插件不存在");
         }
         

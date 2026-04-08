@@ -29,7 +29,4 @@ public class SysConfig {
     private String createBy;
     
     private String updateBy;
-    
-    @Column(isLogicDelete = true)
-    private Integer deleted;
 }

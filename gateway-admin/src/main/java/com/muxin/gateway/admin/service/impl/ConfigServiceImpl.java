@@ -36,8 +36,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
     public PageVO<ConfigVO> pageQuery(ConfigQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
-                .from(SYS_CONFIG)
-                .where(SYS_CONFIG.DELETED.eq(0));
+                .from(SYS_CONFIG);
         
         if (StringUtils.hasText(query.getConfigKey())) {
             wrapper.and(SYS_CONFIG.CONFIG_KEY.like("%" + query.getConfigKey() + "%"));
@@ -76,7 +75,6 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
                 .select()
                 .from(SYS_CONFIG)
                 .where(SYS_CONFIG.CONFIG_KEY.eq(configKey))
-                .and(SYS_CONFIG.DELETED.eq(0))
                 .and(SYS_CONFIG.STATUS.eq(1));
         
         SysConfig config = getOne(wrapper);
@@ -86,7 +84,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
     @Override
     public ConfigVO getDetail(Long id) {
         SysConfig config = getById(id);
-        if (config == null || config.getDeleted() == 1) {
+        if (config == null) {
             throw new BusinessException("配置不存在");
         }
         return convertToVO(config);
@@ -105,7 +103,6 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
         config.setCreateTime(LocalDateTime.now());
         config.setUpdateTime(LocalDateTime.now());
         config.setCreateBy(StpUtil.getLoginIdAsString());
-        config.setDeleted(0);
         
         save(config);
         log.info("创建配置成功：{}", config.getConfigKey());
@@ -116,7 +113,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, ConfigUpdateDTO dto) {
         SysConfig config = getById(id);
-        if (config == null || config.getDeleted() == 1) {
+        if (config == null) {
             throw new BusinessException("配置不存在");
         }
         
@@ -144,14 +141,11 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         SysConfig config = getById(id);
-        if (config == null || config.getDeleted() == 1) {
+        if (config == null) {
             throw new BusinessException("配置不存在");
         }
         
-        config.setDeleted(1);
-        config.setUpdateTime(LocalDateTime.now());
-        config.setUpdateBy(StpUtil.getLoginIdAsString());
-        updateById(config);
+        removeById(id);
         
         log.info("删除配置成功：{}", config.getConfigKey());
     }
@@ -183,8 +177,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_CONFIG)
-                .where(SYS_CONFIG.CONFIG_KEY.eq(configKey))
-                .and(SYS_CONFIG.DELETED.eq(0));
+                .where(SYS_CONFIG.CONFIG_KEY.eq(configKey));
         
         if (excludeId != null) {
             wrapper.and(SYS_CONFIG.ID.ne(excludeId));
@@ -203,8 +196,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
         QueryWrapper wrapper = QueryWrapper.create()
                 .select()
                 .from(SYS_CONFIG)
-                .where(SYS_CONFIG.DELETED.eq(0))
-                .and(SYS_CONFIG.STATUS.eq(1));
+                .where(SYS_CONFIG.STATUS.eq(1));
         
         return list(wrapper).stream()
                 .map(this::convertToVO)
@@ -213,7 +205,7 @@ public class ConfigServiceImpl extends ServiceImpl<ConfigMapper, SysConfig> impl
     
     private void updateStatus(Long id, Integer status) {
         SysConfig config = getById(id);
-        if (config == null || config.getDeleted() == 1) {
+        if (config == null) {
             throw new BusinessException("配置不存在");
         }
         

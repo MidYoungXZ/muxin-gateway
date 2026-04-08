@@ -55,8 +55,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     @Override
     public PageVO<ServiceStatsVO> getServiceStats(String serviceName, int pageNum, int pageSize) {
         QueryWrapper wrapper = QueryWrapper.create()
-                .from(GwServiceNode.class)
-                .where(GwServiceNode::getDeleted).eq(false);
+                .from(GwServiceNode.class);
         
         List<GwServiceNode> nodes = mapper.selectListByQuery(wrapper);
         
@@ -115,7 +114,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GwServiceNode.class)
                 .where(GwServiceNode::getServiceName).eq(serviceName)
-                .and(GwServiceNode::getDeleted).eq(false)
                 .orderBy(GwServiceNode::getCreateTime, false);
         
         com.mybatisflex.core.paginate.Page<GwServiceNode> page = 
@@ -137,7 +135,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     @Override
     public ServiceNodeVO getDetail(Long id) {
         GwServiceNode entity = getById(id);
-        if (entity == null || entity.getDeleted()) {
+        if (entity == null) {
             throw new BusinessException("节点不存在");
         }
         return convertToVO(entity);
@@ -163,8 +161,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     private void checkServiceExists(String serviceName) {
         QueryWrapper existWrapper = QueryWrapper.create()
                 .from(GwServiceNode.class)
-                .where(GwServiceNode::getServiceName).eq(serviceName)
-                .and(GwServiceNode::getDeleted).eq(false);
+                .where(GwServiceNode::getServiceName).eq(serviceName);
         long existCount = mapper.selectCountByQuery(existWrapper);
         if (existCount > 0) {
             throw new BusinessException("服务已存在: " + serviceName);
@@ -207,7 +204,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         entity.setHealthCheckPath("/health");
         entity.setHealthCheckExpectedStatus(Arrays.asList(200, 201));
         entity.setStatus(1);
-        entity.setDeleted(false);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());
         entity.setCreateBy(StpUtil.getLoginIdAsString());
@@ -248,11 +244,10 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             entity.setHealthCheckTimeout(5);
             entity.setHealthCheckPath("/health");
             entity.setHealthCheckExpectedStatus(Arrays.asList(200, 201));
-            entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
-            entity.setDeleted(false);
-            entity.setCreateTime(LocalDateTime.now());
-            entity.setUpdateTime(LocalDateTime.now());
-            entity.setCreateBy(StpUtil.getLoginIdAsString());
+entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
+        entity.setCreateTime(LocalDateTime.now());
+        entity.setUpdateTime(LocalDateTime.now());
+        entity.setCreateBy(StpUtil.getLoginIdAsString());
             
             save(entity);
             if (firstId == null) {
@@ -282,7 +277,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         entity.setHealthCheckPath(StringUtils.hasText(dto.getHealthCheckPath()) ? dto.getHealthCheckPath() : "/health");
         entity.setHealthCheckExpectedStatus(dto.getHealthCheckExpectedStatus() != null ? dto.getHealthCheckExpectedStatus() : Arrays.asList(200, 201));
         entity.setStatus(1);
-        entity.setDeleted(false);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());
         entity.setCreateBy(StpUtil.getLoginIdAsString());
@@ -317,7 +311,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         entity.setHealthCheckExpectedStatus(dto.getHealthCheckExpectedStatus() != null ? 
                 dto.getHealthCheckExpectedStatus() : Arrays.asList(200, 201));
         entity.setStatus(1);
-        entity.setDeleted(false);
         entity.setCreateTime(LocalDateTime.now());
         entity.setUpdateTime(LocalDateTime.now());
         entity.setCreateBy(StpUtil.getLoginIdAsString());
@@ -332,7 +325,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     @Transactional(rollbackFor = Exception.class)
     public void update(Long id, ServiceNodeUpdateDTO dto) {
         GwServiceNode entity = getById(id);
-        if (entity == null || entity.getDeleted()) {
+        if (entity == null) {
             throw new BusinessException("节点不存在");
         }
         
@@ -380,7 +373,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         GwServiceNode entity = getById(id);
-        if (entity == null || entity.getDeleted()) {
+        if (entity == null) {
             throw new BusinessException("节点不存在");
         }
         
@@ -412,7 +405,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         QueryWrapper wrapper = QueryWrapper.create()
                 .select(GwServiceNode::getServiceName)
                 .from(GwServiceNode.class)
-                .where(GwServiceNode::getDeleted).eq(false)
                 .orderBy(GwServiceNode::getServiceName, true);
         
         return mapper.selectListByQuery(wrapper).stream()
@@ -428,7 +420,6 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             QueryWrapper.create()
                 .select()
                 .where(GW_ROUTE.URI.like("lb://" + serviceName))
-                .and(GW_ROUTE.DELETED.eq(false))
                 .orderBy(GW_ROUTE.CREATE_TIME.desc())
         );
         
@@ -452,8 +443,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
         
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GwServiceNode.class)
-                .where(GwServiceNode::getServiceName).eq(serviceName)
-                .and(GwServiceNode::getDeleted).eq(false);
+                .where(GwServiceNode::getServiceName).eq(serviceName);
         
         List<GwServiceNode> nodes = mapper.selectListByQuery(wrapper);
         if (nodes.isEmpty()) {
@@ -518,7 +508,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     
     private void updateStatus(Long id, Integer status) {
         GwServiceNode entity = getById(id);
-        if (entity == null || entity.getDeleted()) {
+        if (entity == null) {
             throw new BusinessException("节点不存在");
         }
         entity.setStatus(status);
