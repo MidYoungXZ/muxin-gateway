@@ -1,10 +1,7 @@
 package com.muxin.gateway.core.route.filter;
 
 import com.muxin.gateway.core.route.exchange.HttpServerExchange;
-import io.netty.handler.codec.http.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
 
 @Slf4j
 public class CorsFilter implements Filter {
@@ -20,34 +17,13 @@ public class CorsFilter implements Filter {
     private final boolean enabled;
 
     public CorsFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.allowOrigins = args != null ? getStringValue(args.get("allowOrigins"), "*") : "*";
-        this.allowMethods = args != null ? getStringValue(args.get("allowMethods"), "*") : "*";
-        this.allowHeaders = args != null ? getStringValue(args.get("allowHeaders"), "*") : "*";
-        this.allowCredentials = args != null ? getBooleanValue(args.get("allowCredentials"), false) : false;
-        this.maxAge = args != null ? getIntValue(args.get("maxAge"), 3600) : 3600;
+        this.allowOrigins = definition.getStringArg("allowOrigins", "*");
+        this.allowMethods = definition.getStringArg("allowMethods", "*");
+        this.allowHeaders = definition.getStringArg("allowHeaders", "*");
+        this.allowCredentials = definition.getBooleanArg("allowCredentials", false);
+        this.maxAge = definition.getIntArg("maxAge", 3600);
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-    }
-
-    private String getStringValue(Object value, String defaultValue) {
-        return value != null ? value.toString() : defaultValue;
-    }
-
-    private int getIntValue(Object value, int defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Number) return ((Number) value).intValue();
-        try {
-            return Integer.parseInt(value.toString());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
-    }
-
-    private boolean getBooleanValue(Object value, boolean defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Boolean) return (Boolean) value;
-        return Boolean.parseBoolean(value.toString());
     }
 
     @Override
@@ -79,22 +55,13 @@ public class CorsFilter implements Filter {
             }
         }
 
-        if (log.isDebugEnabled()) {
-            log.debug("[CorsFilter] CORS 处理完成, origin: {}, allowed: {}", origin, isAllowed);
-        }
-
         chain.doFilter(exchange);
     }
 
     private boolean isOriginAllowed(String origin) {
-        if ("*".equals(allowOrigins)) {
-            return true;
-        }
-        String[] allowedOrigins = allowOrigins.split(",");
-        for (String allowed : allowedOrigins) {
-            if (allowed.trim().equalsIgnoreCase(origin)) {
-                return true;
-            }
+        if ("*".equals(allowOrigins)) return true;
+        for (String allowed : allowOrigins.split(",")) {
+            if (allowed.trim().equalsIgnoreCase(origin)) return true;
         }
         return false;
     }
@@ -109,46 +76,16 @@ public class CorsFilter implements Filter {
         }
         exchange.setStatus(io.netty.handler.codec.http.HttpResponseStatus.OK);
         exchange.setResponseBody("");
-
-        if (log.isDebugEnabled()) {
-            log.debug("[CorsFilter] 预检请求处理完成, origin: {}", origin);
-        }
     }
 
-    @Override
-    public String getName() {
-        return TYPE;
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.PRE;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE; }
+    @Override public FilterType getType() { return FilterType.PRE; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new CorsFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new CorsFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

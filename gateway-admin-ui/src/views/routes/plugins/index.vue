@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">插件</span>
+      <span class="title">插件管理</span>
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增插件

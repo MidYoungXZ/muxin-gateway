@@ -21,25 +21,21 @@ public class RequestRewriteFilter implements Filter {
     private final int order;
     private final boolean enabled;
 
+    @SuppressWarnings("unchecked")
     public RequestRewriteFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.pathRegex = args != null ? getStringValue(args.get("pathRegex"), null) : null;
-        this.pathReplacement = args != null ? getStringValue(args.get("pathReplacement"), null) : null;
-        this.headersToAdd = args != null ? extractHeadersToAdd(args.get("headersToAdd")) : null;
-        this.headersToRemove = args != null ? extractHeadersToRemove(args.get("headersToRemove")) : null;
+        this.pathRegex = definition.getStringArg("pathRegex", null);
+        this.pathReplacement = definition.getStringArg("pathReplacement", null);
+        this.headersToAdd = extractHeadersToAdd(definition.getArg("headersToAdd"));
+        this.headersToRemove = extractHeadersToRemove(definition.getArg("headersToRemove"));
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
     }
 
-    private String getStringValue(Object value, String defaultValue) {
-        return value != null ? value.toString() : defaultValue;
-    }
-
     @SuppressWarnings("unchecked")
-    private Map<String, String> extractHeadersToAdd(Object value) {
+    private static Map<String, String> extractHeadersToAdd(Object value) {
         if (value instanceof Map) {
             Map<String, Object> map = (Map<String, Object>) value;
-            Map<String, String> result = new java.util.HashMap<>();
+            Map<String, String> result = new java.util.LinkedHashMap<>();
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 result.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
             }
@@ -49,10 +45,9 @@ public class RequestRewriteFilter implements Filter {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> extractHeadersToRemove(Object value) {
+    private static List<String> extractHeadersToRemove(Object value) {
         if (value instanceof List) {
-            List<?> list = (List<?>) value;
-            return list.stream()
+            return ((List<?>) value).stream()
                     .filter(v -> v != null)
                     .map(Object::toString)
                     .collect(java.util.stream.Collectors.toList());
@@ -72,37 +67,34 @@ public class RequestRewriteFilter implements Filter {
             if (originalPath != null && PATH_MATCHER.match(pathRegex, originalPath)) {
                 String extractedPath = PATH_MATCHER.extractPathWithinPattern(pathRegex, originalPath);
                 Map<String, String> uriVariables = PATH_MATCHER.extractUriTemplateVariables(pathRegex, originalPath);
-                
+
                 String newPath = pathReplacement;
-                
                 if (newPath.contains("/**")) {
                     newPath = newPath.replace("/**", extractedPath.isEmpty() ? "" : "/" + extractedPath);
                 }
                 if (newPath.contains("/*")) {
                     newPath = newPath.replace("/*", extractedPath.isEmpty() ? "" : "/" + extractedPath);
                 }
-                
                 for (Map.Entry<String, String> entry : uriVariables.entrySet()) {
                     newPath = newPath.replace("${" + entry.getKey() + "}", entry.getValue());
                     newPath = newPath.replace("{" + entry.getKey() + "}", entry.getValue());
                 }
-                
                 if (!newPath.startsWith("/")) {
                     newPath = "/" + newPath;
                 }
-                
+
                 String queryString = "";
                 int queryIndex = originalPath.indexOf('?');
                 if (queryIndex > 0) {
                     queryString = originalPath.substring(queryIndex);
                 }
-                
+
                 String finalUri = newPath + queryString;
                 exchange.uri(finalUri);
                 exchange.setAttribute("originalPath", originalPath);
                 exchange.setAttribute("rewrittenPath", finalUri);
                 exchange.setAttribute("uriVariables", uriVariables);
-                
+
                 if (log.isDebugEnabled()) {
                     log.debug("[RequestRewriteFilter] 路径重写: {} -> {}, 变量: {}", originalPath, finalUri, uriVariables);
                 }
@@ -112,26 +104,19 @@ public class RequestRewriteFilter implements Filter {
         if (headersToRemove != null) {
             for (String header : headersToRemove) {
                 exchange.removeHeader(header);
-                if (log.isDebugEnabled()) {
-                    log.debug("[RequestRewriteFilter] 移除请求头: {}", header);
-                }
             }
         }
 
         if (headersToAdd != null) {
             for (Map.Entry<String, String> entry : headersToAdd.entrySet()) {
-                String resolvedValue = resolveValue(entry.getValue());
-                exchange.header(entry.getKey(), resolvedValue);
-                if (log.isDebugEnabled()) {
-                    log.debug("[RequestRewriteFilter] 添加请求头: {} = {}", entry.getKey(), resolvedValue);
-                }
+                exchange.header(entry.getKey(), resolveValue(entry.getValue()));
             }
         }
 
         chain.doFilter(exchange);
     }
 
-    private String resolveValue(String value) {
+    private static String resolveValue(String value) {
         if (value == null) return "";
         if (value.contains("#{T(System).currentTimeMillis()}")) {
             return value.replace("#{T(System).currentTimeMillis()}", String.valueOf(System.currentTimeMillis()));
@@ -142,40 +127,14 @@ public class RequestRewriteFilter implements Filter {
         return value;
     }
 
-    @Override
-    public String getName() {
-        return TYPE;
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.PRE;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE; }
+    @Override public FilterType getType() { return FilterType.PRE; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new RequestRewriteFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new RequestRewriteFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

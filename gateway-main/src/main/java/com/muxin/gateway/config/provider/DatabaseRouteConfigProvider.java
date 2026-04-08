@@ -14,7 +14,6 @@ import com.muxin.gateway.admin.mapper.RoutePredicateMapper;
 import com.muxin.gateway.admin.mapper.RoutePluginMapper;
 import com.muxin.gateway.admin.constants.PluginConfigKeys;
 import com.muxin.gateway.constants.FilterConfigKeys;
-import com.muxin.gateway.constants.FilterConfigKeys;
 import static com.muxin.gateway.admin.entity.table.GwRoutePluginTableDef.GW_ROUTE_PLUGIN;
 import static com.muxin.gateway.admin.entity.table.GwPluginTableDef.GW_PLUGIN;
 import static com.muxin.gateway.admin.entity.table.GwRoutePredicateTableDef.GW_ROUTE_PREDICATE;
@@ -359,8 +358,8 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
     @SuppressWarnings("unchecked")
     private FilterDefinition createRequestRewriteFilter(Map<String, Object> config, int order) {
-Map<String, Object> filterArgs = new HashMap<>();
-        
+        Map<String, Object> filterArgs = new HashMap<>();
+
         if (config.get(PluginConfigKeys.PATH_REGEX) != null) {
             filterArgs.put(FilterConfigKeys.PATH_REGEX, config.get(PluginConfigKeys.PATH_REGEX));
         }
@@ -368,7 +367,7 @@ Map<String, Object> filterArgs = new HashMap<>();
             filterArgs.put(FilterConfigKeys.PATH_REPLACEMENT, config.get(PluginConfigKeys.PATH_REPLACEMENT));
         }
         if (config.get(PluginConfigKeys.HEADERS_TO_ADD) != null) {
-            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, config.get(PluginConfigKeys.HEADERS_TO_ADD));
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, convertHeadersToAdd(config.get(PluginConfigKeys.HEADERS_TO_ADD)));
         }
         if (config.get(PluginConfigKeys.HEADERS_TO_REMOVE) != null) {
             filterArgs.put(FilterConfigKeys.HEADERS_TO_REMOVE, config.get(PluginConfigKeys.HEADERS_TO_REMOVE));
@@ -387,7 +386,7 @@ Map<String, Object> filterArgs = new HashMap<>();
         Map<String, Object> filterArgs = new HashMap<>();
 
         if (config.get(PluginConfigKeys.HEADERS_TO_ADD) != null) {
-            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, config.get(PluginConfigKeys.HEADERS_TO_ADD));
+            filterArgs.put(FilterConfigKeys.HEADERS_TO_ADD, convertHeadersToAdd(config.get(PluginConfigKeys.HEADERS_TO_ADD)));
         }
         if (config.get(PluginConfigKeys.HEADERS_TO_REMOVE) != null) {
             filterArgs.put(FilterConfigKeys.HEADERS_TO_REMOVE, config.get(PluginConfigKeys.HEADERS_TO_REMOVE));
@@ -405,6 +404,28 @@ Map<String, Object> filterArgs = new HashMap<>();
                 .order(order)
                 .enabled(true)
                 .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, String> convertHeadersToAdd(Object value) {
+        if (value instanceof Map) {
+            return (Map<String, String>) value;
+        }
+        if (value instanceof List) {
+            Map<String, String> map = new HashMap<>();
+            for (Object item : (List<?>) value) {
+                if (item instanceof Map) {
+                    Map<?, ?> m = (Map<?, ?>) item;
+                    Object key = m.get("key");
+                    Object val = m.get("value");
+                    if (key != null && !key.toString().isEmpty()) {
+                        map.put(key.toString(), val != null ? val.toString() : "");
+                    }
+                }
+            }
+            return map;
+        }
+        return Collections.emptyMap();
     }
 
     private int toInt(Object value, int defaultValue) {

@@ -4,7 +4,6 @@ import com.muxin.gateway.core.route.exchange.HttpServerExchange;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.concurrent.*;
 
 @Slf4j
@@ -12,29 +11,25 @@ public class TimeoutFilter implements Filter {
 
     public static final String TYPE = "TimeoutFilter";
 
+    private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            r -> {
+                Thread t = new Thread(r, "timeout-filter");
+                t.setDaemon(true);
+                return t;
+            }
+    );
+
     private final int connectTimeout;
     private final int responseTimeout;
     private final int order;
     private final boolean enabled;
 
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     public TimeoutFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.connectTimeout = args != null ? getIntValue(args.get("connectTimeout"), 5000) : 5000;
-        this.responseTimeout = args != null ? getIntValue(args.get("responseTimeout"), 30000) : 30000;
+        this.connectTimeout = definition.getIntArg("connectTimeout", 5000);
+        this.responseTimeout = definition.getIntArg("responseTimeout", 30000);
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-    }
-
-    private int getIntValue(Object value, int defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Number) return ((Number) value).intValue();
-        try {
-            return Integer.parseInt(value.toString());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     @Override
@@ -58,7 +53,7 @@ public class TimeoutFilter implements Filter {
             }
         });
 
-        ScheduledFuture<?> timeoutFuture = scheduler.schedule(() -> {
+        ScheduledFuture<?> timeoutFuture = SCHEDULER.schedule(() -> {
             if (!future.isDone()) {
                 future.cancel(true);
                 log.warn("[TimeoutFilter] 请求超时, 路径: {}", exchange.fullPath());
@@ -68,9 +63,7 @@ public class TimeoutFilter implements Filter {
             }
         }, responseTimeout, TimeUnit.MILLISECONDS);
 
-        future.whenComplete((result, ex) -> {
-            timeoutFuture.cancel(false);
-        });
+        future.whenComplete((result, ex) -> timeoutFuture.cancel(false));
 
         try {
             future.get(responseTimeout, TimeUnit.MILLISECONDS);
@@ -81,40 +74,14 @@ public class TimeoutFilter implements Filter {
         }
     }
 
-    @Override
-    public String getName() {
-        return TYPE;
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.PRE;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE; }
+    @Override public FilterType getType() { return FilterType.PRE; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new TimeoutFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new TimeoutFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

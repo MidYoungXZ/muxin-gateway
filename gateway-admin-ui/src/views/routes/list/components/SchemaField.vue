@@ -55,29 +55,69 @@
       <template v-else-if="schema.type === 'array'">
         <div class="array-field">
           <template v-if="schema.items?.type === 'object'">
-            <div v-for="(_, index) in (modelValue || [])" :key="index" class="array-item">
-              <div class="array-item-header">
-                <span class="array-item-index">#{{ index + 1 }}</span>
-                <el-button type="danger" size="small" link @click="removeArrayItem(index)">
-                  删除
-                </el-button>
+            <template v-if="schema['x-layout'] === 'row'">
+              <div class="inline-row-list">
+                <div
+                  v-for="(_, index) in (modelValue || [])"
+                  :key="index"
+                  class="inline-row"
+                >
+                  <template v-for="(subProp, subKey) in schema.items.properties" :key="subKey">
+                    <el-input
+                      v-if="subProp.type === 'string' || !subProp.type"
+                      :model-value="(modelValue[index] || {})[subKey]"
+                      @update:model-value="updateArrayObjectField(index, subKey, $event)"
+                      :placeholder="subProp.placeholder || subProp.title || subKey"
+                      style="flex: 1; min-width: 0"
+                    />
+                    <el-select
+                      v-else-if="subProp.enum"
+                      :model-value="(modelValue[index] || {})[subKey]"
+                      @update:model-value="updateArrayObjectField(index, subKey, $event)"
+                      style="width: 120px"
+                    >
+                      <el-option
+                        v-for="opt in subProp.enum"
+                        :key="opt"
+                        :label="subProp.enumTitles?.[opt] || opt"
+                        :value="opt"
+                      />
+                    </el-select>
+                  </template>
+                  <el-button v-if="!readonly" type="danger" link @click="removeArrayItem(index)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
               </div>
-              <div class="array-item-body">
-                <SchemaField
-                  v-for="(subProp, subKey) in schema.items.properties"
-                  :key="subKey"
-                  :schema="subProp"
-                  :model-value="(modelValue[index] || {})[subKey]"
-                  @update:model-value="updateArrayObjectField(index, subKey, $event)"
-                  :title="subProp.title || subKey"
-                  :is-required="schema.items.required?.includes(subKey)"
-                  :prop-path="`${propPath}.${index}.${subKey}`"
-                />
+              <el-button v-if="!readonly" type="primary" link @click="addArrayObjectItem">
+                <el-icon><Plus /></el-icon> 添加
+              </el-button>
+            </template>
+            <template v-else>
+              <div v-for="(_, index) in (modelValue || [])" :key="index" class="array-item">
+                <div class="array-item-header">
+                  <span class="array-item-index">#{{ index + 1 }}</span>
+                  <el-button type="danger" size="small" link @click="removeArrayItem(index)">
+                    删除
+                  </el-button>
+                </div>
+                <div class="array-item-body">
+                  <SchemaField
+                    v-for="(subProp, subKey) in schema.items.properties"
+                    :key="subKey"
+                    :schema="subProp"
+                    :model-value="(modelValue[index] || {})[subKey]"
+                    @update:model-value="updateArrayObjectField(index, subKey, $event)"
+                    :title="subProp.title || subKey"
+                    :is-required="schema.items.required?.includes(subKey)"
+                    :prop-path="`${propPath}.${index}.${subKey}`"
+                  />
+                </div>
               </div>
-            </div>
-            <el-button type="primary" plain size="small" @click="addArrayObjectItem">
-              <el-icon><Plus /></el-icon> 添加
-            </el-button>
+              <el-button type="primary" plain size="small" @click="addArrayObjectItem">
+                <el-icon><Plus /></el-icon> 添加
+              </el-button>
+            </template>
           </template>
           <template v-else>
             <div class="tag-list">
@@ -94,15 +134,14 @@
             <div class="tag-input-row">
               <el-input
                 v-model="arrayInput"
-                :placeholder="`添加${title}`"
+                :placeholder="schema.placeholder || `添加${title}`"
                 size="small"
-                style="width: 200px"
+                style="flex: 1; min-width: 0"
                 @keyup.enter="addArrayItem"
-              >
-                <template #append>
-                  <el-button @click="addArrayItem">添加</el-button>
-                </template>
-              </el-input>
+              />
+              <el-button type="primary" link size="small" @click="addArrayItem">
+                <el-icon><Plus /></el-icon> 添加
+              </el-button>
             </div>
           </template>
         </div>
@@ -142,7 +181,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Delete } from '@element-plus/icons-vue'
 
 interface JsonSchema {
   type?: string
@@ -166,6 +205,7 @@ const props = defineProps<{
   title: string
   isRequired?: boolean
   propPath?: string
+  readonly?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -176,7 +216,7 @@ const arrayInput = ref('')
 const objectJsonStr = ref('')
 const jsonError = ref('')
 
-const placeholder = computed(() => `请输入${props.title}`)
+const placeholder = computed(() => props.schema.placeholder || `请输入${props.title}`)
 
 function handleInput(val: any) {
   emit('update:modelValue', val)
@@ -256,6 +296,17 @@ function getDefaultForType(type?: string): any {
   width: 100%;
 }
 
+.inline-row-list {
+  margin-bottom: 8px;
+}
+
+.inline-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
 .array-item {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
@@ -312,6 +363,7 @@ function getDefaultForType(type?: string): any {
 .tag-input-row {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .json-error {

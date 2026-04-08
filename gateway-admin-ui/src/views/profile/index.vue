@@ -80,14 +80,11 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="角色">
-                    <el-tag
-                      v-for="role in userInfo.roles"
-                      :key="role"
-                      style="margin-right: 8px"
-                    >
-                      {{ role }}
-                    </el-tag>
-                    <span v-if="!userInfo.roles?.length">暂无角色</span>
+                    <el-input
+                      :model-value="userInfo.roles?.map((r: any) => r.roleName).join(', ') || ''"
+                      disabled
+                      placeholder="暂无角色"
+                    />
                   </el-form-item>
                 </el-col>
               </el-row>

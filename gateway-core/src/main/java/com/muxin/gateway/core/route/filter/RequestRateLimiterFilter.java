@@ -13,40 +13,21 @@ public class RequestRateLimiterFilter implements Filter {
 
     public static final String TYPE = "RequestRateLimiter";
 
+    private static final long BUCKET_TTL_MS = 30 * 60 * 1000L;
+
     private final int replenishRate;
     private final int burstCapacity;
     private final int order;
     private final boolean enabled;
 
     private final Map<String, TokenBucket> buckets = new ConcurrentHashMap<>();
-
-    public RequestRateLimiterFilter(int replenishRate, int burstCapacity) {
-        this(replenishRate, burstCapacity, 0, true);
-    }
-
-    public RequestRateLimiterFilter(int replenishRate, int burstCapacity, int order, boolean enabled) {
-        this.replenishRate = replenishRate;
-        this.burstCapacity = burstCapacity;
-        this.order = order;
-        this.enabled = enabled;
-    }
+    private volatile long lastCleanupTime = System.currentTimeMillis();
 
     public RequestRateLimiterFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.replenishRate = args != null ? getIntValue(args.get("replenishRate"), 10) : 10;
-        this.burstCapacity = args != null ? getIntValue(args.get("burstCapacity"), 20) : 20;
+        this.replenishRate = definition.getIntArg("replenishRate", 10);
+        this.burstCapacity = definition.getIntArg("burstCapacity", 20);
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-    }
-
-    private int getIntValue(Object value, int defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Number) return ((Number) value).intValue();
-        try {
-            return Integer.parseInt(value.toString());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     @Override
@@ -56,12 +37,18 @@ public class RequestRateLimiterFilter implements Filter {
             return;
         }
 
+        long now = System.currentTimeMillis();
+        if (now - lastCleanupTime > BUCKET_TTL_MS) {
+            lastCleanupTime = now;
+            buckets.clear();
+        }
+
         String key = getClientKey(exchange);
         TokenBucket bucket = buckets.computeIfAbsent(key, k -> new TokenBucket(burstCapacity, replenishRate));
 
         if (bucket.tryAcquire()) {
             if (log.isDebugEnabled()) {
-                log.debug("[RequestRateLimiterFilter] 请求通过, key: {}, available tokens: {}", key, bucket.availableTokens());
+                log.debug("[RequestRateLimiterFilter] 请求通过, key: {}", key);
             }
             chain.doFilter(exchange);
         } else {
@@ -84,25 +71,10 @@ public class RequestRateLimiterFilter implements Filter {
         return "default";
     }
 
-    @Override
-    public String getName() {
-        return "RequestRateLimiterFilter";
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.PRE;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE; }
+    @Override public FilterType getType() { return FilterType.PRE; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     private static class TokenBucket {
         private final int capacity;
@@ -131,32 +103,15 @@ public class RequestRateLimiterFilter implements Filter {
             long elapsed = now - lastRefillTime;
             if (elapsed >= 1000) {
                 long tokensToAdd = (elapsed / 1000) * refillRate;
-                long newTokens = Math.min(capacity, tokens.get() + tokensToAdd);
-                tokens.set(newTokens);
+                tokens.set(Math.min(capacity, tokens.get() + tokensToAdd));
                 lastRefillTime = now;
             }
-        }
-
-        long availableTokens() {
-            refill();
-            return tokens.get();
         }
     }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new RequestRateLimiterFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new RequestRateLimiterFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

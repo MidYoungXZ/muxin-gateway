@@ -119,4 +119,19 @@ public class FilterDefinition {
         }
         return defaultValue;
     }
+
+    public long getLongArg(String key, long defaultValue) {
+        Object value = getArg(key);
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        if (value instanceof String) {
+            try {
+                return Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
+    }
 }

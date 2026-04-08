@@ -2,7 +2,7 @@
 export type ThemeType = 'light' | 'dark';
 
 // 主题状态
-const theme = ref<ThemeType>('light');
+const theme = ref<ThemeType>('dark');
 
 /**
  * Applies the given theme to the document root by setting the class name
@@ -32,7 +32,7 @@ export function applyTheme(themeType: ThemeType) {
  */
 export function initTheme() {
   // 从 localStorage 读取主题设置，默认为 light
-  const savedTheme = localStorage.getItem('theme') as ThemeType || 'light';
+  const savedTheme = localStorage.getItem('theme') as ThemeType || 'dark';
   theme.value = savedTheme;
   applyTheme(savedTheme);
 }

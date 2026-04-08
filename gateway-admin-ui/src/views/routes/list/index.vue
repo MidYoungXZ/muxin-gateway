@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">路由</span>
+      <span class="title">路由列表</span>
       <el-button type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增路由
@@ -43,6 +43,7 @@
         <div class="toolbar-left">
           <el-button
             type="danger"
+            plain
             :disabled="!selectedRoutes.length"
             @click="handleBatchDelete"
           >

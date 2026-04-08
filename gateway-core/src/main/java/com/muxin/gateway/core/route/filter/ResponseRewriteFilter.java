@@ -18,25 +18,21 @@ public class ResponseRewriteFilter implements Filter {
     private final int order;
     private final boolean enabled;
 
+    @SuppressWarnings("unchecked")
     public ResponseRewriteFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.headersToAdd = args != null ? extractHeadersToAdd(args.get("headersToAdd")) : null;
-        this.headersToRemove = args != null ? extractHeadersToRemove(args.get("headersToRemove")) : null;
-        this.bodyRegex = args != null ? getStringValue(args.get("bodyRegex"), null) : null;
-        this.bodyReplacement = args != null ? getStringValue(args.get("bodyReplacement"), null) : null;
+        this.headersToAdd = extractHeadersToAdd(definition.getArg("headersToAdd"));
+        this.headersToRemove = extractHeadersToRemove(definition.getArg("headersToRemove"));
+        this.bodyRegex = definition.getStringArg("bodyRegex", null);
+        this.bodyReplacement = definition.getStringArg("bodyReplacement", null);
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
     }
 
-    private String getStringValue(Object value, String defaultValue) {
-        return value != null ? value.toString() : defaultValue;
-    }
-
     @SuppressWarnings("unchecked")
-    private Map<String, String> extractHeadersToAdd(Object value) {
+    private static Map<String, String> extractHeadersToAdd(Object value) {
         if (value instanceof Map) {
             Map<String, Object> map = (Map<String, Object>) value;
-            Map<String, String> result = new java.util.HashMap<>();
+            Map<String, String> result = new java.util.LinkedHashMap<>();
             for (Map.Entry<String, Object> entry : map.entrySet()) {
                 result.put(entry.getKey(), entry.getValue() != null ? entry.getValue().toString() : "");
             }
@@ -46,10 +42,9 @@ public class ResponseRewriteFilter implements Filter {
     }
 
     @SuppressWarnings("unchecked")
-    private List<String> extractHeadersToRemove(Object value) {
+    private static List<String> extractHeadersToRemove(Object value) {
         if (value instanceof List) {
-            List<?> list = (List<?>) value;
-            return list.stream()
+            return ((List<?>) value).stream()
                     .filter(v -> v != null)
                     .map(Object::toString)
                     .collect(java.util.stream.Collectors.toList());
@@ -69,67 +64,31 @@ public class ResponseRewriteFilter implements Filter {
         if (headersToRemove != null) {
             for (String header : headersToRemove) {
                 exchange.responseHeaders().remove(header);
-                if (log.isDebugEnabled()) {
-                    log.debug("[ResponseRewriteFilter] 移除响应头: {}", header);
-                }
             }
         }
 
         if (headersToAdd != null) {
             for (Map.Entry<String, String> entry : headersToAdd.entrySet()) {
                 exchange.setResponseHeader(entry.getKey(), entry.getValue());
-                if (log.isDebugEnabled()) {
-                    log.debug("[ResponseRewriteFilter] 添加响应头: {} = {}", entry.getKey(), entry.getValue());
-                }
             }
         }
 
         if (bodyRegex != null && bodyReplacement != null) {
             String body = exchange.getResponseBody();
             if (body != null && !body.isEmpty()) {
-                String newBody = body.replaceAll(bodyRegex, bodyReplacement);
-                exchange.setResponseBody(newBody);
-                if (log.isDebugEnabled()) {
-                    log.debug("[ResponseRewriteFilter] Body 重写完成");
-                }
+                exchange.setResponseBody(body.replaceAll(bodyRegex, bodyReplacement));
             }
         }
     }
 
-    @Override
-    public String getName() {
-        return TYPE;
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.POST;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE; }
+    @Override public FilterType getType() { return FilterType.POST; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new ResponseRewriteFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new ResponseRewriteFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

@@ -17,6 +17,10 @@ public class CircuitBreakerFilter implements Filter {
     private static final int STATE_OPEN = 1;
     private static final int STATE_HALF_OPEN = 2;
 
+    private static final long CLEANUP_INTERVAL_MS = 30 * 60 * 1000L;
+    private static final Map<String, CircuitBreakerState> circuitBreakers = new ConcurrentHashMap<>();
+    private static volatile long lastCleanupTime = System.currentTimeMillis();
+
     private final String name;
     private final String fallbackUri;
     private final int failureRateThreshold;
@@ -25,53 +29,14 @@ public class CircuitBreakerFilter implements Filter {
     private final int order;
     private final boolean enabled;
 
-    private static final Map<String, CircuitBreakerState> circuitBreakers = new ConcurrentHashMap<>();
-
-    public CircuitBreakerFilter(String name, String fallbackUri) {
-        this(name, fallbackUri, 50, 100, 60000, 0, true);
-    }
-
-    public CircuitBreakerFilter(String name, String fallbackUri, int failureRateThreshold, 
-                                 int ringBufferSize, long waitDurationInOpenState, 
-                                 int order, boolean enabled) {
-        this.name = name;
-        this.fallbackUri = fallbackUri;
-        this.failureRateThreshold = failureRateThreshold;
-        this.ringBufferSize = ringBufferSize;
-        this.waitDurationInOpenState = waitDurationInOpenState;
-        this.order = order;
-        this.enabled = enabled;
-    }
-
     public CircuitBreakerFilter(FilterDefinition definition) {
-        Map<String, Object> args = definition.getArgs();
-        this.name = args != null ? (String) args.get("name") : "default";
-        this.fallbackUri = args != null ? (String) args.get("fallbackUri") : "/fallback";
-        this.failureRateThreshold = args != null ? getIntValue(args.get("failureRateThreshold"), 50) : 50;
-        this.ringBufferSize = args != null ? getIntValue(args.get("ringBufferSize"), 100) : 100;
-        this.waitDurationInOpenState = args != null ? getLongValue(args.get("waitDurationInOpenState"), 60000) : 60000;
+        this.name = definition.getStringArg("name", "default");
+        this.fallbackUri = definition.getStringArg("fallbackUri", "/fallback");
+        this.failureRateThreshold = definition.getIntArg("failureRateThreshold", 50);
+        this.ringBufferSize = definition.getIntArg("ringBufferSize", 100);
+        this.waitDurationInOpenState = definition.getLongArg("waitDurationInOpenState", 60000);
         this.order = definition.getOrder();
         this.enabled = definition.isEnabled();
-    }
-
-    private int getIntValue(Object value, int defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Number) return ((Number) value).intValue();
-        try {
-            return Integer.parseInt(value.toString());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
-    }
-
-    private long getLongValue(Object value, long defaultValue) {
-        if (value == null) return defaultValue;
-        if (value instanceof Number) return ((Number) value).longValue();
-        try {
-            return Long.parseLong(value.toString());
-        } catch (NumberFormatException e) {
-            return defaultValue;
-        }
     }
 
     @Override
@@ -81,7 +46,13 @@ public class CircuitBreakerFilter implements Filter {
             return;
         }
 
-        CircuitBreakerState state = circuitBreakers.computeIfAbsent(name, 
+        long now = System.currentTimeMillis();
+        if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
+            lastCleanupTime = now;
+            circuitBreakers.clear();
+        }
+
+        CircuitBreakerState state = circuitBreakers.computeIfAbsent(name,
                 k -> new CircuitBreakerState(failureRateThreshold, ringBufferSize, waitDurationInOpenState));
 
         if (state.getState() == STATE_OPEN) {
@@ -95,7 +66,6 @@ public class CircuitBreakerFilter implements Filter {
 
         try {
             chain.doFilter(exchange);
-            
             HttpResponseStatus status = exchange.status();
             if (status != null && status.code() >= 500) {
                 state.recordFailure();
@@ -111,43 +81,24 @@ public class CircuitBreakerFilter implements Filter {
 
     private void handleFallback(HttpServerExchange exchange) {
         log.warn("[CircuitBreakerFilter] 触发熔断, 执行降级: {}", fallbackUri);
-        
-        if (fallbackUri != null && !fallbackUri.isEmpty()) {
-            exchange.setStatus(HttpResponseStatus.SERVICE_UNAVAILABLE);
-            exchange.setResponseHeader("Content-Type", "application/json");
-            exchange.setResponseBody("{\"code\":503,\"message\":\"Service Unavailable - Circuit Breaker Open\"}");
-        }
+        exchange.setStatus(HttpResponseStatus.SERVICE_UNAVAILABLE);
+        exchange.setResponseHeader("Content-Type", "application/json");
+        exchange.setResponseBody("{\"code\":503,\"message\":\"Service Unavailable - Circuit Breaker Open\"}");
     }
 
-    @Override
-    public String getName() {
-        return "CircuitBreakerFilter-" + name;
-    }
-
-    @Override
-    public FilterType getType() {
-        return FilterType.PRE;
-    }
-
-    @Override
-    public int getOrder() {
-        return order;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
+    @Override public String getName() { return TYPE + "-" + name; }
+    @Override public FilterType getType() { return FilterType.PRE; }
+    @Override public int getOrder() { return order; }
+    @Override public boolean isEnabled() { return enabled; }
 
     private static class CircuitBreakerState {
         private final int failureRateThreshold;
         private final int ringBufferSize;
         private final long waitDurationInOpenState;
-        
+
         private volatile int state = STATE_CLOSED;
         private volatile long lastFailureTime = 0;
         private final AtomicInteger failureCount = new AtomicInteger(0);
-        private final AtomicInteger successCount = new AtomicInteger(0);
         private final AtomicInteger totalCount = new AtomicInteger(0);
 
         CircuitBreakerState(int failureRateThreshold, int ringBufferSize, long waitDurationInOpenState) {
@@ -156,9 +107,7 @@ public class CircuitBreakerFilter implements Filter {
             this.waitDurationInOpenState = waitDurationInOpenState;
         }
 
-        int getState() {
-            return state;
-        }
+        int getState() { return state; }
 
         synchronized boolean tryTransitionToHalfOpen() {
             if (state == STATE_OPEN && System.currentTimeMillis() - lastFailureTime >= waitDurationInOpenState) {
@@ -171,49 +120,37 @@ public class CircuitBreakerFilter implements Filter {
         void recordFailure() {
             lastFailureTime = System.currentTimeMillis();
             failureCount.incrementAndGet();
-            totalCount.incrementAndGet();
-            
-            if (totalCount.get() >= ringBufferSize) {
-                double failureRate = (failureCount.get() * 100.0) / totalCount.get();
-                if (failureRate >= failureRateThreshold) {
-                    state = STATE_OPEN;
-                    log.warn("CircuitBreaker OPEN - failure rate: {}%", failureRate);
+            int total = totalCount.incrementAndGet();
+
+            if (total >= ringBufferSize) {
+                synchronized (this) {
+                    double failureRate = (failureCount.get() * 100.0) / totalCount.get();
+                    if (failureRate >= failureRateThreshold && state != STATE_OPEN) {
+                        state = STATE_OPEN;
+                        log.warn("CircuitBreaker OPEN - failure rate: {}%", failureRate);
+                    }
                 }
             }
         }
 
         void recordSuccess() {
-            successCount.incrementAndGet();
             totalCount.incrementAndGet();
-            
             if (state == STATE_HALF_OPEN) {
-                state = STATE_CLOSED;
-                reset();
-                log.info("CircuitBreaker CLOSED - service recovered");
+                synchronized (this) {
+                    if (state == STATE_HALF_OPEN) {
+                        state = STATE_CLOSED;
+                        failureCount.set(0);
+                        totalCount.set(0);
+                        log.info("CircuitBreaker CLOSED - service recovered");
+                    }
+                }
             }
-        }
-
-        private void reset() {
-            failureCount.set(0);
-            successCount.set(0);
-            totalCount.set(0);
         }
     }
 
     public static class Factory implements FilterFactory {
-
-        @Override
-        public Filter createFilter(FilterDefinition definition) {
-            return new CircuitBreakerFilter(definition);
-        }
-
-        @Override
-        public String getSupportedFilterName() {
-            return TYPE;
-        }
-
-        @Override
-        public void validateConfig(FilterDefinition definition) {
-        }
+        @Override public Filter createFilter(FilterDefinition definition) { return new CircuitBreakerFilter(definition); }
+        @Override public String getSupportedFilterName() { return TYPE; }
+        @Override public void validateConfig(FilterDefinition definition) {}
     }
 }

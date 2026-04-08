@@ -53,9 +53,9 @@ INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, comp
 
 -- Route management sub-menus
 INSERT INTO sys_menu (id, parent_id, menu_name, i18n_code, menu_type, path, component, perms, icon, sort_order, visible, status) VALUES
-(10, 1, '路由', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1),
-(11, 1, '服务', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'Connection', 2, 1, 1),
-(105, 1, '插件', 'menu.routes.plugins', 'C', '/routes/plugins', 'routes/plugins/index', 'route:plugin:list', 'SetUp', 3, 1, 1);
+(10, 1, '路由列表', 'menu.routes.list', 'C', '/routes/list', 'routes/list/index', 'route:list', 'List', 1, 1, 1),
+(11, 1, '服务节点', 'menu.routes.nodes', 'C', '/routes/nodes', 'routes/nodes/index', 'route:node:list', 'Connection', 2, 1, 1),
+(105, 1, '插件管理', 'menu.routes.plugins', 'C', '/routes/plugins', 'routes/plugins/index', 'route:plugin:list', 'SetUp', 3, 1, 1);
 
 -- Route list buttons
 INSERT INTO sys_menu (id, parent_id, menu_name, menu_type, perms, sort_order, visible, status) VALUES
@@ -168,13 +168,13 @@ INSERT INTO gw_plugin (plugin_name, plugin_type, description, schema, default_co
  5500, 'FILTER_PRE', '⚡', 1, 1);
 
 INSERT INTO gw_plugin (plugin_name, plugin_type, description, schema, default_config, default_priority, phase, icon, is_system, enabled) VALUES
-('request-rewrite', 'FILTER', '请求重写',
- '{"type":"object","properties":{"pathRegex":{"type":"string","title":"路径正则"},"pathReplacement":{"type":"string","title":"替换路径"},"headersToAdd":{"type":"object","title":"添加Header"},"headersToRemove":{"type":"array","items":{"type":"string"},"title":"移除Header"}}}',
- '{}',
- 5000, 'FILTER_PRE', '⚡', 1, 1);
+ ('request-rewrite', 'FILTER', '请求重写',
+  '{"type":"object","properties":{"pathRegex":{"type":"string","title":"路径正则","placeholder":"/api/v1/**"},"pathReplacement":{"type":"string","title":"替换路径","placeholder":"/api/v2/**"},"headersToAdd":{"type":"array","title":"添加Header","x-layout":"row","items":{"type":"object","properties":{"key":{"type":"string","title":"Header名称","placeholder":"X-Custom-Header"},"value":{"type":"string","title":"Header值","placeholder":"some-value"}}}},"headersToRemove":{"type":"array","items":{"type":"string"},"title":"移除Header","placeholder":"X-Old-Header"}}}',
+  '{}',
+  5000, 'FILTER_PRE', '⚡', 1, 1);
 
 INSERT INTO gw_plugin (plugin_name, plugin_type, description, schema, default_config, default_priority, phase, icon, is_system, enabled) VALUES
-('response-rewrite', 'FILTER', '响应重写',
- '{"type":"object","properties":{"headersToAdd":{"type":"object","title":"添加Header"},"headersToRemove":{"type":"array","items":{"type":"string"},"title":"移除Header"},"bodyRegex":{"type":"string","title":"Body正则"},"bodyReplacement":{"type":"string","title":"Body替换"}}}',
- '{}',
- 2000, 'FILTER_POST', '⚡', 1, 1);
+ ('response-rewrite', 'FILTER', '响应重写',
+  '{"type":"object","properties":{"headersToAdd":{"type":"array","title":"添加Header","x-layout":"row","items":{"type":"object","properties":{"key":{"type":"string","title":"Header名称","placeholder":"X-Custom-Header"},"value":{"type":"string","title":"Header值","placeholder":"some-value"}}}},"headersToRemove":{"type":"array","items":{"type":"string"},"title":"移除Header","placeholder":"X-Old-Header"},"bodyRegex":{"type":"string","title":"Body正则","placeholder":"old\\.com"},"bodyReplacement":{"type":"string","title":"Body替换","placeholder":"new.com"}}}',
+  '{}',
+  2000, 'FILTER_POST', '⚡', 1, 1);

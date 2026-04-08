@@ -1,7 +1,7 @@
 <template>
   <div class="page-list-container">
     <div class="page-title-bar">
-      <span class="title">服务</span>
+      <span class="title">服务节点</span>
       <el-button type="primary" @click="handleAddService">
         <el-icon><Plus /></el-icon>
         新增服务

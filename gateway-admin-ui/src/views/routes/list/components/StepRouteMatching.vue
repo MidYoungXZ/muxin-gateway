@@ -53,6 +53,7 @@
     </el-form>
 
     <div class="section-title">方法匹配（可选）</div>
+    <div class="field-tip" style="margin-bottom: 12px">限制请求方法，不选择则匹配所有方法</div>
     <el-form :model="modelValue" label-position="top">
       <el-form-item>
         <div class="method-checkboxes">
@@ -70,11 +71,15 @@
             </el-checkbox-button>
           </el-checkbox-group>
         </div>
-        <div class="field-tip">限制请求方法，不选择则匹配所有方法</div>
       </el-form-item>
     </el-form>
 
-    <div class="section-title">Header匹配（可选）</div>
+    <div class="section-header">
+      <div class="section-title">Header匹配（可选）</div>
+      <el-button v-if="!readonly" type="primary" link @click="addHeader">
+        <el-icon><Plus /></el-icon> 添加
+      </el-button>
+    </div>
     <el-form :model="modelValue" label-position="top">
       <div class="match-list">
         <div
@@ -107,13 +112,14 @@
           </el-button>
         </div>
       </div>
-      <el-button v-if="!readonly" type="primary" link @click="addHeader">
-        <el-icon><Plus /></el-icon>
-        添加 Header 匹配条件
-      </el-button>
     </el-form>
 
-    <div class="section-title">Host匹配（可选）</div>
+    <div class="section-header">
+      <div class="section-title">Host匹配（可选）</div>
+      <el-button v-if="!readonly" type="primary" link @click="addHost">
+        <el-icon><Plus /></el-icon> 添加
+      </el-button>
+    </div>
     <el-form :model="modelValue" label-position="top">
       <div class="host-list">
         <div
@@ -133,14 +139,15 @@
           </el-button>
         </div>
       </div>
-      <el-button v-if="!readonly" type="primary" link @click="addHost">
-        <el-icon><Plus /></el-icon>
-        添加 Host 匹配条件
-      </el-button>
       <div class="field-tip">支持通配符 *，如 *.example.com 匹配所有子域名</div>
     </el-form>
 
-    <div class="section-title">Query参数匹配（可选）</div>
+    <div class="section-header">
+      <div class="section-title">Query参数匹配（可选）</div>
+      <el-button v-if="!readonly" type="primary" link @click="addQuery">
+        <el-icon><Plus /></el-icon> 添加
+      </el-button>
+    </div>
     <el-form :model="modelValue" label-position="top">
       <div class="match-list">
         <div
@@ -173,10 +180,6 @@
           </el-button>
         </div>
       </div>
-      <el-button v-if="!readonly" type="primary" link @click="addQuery">
-        <el-icon><Plus /></el-icon>
-        添加 Query 参数匹配条件
-      </el-button>
     </el-form>
 
     <div class="match-preview" v-if="hasMatchingRules">
@@ -319,9 +322,23 @@ defineExpose({ validate })
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border-primary);
+
+  .section-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
 }
 
 .required-mark {

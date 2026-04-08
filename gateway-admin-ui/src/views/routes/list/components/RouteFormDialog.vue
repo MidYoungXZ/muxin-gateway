@@ -3,9 +3,10 @@
     :model-value="modelValue"
     @update:model-value="$emit('update:modelValue', $event)"
     :title="mode === 'view' ? '查看路由' : (isEdit ? '编辑路由' : '新增路由')"
-    width="clamp(600px, 85vw, 900px)"
+    width="clamp(650px, 85vw, 1000px)"
     :close-on-click-modal="false"
     class="route-form-dialog"
+    modal-class="route-form-dialog-overlay"
     append-to-body
     @close="handleClose"
   >
@@ -275,51 +276,55 @@ function handleClose() {
 }
 </script>
 
-<style lang="scss" scoped>
-.route-form-dialog {
-  :deep(.el-overlay) {
-    overflow: hidden;
-  }
+<style lang="scss">
+.route-form-dialog-overlay {
+  overflow: hidden;
+}
 
-  :deep(.el-dialog) {
-    height: 80vh;
-    display: flex;
-    flex-direction: column;
-    margin-top: 10vh !important;
-  }
+.el-dialog.route-form-dialog {
+  height: 80vh;
+  display: flex !important;
+  flex-direction: column !important;
+  margin-top: 10vh !important;
 
-  :deep(.el-dialog__header) {
+  .el-dialog__header {
     flex-shrink: 0;
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-primary);
+    background: inherit;
+    margin-right: 0;
   }
 
-  :deep(.el-dialog__body) {
+  .el-dialog__body {
     flex: 1;
     overflow: hidden;
     padding: 0;
     min-height: 0;
   }
 
-  :deep(.el-dialog__footer) {
+  .el-dialog__footer {
     flex-shrink: 0;
     padding: 12px 20px;
     border-top: 1px solid var(--border-primary);
     background: var(--bg-secondary);
   }
 }
+</style>
 
+<style lang="scss" scoped>
 .dialog-content {
-  display: flex;
+  display: flex !important;
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .form-content {
-  flex: 1;
+  flex: 1 !important;
   padding: 16px 0;
   overflow-y: auto;
   min-height: 0;
+  min-width: 0;
 }
 
 .dialog-footer {
