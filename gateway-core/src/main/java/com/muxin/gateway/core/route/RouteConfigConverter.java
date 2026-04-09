@@ -99,7 +99,6 @@ public class RouteConfigConverter {
         registerFilterFactory(new RequestRateLimiterFilter.Factory());
         registerFilterFactory(new CircuitBreakerFilter.Factory());
         registerFilterFactory(new CorsFilter.Factory());
-        registerFilterFactory(new TimeoutFilter.Factory());
         registerFilterFactory(new RequestRewriteFilter.Factory());
         registerFilterFactory(new ResponseRewriteFilter.Factory());
         log.info("[RouteConfigConverter] FilterFactory初始化完成，支持的Filter类型: {}", filterFactories.keySet());

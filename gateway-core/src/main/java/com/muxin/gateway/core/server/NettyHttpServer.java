@@ -70,21 +70,10 @@ public class NettyHttpServer {
         try {
             log.info("[NettyHttpServer] 开始启动HTTP服务器 - 端口: {}", port);
 
-            // 初始化线程组
-            bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory("boss"));
-            workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("worker"));
-
-            // 配置ServerBootstrap
             bootstrap = new ServerBootstrap();
-            bootstrap.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .option(ChannelOption.SO_BACKLOG, 1024)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childOption(ChannelOption.TCP_NODELAY, true)
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .childHandler(new HttpChannelInitializer());
+            initEventLoopGroups();
+            configureBootstrap();
 
-            // 绑定端口并启动
             ChannelFuture future = bootstrap.bind(new InetSocketAddress(port)).sync();
             serverChannel = future.channel();
 

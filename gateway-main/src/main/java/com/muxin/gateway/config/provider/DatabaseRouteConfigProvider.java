@@ -272,7 +272,7 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
             case "rate-limit" -> List.of(createRateLimitFilter(config, order));
             case "circuit-breaker" -> List.of(createCircuitBreakerFilter(config, order));
             case "cors" -> List.of(createCorsFilter(config, order));
-            case "timeout" -> List.of(createTimeoutFilter(config, order));
+            case "timeout" -> List.of();
             case "request-rewrite" -> List.of(createRequestRewriteFilter(config, order));
             case "response-rewrite" -> List.of(createResponseRewriteFilter(config, order));
             default -> {
@@ -334,19 +334,6 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
 
         return FilterDefinition.builder()
                 .name("CorsFilter")
-                .args(filterArgs)
-                .order(order)
-                .enabled(true)
-                .build();
-    }
-
-    private FilterDefinition createTimeoutFilter(Map<String, Object> config, int order) {
-        Map<String, Object> filterArgs = new HashMap<>();
-        filterArgs.put(FilterConfigKeys.CONNECT_TIMEOUT, config.getOrDefault(PluginConfigKeys.CONNECT_TIMEOUT, 5000));
-        filterArgs.put(FilterConfigKeys.RESPONSE_TIMEOUT, config.getOrDefault(PluginConfigKeys.RESPONSE_TIMEOUT, 30000));
-
-        return FilterDefinition.builder()
-                .name("TimeoutFilter")
                 .args(filterArgs)
                 .order(order)
                 .enabled(true)

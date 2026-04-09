@@ -55,7 +55,7 @@ public class RoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
         }
         
         // 使用原子操作确保线程安全
-        return Math.abs(counter.getAndIncrement()) % size;
+        return (counter.getAndIncrement() & Integer.MAX_VALUE) % size;
     }
     
     @Override

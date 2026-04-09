@@ -24,7 +24,7 @@ public class FilterRegistry {
         register(new RequestRateLimiterFilter.Factory());
         register(new CircuitBreakerFilter.Factory());
         register(new CorsFilter.Factory());
-        register(new TimeoutFilter.Factory());
+
         register(new RequestRewriteFilter.Factory());
         register(new ResponseRewriteFilter.Factory());
         

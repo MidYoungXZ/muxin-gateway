@@ -105,14 +105,14 @@ public class PooledClientConnection implements ClientConnection {
 
             FullHttpRequest requestToSend = duplicateRequest(request);
 
-            log.info("[PooledClientConnection] >>> 发送请求到后端");
-            log.info("[PooledClientConnection] >>> URL: {} {} {}", requestToSend.method(), requestToSend.uri(), requestToSend.protocolVersion());
-            log.info("[PooledClientConnection] >>> Headers: {}", requestToSend.headers());
+            log.debug("[PooledClientConnection] >>> 发送请求到后端");
+            log.debug("[PooledClientConnection] >>> URL: {} {} {}", requestToSend.method(), requestToSend.uri(), requestToSend.protocolVersion());
+            log.debug("[PooledClientConnection] >>> Headers: {}", requestToSend.headers());
             if (requestToSend.content().isReadable()) {
                 String body = requestToSend.content().toString(java.nio.charset.StandardCharsets.UTF_8);
-                log.info("[PooledClientConnection] >>> Body: {}", body);
+                log.debug("[PooledClientConnection] >>> Body: {}", body);
             } else {
-                log.info("[PooledClientConnection] >>> Body: (empty)");
+                log.debug("[PooledClientConnection] >>> Body: (empty)");
             }
 
             channel.writeAndFlush(requestToSend).addListener((GenericFutureListener<Future<Void>>) channelFuture -> {

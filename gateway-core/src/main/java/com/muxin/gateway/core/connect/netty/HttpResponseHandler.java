@@ -28,14 +28,14 @@ public class HttpResponseHandler extends SimpleChannelInboundHandler<FullHttpRes
         CompletableFuture<FullHttpResponse> future = RESPONSE_FUTURES.remove(ctx.channel());
 
         if (future != null) {
-            log.info("[HttpResponseHandler] <<< 收到后端响应");
-            log.info("[HttpResponseHandler] <<< Status: {}", response.status());
-            log.info("[HttpResponseHandler] <<< Headers: {}", response.headers());
+            log.debug("[HttpResponseHandler] <<< 收到后端响应");
+            log.debug("[HttpResponseHandler] <<< Status: {}", response.status());
+            log.debug("[HttpResponseHandler] <<< Headers: {}", response.headers());
             if (response.content().isReadable()) {
                 String body = response.content().toString(java.nio.charset.StandardCharsets.UTF_8);
-                log.info("[HttpResponseHandler] <<< Body: {}", body);
+                log.debug("[HttpResponseHandler] <<< Body: {}", body);
             } else {
-                log.info("[HttpResponseHandler] <<< Body: (empty)");
+                log.debug("[HttpResponseHandler] <<< Body: (empty)");
             }
             future.complete(response);
         } else {
