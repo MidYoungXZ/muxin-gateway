@@ -65,9 +65,9 @@ Muxin Gateway 是一个高性能 API 网关系统，采用 Netty 作为核心转
 
 Plugin 到 Filter 映射（在 `DatabaseRouteConfigProvider.mapPluginToFilters()` 中）：`rate-limit` -> RequestRateLimiter, `circuit-breaker` -> CircuitBreaker, `cors` -> CorsFilter, `timeout` -> TimeoutFilter, `request-rewrite` -> RequestRewriteFilter, `response-rewrite` -> ResponseRewriteFilter
 
-### 3.3 负载均衡 - 4种策略
+### 3.3 负载均衡 - 3种策略
 
-ROUND_ROBIN（默认）, RANDOM, WEIGHTED_ROUND_ROBIN, LEAST_CONNECTIONS
+ROUND_ROBIN（默认）, RANDOM, WEIGHTED_ROUND_ROBIN
 
 ## 4. 数据模型
 

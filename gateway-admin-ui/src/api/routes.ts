@@ -96,7 +96,7 @@ export interface RoutePlugin {
   enabled: boolean
 }
 
-export type LoadBalanceStrategy = 'ROUND_ROBIN' | 'RANDOM' | 'WEIGHTED_ROUND_ROBIN' | 'LEAST_CONNECTIONS'
+export type LoadBalanceStrategy = 'ROUND_ROBIN' | 'RANDOM' | 'WEIGHTED_ROUND_ROBIN'
 
 export interface RouteCreateRequest {
   routeId: string
@@ -170,8 +170,7 @@ export interface RouteUpdateRequest {
 export const LOAD_BALANCE_STRATEGIES = [
   { value: 'ROUND_ROBIN', label: '轮询', description: '依次选择可用地址' },
   { value: 'RANDOM', label: '随机', description: '随机选择可用地址' },
-  { value: 'WEIGHTED_ROUND_ROBIN', label: '加权轮询', description: '根据权重选择地址' },
-  { value: 'LEAST_CONNECTIONS', label: '最少连接', description: '选择连接数最少的地址' }
+  { value: 'WEIGHTED_ROUND_ROBIN', label: '加权轮询', description: '根据权重选择地址' }
 ]
 
 export const MATCH_TYPES = [

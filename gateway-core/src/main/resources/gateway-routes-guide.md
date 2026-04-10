@@ -385,7 +385,6 @@ filters:
 | `ROUND_ROBIN` | 顺序轮询 | `strategy: ROUND_ROBIN` |
 | `RANDOM` | 随机选择 | `strategy: RANDOM` |
 | `WEIGHTED_ROUND_ROBIN` | 权重轮询 | `strategy: WEIGHTED_ROUND_ROBIN` |
-| `LEAST_CONNECTIONS` | 最少连接数 | `strategy: LEAST_CONNECTIONS` |
 
 ### 权重配置
 

@@ -10,11 +10,9 @@ import com.muxin.gateway.core.route.Route;
 import com.muxin.gateway.core.route.RouteManager;
 import com.muxin.gateway.core.route.TimeoutType;
 import com.muxin.gateway.core.route.filter.FilterChain;
-import com.muxin.gateway.core.route.loadbalance.LeastConnectionsLoadBalanceStrategy;
 import com.muxin.gateway.core.route.loadbalance.LoadBalanceStrategy;
 import com.muxin.gateway.core.service.EndpointAddress;
 import com.muxin.gateway.core.service.ServiceRegistry;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.FullHttpResponse;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,14 +22,6 @@ import java.util.concurrent.*;
 
 @Slf4j
 public class GatewayProcessor implements LifeCycle {
-
-    private static final ScheduledExecutorService TIMEOUT_SCHEDULER = Executors.newScheduledThreadPool(
-            2, r -> {
-                Thread t = new Thread(r, "gateway-timeout");
-                t.setDaemon(true);
-                return t;
-            }
-    );
 
     protected final GatewayConfig config;
     protected final ConnectionPoolManager connectionPoolManager;
@@ -49,29 +39,36 @@ public class GatewayProcessor implements LifeCycle {
         this.serviceRegistry = serviceRegistry;
     }
 
+    /**
+     * 请求处理主流程：
+     * 路由匹配 → PRE过滤器 → 负载均衡选端点 → 发送到后端 → POST过滤器 → 响应客户端
+     *
+     * 线程模型：无显式线程切换
+     * - 同步阶段（路由匹配/过滤器/连接获取）在调用方线程执行
+     * - 异步阶段（thenAccept/whenComplete）在后端响应回调线程执行
+     * - 超时由 CompletableFuture.orTimeout 内置调度器驱动
+     */
     public final void processRequest(RequestContext ctx) {
         Objects.requireNonNull(ctx, "RequestContext不能为空");
         Objects.requireNonNull(ctx.exchange(), "HttpServerExchange不能为空");
 
         try {
+            // 1. 路由匹配
             Route route = routeManager.matchRoute(ctx);
             if (route == null) throw error("路由匹配失败", ctx.requestId());
-            ctx.setMatchedRoute(route);
 
+            // 2. 执行 PRE 过滤器链
             FilterChain.create(route.getPreFilters()).doFilter(ctx.exchange());
 
+            // 3. 选择后端端点并发送请求（含同步重试）
             long requestTimeout = route.getTimeout(TimeoutType.REQUEST);
-            long totalTimeout = route.getTimeout(TimeoutType.TOTAL);
-
-            ScheduledFuture<?> globalTimeout = TIMEOUT_SCHEDULER.schedule(
-                    () -> forceTimeout(ctx), totalTimeout, TimeUnit.MILLISECONDS);
-
             LoadBalanceStrategy lb = route.getLoadBalanceStrategy();
             int maxRetries = config.getCoreConfig() != null ? config.getCoreConfig().getMaxRetries() : 0;
 
             CompletableFuture<FullHttpResponse> backendFuture =
                     selectAndSend(ctx, route, lb, maxRetries);
 
+            // 4. 异步处理响应：超时控制 → POST过滤器 → 响应客户端 → 资源清理
             backendFuture
                     .orTimeout(requestTimeout, TimeUnit.MILLISECONDS)
                     .thenAccept(response -> {
@@ -81,9 +78,7 @@ public class GatewayProcessor implements LifeCycle {
                         sendResponse(ctx);
                     })
                     .whenComplete((v, ex) -> {
-                        globalTimeout.cancel(false);
                         if (ex != null && !ctx.isCompleted()) handleError(ctx, unwrap(ex));
-                        decrementLb(lb, ctx.getSelectedEndpoint());
                         cleanup(ctx);
                     });
 
@@ -93,6 +88,10 @@ public class GatewayProcessor implements LifeCycle {
         }
     }
 
+    /**
+     * 选择后端端点并通过连接池发送请求。
+     * conn.send() 是非阻塞的（瞬间返回 CompletableFuture），因此重试在同步循环中完成。
+     */
     private CompletableFuture<FullHttpResponse> selectAndSend(
             RequestContext ctx, Route route, LoadBalanceStrategy lb, int maxRetries) {
 
@@ -108,15 +107,11 @@ public class GatewayProcessor implements LifeCycle {
                 if (conn == null) throw error("连接获取失败", ctx.requestId());
                 ctx.setClientConnection(conn);
 
-                String strippedPath = ctx.exchange().getAttribute("strippedPath");
-                if (strippedPath != null) ctx.exchange().uri(strippedPath);
-
                 return conn.send(ctx.exchange()._nettyRequest());
             } catch (Exception e) {
                 lastException = e;
                 if (attempt < maxRetries) {
                     log.warn("[GatewayProcessor] 重试 {}: {}", attempt + 1, ctx.requestId());
-                    decrementLb(lb, ctx.getSelectedEndpoint());
                 }
             }
         }
@@ -127,24 +122,8 @@ public class GatewayProcessor implements LifeCycle {
                 : error("发送失败", ctx.requestId());
     }
 
-    private void forceTimeout(RequestContext ctx) {
-        if (ctx.isCompleted()) return;
-        log.warn("[GatewayProcessor] 全局超时: {}", ctx.requestId());
-        ctx.exchange().setStatus(HttpResponseStatus.GATEWAY_TIMEOUT);
-        ctx.exchange().setResponseHeader("Content-Type", "application/json");
-        ctx.exchange().setResponseBody("{\"code\":504,\"message\":\"Gateway Timeout\"}");
-        sendResponse(ctx);
-        ctx.markComplete();
-    }
-
     private Throwable unwrap(Throwable ex) {
         return ex instanceof CompletionException && ex.getCause() != null ? ex.getCause() : ex;
-    }
-
-    private void decrementLb(LoadBalanceStrategy lb, EndpointAddress endpoint) {
-        if (endpoint != null && lb instanceof LeastConnectionsLoadBalanceStrategy lc) {
-            lc.decrementConnectionCount(endpoint);
-        }
     }
 
     private void sendResponse(RequestContext ctx) {
@@ -204,7 +183,6 @@ public class GatewayProcessor implements LifeCycle {
     public void shutdown() {
         if (!running) return;
         running = false;
-        TIMEOUT_SCHEDULER.shutdown();
         serviceRegistry.shutdown();
         routeManager.shutdown();
         connectionPoolManager.shutdown();

@@ -61,8 +61,6 @@ public class LoadBalanceStrategyFactory {
                     return new RandomLoadBalanceStrategy(definition);
                 case "WEIGHTED_ROUND_ROBIN":
                     return new WeightedRoundRobinLoadBalanceStrategy(definition);
-                case "LEAST_CONNECTIONS":
-                    return new LeastConnectionsLoadBalanceStrategy(definition);
                 default:
                     log.warn("未知的负载均衡策略: {}, 使用默认策略: {}", strategyName, DEFAULT_STRATEGY);
                     // 创建默认策略，但保持原有的definition配置
@@ -129,8 +127,7 @@ public class LoadBalanceStrategyFactory {
         String upperName = strategyName.toUpperCase();
         return "ROUND_ROBIN".equals(upperName) ||
                "RANDOM".equals(upperName) ||
-               "WEIGHTED_ROUND_ROBIN".equals(upperName) ||
-               "LEAST_CONNECTIONS".equals(upperName);
+               "WEIGHTED_ROUND_ROBIN".equals(upperName);
     }
     
     /**
@@ -140,8 +137,7 @@ public class LoadBalanceStrategyFactory {
         return new String[]{
             "ROUND_ROBIN",
             "RANDOM", 
-            "WEIGHTED_ROUND_ROBIN",
-            "LEAST_CONNECTIONS"
+            "WEIGHTED_ROUND_ROBIN"
         };
     }
     
@@ -160,8 +156,6 @@ public class LoadBalanceStrategyFactory {
                 return "随机负载均衡，随机选择可用地址";
             case "WEIGHTED_ROUND_ROBIN":
                 return "加权轮询负载均衡，根据权重选择地址";
-            case "LEAST_CONNECTIONS":
-                return "最少连接负载均衡，选择连接数最少的地址";
             default:
                 return "未知策略: " + strategyName;
         }

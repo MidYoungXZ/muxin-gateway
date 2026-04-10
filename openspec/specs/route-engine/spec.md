@@ -83,7 +83,7 @@ gateway-core 模块的路由引擎能力，包括请求匹配、过滤、负载�
 - **THEN** 响应应包含请求头 `X-Response-Id: abc123`
 
 ### 需求：服务实例间的负载均衡
-系统应支持 4 种负载均衡策略：ROUND_ROBIN（默认）、RANDOM、WEIGHTED_ROUND_ROBIN、LEAST_CONNECTIONS。
+系统应支持 3 种负载均衡策略：ROUND_ROBIN（默认）、RANDOM、WEIGHTED_ROUND_ROBIN。
 
 #### 场景：轮询选择
 - **WHEN** 路由拥有 `loadBalanceStrategy: ROUND_ROBIN` 和 3 个健康实例

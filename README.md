@@ -82,7 +82,7 @@ muxin-gateway/
 - 动态路由配置
 - 断言匹配（Path、Method、Header、Query、Cookie、Host）
 - 过滤器链（请求/响应重写、限流、熔断、CORS、超时控制）
-- 负载均衡（轮询、随机、加权轮询、最少连接）
+- 负载均衡（轮询、随机、加权轮询）
 - 连接池管理
 - YAML 配置驱动
 
