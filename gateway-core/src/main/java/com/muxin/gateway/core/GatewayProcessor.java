@@ -65,12 +65,10 @@ public class GatewayProcessor implements LifeCycle {
             LoadBalanceStrategy lb = route.getLoadBalanceStrategy();
             int maxRetries = config.getCoreConfig() != null ? config.getCoreConfig().getMaxRetries() : 0;
 
-            CompletableFuture<FullHttpResponse> backendFuture =
-                    selectAndSend(ctx, route, lb, maxRetries);
+            CompletableFuture<FullHttpResponse> backendFuture = selectAndSend(ctx, route, lb, maxRetries);
 
             // 4. 异步处理响应：超时控制 → POST过滤器 → 响应客户端 → 资源清理
-            backendFuture
-                    .orTimeout(requestTimeout, TimeUnit.MILLISECONDS)
+            backendFuture.orTimeout(requestTimeout, TimeUnit.MILLISECONDS)
                     .thenAccept(response -> {
                         if (ctx.isCompleted()) return;
                         ctx.exchange()._setNettyResponse(response);
@@ -93,7 +91,11 @@ public class GatewayProcessor implements LifeCycle {
      * conn.send() 是非阻塞的（瞬间返回 CompletableFuture），因此重试在同步循环中完成。
      */
     private CompletableFuture<FullHttpResponse> selectAndSend(
-            RequestContext ctx, Route route, LoadBalanceStrategy lb, int maxRetries) {
+            RequestContext ctx,
+            Route route,
+            LoadBalanceStrategy lb,
+            int maxRetries)
+    {
 
         Exception lastException = null;
 

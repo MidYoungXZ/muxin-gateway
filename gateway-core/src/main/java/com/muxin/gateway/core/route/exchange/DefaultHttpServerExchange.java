@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * HTTP服务器交换对象的默认实现
@@ -34,13 +35,18 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     private final String requestId;
     private final ZonedDateTime timestamp;
 
+    private volatile String cachedUri;
+    private volatile String cachedPath;
+    private volatile Map<String, String> cachedParams;
+
     public DefaultHttpServerExchange(FullHttpRequest request) {
         Objects.requireNonNull(request, "HTTP请求不能为空");
         this.originalRequest = request;
         this.mutableRequest = null;
-        this.attributes = new HashMap<>();
+        this.attributes = new ConcurrentHashMap<>();
         this.requestId = System.currentTimeMillis() + "-" + System.nanoTime() % 10000;
         this.timestamp = ZonedDateTime.now();
+        cacheUriState(request.uri());
         if (log.isDebugEnabled()) {
             log.debug("创建HTTP服务器交换对象: {} {}", request.method(), request.uri());
         }
@@ -50,6 +56,34 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     private FullHttpRequest currentRequest() {
         return mutableRequest != null ? mutableRequest : originalRequest;
+    }
+
+    private void cacheUriState(String uri) {
+        this.cachedUri = uri;
+        int queryIndex = uri.indexOf('?');
+        this.cachedPath = queryIndex >= 0 ? uri.substring(0, queryIndex) : uri;
+        if (queryIndex >= 0) {
+            Map<String, String> params = new HashMap<>();
+            String queryString = uri.substring(queryIndex + 1);
+            for (String pair : queryString.split("&")) {
+                int eq = pair.indexOf('=');
+                if (eq > 0) {
+                    params.put(pair.substring(0, eq), pair.substring(eq + 1));
+                } else if (!pair.isEmpty()) {
+                    params.put(pair, "");
+                }
+            }
+            this.cachedParams = params;
+        } else {
+            this.cachedParams = Collections.emptyMap();
+        }
+    }
+
+    private void invalidateUriCache() {
+        String currentUri = currentRequest().uri();
+        if (!currentUri.equals(cachedUri)) {
+            cacheUriState(currentUri);
+        }
     }
 
     @Override
@@ -64,8 +98,8 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     @Override
     public String fullPath() {
-        QueryStringDecoder decoder = new QueryStringDecoder(currentRequest().uri());
-        return decoder.path();
+        invalidateUriCache();
+        return cachedPath;
     }
 
     @Override
@@ -90,24 +124,14 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     @Override
     public String param(CharSequence key) {
-        QueryStringDecoder decoder = new QueryStringDecoder(currentRequest().uri());
-        return decoder.parameters()
-                .getOrDefault(key.toString(), Collections.emptyList())
-                .stream()
-                .findFirst()
-                .orElse(null);
+        invalidateUriCache();
+        return cachedParams.get(key.toString());
     }
 
     @Override
     public Map<String, String> params() {
-        QueryStringDecoder decoder = new QueryStringDecoder(currentRequest().uri());
-        Map<String, String> result = new HashMap<>();
-        decoder.parameters().forEach((key, values) -> {
-            if (!values.isEmpty()) {
-                result.put(key, values.get(0));
-            }
-        });
-        return result;
+        invalidateUriCache();
+        return new HashMap<>(cachedParams);
     }
 
     @Override
@@ -224,6 +248,8 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     public void setStatus(HttpResponseStatus status) {
         if (response != null) {
             response.setStatus(status);
+        } else {
+            log.warn("[Exchange] setStatus called but response is null, requestId={}", requestId);
         }
     }
 
@@ -231,6 +257,8 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     public void setResponseHeader(CharSequence name, CharSequence value) {
         if (response != null) {
             response.headers().set(name, value);
+        } else {
+            log.warn("[Exchange] setResponseHeader called but response is null, requestId={}", requestId);
         }
     }
 
@@ -253,8 +281,6 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
             }
         }
     }
-
-    // ==================== 属性存储 ====================
 
     @Override
     public void setAttribute(String key, Object value) {
