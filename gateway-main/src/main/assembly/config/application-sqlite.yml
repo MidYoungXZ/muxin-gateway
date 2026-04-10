@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: 'jdbc:sqlite:data/muxin-gateway.db'
+    url: 'jdbc:sqlite:data/muxin-gateway.db?busy_timeout=5000&journal_mode=WAL&synchronous=NORMAL'
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 5
@@ -8,7 +8,7 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-      auto-commit: false
+      auto-commit: true
 
 mybatis-flex:
   print-sql: false

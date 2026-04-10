@@ -140,7 +140,9 @@ public class SqliteInitializer implements SmartLifecycle {
         }
         
         if (url.startsWith("jdbc:sqlite:")) {
-            return url.substring("jdbc:sqlite:".length());
+            String path = url.substring("jdbc:sqlite:".length());
+            int queryIndex = path.indexOf('?');
+            return queryIndex >= 0 ? path.substring(0, queryIndex) : path;
         }
         
         return null;

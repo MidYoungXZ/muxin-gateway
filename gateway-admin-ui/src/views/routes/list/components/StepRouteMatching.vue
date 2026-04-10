@@ -391,6 +391,7 @@ defineExpose({ validate })
   background: var(--bg-tertiary);
   border-radius: 8px;
   padding: 12px;
+  overflow: hidden;
 }
 
 .preview-title {
@@ -417,11 +418,19 @@ defineExpose({ validate })
   align-items: center;
   font-size: 13px;
   color: var(--text-primary);
+  min-width: 0;
+
+  span {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+  }
 }
 
 .rule-icon {
   color: var(--el-color-success);
   margin-right: 8px;
+  flex-shrink: 0;
 }
 
 :deep(.el-form-item) {
