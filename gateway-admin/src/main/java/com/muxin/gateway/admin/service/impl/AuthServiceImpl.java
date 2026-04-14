@@ -50,12 +50,9 @@ public class AuthServiceImpl implements AuthService {
         }
         
         log.info("用户信息 - ID: {}, 用户名: {}, 状态: {}", user.getId(), user.getUsername(), user.getStatus());
-        log.info("密码验证 - 输入密码: {}, 数据库密码hash: {}", dto.getPassword(), user.getPassword());
-        
+
         // 验证密码
         boolean passwordValid = BCrypt.checkpw(dto.getPassword(), user.getPassword());
-        log.info("密码验证结果: {}", passwordValid);
-        
         if (!passwordValid) {
             log.warn("登录失败 - 密码错误: {}", dto.getUsername());
             throw new BusinessException("用户名或密码错误");

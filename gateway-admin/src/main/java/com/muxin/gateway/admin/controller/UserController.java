@@ -5,6 +5,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.muxin.gateway.admin.model.Result;
 import com.muxin.gateway.admin.model.dto.PasswordUpdateDTO;
 import com.muxin.gateway.admin.model.dto.ProfileUpdateDTO;
+import com.muxin.gateway.admin.model.dto.ResetPasswordDTO;
 import com.muxin.gateway.admin.model.dto.UserCreateDTO;
 import com.muxin.gateway.admin.model.dto.UserQueryDTO;
 import com.muxin.gateway.admin.model.dto.UserUpdateDTO;
@@ -135,9 +136,12 @@ public class UserController {
      */
     @PostMapping("/{id}/reset-password")
     @SaCheckPermission("system:user:update")
-    public Result<Void> resetPassword(@PathVariable Long id, 
-                                     @RequestParam String newPassword) {
-        userService.resetPassword(id, newPassword);
+    public Result<Void> resetPassword(@PathVariable Long id,
+                                     @RequestBody @Valid ResetPasswordDTO dto) {
+        if (!dto.getNewPassword().equals(dto.getConfirmPassword())) {
+            return Result.error("新密码和确认密码不一致");
+        }
+        userService.resetPassword(id, dto.getNewPassword());
         return Result.success();
     }
     

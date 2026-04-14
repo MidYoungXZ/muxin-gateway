@@ -60,7 +60,8 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     public PageVO<RouteVO> pageQuery(RouteQueryDTO query) {
         QueryWrapper wrapper = QueryWrapper.create()
                 .from(GW_ROUTE)
-                .where(GW_ROUTE.ROUTE_NAME.like(query.getRouteName() != null ? "%" + query.getRouteName() + "%" : null, query.getRouteName() != null))
+                .where(GW_ROUTE.ROUTE_ID.like(query.getRouteId() != null ? "%" + query.getRouteId() + "%" : null, query.getRouteId() != null))
+                .and(GW_ROUTE.ROUTE_NAME.like(query.getRouteName() != null ? "%" + query.getRouteName() + "%" : null, query.getRouteName() != null))
                 .and(GW_ROUTE.URI.like(query.getUri() != null ? "%" + query.getUri() + "%" : null, query.getUri() != null))
                 .and(GW_ROUTE.ENABLED.eq(query.getEnabled(), query.getEnabled() != null))
                 .orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc());

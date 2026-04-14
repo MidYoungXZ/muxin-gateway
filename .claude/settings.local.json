@@ -3,7 +3,21 @@
     "allow": [
       "Bash(mvn compile:*)",
       "Bash(where mvn)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(brew install:*)",
+      "Bash(sudo port:*)",
+      "WebSearch",
+      "WebFetch(domain:brew.sh)",
+      "Bash(brew --version)",
+      "Bash(tmux -V)",
+      "Bash(tmux list-sessions:*)",
+      "Bash(npm run:*)",
+      "Bash(npm search:*)",
+      "Bash(pip search:*)",
+      "Bash(pip index:*)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(cc-switch --help)"
     ]
   }
 }

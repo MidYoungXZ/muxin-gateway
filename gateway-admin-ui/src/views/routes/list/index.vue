@@ -42,12 +42,11 @@
       <div class="table-toolbar">
         <div class="toolbar-left">
           <el-button
+            v-permission="'route:delete'"
             type="danger"
-            plain
-            :disabled="!selectedRoutes.length"
+            :disabled="selectedRoutes.length === 0"
             @click="handleBatchDelete"
           >
-            <el-icon><Delete /></el-icon>
             批量删除
           </el-button>
         </div>
@@ -122,7 +121,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import { routesApi, LOAD_BALANCE_STRATEGIES, type Route, type RouteQueryParams } from '@/api/routes'
 import RouteFormDialog from './components/RouteFormDialog.vue'
 

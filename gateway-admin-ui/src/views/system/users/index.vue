@@ -2,7 +2,7 @@
   <div class="page-list-container">
     <div class="page-title-bar">
       <span class="title">用户管理</span>
-      <el-button type="primary" @click="handleAdd">
+      <el-button v-permission="'system:user:create'" type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增用户
       </el-button>
@@ -36,14 +36,15 @@
       </div>
 
       <el-table :data="userList" v-loading="loading" stripe>
-        <el-table-column prop="username" label="用户名" min-width="100" />
+        <el-table-column prop="username" label="用户名" min-width="140" />
         <el-table-column prop="nickname" label="昵称" min-width="100" />
         <el-table-column prop="email" label="邮箱" min-width="160" show-overflow-tooltip />
         <el-table-column prop="mobile" label="手机号" width="120" />
         <el-table-column prop="deptName" label="部门" min-width="120" show-overflow-tooltip />
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
+            <el-switch v-permission="'system:user:update'" v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
+            <span v-if="!hasPermission('system:user:update')">{{ row.status === 1 ? '启用' : '禁用' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" min-width="180" align="center">
@@ -53,11 +54,11 @@
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" size="small" link @click="handleView(row)">查看</el-button>
-            <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
-            <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleAssignRoles(row)">分配角色</el-button>
-            <el-button v-if="canManageUser(row)" type="primary" size="small" link @click="handleResetPassword(row)">重置密码</el-button>
-            <el-button v-if="canManageUser(row) && row.id !== currentUserId" type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
+            <el-button v-permission="'system:user:view'" type="primary" size="small" link @click="handleView(row)">查看</el-button>
+            <el-button v-if="canManageUser(row) && hasPermission('system:user:update')" type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
+            <el-button v-if="canManageUser(row) && hasPermission('system:user:update')" type="primary" size="small" link @click="handleAssignRoles(row)">分配角色</el-button>
+            <el-button v-if="canManageUser(row) && hasPermission('system:user:update')" type="primary" size="small" link @click="handleResetPassword(row)">重置密码</el-button>
+            <el-button v-if="canManageUser(row) && row.id !== currentUserId && hasPermission('system:user:delete')" type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -120,10 +121,13 @@ import { userApi, type User, type UserQueryParams } from '@/api/users'
 import { roleApi, type Role } from '@/api/roles'
 import { departmentApi, type Department } from '@/api/departments'
 import { useUserStore } from '@/stores/user'
+import { useMenuStore } from '@/stores/menu'
 import RoleAssignDialog from './components/RoleAssignDialog.vue'
 import UserFormDialog from './components/UserFormDialog.vue'
 
 const userStore = useUserStore()
+const menuStore = useMenuStore()
+const hasPermission = (permission: string) => menuStore.hasPermission(permission)
 
 const loading = ref(false)
 const userList = ref<User[]>([])

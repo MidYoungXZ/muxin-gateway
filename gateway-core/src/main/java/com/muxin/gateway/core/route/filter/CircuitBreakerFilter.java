@@ -18,8 +18,11 @@ public class CircuitBreakerFilter implements Filter {
     private static final int STATE_HALF_OPEN = 2;
 
     private static final long CLEANUP_INTERVAL_MS = 30 * 60 * 1000L;
-    private static final Map<String, CircuitBreakerState> circuitBreakers = new ConcurrentHashMap<>();
-    private static volatile long lastCleanupTime = System.currentTimeMillis();
+    private static final String CIRCUIT_BREAKER_RESPONSE = "{\"code\":503,\"message\":\"Service Unavailable - Circuit Breaker Open\"}";
+
+    // 改为实例级别存储，避免多实例间状态共享冲突
+    private final Map<String, CircuitBreakerState> circuitBreakers = new ConcurrentHashMap<>();
+    private volatile long lastCleanupTime = System.currentTimeMillis();
 
     private final String name;
     private final String fallbackUri;
@@ -83,7 +86,7 @@ public class CircuitBreakerFilter implements Filter {
         log.warn("[CircuitBreakerFilter] 触发熔断, 执行降级: {}", fallbackUri);
         exchange.setStatus(HttpResponseStatus.SERVICE_UNAVAILABLE);
         exchange.setResponseHeader("Content-Type", "application/json");
-        exchange.setResponseBody("{\"code\":503,\"message\":\"Service Unavailable - Circuit Breaker Open\"}");
+        exchange.setResponseBody(CIRCUIT_BREAKER_RESPONSE);
     }
 
     @Override public String getName() { return TYPE + "-" + name; }

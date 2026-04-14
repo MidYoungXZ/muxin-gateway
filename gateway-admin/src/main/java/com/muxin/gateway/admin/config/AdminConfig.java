@@ -28,7 +28,8 @@ public class AdminConfig {
     /**
      * 配置CORS跨域支持.
      * <p>
-     * 允许所有来源、所有常用HTTP方法、所有请求头，预检请求缓存时间为1小时。
+     * 使用allowedOriginPatterns替代allowedOrigins以支持credentials模式。
+     * 生产环境应通过AdminProperties配置具体的允许域名。
      * </p>
      *
      * @return WebMvcConfigurer配置器实例
@@ -39,9 +40,10 @@ public class AdminConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*")
+                        .allowedOriginPatterns("*")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
+                        .allowCredentials(true)
                         .maxAge(3600);
             }
         };

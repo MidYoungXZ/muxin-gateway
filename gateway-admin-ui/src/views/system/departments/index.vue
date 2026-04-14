@@ -2,7 +2,7 @@
   <div class="page-list-container">
     <div class="page-title-bar">
       <span class="title">部门管理</span>
-      <el-button type="primary" @click="handleAdd">
+      <el-button v-permission="'system:dept:add'" type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增部门
       </el-button>
@@ -65,9 +65,10 @@
               </span>
             </div>
             <div class="dept-actions">
-              <el-button type="primary" size="small" link @click="handleAddChild(data)">添加</el-button>
-              <el-button type="primary" size="small" link @click="handleEdit(data)">编辑</el-button>
+              <el-button v-permission="'system:dept:add'" type="primary" size="small" link @click="handleAddChild(data)">添加</el-button>
+              <el-button v-permission="'system:dept:edit'" type="primary" size="small" link @click="handleEdit(data)">编辑</el-button>
               <el-switch
+                v-permission="'system:dept:edit'"
                 v-model="data.status"
                 :active-value="1"
                 :inactive-value="0"
@@ -75,7 +76,8 @@
                 style="margin: 0 8px;"
                 @change="handleStatusChange(data)"
               />
-              <el-button type="danger" size="small" link @click="handleDelete(data)">删除</el-button>
+              <span v-if="!hasPermission('system:dept:edit')" style="margin: 0 8px;">{{ data.status === 1 ? '启用' : '禁用' }}</span>
+              <el-button v-permission="'system:dept:remove'" type="danger" size="small" link @click="handleDelete(data)">删除</el-button>
             </div>
           </div>
         </template>
@@ -196,6 +198,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, OfficeBuilding } from '@element-plus/icons-vue'
 import { departmentApi, type Department } from '@/api/departments'
+import { useMenuStore } from '@/stores/menu'
+
+const menuStore = useMenuStore()
+const hasPermission = (permission: string) => menuStore.hasPermission(permission)
 
 const loading = ref(false)
 const formLoading = ref(false)

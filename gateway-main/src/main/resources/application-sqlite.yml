@@ -16,9 +16,6 @@ spring:
 # MyBatis-Flex配置
 mybatis-flex:
   print-sql: true
-  logic-delete-column: deleted
-  logic-delete-value: 1
-  logic-not-delete-value: 0
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.muxin.gateway.admin.entity
   global-config:

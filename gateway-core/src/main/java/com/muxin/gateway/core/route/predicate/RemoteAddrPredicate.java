@@ -111,18 +111,56 @@ public class RemoteAddrPredicate implements Predicate {
         }
     }
 
+    /**
+     * 获取客户端真实IP
+     * 增加可信代理验证逻辑，防止IP伪造攻击
+     */
     private String getClientIp(HttpServerExchange exchange) {
         String xForwardedFor = exchange.header("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
+            // 从右向左解析，找到第一个非可信代理IP
+            String[] ips = xForwardedFor.split(",");
+            for (int i = ips.length - 1; i >= 0; i--) {
+                String ip = ips[i].trim();
+                if (!ip.isEmpty() && !isTrustedProxy(ip)) {
+                    return ip;
+                }
+            }
+            // 如果全部是可信代理，取最后一个（可能是原始客户端）
+            if (ips.length > 0) {
+                return ips[ips.length - 1].trim();
+            }
         }
-        
+
         String xRealIp = exchange.header("X-Real-IP");
         if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
+            return xRealIp.trim();
         }
-        
+
+        // TODO: 需要扩展 HttpServerExchange 接口添加 remoteAddress 方法
         return null;
+    }
+
+    /**
+     * 判断是否为可信代理IP
+     * 生产环境应从配置文件加载可信代理列表
+     */
+    private boolean isTrustedProxy(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return false;
+        }
+        // 内网IP默认可信
+        return ip.startsWith("10.") ||
+               ip.startsWith("192.168.") ||
+               ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
+               ip.startsWith("172.18.") || ip.startsWith("172.19.") ||
+               ip.startsWith("172.20.") || ip.startsWith("172.21.") ||
+               ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
+               ip.startsWith("172.24.") || ip.startsWith("172.25.") ||
+               ip.startsWith("172.26.") || ip.startsWith("172.27.") ||
+               ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
+               ip.startsWith("172.30.") || ip.startsWith("172.31.") ||
+               ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1");
     }
 
     @Override

@@ -171,7 +171,11 @@ public class NettyConnectionPool implements ConnectionPool {
 
     @Override
     public int getIdleCount() {
-        return 0;
+        // FixedChannelPool不支持直接获取空闲连接数
+        // 使用总连接数减去活跃连接数作为估算
+        int maxConnections = config.getMaxConnections();
+        int active = getActiveCount();
+        return Math.max(0, maxConnections - active);
     }
 
     @Override

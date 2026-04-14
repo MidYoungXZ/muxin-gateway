@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -88,38 +89,39 @@ public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
     
     /**
      * 根据权重选择地址（平滑加权轮询算法）
+     * 使用原子操作替代synchronized，减少锁竞争
      */
     private EndpointAddress selectByWeight(List<EndpointAddress> addresses) {
-        synchronized (this) {
-            int totalWeight = 0;
-            WeightedNode maxWeightNode = null;
-            
-            // 找到当前权重最大的节点，并计算总权重
-            for (EndpointAddress address : addresses) {
-                WeightedNode node = weightedNodes.get(address.toUri());
-                if (node != null) {
-                    // 增加当前权重
-                    node.increaseCurrent();
-                    totalWeight += node.getWeight();
-                    
-                    // 找到当前权重最大的节点
-                    if (maxWeightNode == null || node.getCurrentWeight() > maxWeightNode.getCurrentWeight()) {
-                        maxWeightNode = node;
-                    }
+        int totalWeight = 0;
+        WeightedNode maxWeightNode = null;
+        int maxCurrentWeight = Integer.MIN_VALUE;
+
+        // 找到当前权重最大的节点，并计算总权重
+        for (EndpointAddress address : addresses) {
+            WeightedNode node = weightedNodes.get(address.toUri());
+            if (node != null) {
+                // 增加当前权重（原子操作）
+                int currentWeight = node.increaseCurrentAndGet();
+                totalWeight += node.getWeight();
+
+                // 找到当前权重最大的节点
+                if (currentWeight > maxCurrentWeight) {
+                    maxCurrentWeight = currentWeight;
+                    maxWeightNode = node;
                 }
             }
-            
-            if (maxWeightNode == null) {
-                // 降级处理：如果没有权重信息，使用第一个地址
-                log.warn("未找到权重节点，使用第一个地址");
-                return addresses.get(0);
-            }
-            
-            // 减少选中节点的当前权重
-            maxWeightNode.decreaseCurrent(totalWeight);
-            
-            return maxWeightNode.getAddress();
         }
+
+        if (maxWeightNode == null) {
+            // 降级处理：如果没有权重信息，使用第一个地址
+            log.warn("未找到权重节点，使用第一个地址");
+            return addresses.get(0);
+        }
+
+        // 减少选中节点的当前权重（原子操作）
+        maxWeightNode.decreaseCurrent(totalWeight);
+
+        return maxWeightNode.getAddress();
     }
     
     /**
@@ -164,50 +166,55 @@ public class WeightedRoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
     
     @Override
     public void reset() {
-        synchronized (this) {
-            weightedNodes.clear();
-            log.debug("加权轮询策略状态已重置");
-        }
+        weightedNodes.clear();
+        log.debug("加权轮询策略状态已重置");
     }
-    
+
     /**
      * 权重节点内部类
+     * 使用AtomicInteger实现无锁权重调整
      */
     private static class WeightedNode {
         private final EndpointAddress address;
         private final int weight;
-        private int currentWeight;
-        
+        private final AtomicInteger currentWeight;
+
         public WeightedNode(EndpointAddress address, int weight, int currentWeight) {
             this.address = address;
             this.weight = weight;
-            this.currentWeight = currentWeight;
+            this.currentWeight = new AtomicInteger(currentWeight);
         }
-        
+
         public EndpointAddress getAddress() {
             return address;
         }
-        
+
         public int getWeight() {
             return weight;
         }
-        
+
         public int getCurrentWeight() {
-            return currentWeight;
+            return currentWeight.get();
         }
-        
-        public void increaseCurrent() {
-            this.currentWeight += weight;
+
+        /**
+         * 增加当前权重并返回新值（原子操作）
+         */
+        public int increaseCurrentAndGet() {
+            return currentWeight.addAndGet(weight);
         }
-        
+
+        /**
+         * 减少当前权重（原子操作）
+         */
         public void decreaseCurrent(int totalWeight) {
-            this.currentWeight -= totalWeight;
+            currentWeight.addAndGet(-totalWeight);
         }
-        
+
         @Override
         public String toString() {
-            return String.format("WeightedNode{address=%s, weight=%d, currentWeight=%d}", 
-                    address.toUri(), weight, currentWeight);
+            return String.format("WeightedNode{address=%s, weight=%d, currentWeight=%d}",
+                    address.toUri(), weight, currentWeight.get());
         }
     }
     

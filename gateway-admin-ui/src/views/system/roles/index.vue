@@ -2,7 +2,7 @@
   <div class="page-list-container">
     <div class="page-title-bar">
       <span class="title">角色管理</span>
-      <el-button type="primary" @click="handleAdd">
+      <el-button v-permission="'system:role:create'" type="primary" @click="handleAdd">
         <el-icon><Plus /></el-icon>
         新增角色
       </el-button>
@@ -34,8 +34,9 @@
     <div class="table-wrapper">
       <div class="table-toolbar">
         <div class="toolbar-left">
-          <el-button 
-            type="danger" 
+          <el-button
+            v-permission="'system:role:delete'"
+            type="danger"
             :disabled="selectedRoles.length === 0"
             @click="handleBatchDelete"
           >
@@ -69,7 +70,8 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-switch v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
+            <el-switch v-permission="'system:role:update'" v-model="row.status" :active-value="1" :inactive-value="0" @change="handleStatusChange(row)" />
+            <span v-if="!hasPermission('system:role:update')">{{ row.status === 1 ? '启用' : '禁用' }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" min-width="180" align="center">
@@ -79,25 +81,28 @@
         </el-table-column>
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              type="primary" 
-              size="small" 
+            <el-button
+              v-permission="'system:role:update'"
+              type="primary"
+              size="small"
               link
               @click="handleEdit(row)"
             >
               编辑
             </el-button>
-            <el-button 
-              type="primary" 
-              size="small" 
+            <el-button
+              v-permission="'system:role:update'"
+              type="primary"
+              size="small"
               link
               @click="handleAssignMenus(row)"
             >
               权限
             </el-button>
-            <el-button 
-              type="danger" 
-              size="small" 
+            <el-button
+              v-permission="'system:role:delete'"
+              type="danger"
+              size="small"
               link
               @click="handleDelete(row)"
             >
@@ -254,6 +259,10 @@ import { Plus, Folder, Document, Key } from '@element-plus/icons-vue'
 import { roleApi, type Role, type RoleQueryParams } from '@/api/roles'
 import { menuApi } from '@/api/menus'
 import { departmentApi, type Department } from '@/api/departments'
+import { useMenuStore } from '@/stores/menu'
+
+const menuStore = useMenuStore()
+const hasPermission = (permission: string) => menuStore.hasPermission(permission)
 
 const loading = ref(false)
 const formLoading = ref(false)
