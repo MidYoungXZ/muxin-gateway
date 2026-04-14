@@ -71,7 +71,6 @@ Admin UI → REST API → RouteServiceImpl
 - **异常处理**: 抛出 `BusinessException`，由 `GlobalExceptionHandler` 统一处理
 - **认证**: Sa-Token + JWT（有状态），权限格式 `{module}:{entity}:{action}`
 - **API 前缀**: `/api/` + 资源名复数形式（如 `/api/routes`, `/api/plugins`）
-- **不要添加注释**，除非用户要求
 
 ### MyBatis-Flex 使用规范
 
@@ -93,7 +92,6 @@ Admin UI → REST API → RouteServiceImpl
 - **状态管理**: Pinia
 - **HTTP 请求**: Axios，封装在 `src/utils/request.ts`
 - **暗黑模式**: 使用 `.dark` 类 + 自定义 CSS 变量 (`--bg-primary`, `--card-bg` 等)，**不要使用** Element Plus 的 `var(--el-bg-color)` 或硬编码 `#fff`
-- **不要添加注释**，除非用户要求
 
 ### 数据库
 
