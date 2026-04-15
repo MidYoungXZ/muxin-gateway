@@ -42,7 +42,7 @@ public class GatewayProcessor implements LifeCycle {
     /**
      * 请求处理主流程：
      * 路由匹配 → PRE过滤器 → 负载均衡选端点 → 发送到后端 → POST过滤器 → 响应客户端
-     *
+     * <p>
      * 线程模型：无显式线程切换
      * - 同步阶段（路由匹配/过滤器/连接获取）在调用方线程执行
      * - 异步阶段（thenAccept/whenComplete）在后端响应回调线程执行
@@ -76,7 +76,9 @@ public class GatewayProcessor implements LifeCycle {
                         sendResponse(ctx);
                     })
                     .whenComplete((v, ex) -> {
-                        if (ex != null && !ctx.isCompleted()) handleError(ctx, unwrap(ex));
+                        if (ex != null && !ctx.isCompleted()) {
+                            handleError(ctx, unwrap(ex));
+                        }
                         cleanup(ctx);
                     });
 
@@ -94,24 +96,33 @@ public class GatewayProcessor implements LifeCycle {
             RequestContext ctx,
             Route route,
             LoadBalanceStrategy lb,
-            int maxRetries)
-    {
+            int maxRetries) {
 
         Exception lastException = null;
 
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            ClientConnection conn = null;
             try {
                 EndpointAddress endpoint = route.getService().selectTarget(ctx, lb);
                 if (endpoint == null) throw error("端点选择失败", ctx.requestId());
                 ctx.setSelectedEndpoint(endpoint);
 
-                ClientConnection conn = connectionPoolManager.getClientConnection(endpoint);
+                conn = connectionPoolManager.getClientConnection(endpoint);
                 if (conn == null) throw error("连接获取失败", ctx.requestId());
+
+                final ClientConnection finalConn = conn;
                 ctx.setClientConnection(conn);
 
-                return conn.send(ctx.exchange()._nettyRequest());
+                return conn.send(ctx.exchange()._nettyRequest())
+                        .whenComplete((response, ex) -> {
+                            if (ex != null) {
+                                ctx.setClientConnection(null);
+                                safeReturnConnection(finalConn);
+                            }
+                        });
             } catch (Exception e) {
                 lastException = e;
+                safeReturnConnection(conn);
                 if (attempt < maxRetries) {
                     log.warn("[GatewayProcessor] 重试 {}: {}", attempt + 1, ctx.requestId());
                 }
@@ -122,6 +133,17 @@ public class GatewayProcessor implements LifeCycle {
         throw lastException != null
                 ? new RuntimeException(lastException)
                 : error("发送失败", ctx.requestId());
+    }
+
+    private void safeReturnConnection(ClientConnection conn) {
+        if (conn == null) {
+            return;
+        }
+        try {
+            conn.returnToPool();
+        } catch (Exception e) {
+            log.warn("[GatewayProcessor] 归还连接失败: {}", e.getMessage());
+        }
     }
 
     private Throwable unwrap(Throwable ex) {

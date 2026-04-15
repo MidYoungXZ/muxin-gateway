@@ -232,6 +232,8 @@ public class NettyHttpServer {
         protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
             ctx.channel().attr(AttributeKey.<FullHttpRequest>valueOf("request")).set(request);
             try {
+                request.retain();
+
                 DefaultHttpServerExchange exchange = new DefaultHttpServerExchange(request);
                 DefaultRequestContext context = new DefaultRequestContext(exchange);
                 
@@ -242,6 +244,10 @@ public class NettyHttpServer {
             } catch (Exception e) {
                 log.error("[SimpleHttpServerHandler] 处理请求异常", e);
                 writeErrorResponse(e, ctx);
+            } finally {
+                if (request.refCnt() > 0) {
+                    request.release();
+                }
             }
         }
 

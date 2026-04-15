@@ -12,6 +12,7 @@ import com.muxin.gateway.core.config.provider.ConfigChangeListener;
 import com.muxin.gateway.core.config.provider.RouteConfigProvider;
 import com.muxin.gateway.core.config.provider.ServiceConfigProvider;
 import com.muxin.gateway.core.connect.ConnectionPoolManager;
+import com.muxin.gateway.core.connect.netty.HttpResponseHandler;
 import com.muxin.gateway.core.connect.netty.NettyConnectionPoolManager;
 import com.muxin.gateway.core.connect.netty.NettyPoolConfig;
 import com.muxin.gateway.core.route.*;
@@ -493,6 +494,8 @@ public class GatewayBootstrap implements LifeCycle {
         if (connectionPoolManager != null) {
             connectionPoolManager.shutdown();
         }
+
+        HttpResponseHandler.shutdown();
 
         log.debug("Core components shut down");
     }

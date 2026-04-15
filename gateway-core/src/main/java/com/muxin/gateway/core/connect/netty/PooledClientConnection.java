@@ -173,6 +173,9 @@ public class PooledClientConnection implements ClientConnection {
         if (isActive()) {
             markIdle();
             pool.returnChannel(channel);
+        } else {
+            pool.destroyChannel(channel);
+            log.debug("[PooledClientConnection] 销毁非活跃连接: {}", connectionId);
         }
     }
 

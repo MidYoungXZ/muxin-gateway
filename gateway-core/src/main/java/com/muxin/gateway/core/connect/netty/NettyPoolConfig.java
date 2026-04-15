@@ -20,7 +20,7 @@ import java.util.Map;
 public class NettyPoolConfig {
 
     @Builder.Default
-    private int maxConnections = 10;
+    private int maxConnections = Math.max(100, Runtime.getRuntime().availableProcessors() * 10);
 
     @Builder.Default
     private int maxPendingAcquires = 100;
@@ -62,7 +62,7 @@ public class NettyPoolConfig {
     private boolean enableHealthCheck = true;
 
     @Builder.Default
-    private int minConnections = 1;
+    private int minConnections = Math.max(10, Runtime.getRuntime().availableProcessors() * 2);
 
     @Builder.Default
     private int maxContentLength = 10 * 1024 * 1024;
@@ -87,18 +87,22 @@ public class NettyPoolConfig {
     }
 
     public static NettyPoolConfig highPerformanceConfig() {
+        int processors = Runtime.getRuntime().availableProcessors();
         return NettyPoolConfig.builder()
-                .maxConnections(20)
+                .maxConnections(processors * 20)
+                .minConnections(processors * 5)
                 .maxPendingAcquires(200)
                 .acquireTimeoutMs(3000)
                 .connectTimeoutMs(3000)
-                .eventLoopThreads(Runtime.getRuntime().availableProcessors() * 2)
+                .eventLoopThreads(processors * 2)
                 .build();
     }
 
     public static NettyPoolConfig lowLatencyConfig() {
+        int processors = Runtime.getRuntime().availableProcessors();
         return NettyPoolConfig.builder()
-                .maxConnections(50)
+                .maxConnections(processors * 50)
+                .minConnections(processors * 10)
                 .maxPendingAcquires(500)
                 .acquireTimeoutMs(1000)
                 .connectTimeoutMs(1000)
