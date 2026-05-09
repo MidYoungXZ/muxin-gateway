@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class CircuitBreakerFilter implements Filter {
@@ -22,7 +23,7 @@ public class CircuitBreakerFilter implements Filter {
 
     // 改为实例级别存储，避免多实例间状态共享冲突
     private final Map<String, CircuitBreakerState> circuitBreakers = new ConcurrentHashMap<>();
-    private volatile long lastCleanupTime = System.currentTimeMillis();
+    private final AtomicLong lastCleanupTime = new AtomicLong(System.currentTimeMillis());
 
     private final String name;
     private final String fallbackUri;
@@ -50,9 +51,11 @@ public class CircuitBreakerFilter implements Filter {
         }
 
         long now = System.currentTimeMillis();
-        if (now - lastCleanupTime > CLEANUP_INTERVAL_MS) {
-            lastCleanupTime = now;
-            circuitBreakers.clear();
+        long lastCleanup = lastCleanupTime.get();
+        if (now - lastCleanup > CLEANUP_INTERVAL_MS) {
+            if (lastCleanupTime.compareAndSet(lastCleanup, now)) {
+                circuitBreakers.clear();
+            }
         }
 
         CircuitBreakerState state = circuitBreakers.computeIfAbsent(name,
@@ -122,15 +125,16 @@ public class CircuitBreakerFilter implements Filter {
 
         void recordFailure() {
             lastFailureTime = System.currentTimeMillis();
-            failureCount.incrementAndGet();
             int total = totalCount.incrementAndGet();
 
             if (total >= ringBufferSize) {
                 synchronized (this) {
-                    double failureRate = (failureCount.get() * 100.0) / totalCount.get();
-                    if (failureRate >= failureRateThreshold && state != STATE_OPEN) {
-                        state = STATE_OPEN;
-                        log.warn("CircuitBreaker OPEN - failure rate: {}%", failureRate);
+                    if (state != STATE_OPEN) {
+                        double failureRate = (failureCount.get() * 100.0) / totalCount.get();
+                        if (failureRate >= failureRateThreshold) {
+                            state = STATE_OPEN;
+                            log.warn("CircuitBreaker OPEN - failure rate: {}%", failureRate);
+                        }
                     }
                 }
             }

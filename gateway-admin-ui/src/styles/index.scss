@@ -2775,4 +2775,21 @@ a {
       }
     }
   }
+  
+  // Loading 加载遮罩 - 暗色玻璃态
+  .el-loading-mask {
+    background-color: rgba(10, 10, 10, 0.6) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    
+    .el-loading-spinner {
+      .path {
+        stroke: var(--primary-light);
+      }
+      
+      .el-loading-text {
+        color: var(--text-secondary);
+      }
+    }
+  }
 } 

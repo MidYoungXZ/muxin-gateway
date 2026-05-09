@@ -96,9 +96,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
                     .map(inst -> new NacosServiceInstance(serviceId, inst))
                     .collect(Collectors.toList());
         } catch (NacosException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("[NacosServiceRegistryAdapter] 获取服务实例失败: {} - {}", serviceId, e.getMessage());
-            }
+            log.warn("[NacosServiceRegistryAdapter] 获取服务实例失败: {} - {}", serviceId, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -112,9 +110,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
                     .map(inst -> new NacosServiceInstance(serviceId, inst))
                     .collect(Collectors.toList());
         } catch (NacosException e) {
-            if (log.isDebugEnabled()) {
-                log.debug("[NacosServiceRegistryAdapter] 获取健康实例失败: {} - {}", serviceId, e.getMessage());
-            }
+            log.warn("[NacosServiceRegistryAdapter] 获取健康实例失败: {} - {}", serviceId, e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -169,6 +165,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
                 log.info("[NacosServiceRegistryAdapter] 注销服务实例: {} - {}", serviceId, instanceId);
             } catch (NacosException e) {
                 log.warn("[NacosServiceRegistryAdapter] 注销服务实例失败: {}", e.getMessage());
+                throw new RuntimeException("注销服务实例失败: " + serviceId + " - " + instanceId, e);
             }
         }
     }
@@ -192,6 +189,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
                 log.info("[NacosServiceRegistryAdapter] 订阅服务变更: {}", serviceId);
             } catch (NacosException e) {
                 log.error("[NacosServiceRegistryAdapter] 订阅服务失败: {}", e.getMessage(), e);
+                throw new RuntimeException("订阅服务失败: " + serviceId, e);
             }
         }
     }

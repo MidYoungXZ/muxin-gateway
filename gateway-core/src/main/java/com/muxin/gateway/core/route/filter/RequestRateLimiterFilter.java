@@ -27,7 +27,7 @@ public class RequestRateLimiterFilter implements Filter {
     private final boolean enabled;
 
     private final Map<String, TokenBucket> buckets = new ConcurrentHashMap<>();
-    private volatile long lastCleanupTime = System.currentTimeMillis();
+    private final AtomicLong lastCleanupTime = new AtomicLong(System.currentTimeMillis());
 
     public RequestRateLimiterFilter(FilterDefinition definition) {
         this.replenishRate = definition.getIntArg("replenishRate", 10);
@@ -44,9 +44,11 @@ public class RequestRateLimiterFilter implements Filter {
         }
 
         long now = System.currentTimeMillis();
-        if (now - lastCleanupTime > BUCKET_TTL_MS) {
-            lastCleanupTime = now;
-            buckets.clear();
+        long lastCleanup = lastCleanupTime.get();
+        if (now - lastCleanup > BUCKET_TTL_MS) {
+            if (lastCleanupTime.compareAndSet(lastCleanup, now)) {
+                buckets.clear();
+            }
         }
 
         String key = getClientKey(exchange);
@@ -66,13 +68,8 @@ public class RequestRateLimiterFilter implements Filter {
     }
 
     private String getClientKey(HttpServerExchange exchange) {
-        // 注意: HttpServerExchange 当前不提供 remoteAddress 方法
-        // 需要在 NettyHttpServer 中传递真实 IP 到 exchange
-        // 当前实现依赖代理头，但增加了可信代理验证逻辑
-
         String xForwardedFor = exchange.header("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            // 从右向左解析，找到第一个非可信代理IP
             String[] ips = xForwardedFor.split(",");
             for (int i = ips.length - 1; i >= 0; i--) {
                 String ip = ips[i].trim();
@@ -80,7 +77,6 @@ public class RequestRateLimiterFilter implements Filter {
                     return ip;
                 }
             }
-            // 如果全部是可信代理，取最后一个
             if (ips.length > 0) {
                 return ips[ips.length - 1].trim();
             }
@@ -91,8 +87,11 @@ public class RequestRateLimiterFilter implements Filter {
             return realIp.trim();
         }
 
-        // TODO: 需要扩展 HttpServerExchange 接口添加 remoteAddress 方法
-        // 当前作为兜底返回固定标识
+        String remoteAddress = exchange.remoteAddress();
+        if (remoteAddress != null && !remoteAddress.isEmpty()) {
+            return remoteAddress;
+        }
+
         return "default-client";
     }
 
@@ -104,20 +103,27 @@ public class RequestRateLimiterFilter implements Filter {
         if (ip == null || ip.isEmpty()) {
             return false;
         }
-        // 内网IP默认可信（可根据实际情况调整）
-        // 生产环境应从配置文件加载可信代理列表
-        return TRUSTED_PROXIES.contains(ip) ||
-               ip.startsWith("10.") ||
-               ip.startsWith("192.168.") ||
-               ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-               ip.startsWith("172.18.") || ip.startsWith("172.19.") ||
-               ip.startsWith("172.20.") || ip.startsWith("172.21.") ||
-               ip.startsWith("172.22.") || ip.startsWith("172.23.") ||
-               ip.startsWith("172.24.") || ip.startsWith("172.25.") ||
-               ip.startsWith("172.26.") || ip.startsWith("172.27.") ||
-               ip.startsWith("172.28.") || ip.startsWith("172.29.") ||
-               ip.startsWith("172.30.") || ip.startsWith("172.31.") ||
-               ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1");
+        if (TRUSTED_PROXIES.contains(ip)) {
+            return true;
+        }
+        try {
+            String[] parts = ip.split("\\.");
+            if (parts.length != 4) {
+                if (ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1")) {
+                    return true;
+                }
+                return false;
+            }
+            int first = Integer.parseInt(parts[0]);
+            int second = Integer.parseInt(parts[1]);
+            if (first == 10) return true;
+            if (first == 192 && second == 168) return true;
+            if (first == 127) return true;
+            if (first == 172 && second >= 16 && second <= 31) return true;
+            return false;
+        } catch (NumberFormatException e) {
+            return ip.equals("127.0.0.1") || ip.equals("0:0:0:0:0:0:0:1") || ip.equals("::1");
+        }
     }
 
     @Override public String getName() { return TYPE; }
@@ -142,27 +148,31 @@ public class RequestRateLimiterFilter implements Filter {
         }
 
         boolean tryAcquire() {
-            long current = tokensAndTime.get();
-            long lastTime = extractTime(current);
-            long tokens = extractTokens(current);
-            long now = System.currentTimeMillis();
+            int maxRetries = 64; // 防止极端情况下无限自旋
+            for (int i = 0; i < maxRetries; i++) {
+                long current = tokensAndTime.get();
+                long lastTime = extractTime(current);
+                long tokens = extractTokens(current);
+                long now = System.currentTimeMillis();
 
-            // 计算需要补充的令牌
-            long elapsed = now - lastTime;
-            if (elapsed >= 1000) {
-                long tokensToAdd = (elapsed / 1000) * refillRate;
-                tokens = Math.min(capacity, tokens + tokensToAdd);
-                lastTime = now;
-            }
-
-            // 尝试获取令牌
-            if (tokens > 0) {
-                long newValue = encode(lastTime, tokens - 1);
-                if (tokensAndTime.compareAndSet(current, newValue)) {
-                    return true;
+                // 计算需要补充的令牌
+                long elapsed = now - lastTime;
+                if (elapsed >= 1000) {
+                    long tokensToAdd = (elapsed / 1000) * refillRate;
+                    tokens = Math.min(capacity, tokens + tokensToAdd);
+                    lastTime = now;
                 }
-                // CAS失败，重试一次
-                return tryAcquire();
+
+                // 尝试获取令牌
+                if (tokens > 0) {
+                    long newValue = encode(lastTime, tokens - 1);
+                    if (tokensAndTime.compareAndSet(current, newValue)) {
+                        return true;
+                    }
+                    // CAS失败，重试
+                    continue;
+                }
+                return false;
             }
             return false;
         }

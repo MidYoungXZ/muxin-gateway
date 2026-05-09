@@ -13,6 +13,12 @@ export const constantRoutes: RouteRecordRaw[] = [
     name: 'Forbidden',
     component: () => import('@/views/error/403.vue'),
     meta: { hidden: true, title: '无权限' }
+  },
+  {
+    path: '/404',
+    name: 'NotFound',
+    component: () => import('@/views/error/404.vue'),
+    meta: { hidden: true, title: '页面未找到' }
   }
 ]
 

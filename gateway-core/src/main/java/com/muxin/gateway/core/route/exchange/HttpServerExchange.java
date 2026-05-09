@@ -77,6 +77,11 @@ public interface HttpServerExchange {
      */
     ZonedDateTime timestamp();
 
+    /**
+     * 获取客户端远程地址（IP地址，不含端口）
+     */
+    String remoteAddress();
+
     // ==================== 响应信息 ====================
 
     /**

@@ -356,7 +356,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Long createMenu(MenuCreateDTO dto) {
         SysMenu menu = new SysMenu();
         BeanUtils.copyProperties(dto, menu);
@@ -372,7 +372,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void updateMenu(Long id, MenuUpdateDTO dto) {
         SysMenu menu = getById(id);
         if (menu == null) {
@@ -395,7 +395,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteMenu(Long id) {
         // 检查是否有子菜单
         long childCount = count(QueryWrapper.create()
@@ -421,7 +421,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void batchDelete(List<Long> ids) {
         for (Long id : ids) {
             deleteMenu(id);
@@ -447,7 +447,7 @@ public class MenuServiceImpl extends ServiceImpl<MenuMapper, SysMenu> implements
     }
     
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void moveMenu(Long id, Long targetParentId) {
         SysMenu menu = getById(id);
         if (menu == null) {

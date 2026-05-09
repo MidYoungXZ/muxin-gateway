@@ -34,18 +34,24 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     private final Map<String, Object> attributes;
     private final String requestId;
     private final ZonedDateTime timestamp;
+    private final String remoteAddress;
 
     private volatile String cachedUri;
     private volatile String cachedPath;
     private volatile Map<String, String> cachedParams;
 
     public DefaultHttpServerExchange(FullHttpRequest request) {
+        this(request, null);
+    }
+
+    public DefaultHttpServerExchange(FullHttpRequest request, String remoteAddress) {
         Objects.requireNonNull(request, "HTTP请求不能为空");
         this.originalRequest = request;
         this.mutableRequest = null;
         this.attributes = new ConcurrentHashMap<>();
         this.requestId = System.currentTimeMillis() + "-" + System.nanoTime() % 10000;
         this.timestamp = ZonedDateTime.now();
+        this.remoteAddress = remoteAddress;
         cacheUriState(request.uri());
         if (log.isDebugEnabled()) {
             log.debug("创建HTTP服务器交换对象: {} {}", request.method(), request.uri());
@@ -146,6 +152,11 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     @Override
     public ZonedDateTime timestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String remoteAddress() {
+        return remoteAddress;
     }
 
     // ==================== 响应信息 ====================

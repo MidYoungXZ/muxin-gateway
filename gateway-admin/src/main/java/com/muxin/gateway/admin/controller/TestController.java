@@ -6,12 +6,16 @@ import com.muxin.gateway.admin.entity.SysUser;
 import com.muxin.gateway.admin.mapper.UserMapper;
 import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
 /**
  * 测试控制器 - 仅用于开发环境
+ *
+ * ⚠️ 警告：此控制器绕过了所有认证，绝对不能部署到生产环境！
+ * ⚠️ WARNING: This controller bypasses all authentication, MUST NOT be deployed to production!
  *
  * @author muxin
  * @version 1.0.0
@@ -21,6 +25,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/test")
 @RequiredArgsConstructor
 @SaIgnore  // 忽略认证
+@Profile("dev")  // 仅在开发环境激活，禁止部署到生产环境
 public class TestController {
     
     private final UserMapper userMapper;

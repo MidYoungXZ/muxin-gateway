@@ -38,23 +38,18 @@ public class AuthServiceImpl implements AuthService {
     
     @Override
     public LoginVO login(LoginDTO dto) {
-        log.info("用户登录请求 - 用户名: {}", dto.getUsername());
-        
         // 根据用户名查询用户
         UserVO user = userService.getByUsername(dto.getUsername());
-        log.info("数据库查询结果 - 用户存在: {}", user != null);
         
         if (user == null) {
-            log.warn("登录失败 - 用户不存在: {}", dto.getUsername());
+            log.warn("登录失败 - 用户名或密码错误");
             throw new BusinessException("用户名或密码错误");
         }
         
-        log.info("用户信息 - ID: {}, 用户名: {}, 状态: {}", user.getId(), user.getUsername(), user.getStatus());
-
         // 验证密码
         boolean passwordValid = BCrypt.checkpw(dto.getPassword(), user.getPassword());
         if (!passwordValid) {
-            log.warn("登录失败 - 密码错误: {}", dto.getUsername());
+            log.warn("登录失败 - 用户名或密码错误");
             throw new BusinessException("用户名或密码错误");
         }
         

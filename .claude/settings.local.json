@@ -17,7 +17,22 @@
       "Bash(pip index:*)",
       "Bash(npm install:*)",
       "Bash(npm list:*)",
-      "Bash(cc-switch --help)"
+      "Bash(cc-switch --help)",
+      "Bash(cc-switch current:*)",
+      "Bash(cc-switch list:*)",
+      "Bash(cc-switch init:*)",
+      "Bash(ls -la ~/.claude/cc-switch*)",
+      "Read(//Users/midyoung/**)",
+      "Bash(cc-switch help:*)",
+      "Bash(cc-switch new:*)",
+      "Bash(gh repo:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(cc-switch uninstall:*)",
+      "Bash(export https_proxy=http://127.0.0.1:7890)",
+      "Bash(brew tap:*)",
+      "Bash(cc-switch:*)",
+      "Bash(\"/Applications/CC Switch.app/Contents/MacOS/cc-switch\" --cli --help)",
+      "Bash(\"/Applications/CC Switch.app/Contents/MacOS/cc-switch\" help)"
     ]
   }
 }

@@ -68,7 +68,14 @@ export const useUserStore = defineStore('user', () => {
 
   const refreshUserToken = async (): Promise<void> => {
     try {
-      await authApi.refreshToken()
+      const response = await authApi.refreshToken()
+      if (response.code === 200 && response.data) {
+        const { accessToken, tokenType: type } = response.data
+        token.value = accessToken || ''
+        tokenType.value = type || 'Bearer'
+        localStorage.setItem('user-token', token.value)
+        localStorage.setItem('user-token-type', tokenType.value)
+      }
     } catch {
       await logout()
       throw new Error('Token refresh failed')

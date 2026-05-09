@@ -234,7 +234,13 @@ public class NettyHttpServer {
             try {
                 request.retain();
 
-                DefaultHttpServerExchange exchange = new DefaultHttpServerExchange(request);
+                String remoteAddress = null;
+                if (ctx.channel().remoteAddress() instanceof InetSocketAddress) {
+                    InetSocketAddress inetAddr = (InetSocketAddress) ctx.channel().remoteAddress();
+                    remoteAddress = inetAddr.getAddress().getHostAddress();
+                }
+
+                DefaultHttpServerExchange exchange = new DefaultHttpServerExchange(request, remoteAddress);
                 DefaultRequestContext context = new DefaultRequestContext(exchange);
                 
                 NettyServerConnection serverConnection = new NettyServerConnection(ctx.channel());

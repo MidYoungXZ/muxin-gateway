@@ -21,9 +21,9 @@ let loadingInstance: ReturnType<typeof ElLoading.service> | null = null
 const showLoading = () => {
   if (requestCount === 0) {
     loadingInstance = ElLoading.service({
-      lock: true,
+      lock: false,
       text: '加载中...',
-      background: 'rgba(0, 0, 0, 0.7)'
+      background: 'transparent'
     })
   }
   requestCount++
@@ -37,29 +37,26 @@ const hideLoading = () => {
   }
 }
 
-const errorMessages = new Set<string>()
-let errorTimer: ReturnType<typeof setTimeout> | null = null
-let isShowingError = false
+// 错误消息去重：相同消息1秒内不重复显示，使用Map自动清理过期条目
+const errorMessageTimestamps = new Map<string, number>()
 
 const showErrorMessage = (message: string) => {
-  if (isShowingError) return
+  const now = Date.now()
+  // 清理超过2秒的过期条目，防止内存泄漏
+  for (const [key, timestamp] of errorMessageTimestamps) {
+    if (now - timestamp > 2000) {
+      errorMessageTimestamps.delete(key)
+    }
+  }
+  const lastShown = errorMessageTimestamps.get(message)
+  if (lastShown && now - lastShown < 1000) return
   
-  isShowingError = true
+  errorMessageTimestamps.set(message, now)
   ElMessage.error({
     message,
     duration: 3000,
-    showClose: true,
-    onClose: () => {
-      isShowingError = false
-      errorMessages.clear()
-    }
+    showClose: true
   })
-  
-  if (errorTimer) clearTimeout(errorTimer)
-  errorTimer = setTimeout(() => {
-    isShowingError = false
-    errorMessages.clear()
-  }, 3000)
 }
 
 request.interceptors.request.use(

@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -48,11 +49,11 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
     private final PredicateMapper predicateMapper;
     private final List<ConfigChangeListener> listeners = new CopyOnWriteArrayList<>();
     private volatile List<RouteDefinition> cachedRoutes = new ArrayList<>();
-    private volatile boolean refreshing = false;
+    private final AtomicBoolean refreshing = new AtomicBoolean(false);
 
     @Override
     public List<RouteDefinition> getRoutes() {
-        if (cachedRoutes.isEmpty() && !refreshing) {
+        if (cachedRoutes.isEmpty() && !refreshing.get()) {
             refresh();
         }
         return Collections.unmodifiableList(cachedRoutes);
@@ -67,10 +68,9 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
     @Override
     public void refresh() {
-        if (refreshing) {
+        if (!refreshing.compareAndSet(false, true)) {
             return;
         }
-        refreshing = true;
         try {
             if (log.isInfoEnabled()) {
                 log.info("Refreshing route configuration from database");
@@ -104,7 +104,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
                 log.info("Loaded {} routes from database", cachedRoutes.size());
             }
         } finally {
-            refreshing = false;
+            refreshing.set(false);
         }
     }
 

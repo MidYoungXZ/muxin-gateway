@@ -84,8 +84,8 @@
       </el-form>
       
       <div class="login-footer">
-        <el-link type="primary" underline="never">忘记密码？</el-link>
-        <el-link type="primary" underline="never">注册账号</el-link>
+        <el-link type="primary" underline="never" @click="ElMessage.info('请联系管理员重置密码')">忘记密码？</el-link>
+        <el-link type="primary" underline="never" @click="ElMessage.info('请联系管理员开通账号')">注册账号</el-link>
       </div>
     </div>
     
@@ -133,6 +133,9 @@ const rules = reactive({
 // 状态
 const loading = ref(false)
 const showCaptcha = ref(false)
+// 注意：以下账号锁定机制仅用于前端体验优化（防止暴力点击），不构成真正的安全限制。
+// 真正的登录安全（频率限制、账号锁定）应依赖后端实现。
+// 刷新页面即可重置锁定状态，请确保后端API具备登录频率限制。
 const failedAttempts = ref(0)
 const accountLocked = ref(false)
 const lockTime = ref(0)

@@ -118,7 +118,6 @@ public class RemoteAddrPredicate implements Predicate {
     private String getClientIp(HttpServerExchange exchange) {
         String xForwardedFor = exchange.header("X-Forwarded-For");
         if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            // 从右向左解析，找到第一个非可信代理IP
             String[] ips = xForwardedFor.split(",");
             for (int i = ips.length - 1; i >= 0; i--) {
                 String ip = ips[i].trim();
@@ -126,7 +125,6 @@ public class RemoteAddrPredicate implements Predicate {
                     return ip;
                 }
             }
-            // 如果全部是可信代理，取最后一个（可能是原始客户端）
             if (ips.length > 0) {
                 return ips[ips.length - 1].trim();
             }
@@ -137,7 +135,11 @@ public class RemoteAddrPredicate implements Predicate {
             return xRealIp.trim();
         }
 
-        // TODO: 需要扩展 HttpServerExchange 接口添加 remoteAddress 方法
+        String remoteAddress = exchange.remoteAddress();
+        if (remoteAddress != null && !remoteAddress.isEmpty()) {
+            return remoteAddress;
+        }
+
         return null;
     }
 

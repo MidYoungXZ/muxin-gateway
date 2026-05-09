@@ -55,15 +55,12 @@ public class RoundRobinLoadBalanceStrategy extends LoadBalanceStrategy {
             throw new IllegalArgumentException("地址数量必须大于0");
         }
 
-        // 使用原子操作确保线程安全，并正确处理溢出
         int current = counter.getAndIncrement();
-        // 使用Math.abs处理可能的负数（溢出后）
-        int index = Math.abs(current % size);
-        // 当计数器接近溢出时，重置以避免长期负数问题
-        if (current > Integer.MAX_VALUE - 10000) {
-            counter.set(0);
+        if (current < 0) {
+            counter.compareAndSet(current + 1, 0);
+            current = counter.getAndIncrement();
         }
-        return index;
+        return Math.floorMod(current, size);
     }
     
     @Override

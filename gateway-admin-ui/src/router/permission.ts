@@ -29,7 +29,7 @@ router.beforeEach(async (to, from, next) => {
         }
       } else {
         if (to.name === 'NotFound' && to.matched.length === 0) {
-          next({ path: '/dashboard' })
+          next({ path: '/404', replace: true })
         } else {
           next()
         }
