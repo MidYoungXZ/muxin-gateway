@@ -51,6 +51,7 @@ export interface ServiceNodeDTO {
 export interface DiscoveryConfig {
   registryType: string
   serverAddr: string
+  discoveryServiceName?: string
   namespace?: string
   username?: string
   password?: string
@@ -131,6 +132,7 @@ export interface DiscoveryRequest {
   registryType: string
   serverAddr: string
   serviceName: string
+  discoveryServiceName?: string
   namespace?: string
   username?: string
   password?: string

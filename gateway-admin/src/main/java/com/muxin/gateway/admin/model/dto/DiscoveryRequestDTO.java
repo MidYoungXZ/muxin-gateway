@@ -23,4 +23,6 @@ public class DiscoveryRequestDTO {
     private String password;
     
     private String group;
+    
+    private String discoveryServiceName;
 }

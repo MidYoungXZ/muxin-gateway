@@ -379,23 +379,32 @@
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="命名空间">
-                <el-input v-model="serviceForm.discoveryConfig.namespace" placeholder="可选" />
+              <el-form-item label="Nacos服务名">
+                <el-input v-model="serviceForm.discoveryConfig.discoveryServiceName" placeholder="留空则使用服务名称" />
+                <div class="el-form-item__tip" style="font-size: 12px; color: #909399; margin-top: 4px;">在Nacos中查找的服务名称，留空则使用上方"服务名称"</div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="分组">
-                <el-input v-model="serviceForm.discoveryConfig.group" placeholder="默认: DEFAULT_GROUP" />
+              <el-form-item label="命名空间">
+                <el-input v-model="serviceForm.discoveryConfig.namespace" placeholder="可选" />
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-row :gutter="20">
             <el-col :span="12">
+              <el-form-item label="分组">
+                <el-input v-model="serviceForm.discoveryConfig.group" placeholder="默认: DEFAULT_GROUP" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
               <el-form-item label="用户名">
                 <el-input v-model="serviceForm.discoveryConfig.username" placeholder="可选" />
               </el-form-item>
             </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="密码">
                 <el-input v-model="serviceForm.discoveryConfig.password" type="password" placeholder="可选" show-password />
@@ -491,6 +500,7 @@ const serviceForm = reactive({
   discoveryConfig: {
     registryType: 'NACOS',
     serverAddr: '',
+    discoveryServiceName: '',
     namespace: '',
     username: '',
     password: '',
@@ -768,6 +778,7 @@ const handleAddService = () => {
     discoveryConfig: {
       registryType: 'NACOS',
       serverAddr: '',
+      discoveryServiceName: '',
       namespace: '',
       username: '',
       password: '',
@@ -801,11 +812,12 @@ const handleTestDiscovery = async () => {
       const discoverResult = await nodesApi.discoverNodes({
         registryType: serviceForm.discoveryConfig.registryType,
         serverAddr: serviceForm.discoveryConfig.serverAddr,
-        serviceName: serviceForm.serviceName,
+        serviceName: serviceForm.discoveryConfig.discoveryServiceName || serviceForm.serviceName,
         namespace: serviceForm.discoveryConfig.namespace,
         username: serviceForm.discoveryConfig.username,
         password: serviceForm.discoveryConfig.password,
-        group: serviceForm.discoveryConfig.group
+        group: serviceForm.discoveryConfig.group,
+        discoveryServiceName: serviceForm.discoveryConfig.discoveryServiceName
       })
       
       if (discoverResult?.data && discoverResult.data.length > 0) {

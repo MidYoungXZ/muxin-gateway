@@ -219,11 +219,14 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
             throw new BusinessException("注册中心配置不能为空");
         }
         
+        String discoveryName = config.getDiscoveryServiceName() != null 
+                && !config.getDiscoveryServiceName().isBlank() 
+                ? config.getDiscoveryServiceName() : serviceName;
         RegistryDiscoveryService discoveryService = getDiscoveryService(config.getRegistryType());
         List<DiscoveredNodeVO> discoveredNodes = discoveryService.discoverNodes(serviceName, config);
         
         if (CollectionUtils.isEmpty(discoveredNodes)) {
-            throw new BusinessException("未在注册中心发现服务: " + serviceName);
+            throw new BusinessException("未在注册中心发现服务: " + discoveryName);
         }
         
         Long firstId = null;

@@ -20,4 +20,11 @@ public class DiscoveryConfigDTO {
     private String password;
     
     private String group;
+    
+    /**
+     * 注册中心中的服务发现名称
+     * 用于在注册中心（如Nacos）中查找服务实例时使用的名称
+     * 留空则使用serviceName作为查询名称
+     */
+    private String discoveryServiceName;
 }

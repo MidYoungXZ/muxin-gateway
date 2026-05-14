@@ -58,7 +58,10 @@ public class NacosDiscoveryServiceImpl implements RegistryDiscoveryService {
         try {
             namingService = createNamingService(config);
             
-            List<Instance> instances = namingService.getAllInstances(serviceName, getGroup(config));
+            String nacosServiceName = config.getDiscoveryServiceName() != null 
+                    && !config.getDiscoveryServiceName().isBlank() 
+                    ? config.getDiscoveryServiceName() : serviceName;
+            List<Instance> instances = namingService.getAllInstances(nacosServiceName, getGroup(config));
             
             return instances.stream()
                     .map(this::convertToVO)
