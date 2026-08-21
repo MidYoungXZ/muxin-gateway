@@ -142,6 +142,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
     }
     
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Long createService(ServiceCreateDTO dto) {
         String serviceName = dto.getServiceName();
         
@@ -223,7 +224,7 @@ public class ServiceNodeServiceImpl extends ServiceImpl<ServiceNodeMapper, GwSer
                 && !config.getDiscoveryServiceName().isBlank() 
                 ? config.getDiscoveryServiceName() : serviceName;
         RegistryDiscoveryService discoveryService = getDiscoveryService(config.getRegistryType());
-        List<DiscoveredNodeVO> discoveredNodes = discoveryService.discoverNodes(serviceName, config);
+        List<DiscoveredNodeVO> discoveredNodes = discoveryService.discoverNodes(discoveryName, config);
         
         if (CollectionUtils.isEmpty(discoveredNodes)) {
             throw new BusinessException("未在注册中心发现服务: " + discoveryName);
@@ -319,6 +320,7 @@ entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
         entity.setCreateBy(StpUtil.getLoginIdAsString());
         
         save(entity);
+        configRefreshService.refreshServices();
         
         log.info("创建服务节点成功：{} - {}", entity.getServiceName(), entity.getNodeId());
         return entity.getId();
@@ -368,6 +370,7 @@ entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
         entity.setUpdateBy(StpUtil.getLoginIdAsString());
         
         updateById(entity);
+        configRefreshService.refreshServices();
         
         log.info("更新服务节点成功：{}", entity.getNodeId());
     }
@@ -381,6 +384,7 @@ entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
         }
         
         removeById(id);
+        configRefreshService.refreshServices();
         
         log.info("删除服务节点成功：{}", entity.getNodeId());
     }
@@ -518,6 +522,7 @@ entity.setStatus(node.getHealthy() != null && node.getHealthy() ? 1 : 0);
         entity.setUpdateTime(LocalDateTime.now());
         entity.setUpdateBy(StpUtil.getLoginIdAsString());
         updateById(entity);
+        configRefreshService.refreshServices();
     }
     
     private ServiceNodeVO convertToVO(GwServiceNode entity) {

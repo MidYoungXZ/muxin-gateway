@@ -23,8 +23,8 @@ Muxin Gateway 是一个现代化的 API 网关解决方案，采用分层架构�
 CREATE DATABASE muxin_gateway DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-2. **导入数据**
-执行 `gateway-admin/src/main/resources/schema.sql` 和 `data.sql`
+2. **初始化数据**
+SQLite 配置会自动执行 `gateway-admin/src/main/resources/sql/sqlite/schema.sql` 和 `data.sql`。
 
 3. **修改配置**
 编辑 `gateway-main/src/main/resources/application.yml`，配置数据库连接
@@ -40,7 +40,8 @@ java -jar gateway-main/target/gateway-main-1.0-SNAPSHOT.jar
 
 5. **访问系统**
 - 管理后台: http://localhost:9191/
-- 默认账号: admin / admin123
+- 部署前设置 `SA_TOKEN_JWT_SECRET`。
+- SQLite 首次初始化前可设置 `MUXIN_GATEWAY_ADMIN_PASSWORD` 覆盖 admin 密码。
 
 ## 项目结构
 
@@ -91,14 +92,13 @@ muxin-gateway/
 #### 路由管理
 - 路由增删改查
 - 路由启用/禁用
-- 路由配置导入导出
 - 路由匹配测试
 
 #### 服务节点管理
 - 服务注册发现
 - 节点健康检查
 - 节点状态管理
-- 支持从 Nacos、Consul 导入
+- 支持从 Nacos 发现节点
 
 #### 插件管理
 - 内置插件：限流、熔断、CORS、超时、请求/响应重写

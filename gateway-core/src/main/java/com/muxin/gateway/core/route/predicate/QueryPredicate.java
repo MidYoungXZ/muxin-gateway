@@ -60,7 +60,7 @@ public class QueryPredicate implements Predicate {
         String paramValue = exchange.param(param);
         if (paramValue == null) {
             log.debug("[QueryPredicate] 查询参数 {} 不存在", param);
-            return false;
+            return Boolean.TRUE.equals(config.get("not"));
         }
 
         if (pattern == null) {
@@ -69,6 +69,7 @@ public class QueryPredicate implements Predicate {
         }
 
         boolean matched = pattern.matcher(paramValue).matches();
+        if (Boolean.TRUE.equals(config.get("not"))) matched = !matched;
         log.debug("[QueryPredicate] 查询参数 {} = {}, 正则 {} 匹配结果: {}", 
                  param, paramValue, regexp, matched);
         return matched;

@@ -147,15 +147,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Sys
     }
     
     @Override
-    public List<OperationLogVO> exportLogs(OperationLogQueryDTO query) {
-        query.setPageNum(1);
-        query.setPageSize(Integer.MAX_VALUE);
-        
-        PageVO<OperationLogVO> result = pageQuery(query);
-        return result.getData();
-    }
-    
-    @Override
     public LogStatsVO getLogStats() {
         long totalCount = count();
         

@@ -58,7 +58,8 @@ public class DatabaseServiceConfigProvider implements ServiceConfigProvider {
 
             List<GwServiceNode> nodes = serviceNodeMapper.selectAll()
                     .stream()
-                    .filter(n -> n.getStatus() != null && n.getStatus() == 1)
+                    .filter(n -> n.getStatus() != null && n.getStatus() == 1
+                            && !Integer.valueOf(0).equals(n.getLastCheckResult()))
                     .collect(Collectors.toList());
 
             Map<String, List<GwServiceNode>> groupedNodes = nodes.stream()

@@ -22,6 +22,7 @@ import com.muxin.gateway.core.config.provider.ConfigChangedEvent;
 import com.muxin.gateway.core.config.provider.ConfigChangeListener;
 import com.muxin.gateway.core.config.provider.RouteConfigProvider;
 import com.muxin.gateway.core.route.RouteDefinition;
+import com.muxin.gateway.core.route.TimeoutConfig;
 import com.muxin.gateway.core.route.filter.FilterDefinition;
 import com.muxin.gateway.core.route.loadbalance.LoadBalanceDefinition;
 import com.muxin.gateway.core.route.predicate.PredicateDefinition;
@@ -33,6 +34,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -83,12 +85,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
             List<RouteDefinition> newRoutes = new ArrayList<>();
             for (GwRoute route : routes) {
-                try {
-                    RouteDefinition definition = convertToRouteDefinition(route);
-                    newRoutes.add(definition);
-                } catch (Exception e) {
-                    log.error("Failed to convert route: {}", route.getRouteId(), e);
-                }
+                newRoutes.add(convertToRouteDefinition(route));
             }
 
             cachedRoutes = newRoutes;
@@ -151,6 +148,7 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
 
         List<FilterDefinition> filters = loadFiltersFromPlugins(route.getId());
         definition.setFilters(filters);
+        definition.setTimeouts(loadTimeouts(route.getId()));
 
         return definition;
     }
@@ -191,14 +189,54 @@ public class DatabaseRouteConfigProvider implements RouteConfigProvider {
             GwPredicate predicate = predicateMap.get(rp.getPredicateId());
             if (predicate == null) continue;
 
-            PredicateDefinition pd = PredicateDefinition.builder()
-                    .name(predicate.getPredicateType())
-                    .args(predicate.getArgs() != null ? predicate.getArgs() : new HashMap<>())
-                    .build();
-            predicates.add(pd);
+            predicates.addAll(expandPredicate(predicate));
         }
 
         return predicates;
+    }
+
+    private List<PredicateDefinition> expandPredicate(GwPredicate predicate) {
+        Map<String, Object> args = predicate.getArgs() != null ? predicate.getArgs() : Map.of();
+        String type = predicate.getPredicateType();
+        if ("HEADER".equalsIgnoreCase(type)) {
+            return expandNamedRules(args.get("headers"), "header");
+        }
+        if ("QUERY".equalsIgnoreCase(type)) {
+            return expandNamedRules(args.get("queries"), "param");
+        }
+        return List.of(PredicateDefinition.builder().name(type).args(args).build());
+    }
+
+    private List<PredicateDefinition> expandNamedRules(Object rules, String nameKey) {
+        if (!(rules instanceof Collection<?> collection) || collection.isEmpty()) {
+            throw new IllegalArgumentException(nameKey + " predicate must contain rules");
+        }
+        List<PredicateDefinition> definitions = new ArrayList<>();
+        for (Object rule : collection) {
+            if (!(rule instanceof Map<?, ?> map)) {
+                throw new IllegalArgumentException(nameKey + " predicate rule is invalid");
+            }
+            String name = Objects.toString(map.get("name"), "").trim();
+            String matchType = Objects.toString(map.get("matchType"), "EXIST");
+            String value = Objects.toString(map.get("value"), "");
+            if (name.isEmpty()) {
+                throw new IllegalArgumentException(nameKey + " predicate name is empty");
+            }
+            Map<String, Object> definitionArgs = new HashMap<>();
+            definitionArgs.put(nameKey, name);
+            switch (matchType.toUpperCase(Locale.ROOT)) {
+                case "EXIST" -> { }
+                case "NOT_EXIST" -> definitionArgs.put("not", true);
+                case "EQUAL" -> definitionArgs.put("regexp", Pattern.quote(value));
+                case "REGEX" -> definitionArgs.put("regexp", value);
+                default -> throw new IllegalArgumentException("unsupported match type: " + matchType);
+            }
+            definitions.add(PredicateDefinition.builder()
+                    .name("header".equals(nameKey) ? "HEADER" : "QUERY")
+                    .args(definitionArgs)
+                    .build());
+        }
+        return definitions;
     }
 
     private List<FilterDefinition> loadFiltersFromPlugins(Long routeId) {
@@ -280,6 +318,33 @@ private List<FilterDefinition> mapPluginToFilters(String pluginName, String plug
                 yield List.of();
             }
         };
+    }
+
+    private TimeoutConfig loadTimeouts(Long routeId) {
+        List<GwRoutePlugin> routePlugins = routePluginMapper.selectListByQuery(
+                QueryWrapper.create().where(GW_ROUTE_PLUGIN.ROUTE_ID.eq(routeId))
+        );
+        if (routePlugins.isEmpty()) {
+            return null;
+        }
+
+        List<Long> pluginIds = routePlugins.stream().map(GwRoutePlugin::getPluginId).distinct().toList();
+        Map<Long, GwPlugin> plugins = pluginMapper.selectListByQuery(
+                QueryWrapper.create().where(GW_PLUGIN.ID.in(pluginIds))
+        ).stream().collect(Collectors.toMap(GwPlugin::getId, plugin -> plugin));
+
+        for (GwRoutePlugin routePlugin : routePlugins) {
+            GwPlugin plugin = plugins.get(routePlugin.getPluginId());
+            if (plugin == null || !"timeout".equals(plugin.getPluginName())
+                    || Boolean.FALSE.equals(routePlugin.getEnabled())) {
+                continue;
+            }
+            Map<String, Object> config = mergeConfig(plugin.getDefaultConfig(), routePlugin.getConfig());
+            return TimeoutConfig.builder()
+                    .request(toLong(config.get(PluginConfigKeys.RESPONSE_TIMEOUT), TimeoutConfig.DEFAULT_REQUEST))
+                    .build();
+        }
+        return null;
     }
 
     private FilterDefinition createRateLimitFilter(Map<String, Object> config, int order) {

@@ -57,11 +57,29 @@ public class GatewayProcessor implements LifeCycle {
             Route route = routeManager.matchRoute(ctx);
             if (route == null) throw error("路由匹配失败", ctx.requestId());
 
-            // 2. 执行 PRE 过滤器链
+            // 2. 路径前缀剥离（strip-prefix）
+            if (route.getStripPrefixCount() > 0) {
+                String uri = ctx.exchange().uri();
+                int queryIdx = uri.indexOf('?');
+                String path = queryIdx >= 0 ? uri.substring(0, queryIdx) : uri;
+                String query = queryIdx >= 0 ? uri.substring(queryIdx) : "";
+                ctx.exchange().uri(route.stripPrefix(path) + query);
+            }
+
+            // 3. 执行 PRE 过滤器链
             FilterChain.create(route.getPreFilters()).doFilter(ctx.exchange());
+            if (ctx.exchange().isResponseCommitted()) {
+                FilterChain.create(route.getPostFilters()).doFilter(ctx.exchange());
+                sendResponse(ctx);
+                cleanup(ctx);
+                return;
+            }
 
             // 3. 选择后端端点并发送请求（含同步重试）
-            long requestTimeout = route.getTimeout(TimeoutType.REQUEST);
+            Long defaultTimeout = config.getCoreConfig() != null ? config.getCoreConfig().getDefaultTimeout() : null;
+            long requestTimeout = route.hasTimeout(TimeoutType.REQUEST)
+                    ? route.getTimeout(TimeoutType.REQUEST)
+                    : defaultTimeout != null ? defaultTimeout : com.muxin.gateway.core.route.TimeoutConfig.DEFAULT_REQUEST;
             LoadBalanceStrategy lb = route.getLoadBalanceStrategy();
             int maxRetries = config.getCoreConfig() != null ? config.getCoreConfig().getMaxRetries() : 0;
 
@@ -77,6 +95,9 @@ public class GatewayProcessor implements LifeCycle {
                     })
                     .whenComplete((v, ex) -> {
                         if (ex != null && !ctx.isCompleted()) {
+                            ClientConnection conn = ctx.clientConnection();
+                            ctx.setClientConnection(null);
+                            safeDestroyConnection(conn);
                             handleError(ctx, unwrap(ex));
                         }
                         cleanup(ctx);
@@ -117,7 +138,7 @@ public class GatewayProcessor implements LifeCycle {
                         .whenComplete((response, ex) -> {
                             if (ex != null) {
                                 ctx.setClientConnection(null);
-                                safeReturnConnection(finalConn);
+                                safeDestroyConnection(finalConn);
                             }
                         });
             } catch (Exception e) {
@@ -143,6 +164,17 @@ public class GatewayProcessor implements LifeCycle {
             conn.returnToPool();
         } catch (Exception e) {
             log.warn("[GatewayProcessor] 归还连接失败: {}", e.getMessage());
+        }
+    }
+
+    private void safeDestroyConnection(ClientConnection conn) {
+        if (conn == null) {
+            return;
+        }
+        try {
+            conn.destroy();
+        } catch (Exception e) {
+            log.warn("[GatewayProcessor] 销毁连接失败: {}", e.getMessage());
         }
     }
 

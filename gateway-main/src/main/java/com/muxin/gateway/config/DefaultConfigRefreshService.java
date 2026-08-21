@@ -6,6 +6,8 @@ import com.muxin.gateway.core.config.provider.ServiceConfigProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -19,8 +21,10 @@ public class DefaultConfigRefreshService implements ConfigRefreshService {
     public void refreshAll() {
         log.info("[ConfigRefreshService] Refreshing all configurations...");
         
-        routeConfigProvider.refresh();
-        serviceConfigProvider.refresh();
+        afterCommit(() -> {
+            serviceConfigProvider.refresh();
+            routeConfigProvider.refresh();
+        });
         
         log.info("[ConfigRefreshService] All configurations refreshed successfully");
     }
@@ -28,14 +32,14 @@ public class DefaultConfigRefreshService implements ConfigRefreshService {
     @Override
     public void refreshRoutes() {
         log.info("[ConfigRefreshService] Refreshing route configuration...");
-        routeConfigProvider.refresh();
+        afterCommit(routeConfigProvider::refresh);
         log.info("[ConfigRefreshService] Route configuration refreshed successfully");
     }
 
     @Override
     public void refreshServices() {
         log.info("[ConfigRefreshService] Refreshing service configuration...");
-        serviceConfigProvider.refresh();
+        afterCommit(serviceConfigProvider::refresh);
         log.info("[ConfigRefreshService] Service configuration refreshed successfully");
     }
 
@@ -44,5 +48,18 @@ public class DefaultConfigRefreshService implements ConfigRefreshService {
         return String.format("RouteProvider: %s, ServiceProvider: %s",
                 routeConfigProvider.getSource(),
                 serviceConfigProvider.getSource());
+    }
+
+    private void afterCommit(Runnable refresh) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            refresh.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                refresh.run();
+            }
+        });
     }
 }

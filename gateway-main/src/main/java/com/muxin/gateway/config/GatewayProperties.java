@@ -20,6 +20,17 @@ public class GatewayProperties {
     @Data
     public static class NettyProperties {
         private ServerProperties server = new ServerProperties();
+        private ClientProperties client = new ClientProperties();
+    }
+
+    @Data
+    public static class ClientProperties {
+        private int httpConnectTimeout = 10000;
+        private long httpRequestTimeout = 30000L;
+        private int httpMaxRequestRetry = 3;
+        private int httpMaxConnections = 1000;
+        private int httpConnectionsPerHost = 100;
+        private long httpPooledConnectionIdleTimeout = 60000L;
     }
 
     @Data
@@ -47,7 +58,7 @@ public class GatewayProperties {
         private boolean enabled = true;
         private String pathPrefix = "/admin";
         private String username = "admin";
-        private String password = "admin123";
+        private String password;
         private int sessionTimeout = 30;
     }
 

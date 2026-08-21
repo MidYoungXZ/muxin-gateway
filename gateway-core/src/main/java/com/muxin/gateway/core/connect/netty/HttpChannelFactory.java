@@ -3,11 +3,15 @@ package com.muxin.gateway.core.connect.netty;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import io.netty.util.AttributeKey;
 import io.netty.channel.pool.ChannelHealthChecker;
 import io.netty.channel.pool.ChannelPoolHandler;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * HTTP协议Channel工厂
@@ -22,6 +26,8 @@ public class HttpChannelFactory {
 
     private static final String CODEC_HANDLER = "http-codec";
     private static final String AGGREGATOR_HANDLER = "http-aggregator";
+    private static final AttributeKey<ScheduledFuture<?>> IDLE_CLOSE_TASK =
+            AttributeKey.valueOf("gateway.idleCloseTask");
 
     private final NettyPoolConfig config;
 
@@ -61,11 +67,13 @@ public class HttpChannelFactory {
         return new ChannelPoolHandler() {
             @Override
             public void channelReleased(Channel ch) {
+                scheduleIdleClose(ch);
                 log.debug("HTTP channel released: {}", ch);
             }
 
             @Override
             public void channelAcquired(Channel ch) {
+                cancelIdleClose(ch);
                 log.debug("HTTP channel acquired: {}", ch);
             }
 
@@ -75,6 +83,22 @@ public class HttpChannelFactory {
                 configurePipeline(ch.pipeline(), config);
             }
         };
+    }
+
+    private void scheduleIdleClose(Channel channel) {
+        Long idleTimeout = config.getIdleTimeout();
+        if (idleTimeout == null || idleTimeout <= 0) {
+            return;
+        }
+        cancelIdleClose(channel);
+        channel.attr(IDLE_CLOSE_TASK).set(channel.eventLoop().schedule(() -> channel.close(), idleTimeout, TimeUnit.MILLISECONDS));
+    }
+
+    private void cancelIdleClose(Channel channel) {
+        ScheduledFuture<?> task = channel.attr(IDLE_CLOSE_TASK).getAndSet(null);
+        if (task != null) {
+            task.cancel(false);
+        }
     }
 
     private boolean isChannelHealthy(Channel channel) {

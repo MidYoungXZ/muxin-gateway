@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +27,7 @@ public class StaticRouteService implements RouteService {
 
     private final ServiceDefinition serviceDefinition;
     private final ServiceRegistry serviceRegistry;
+    private final List<String> registeredInstanceIds = new ArrayList<>();
 
     public StaticRouteService(ServiceDefinition serviceDefinition, ServiceRegistry serviceRegistry) {
         this.serviceDefinition = Objects.requireNonNull(serviceDefinition, "serviceDefinition不能为空");
@@ -35,7 +37,6 @@ public class StaticRouteService implements RouteService {
             throw new IllegalArgumentException("StaticRouteService只支持STATIC类型服务");
         }
 
-        registerStaticInstances();
         log.info("创建STATIC路由服务: {} - {} addresses", 
                 serviceDefinition.getName(), serviceDefinition.getAddresses().size());
     }
@@ -53,6 +54,7 @@ public class StaticRouteService implements RouteService {
                                 addrDef.getWeight() != null ? addrDef.getWeight() : 100
                         );
                 serviceRegistry.registerInstance(instance);
+                registeredInstanceIds.add(instance.getInstanceId());
             }
         }
     }
@@ -103,6 +105,15 @@ public class StaticRouteService implements RouteService {
 
     @Override
     public void refresh() {
+        for (String instanceId : registeredInstanceIds) {
+            serviceRegistry.deregisterInstance(serviceDefinition.getId(), instanceId);
+        }
+        registeredInstanceIds.clear();
+        registerStaticInstances();
+    }
+
+    public List<String> registeredInstanceIds() {
+        return List.copyOf(registeredInstanceIds);
     }
 
     @Override

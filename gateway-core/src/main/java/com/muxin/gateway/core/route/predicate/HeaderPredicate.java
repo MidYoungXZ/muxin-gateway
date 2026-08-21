@@ -60,7 +60,7 @@ public class HeaderPredicate implements Predicate {
         String headerValue = exchange.header(header);
         if (headerValue == null) {
             log.debug("[HeaderPredicate] 请求头 {} 不存在", header);
-            return false;
+            return Boolean.TRUE.equals(config.get("not"));
         }
 
         if (pattern == null) {
@@ -69,6 +69,7 @@ public class HeaderPredicate implements Predicate {
         }
 
         boolean matched = pattern.matcher(headerValue).matches();
+        if (Boolean.TRUE.equals(config.get("not"))) matched = !matched;
         log.debug("[HeaderPredicate] 请求头 {} = {}, 正则 {} 匹配结果: {}", 
                  header, headerValue, regexp, matched);
         return matched;

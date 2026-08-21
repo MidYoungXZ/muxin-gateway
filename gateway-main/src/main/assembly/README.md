@@ -37,9 +37,8 @@ cd gateway-main-1.0-SNAPSHOT
 - **网关端口**: http://localhost:9292
 - **API文档**: http://localhost:9191/swagger-ui.html
 
-默认登录账号：
-- 用户名: `admin`
-- 密码: `admin123`
+首次启动前请设置环境变量 SA_TOKEN_JWT_SECRET。
+SQLite 首次初始化前可设置环境变量 MUXIN_GATEWAY_ADMIN_PASSWORD 覆盖 admin 密码。
 
 ## 停止服务
 

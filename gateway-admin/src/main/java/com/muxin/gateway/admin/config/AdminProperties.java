@@ -10,7 +10,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * 支持的配置项包括：
  * <ul>
  *     <li>enabled: 是否启用管理界面，默认为true</li>
- *     <li>routeFlashInterval: 路由刷新间隔（秒），默认为30秒</li>
  * </ul>
  * </p>
  *
@@ -29,14 +28,5 @@ public class AdminProperties {
      * </p>
      */
     private boolean enabled = true;
-
-    /**
-     * 路由刷新间隔（秒）.
-     * <p>
-     * 用于定时刷新网关路由配置的间隔时间，默认值为30秒。
-     * 较短的间隔可以更快地同步路由变更，但会增加数据库查询频率。
-     * </p>
-     */
-    private Long routeFlashInterval = 30L;
 
 } 

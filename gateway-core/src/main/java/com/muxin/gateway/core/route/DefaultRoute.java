@@ -106,6 +106,16 @@ public class DefaultRoute implements Route {
         return timeoutConfig != null ? timeoutConfig.get(type) : TimeoutConfig.getDefault(type);
     }
 
+    @Override
+    public boolean hasTimeout(TimeoutType type) {
+        return timeoutConfig != null && timeoutConfig.hasTimeout(type);
+    }
+
+    @Override
+    public String stripPrefix(String path) {
+        return pathPredicate != null ? pathPredicate.stripPrefix(path) : path;
+    }
+
     public static class Builder {
         private String id;
         private String name;

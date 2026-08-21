@@ -117,6 +117,12 @@ public class DefaultServiceRegistry implements ServiceRegistry {
         String serviceId = instance.getServiceId();
 
         ServiceInstance existing = instanceStorage.put(instanceId, instance);
+        if (existing != null && existing.isHealthy()) {
+            Set<String> healthyInstances = healthyIndex.get(existing.getServiceId());
+            if (healthyInstances != null) {
+                healthyInstances.remove(instanceId);
+            }
+        }
 
         serviceIndex.computeIfAbsent(serviceId, k -> ConcurrentHashMap.newKeySet()).add(instanceId);
 
@@ -179,6 +185,9 @@ public class DefaultServiceRegistry implements ServiceRegistry {
 
             if (wasHealthy != isHealthy) {
                 updateHealthyIndex(serviceId, instanceId, wasHealthy, isHealthy);
+                notifyInstanceStatusChanged(serviceId, instanceId,
+                        wasHealthy ? NodeStatus.HEALTHY : NodeStatus.UNAVAILABLE,
+                        isHealthy ? NodeStatus.HEALTHY : NodeStatus.UNAVAILABLE);
             }
 
             log.info("[DefaultServiceRegistry] 状态更新: {} - {} -> {}", instanceId, wasHealthy, isHealthy);
@@ -241,6 +250,20 @@ public class DefaultServiceRegistry implements ServiceRegistry {
             for (InstanceChangeListener listener : serviceListeners) {
                 try {
                     listener.onInstanceRemoved(serviceId, instanceId);
+                } catch (Exception e) {
+                    log.error("[DefaultServiceRegistry] 通知监听器失败: {}", e.getMessage());
+                }
+            }
+        }
+    }
+
+    private void notifyInstanceStatusChanged(String serviceId, String instanceId,
+                                             NodeStatus oldStatus, NodeStatus newStatus) {
+        List<InstanceChangeListener> serviceListeners = listeners.get(serviceId);
+        if (serviceListeners != null) {
+            for (InstanceChangeListener listener : serviceListeners) {
+                try {
+                    listener.onInstanceStatusChanged(serviceId, instanceId, oldStatus, newStatus);
                 } catch (Exception e) {
                     log.error("[DefaultServiceRegistry] 通知监听器失败: {}", e.getMessage());
                 }

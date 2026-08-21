@@ -30,6 +30,9 @@ public class SaTokenConfig implements WebMvcConfigurer {
           .excludePathPatterns(
                 "/",
                 "/index.html",
+                "/login",
+                "/403",
+                "/404",
                 "/favicon.ico",
                 "/favicon.svg",
                 "/logo.svg",

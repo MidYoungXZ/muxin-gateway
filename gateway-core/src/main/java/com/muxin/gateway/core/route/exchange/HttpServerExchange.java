@@ -104,6 +104,13 @@ public interface HttpServerExchange {
      */
     boolean hasResponse();
 
+    /**
+     * 是否已生成可直接返回客户端的响应。
+     */
+    default boolean isResponseCommitted() {
+        return hasResponse();
+    }
+
     // ==================== 修改请求（创建副本）====================
 
     /**

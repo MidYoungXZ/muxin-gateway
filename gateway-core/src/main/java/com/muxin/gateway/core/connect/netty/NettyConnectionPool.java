@@ -232,10 +232,8 @@ public class NettyConnectionPool implements ConnectionPool {
             return;
         }
         try {
-            if (channel.isOpen()) {
-                channel.close();
-                log.debug("[NettyConnectionPool] 销毁连接: {}", channel.id().asShortText());
-            }
+            channel.close().addListener(ignored -> returnChannel(channel));
+            log.debug("[NettyConnectionPool] 销毁连接: {}", channel.id().asShortText());
         } catch (Exception e) {
             log.warn("[NettyConnectionPool] 销毁连接失败: {}", e.getMessage());
         }

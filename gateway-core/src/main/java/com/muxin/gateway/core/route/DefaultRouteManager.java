@@ -32,6 +32,7 @@ public class DefaultRouteManager implements RouteManager {
     public void addRoute(Route route) {
         Objects.requireNonNull(route, "路由不能为空");
         route.validate();
+        route.getService().refresh();
         routes.put(route.getId(), route);
         if (route.getService() != null) {
             services.put(route.getId(), route.getService());
@@ -108,6 +109,21 @@ public class DefaultRouteManager implements RouteManager {
         if (log.isDebugEnabled()) {
             log.debug("[DefaultRouteManager] All routes cleared");
         }
+    }
+
+    @Override
+    public synchronized void replaceAll(List<Route> routeList) {
+        List<Route> replacement = routeList == null ? List.of() : new ArrayList<>(routeList);
+        replacement.forEach(route -> Objects.requireNonNull(route, "路由不能为空").validate());
+        replacement.forEach(route -> route.getService().refresh());
+        Map<String, Route> replacementMap = new HashMap<>();
+        replacement.forEach(route -> replacementMap.put(route.getId(), route));
+        replacement.sort(Comparator.comparingInt(Route::getOrder));
+        routes.clear();
+        services.clear();
+        routes.putAll(replacementMap);
+        replacement.forEach(route -> services.put(route.getId(), route.getService()));
+        sortedRoutes = Collections.unmodifiableList(replacement);
     }
 
     public int getRouteCount() {

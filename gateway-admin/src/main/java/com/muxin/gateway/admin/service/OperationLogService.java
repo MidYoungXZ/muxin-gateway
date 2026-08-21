@@ -63,14 +63,6 @@ public interface OperationLogService extends IService<SysOperationLog> {
     void clearAll();
     
     /**
-     * 导出操作日志
-     *
-     * @param query 查询条件
-     * @return 导出数据
-     */
-    List<OperationLogVO> exportLogs(OperationLogQueryDTO query);
-    
-    /**
      * 获取操作日志统计
      *
      * @return 统计数据
@@ -84,4 +76,4 @@ public interface OperationLogService extends IService<SysOperationLog> {
      * @return 清理数量
      */
     int cleanHistoryLogs(int days);
-} 
+}

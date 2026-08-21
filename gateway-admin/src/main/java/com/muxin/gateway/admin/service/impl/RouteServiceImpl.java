@@ -36,10 +36,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.AntPathMatcher;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -47,6 +49,7 @@ import java.util.stream.Collectors;
 public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implements RouteService {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
     
     private final RouteMapper routeMapper;
     private final RoutePluginMapper routePluginMapper;
@@ -221,10 +224,101 @@ public class RouteServiceImpl extends ServiceImpl<RouteMapper, GwRoute> implemen
     
     @Override
     public RouteTestResultVO testRoute(RouteTestDTO dto) {
-        return RouteTestResultVO.builder()
-                .matched(false)
-                .errorMessage("路由测试功能尚未实现")
-                .build();
+        long startedAt = System.currentTimeMillis();
+        if (dto == null || !StringUtils.hasText(dto.getMethod()) || !StringUtils.hasText(dto.getPath())) {
+            return RouteTestResultVO.builder().matched(false)
+                    .elapsedTime(System.currentTimeMillis() - startedAt)
+                    .errorMessage("请求方法和路径不能为空").build();
+        }
+        List<GwRoute> routes = routeMapper.selectListByQuery(QueryWrapper.create()
+                .from(GW_ROUTE).where(GW_ROUTE.ENABLED.eq(true))
+                .orderBy(GW_ROUTE.ORDER.asc(), GW_ROUTE.CREATE_TIME.desc()));
+        for (GwRoute route : routes) {
+            List<RouteVO.PredicateInfo> predicates = loadPredicates(route.getId());
+            if (!predicates.stream().allMatch(predicate -> matches(predicate, dto))) continue;
+            List<PluginVO> plugins = loadPlugins(route.getId());
+            return RouteTestResultVO.builder().matched(true)
+                    .matchedRouteId(route.getRouteId())
+                    .matchedPredicates(predicates.stream().map(RouteVO.PredicateInfo::getPredicateType).toList())
+                    .appliedFilters(plugins.stream().map(PluginVO::getPluginName).toList())
+                    .targetUri(route.getUri())
+                    .elapsedTime(System.currentTimeMillis() - startedAt).build();
+        }
+        return RouteTestResultVO.builder().matched(false)
+                .elapsedTime(System.currentTimeMillis() - startedAt)
+                .errorMessage("没有匹配的路由").build();
+    }
+
+    private boolean matches(RouteVO.PredicateInfo predicate, RouteTestDTO request) {
+        Map<String, Object> args = predicate.getArgs() == null ? Map.of() : predicate.getArgs();
+        return switch (predicate.getPredicateType().toUpperCase(Locale.ROOT)) {
+            case "PATH" -> matchesPath(args, request.getPath());
+            case "METHOD" -> values(args.get(PredicateConfigKeys.METHODS)).stream()
+                    .anyMatch(method -> method.equalsIgnoreCase(request.getMethod()));
+            case "HOST" -> values(args.get(PredicateConfigKeys.HOSTS)).stream()
+                    .anyMatch(host -> wildcardMatches(host, header(request.getHeaders(), "Host")));
+            case "HEADER" -> matchesNamedValues(args.get(PredicateConfigKeys.HEADERS), request.getHeaders());
+            case "QUERY" -> matchesNamedValues(args.get(PredicateConfigKeys.QUERIES), queryParams(request.getPath()));
+            default -> false;
+        };
+    }
+
+    private boolean matchesPath(Map<String, Object> args, String requestPath) {
+        String path = requestPath.split("\\?", 2)[0];
+        String pattern = Objects.toString(args.get(PredicateConfigKeys.PATTERN), "");
+        String matchType = Objects.toString(args.get(PredicateConfigKeys.MATCH_TYPE), "ANT");
+        boolean ignoreCase = Boolean.parseBoolean(Objects.toString(args.get(PredicateConfigKeys.IGNORE_CASE), "false"));
+        if (ignoreCase) { path = path.toLowerCase(Locale.ROOT); pattern = pattern.toLowerCase(Locale.ROOT); }
+        return switch (matchType.toUpperCase(Locale.ROOT)) {
+            case "EXACT" -> pattern.equals(path);
+            case "REGEX" -> Pattern.matches(pattern, path);
+            default -> PATH_MATCHER.match(pattern, path);
+        };
+    }
+
+    private boolean matchesNamedValues(Object rules, Map<String, String> values) {
+        if (!(rules instanceof Collection<?> collection)) return false;
+        for (Object rule : collection) {
+            if (!(rule instanceof Map<?, ?> map)) return false;
+            String name = Objects.toString(map.get("name"), "");
+            String expected = Objects.toString(map.get("value"), "");
+            String matchType = Objects.toString(map.get("matchType"), "EXIST");
+            String actual = header(values, name);
+            boolean matched = switch (matchType.toUpperCase(Locale.ROOT)) {
+                case "NOT_EXIST" -> actual == null;
+                case "EQUAL" -> expected.equals(actual);
+                case "REGEX" -> actual != null && Pattern.matches(expected, actual);
+                default -> actual != null;
+            };
+            if (!matched) return false;
+        }
+        return true;
+    }
+
+    private List<String> values(Object value) {
+        if (value instanceof Collection<?> collection) return collection.stream().map(Objects::toString).toList();
+        return value == null ? List.of() : Arrays.stream(value.toString().split(",")).map(String::trim).toList();
+    }
+
+    private Map<String, String> queryParams(String path) {
+        int queryIndex = path.indexOf('?');
+        if (queryIndex < 0 || queryIndex == path.length() - 1) return Map.of();
+        Map<String, String> params = new HashMap<>();
+        for (String pair : path.substring(queryIndex + 1).split("&")) {
+            String[] parts = pair.split("=", 2);
+            params.put(parts[0], parts.length == 2 ? parts[1] : "");
+        }
+        return params;
+    }
+
+    private String header(Map<String, String> headers, String name) {
+        return headers == null ? null : headers.entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(name))
+                .map(Map.Entry::getValue).findFirst().orElse(null);
+    }
+
+    private boolean wildcardMatches(String pattern, String value) {
+        return value != null && Pattern.matches(pattern.replace(".", "\\.").replace("*", ".*"), value.split(":", 2)[0]);
     }
     
     @Override

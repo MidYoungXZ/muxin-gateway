@@ -52,6 +52,8 @@ node_modules/
 *.static/*
 static/
 target/
+!gateway-admin/src/main/resources/static/
+!gateway-admin/src/main/resources/static/**
 
 # SQLite database files
 data/*.db
@@ -60,3 +62,4 @@ data/*.db-wal
 data/*.db-shm
 
 nul
+/gateway-admin/src/main/resources/static/

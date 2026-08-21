@@ -59,6 +59,7 @@ public class DefaultServiceInstance implements ServiceInstance {
      */
     public static DefaultServiceInstance createStatic(String serviceId, String host, int port) {
         return DefaultServiceInstance.builder()
+                .instanceId(staticInstanceId(serviceId, host, port, "http"))
                 .serviceId(serviceId)
                 .host(host)
                 .port(port)
@@ -74,6 +75,7 @@ public class DefaultServiceInstance implements ServiceInstance {
      */
     public static DefaultServiceInstance createStatic(String serviceId, String host, int port, String scheme, double weight) {
         return DefaultServiceInstance.builder()
+                .instanceId(staticInstanceId(serviceId, host, port, scheme))
                 .serviceId(serviceId)
                 .host(host)
                 .port(port)
@@ -82,6 +84,10 @@ public class DefaultServiceInstance implements ServiceInstance {
                 .healthy(true)
                 .source(InstanceSource.STATIC)
                 .build();
+    }
+
+    private static String staticInstanceId(String serviceId, String host, int port, String scheme) {
+        return serviceId + "@" + (scheme == null ? "http" : scheme) + "://" + host + ":" + port;
     }
 
     /**

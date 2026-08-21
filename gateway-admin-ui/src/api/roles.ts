@@ -163,30 +163,6 @@ export const roleApi = {
     })
   },
 
-  // 导出角色配置
-  export: (ids?: number[]) => {
-    return request({
-      url: '/api/roles/export',
-      method: 'post',
-      data: { ids },
-      responseType: 'blob' as any
-    })
-  },
-
-  // 导入角色配置
-  import: (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return request({
-      url: '/api/roles/import',
-      method: 'post',
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-  },
-
   // 获取角色权限树
   getPermissionTree: (id: number) => {
     return request({
@@ -233,4 +209,4 @@ export const roleApi = {
       method: 'get'
     })
   }
-} 
+}

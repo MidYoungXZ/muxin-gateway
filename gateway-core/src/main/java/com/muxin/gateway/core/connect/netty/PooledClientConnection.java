@@ -59,7 +59,8 @@ public class PooledClientConnection implements ClientConnection {
     @Override
     public CompletableFuture<Void> close() {
         if (closed.compareAndSet(false, true)) {
-            pool.returnChannel(channel);
+            inUse.set(false);
+            pool.destroyChannel(channel);
             log.debug("连接关闭: {}", connectionId);
         }
         return CompletableFuture.completedFuture(null);
@@ -170,13 +171,15 @@ public class PooledClientConnection implements ClientConnection {
 
     @Override
     public void returnToPool() {
+        if (closed.get() || !inUse.compareAndSet(true, false)) return;
         if (isActive()) {
             markIdle();
             pool.returnChannel(channel);
-        } else {
-            pool.destroyChannel(channel);
-            log.debug("[PooledClientConnection] 销毁非活跃连接: {}", connectionId);
+            return;
         }
+        closed.set(true);
+        pool.destroyChannel(channel);
+        log.debug("[PooledClientConnection] 销毁非活跃连接: {}", connectionId);
     }
 
     @Override

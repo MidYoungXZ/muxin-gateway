@@ -364,20 +364,6 @@ const handleClearAll = async () => {
   }
 }
 
-const handleExport = async () => {
-  try {
-    ElMessage.info('正在导出数据...')
-    
-    const params = { ...queryForm, pageNum: 1, pageSize: 10000 }
-    await operationLogApi.exportOperationLogs(params)
-    
-    ElMessage.success('数据导出成功')
-  } catch (error) {
-    console.error('导出失败:', error)
-    ElMessage.error('导出失败')
-  }
-}
-
 // 时间格式化 - 标准格式不带T
 const formatDateTime = (dateTime: string) => {
   if (!dateTime) return '-'
@@ -421,4 +407,4 @@ onMounted(() => {
 .time-cell {
   white-space: nowrap;
 }
-</style> 
+</style>

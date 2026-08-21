@@ -37,7 +37,7 @@ sa-token:
   is-concurrent: true
   is-share: true
   is-log: false
-  jwt-secret-key: muxin-gateway-jwt-secret-key-2024
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET:${random.uuid}}
   is-match-prefix: true
 
 server:

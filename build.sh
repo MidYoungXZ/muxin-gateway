@@ -54,7 +54,6 @@ echo "Deployment steps:"
     echo "  2. cd gateway-main-1.0-SNAPSHOT"
     echo "  3. ./run.sh"
     echo "  4. Open http://localhost:9191"
-    echo "     Login: admin / admin123"
 else
     echo "Error: Backend build failed"
     exit 1

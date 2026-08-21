@@ -1,5 +1,6 @@
 package com.muxin.gateway.admin.config;
 
+import cn.dev33.satoken.secure.BCrypt;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -8,6 +9,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -28,6 +30,9 @@ public class SqliteInitializer implements SmartLifecycle {
 
     @Value("${spring.datasource.url}")
     private String datasourceUrl;
+
+    @Value("${muxin.gateway.admin.password:}")
+    private String adminPassword;
 
     private final DataSource dataSource;
     private final JdbcTemplate jdbcTemplate;
@@ -166,6 +171,10 @@ public class SqliteInitializer implements SmartLifecycle {
         }
 
         populator.execute(dataSource);
+        if (StringUtils.hasText(adminPassword)) {
+            jdbcTemplate.update("UPDATE sys_user SET password = ? WHERE username = 'admin'",
+                    BCrypt.hashpw(adminPassword));
+        }
         log.info("Database initialization scripts executed");
     }
 }

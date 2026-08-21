@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class PathPredicate implements Predicate {
@@ -75,10 +77,26 @@ public class PathPredicate implements Predicate {
             return false;
         }
 
-        boolean matched = PATH_MATCHER.match(pattern, path);
+        String effectivePath = path;
+        String effectivePattern = pattern;
+        if (getBoolean("ignoreCase")) {
+            effectivePath = path.toLowerCase(Locale.ROOT);
+            effectivePattern = pattern.toLowerCase(Locale.ROOT);
+        }
+        String matchType = String.valueOf(config.getOrDefault("matchType", "ANT"));
+        boolean matched = switch (matchType.toUpperCase(Locale.ROOT)) {
+            case "EXACT" -> effectivePattern.equals(effectivePath);
+            case "REGEX" -> Pattern.matches(effectivePattern, effectivePath);
+            default -> PATH_MATCHER.match(effectivePattern, effectivePath);
+        };
         
         log.debug("[PathPredicate] 路径匹配: {} matches {} = {}", path, pattern, matched);
         return matched;
+    }
+
+    private boolean getBoolean(String key) {
+        Object value = config.get(key);
+        return value instanceof Boolean ? (Boolean) value : Boolean.parseBoolean(String.valueOf(value));
     }
 
     @Override

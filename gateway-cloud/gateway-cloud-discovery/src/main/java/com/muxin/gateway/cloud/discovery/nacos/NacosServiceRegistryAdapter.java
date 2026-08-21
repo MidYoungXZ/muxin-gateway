@@ -25,6 +25,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
     private final Map<String, List<InstanceChangeListener>> listeners = new ConcurrentHashMap<>();
     private final Map<String, EventListener> nacosListeners = new ConcurrentHashMap<>();
     private final Map<String, ServiceInstance> registeredInstances = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, ServiceInstance>> knownInstances = new ConcurrentHashMap<>();
 
     private volatile boolean started = false;
     private volatile boolean shutdown = false;
@@ -83,6 +84,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
         }
         nacosListeners.clear();
         listeners.clear();
+        knownInstances.clear();
 
         log.info("[NacosServiceRegistryAdapter] Nacos 服务注册中心已关闭");
     }
@@ -172,7 +174,32 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
 
     @Override
     public void updateStatus(String serviceId, String instanceId, NodeStatus status) {
-        log.info("[NacosServiceRegistryAdapter] 更新实例状态: {} - {} -> {}", serviceId, instanceId, status);
+        checkState();
+        if (status == null) {
+            throw new IllegalArgumentException("节点状态不能为空");
+        }
+        ServiceInstance instance = registeredInstances.get(instanceId);
+        if (instance == null) {
+            instance = getInstance(serviceId, instanceId);
+        }
+        if (instance == null) {
+            log.warn("[NacosServiceRegistryAdapter] 未找到实例，跳过状态更新: {} - {}", serviceId, instanceId);
+            return;
+        }
+
+        try {
+            Instance nacosInstance = convertToNacosInstance(instance);
+            nacosInstance.setHealthy(status.isHealthy());
+            nacosInstance.setEnabled(status.isAvailable());
+            namingService.deregisterInstance(serviceId, group, instance.getHost(), instance.getPort());
+            namingService.registerInstance(serviceId, group, nacosInstance);
+            if (instance instanceof DefaultServiceInstance defaultInstance) {
+                defaultInstance.setHealthy(status.isHealthy());
+            }
+            log.info("[NacosServiceRegistryAdapter] 更新实例状态: {} - {} -> {}", serviceId, instanceId, status);
+        } catch (NacosException e) {
+            throw new RuntimeException("更新实例状态失败: " + serviceId + " - " + instanceId, e);
+        }
     }
 
     @Override
@@ -186,6 +213,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
             try {
                 namingService.subscribe(serviceId, group, nacosListener);
                 nacosListeners.put(serviceId, nacosListener);
+                knownInstances.put(serviceId, snapshotInstances(serviceId));
                 log.info("[NacosServiceRegistryAdapter] 订阅服务变更: {}", serviceId);
             } catch (NacosException e) {
                 log.error("[NacosServiceRegistryAdapter] 订阅服务失败: {}", e.getMessage(), e);
@@ -201,6 +229,7 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
             serviceListeners.remove(listener);
             if (serviceListeners.isEmpty()) {
                 listeners.remove(serviceId);
+                knownInstances.remove(serviceId);
 
                 EventListener nacosListener = nacosListeners.remove(serviceId);
                 if (nacosListener != null) {
@@ -254,19 +283,46 @@ public class NacosServiceRegistryAdapter implements ServiceRegistry {
                 log.debug("[NacosServiceRegistryAdapter] 服务变更: {} - 实例数量: {}", serviceId, instances.size());
             }
 
+            Map<String, ServiceInstance> current = instances.stream()
+                    .map(instance -> new NacosServiceInstance(serviceId, instance))
+                    .collect(Collectors.toMap(ServiceInstance::getInstanceId, instance -> instance, (left, right) -> right));
+            Map<String, ServiceInstance> previous = knownInstances.put(serviceId, current);
+            if (previous == null) {
+                previous = Collections.emptyMap();
+            }
+
             List<InstanceChangeListener> serviceListeners = listeners.get(serviceId);
-            if (serviceListeners != null) {
-                for (InstanceChangeListener listener : serviceListeners) {
-                    try {
-                        for (Instance inst : instances) {
-                            ServiceInstance serviceInstance = new NacosServiceInstance(serviceId, inst);
-                            listener.onInstanceAdded(serviceId, serviceInstance);
+            if (serviceListeners == null) {
+                return;
+            }
+            for (InstanceChangeListener listener : serviceListeners) {
+                try {
+                    for (ServiceInstance instance : current.values()) {
+                        ServiceInstance oldInstance = previous.get(instance.getInstanceId());
+                        if (oldInstance == null) {
+                            listener.onInstanceAdded(serviceId, instance);
+                        } else if (oldInstance.isHealthy() != instance.isHealthy()) {
+                            listener.onInstanceStatusChanged(serviceId, instance.getInstanceId(), statusOf(oldInstance), statusOf(instance));
                         }
-                    } catch (Exception e) {
-                        log.error("[NacosServiceRegistryAdapter] 通知监听器失败: {}", e.getMessage());
                     }
+                    for (String instanceId : previous.keySet()) {
+                        if (!current.containsKey(instanceId)) {
+                            listener.onInstanceRemoved(serviceId, instanceId);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.error("[NacosServiceRegistryAdapter] 通知监听器失败: {}", e.getMessage());
                 }
             }
         }
+    }
+
+    private Map<String, ServiceInstance> snapshotInstances(String serviceId) {
+        return getInstances(serviceId).stream()
+                .collect(Collectors.toMap(ServiceInstance::getInstanceId, instance -> instance, (left, right) -> right));
+    }
+
+    private NodeStatus statusOf(ServiceInstance instance) {
+        return instance.isHealthy() ? NodeStatus.HEALTHY : NodeStatus.UNAVAILABLE;
     }
 }

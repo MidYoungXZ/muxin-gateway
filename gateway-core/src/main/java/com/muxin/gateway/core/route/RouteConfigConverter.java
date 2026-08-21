@@ -318,14 +318,9 @@ public class RouteConfigConverter {
         for (PredicateDefinition config : predicateConfigs) {
             try {
                 String predicateType = config.getName();
-            PredicateFactory factory = predicateFactories.get(predicateType.toLowerCase());
-            if (factory == null) {
-                log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getName(), routeId);
-                continue;
-            }
+                PredicateFactory factory = predicateFactories.get(predicateType.toLowerCase());
                 if (factory == null) {
-                    log.error("[RouteConfigConverter] 不支持的断言类型: {} (路由: {})", config.getName(), routeId);
-                    continue;
+                    throw new IllegalArgumentException("不支持的断言类型: " + config.getName());
                 }
 
                 // 验证配置
@@ -338,7 +333,7 @@ public class RouteConfigConverter {
                 log.debug("[RouteConfigConverter] 为路由 {} 创建断言: {}", routeId, config.getName());
 
             } catch (Exception e) {
-                log.error("[RouteConfigConverter] 创建断言失败，跳过: {} (路由: {})", config.getName(), routeId, e);
+                throw new IllegalArgumentException("创建断言失败: " + config.getName(), e);
             }
         }
 
@@ -430,10 +425,6 @@ public class RouteConfigConverter {
      * 转换超时配置
      */
     private TimeoutConfig convertTimeouts(TimeoutConfig config) {
-        if (config == null) {
-            log.debug("[RouteConfigConverter] 使用默认超时配置");
-            return TimeoutConfig.defaultConfig();
-        }
         return config;
     }
 

@@ -28,6 +28,7 @@ import com.muxin.gateway.core.server.NettyHttpServer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,6 +57,8 @@ public class GatewayBootstrap implements LifeCycle {
     private RouteConfigConverter routeConfigConverter;
     private RouteConfigProvider routeConfigProvider;
     private ServiceConfigProvider serviceConfigProvider;
+    private GatewayCoreConfig coreConfig = GatewayCoreConfig.defaultConfig();
+    private NettyPoolConfig connectionPoolConfig = NettyPoolConfig.defaultConfig();
 
     // ========== 核心组件 ==========
     private ConnectionPoolManager connectionPoolManager;
@@ -86,6 +89,14 @@ public class GatewayBootstrap implements LifeCycle {
 
     public void setServiceConfigProvider(ServiceConfigProvider serviceConfigProvider) {
         this.serviceConfigProvider = serviceConfigProvider;
+    }
+
+    public void setCoreConfig(GatewayCoreConfig coreConfig) {
+        this.coreConfig = coreConfig;
+    }
+
+    public void setConnectionPoolConfig(NettyPoolConfig connectionPoolConfig) {
+        this.connectionPoolConfig = connectionPoolConfig;
     }
 
     @Override
@@ -181,12 +192,13 @@ public class GatewayBootstrap implements LifeCycle {
         this.routeConfigConverter = new RouteConfigConverter();
         log.debug("路由配置转换器初始化完成");
 
-        GatewayCoreConfig coreConfig = GatewayCoreConfig.builder().build();
+        GatewayCoreConfig coreConfig = this.coreConfig;
         RouteSystemConfig routeSystemConfig = RouteSystemConfig.defaultConfig();
         ServerConfig serverConfig = ServerConfig.defaultConfig();
 
         this.gatewayConfig = GatewayConfig.builder()
                 .coreConfig(coreConfig)
+                .connectionPoolConfig(connectionPoolConfig)
                 .build();
 
         this.globalRouteConfig = GlobalRouteConfig.defaultConfig();
@@ -197,8 +209,7 @@ public class GatewayBootstrap implements LifeCycle {
     private void initCoreComponents() {
         log.debug("Initializing core components...");
 
-        NettyPoolConfig poolConfig = NettyPoolConfig.defaultConfig();
-        this.connectionPoolManager = new NettyConnectionPoolManager(poolConfig);
+        this.connectionPoolManager = new NettyConnectionPoolManager(connectionPoolConfig);
         connectionPoolManager.init();
 
         // 路由管理器（使用增强版本，支持全局配置）
@@ -338,6 +349,7 @@ public class GatewayBootstrap implements LifeCycle {
         if (routeManager.getDefaultRoute() == null) {
             log.info("未设置默认路由，创建默认兜底路由");
             Route defaultRoute = createDefaultFallbackRoute();
+            defaultRoute.getService().refresh();
             routeManager.setDefaultRoute(defaultRoute);
         }
     }
@@ -354,18 +366,33 @@ public class GatewayBootstrap implements LifeCycle {
 
             List<RouteDefinition> routeDefinitions = routeConfigProvider.getRoutes();
             List<Route> routes = routeConfigConverter.convertToRoutes(routeDefinitions, serviceMap);
-
-            routeManager.clear();
-            for (Route route : routes) {
-                if (route != null) {
-                    routeManager.insert(route);
-                }
+            if (routes.size() != routeDefinitions.size()) {
+                throw new IllegalStateException("路由转换不完整，保留当前路由快照");
             }
+
+            Map<String, String> oldStaticInstances = staticInstanceServices(routeManager.selectAll());
+            routeManager.replaceAll(routes);
+            Map<String, String> newStaticInstances = staticInstanceServices(routes);
+            oldStaticInstances.forEach((instanceId, serviceId) -> {
+                if (!newStaticInstances.containsKey(instanceId)) {
+                    serviceRegistry.deregisterInstance(serviceId, instanceId);
+                }
+            });
 
             log.info("Routes refreshed: {} routes loaded from {}", routes.size(), routeConfigProvider.getSource());
         } catch (Exception e) {
             log.error("Failed to refresh routes", e);
         }
+    }
+
+    private Map<String, String> staticInstanceServices(Iterable<Route> routes) {
+        Map<String, String> instances = new HashMap<>();
+        for (Route route : routes) {
+            if (route.getService() instanceof StaticRouteService service) {
+                service.registeredInstanceIds().forEach(id -> instances.put(id, service.getServiceId()));
+            }
+        }
+        return instances;
     }
 
     /**
@@ -556,4 +583,4 @@ public class GatewayBootstrap implements LifeCycle {
                 : List.of();
     }
 
-} 
+}

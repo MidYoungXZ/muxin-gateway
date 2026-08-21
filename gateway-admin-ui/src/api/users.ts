@@ -196,30 +196,6 @@ export const userApi = {
     })
   },
 
-  // 导出用户数据
-  export: (params?: any) => {
-    return request({
-      url: '/api/users/export',
-      method: 'get',
-      params,
-      responseType: 'blob'
-    })
-  },
-
-  // 导入用户数据
-  import: (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return request({
-      url: '/api/users/import',
-      method: 'post',
-      data: formData,
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-  },
-
   // 获取用户统计信息
   getStats: () => {
     return request({
@@ -261,4 +237,4 @@ export const userApi = {
       params
     })
   }
-} 
+}

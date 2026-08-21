@@ -3,11 +3,13 @@ package com.muxin.gateway.admin.model.dto;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 @Data
 public class DiscoveryConfigDTO {
     
     @NotBlank(message = "注册中心类型不能为空")
+    @Pattern(regexp = "(?i)NACOS", message = "仅支持 Nacos 注册中心")
     private String registryType;
     
     @NotBlank(message = "注册中心地址不能为空")

@@ -67,15 +67,6 @@ public class OperationLogController {
     }
     
     /**
-     * 导出操作日志
-     */
-    @PostMapping("/export")
-    @SaCheckPermission("system:log:operation:export")
-    public Result<List<OperationLogVO>> exportLogs(@RequestBody OperationLogQueryDTO query) {
-        return Result.success(operationLogService.exportLogs(query));
-    }
-    
-    /**
      * 获取操作日志统计信息
      */
     @GetMapping("/stats")
@@ -95,4 +86,4 @@ public class OperationLogController {
         int cleanCount = operationLogService.cleanHistoryLogs(days);
         return Result.success(cleanCount);
     }
-} 
+}

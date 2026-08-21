@@ -4,7 +4,6 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.StpUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.muxin.gateway.admin.annotation.DataScope;
 import com.muxin.gateway.admin.context.DataScopeContext;
 import com.muxin.gateway.admin.entity.SysDept;
 import com.muxin.gateway.admin.entity.SysRole;

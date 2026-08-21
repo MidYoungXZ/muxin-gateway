@@ -31,6 +31,7 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
     private final FullHttpRequest originalRequest;
     private FullHttpRequest mutableRequest;
     private FullHttpResponse response;
+    private boolean responseCommitted;
     private final Map<String, Object> attributes;
     private final String requestId;
     private final ZonedDateTime timestamp;
@@ -184,6 +185,11 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
         return response != null;
     }
 
+    @Override
+    public boolean isResponseCommitted() {
+        return responseCommitted;
+    }
+
     // ==================== 修改请求（创建副本）====================
 
     @Override
@@ -257,39 +263,32 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     @Override
     public void setStatus(HttpResponseStatus status) {
-        if (response != null) {
-            response.setStatus(status);
-        } else {
-            log.warn("[Exchange] setStatus called but response is null, requestId={}", requestId);
-        }
+        ensureResponse().setStatus(status);
+        responseCommitted = true;
     }
 
     @Override
     public void setResponseHeader(CharSequence name, CharSequence value) {
-        if (response != null) {
-            response.headers().set(name, value);
-        } else {
-            log.warn("[Exchange] setResponseHeader called but response is null, requestId={}", requestId);
-        }
+        ensureResponse().headers().set(name, value);
     }
 
     @Override
     public void setResponseBody(String body) {
-        if (response != null && body != null) {
+        if (body != null) {
+            FullHttpResponse response = ensureResponse();
             ByteBuf content = Unpooled.copiedBuffer(body, StandardCharsets.UTF_8);
             response.content().clear().writeBytes(content);
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
+            responseCommitted = true;
         }
     }
 
     @Override
     public void keepAlive(boolean keepAlive) {
-        if (response != null) {
-            if (keepAlive) {
-                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-            } else {
-                response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
-            }
+        if (keepAlive) {
+            ensureResponse().headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+        } else {
+            ensureResponse().headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         }
     }
 
@@ -317,7 +316,17 @@ public class DefaultHttpServerExchange implements HttpServerExchange {
 
     @Override
     public void _setNettyResponse(FullHttpResponse response) {
+        if (this.response != null && this.response != response) {
+            response.headers().set(this.response.headers());
+        }
         this.response = response;
+    }
+
+    private FullHttpResponse ensureResponse() {
+        if (response == null) {
+            response = new DefaultFullHttpResponse(currentRequest().protocolVersion(), HttpResponseStatus.OK, Unpooled.buffer(0));
+        }
+        return response;
     }
 
     @Override

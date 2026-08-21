@@ -1,8 +1,10 @@
 package com.muxin.gateway.config;
 
 import com.muxin.gateway.core.GatewayBootstrap;
+import com.muxin.gateway.core.config.GatewayCoreConfig;
 import com.muxin.gateway.core.config.provider.RouteConfigProvider;
 import com.muxin.gateway.core.config.provider.ServiceConfigProvider;
+import com.muxin.gateway.core.connect.netty.NettyPoolConfig;
 import com.muxin.gateway.core.server.HttpServerConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class GatewayAutoConfiguration {
         log.info("[GatewayAutoConfiguration] Creating GatewayBootstrap bean");
 
         GatewayProperties.ServerProperties serverProps = gatewayProperties.getNetty().getServer();
+        GatewayProperties.ClientProperties clientProps = gatewayProperties.getNetty().getClient();
         log.info("[GatewayAutoConfiguration] Netty server port: {}", serverProps.getPort());
         
         HttpServerConfig httpConfig = buildHttpServerConfig(serverProps);
@@ -37,6 +40,15 @@ public class GatewayAutoConfiguration {
         GatewayBootstrapWrapper bootstrap = new GatewayBootstrapWrapper();
         bootstrap.setServerPort(serverProps.getPort());
         bootstrap.setHttpServerConfig(httpConfig);
+        bootstrap.setConnectionPoolConfig(NettyPoolConfig.builder()
+                .maxConnections(Math.min(clientProps.getHttpMaxConnections(), clientProps.getHttpConnectionsPerHost()))
+                .connectTimeoutMs(clientProps.getHttpConnectTimeout())
+                .idleTimeout(clientProps.getHttpPooledConnectionIdleTimeout())
+                .build());
+        bootstrap.setCoreConfig(GatewayCoreConfig.builder()
+                .defaultTimeout(clientProps.getHttpRequestTimeout())
+                .maxRetries(clientProps.getHttpMaxRequestRetry())
+                .build());
 
         if (routeConfigProvider != null) {
             bootstrap.setRouteConfigProvider(routeConfigProvider);

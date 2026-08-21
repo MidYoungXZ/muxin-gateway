@@ -23,7 +23,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/index.html")
                 .addResourceLocations("classpath:/static/");
 
-        registry.addResourceHandler("/favicon.ico", "/favicon.svg")
+        registry.addResourceHandler("/logo.svg")
                 .addResourceLocations("classpath:/static/");
 
         // Vue3 构建产物
@@ -48,7 +48,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
         // 根路径重定向到管理界面
         registry.addRedirectViewController("/", "/index.html");
         // favicon
-        registry.addRedirectViewController("/favicon.ico", "/favicon.svg");
+        registry.addRedirectViewController("/favicon.ico", "/logo.svg");
+        registry.addRedirectViewController("/favicon.svg", "/logo.svg");
     }
 
     @Override

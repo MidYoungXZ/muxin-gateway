@@ -125,7 +125,7 @@ services:
     type: DISCOVERY
     supported-protocols: [HTTP]
     discovery:
-      type: NACOS                # 或 CONSUL, EUREKA
+      type: NACOS
       namespace: "public"
       group: "DEFAULT_GROUP"
     health-check:

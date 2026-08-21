@@ -32,4 +32,6 @@ public interface RouteManager extends Repository<String, Route>, LifeCycle {
      */
     void clear();
 
-} 
+    void replaceAll(java.util.List<Route> routes);
+
+}

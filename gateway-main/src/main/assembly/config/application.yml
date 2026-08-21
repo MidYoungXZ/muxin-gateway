@@ -26,7 +26,7 @@ sa-token:
   is-concurrent: true
   is-share: true
   is-log: false
-  jwt-secret-key: muxin-gateway-jwt-secret-key-2024
+  jwt-secret-key: ${SA_TOKEN_JWT_SECRET:${random.uuid}}
   is-match-prefix: true
 
 server:
@@ -68,7 +68,7 @@ muxin:
       enabled: true
       path-prefix: /admin
       username: admin
-      password: admin123
+      password: ${MUXIN_GATEWAY_ADMIN_PASSWORD:}
       session-timeout: 30
 
 logging:

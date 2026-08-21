@@ -36,16 +36,6 @@ export const operationLogApi = {
     })
   },
 
-  // 导出操作日志
-  exportOperationLogs(params: OperationLogQueryParams) {
-    return request({
-      url: '/api/system/logs/operation/export',
-      method: 'post',
-      data: params,
-      responseType: 'blob'
-    })
-  },
-
   // 获取操作日志统计
   getOperationLogStats() {
     return request({
@@ -61,4 +51,4 @@ export const operationLogApi = {
       method: 'post'
     })
   }
-} 
+}

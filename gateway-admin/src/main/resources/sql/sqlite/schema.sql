@@ -98,26 +98,7 @@ CREATE INDEX IF NOT EXISTS idx_rplugin_route ON gw_route_plugin(route_id);
 CREATE INDEX IF NOT EXISTS idx_rplugin_plugin ON gw_route_plugin(plugin_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rplugin_unique ON gw_route_plugin(route_id, plugin_id);
 
--- 6. 路由模板表
-CREATE TABLE IF NOT EXISTS gw_route_template (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    template_name VARCHAR(100) NOT NULL,
-    description VARCHAR(500),
-    category VARCHAR(50),
-    config TEXT NOT NULL,
-    variables TEXT,
-    is_system INTEGER NOT NULL DEFAULT 0,
-    usage_count INTEGER NOT NULL DEFAULT 0,
-    enabled INTEGER NOT NULL DEFAULT 1,
-    create_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    update_time TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    create_by VARCHAR(50),
-    update_by VARCHAR(50)
-);
-
-CREATE INDEX IF NOT EXISTS idx_template_category ON gw_route_template(category);
-
--- 7. 服务节点表
+-- 6. 服务节点表
 CREATE TABLE IF NOT EXISTS gw_service_node (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     node_id VARCHAR(100) NOT NULL UNIQUE,
@@ -151,7 +132,7 @@ CREATE INDEX IF NOT EXISTS idx_node_status ON gw_service_node(status);
 -- RBAC System Tables
 -- ====================================
 
--- 8. 用户表
+-- 7. 用户表
 CREATE TABLE IF NOT EXISTS sys_user (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -171,7 +152,7 @@ CREATE TABLE IF NOT EXISTS sys_user (
 CREATE INDEX IF NOT EXISTS idx_user_dept ON sys_user(dept_id);
 CREATE INDEX IF NOT EXISTS idx_user_status ON sys_user(status);
 
--- 9. 角色表
+-- 8. 角色表
 CREATE TABLE IF NOT EXISTS sys_role (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_code VARCHAR(50) NOT NULL UNIQUE,
@@ -187,7 +168,7 @@ CREATE TABLE IF NOT EXISTS sys_role (
 
 CREATE INDEX IF NOT EXISTS idx_role_status ON sys_role(status);
 
--- 10. 部门表
+-- 9. 部门表
 CREATE TABLE IF NOT EXISTS sys_dept (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_id INTEGER NOT NULL DEFAULT 0,
@@ -208,7 +189,7 @@ CREATE TABLE IF NOT EXISTS sys_dept (
 CREATE INDEX IF NOT EXISTS idx_dept_parent ON sys_dept(parent_id);
 CREATE INDEX IF NOT EXISTS idx_dept_status ON sys_dept(status);
 
--- 11. 菜单表
+-- 10. 菜单表
 CREATE TABLE IF NOT EXISTS sys_menu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     parent_id INTEGER NOT NULL DEFAULT 0,
@@ -231,7 +212,7 @@ CREATE TABLE IF NOT EXISTS sys_menu (
 CREATE INDEX IF NOT EXISTS idx_menu_parent ON sys_menu(parent_id);
 CREATE INDEX IF NOT EXISTS idx_menu_status ON sys_menu(status);
 
--- 12. 用户角色关联表
+-- 11. 用户角色关联表
 CREATE TABLE IF NOT EXISTS sys_user_role (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
@@ -243,7 +224,7 @@ CREATE TABLE IF NOT EXISTS sys_user_role (
 CREATE INDEX IF NOT EXISTS idx_ur_user ON sys_user_role(user_id);
 CREATE INDEX IF NOT EXISTS idx_ur_role ON sys_user_role(role_id);
 
--- 13. 角色菜单关联表
+-- 12. 角色菜单关联表
 CREATE TABLE IF NOT EXISTS sys_role_menu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INTEGER NOT NULL,
@@ -255,7 +236,7 @@ CREATE TABLE IF NOT EXISTS sys_role_menu (
 CREATE INDEX IF NOT EXISTS idx_rm_role ON sys_role_menu(role_id);
 CREATE INDEX IF NOT EXISTS idx_rm_menu ON sys_role_menu(menu_id);
 
--- 14. 角色部门关联表
+-- 13. 角色部门关联表
 CREATE TABLE IF NOT EXISTS sys_role_dept (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INTEGER NOT NULL,
@@ -267,7 +248,7 @@ CREATE TABLE IF NOT EXISTS sys_role_dept (
 CREATE INDEX IF NOT EXISTS idx_rd_role ON sys_role_dept(role_id);
 CREATE INDEX IF NOT EXISTS idx_rd_dept ON sys_role_dept(dept_id);
 
--- 15. 操作日志表
+-- 14. 操作日志表
 CREATE TABLE IF NOT EXISTS sys_operation_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     module VARCHAR(100),
@@ -291,7 +272,7 @@ CREATE TABLE IF NOT EXISTS sys_operation_log (
 CREATE INDEX IF NOT EXISTS idx_log_operator ON sys_operation_log(operator_id);
 CREATE INDEX IF NOT EXISTS idx_log_operate_time ON sys_operation_log(operate_time);
 
--- 16. 系统配置表
+-- 15. 系统配置表
 CREATE TABLE IF NOT EXISTS sys_config (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     config_key VARCHAR(100) NOT NULL UNIQUE,

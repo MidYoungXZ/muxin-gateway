@@ -39,6 +39,18 @@ public interface Route {
         return TimeoutConfig.getDefault(type);
     }
 
+    default boolean hasTimeout(TimeoutType type) {
+        return false;
+    }
+
+    default int getStripPrefixCount() {
+        return 0;
+    }
+
+    default String stripPrefix(String path) {
+        return path;
+    }
+
     default List<Filter> getPreFilters() {
         return getFilters().stream()
                 .filter(f -> f.getType() == FilterType.PRE && f.isEnabled())

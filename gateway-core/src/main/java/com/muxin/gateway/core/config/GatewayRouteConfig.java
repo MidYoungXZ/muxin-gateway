@@ -376,7 +376,6 @@ public class GatewayRouteConfig {
 
         private NacosConfig nacos;
         private EurekaConfig eureka;
-        private ConsulConfig consul;
     }
     
     /**
@@ -404,32 +403,6 @@ public class GatewayRouteConfig {
     public static class EurekaConfig {
         private String serviceUrl;
         private boolean preferIpAddress;
-    }
-    
-    /**
-     * Consul配置
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ConsulConfig {
-        private String host;
-        private String port;
-
-        public int getPortAsInt() {
-            if (port == null || port.isEmpty()) {
-                return 8500;
-            }
-            if (port.contains("${")) {
-                return 8500;
-            }
-            try {
-                return Integer.parseInt(port);
-            } catch (NumberFormatException e) {
-                return 8500;
-            }
-        }
     }
     
     /**
